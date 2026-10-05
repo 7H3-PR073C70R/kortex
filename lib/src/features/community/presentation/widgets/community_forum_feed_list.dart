@@ -59,7 +59,10 @@ class CommunityForumFeedList extends HookWidget {
     useEffect(
       () {
         void onScroll() {
-          if (!scrollController.hasClients) return;
+          if (!scrollController.hasClients ||
+              !scrollController.position.hasContentDimensions) {
+            return;
+          }
           final maxScroll = scrollController.position.maxScrollExtent;
           final currentScroll = scrollController.position.pixels;
           if (maxScroll - currentScroll <= 200) {

@@ -188,7 +188,8 @@ class AuthChatView extends HookWidget {
     void scrollToBottom({bool animate = false}) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (scrollController.hasClients) {
+          if (scrollController.hasClients &&
+              scrollController.position.hasContentDimensions) {
             if (animate) {
               unawaited(
                 scrollController.animateTo(

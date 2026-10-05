@@ -12,6 +12,8 @@ abstract class LocalStorageService {
   String? getPreference({required String key});
 
   Future<void> deletePreference({required String key});
+
+  Future<void> clearAllPreferences() async {}
 }
 
 class LocalStorageServiceImpl implements LocalStorageService {
@@ -46,6 +48,17 @@ class LocalStorageServiceImpl implements LocalStorageService {
       final prefs = _preferences ?? await SharedPreferences.getInstance();
       _preferences = prefs;
       await prefs.remove(key);
+    } on Exception catch (e) {
+      Logger().e(e);
+    }
+  }
+
+  @override
+  Future<void> clearAllPreferences() async {
+    try {
+      final prefs = _preferences ?? await SharedPreferences.getInstance();
+      _preferences = prefs;
+      await prefs.clear();
     } on Exception catch (e) {
       Logger().e(e);
     }

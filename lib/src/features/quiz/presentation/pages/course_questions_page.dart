@@ -200,7 +200,9 @@ class _CourseQuestionsView extends HookWidget {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 820),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width >= 900 ? 1050 : 820,
+            ),
             child: Column(
               children: [
                 // 1. Search Bar & Instant Feedback Switcher

@@ -104,7 +104,9 @@ class LeaderboardPodiumWidget extends StatelessWidget {
                     avatarSize: 52,
                     delay: const Duration(milliseconds: 120),
                   ),
-                ),
+                )
+              else
+                const Expanded(child: SizedBox.shrink()),
 
               // ── Rank 1 (Gold Champion) ───────────────────────────────────
               if (entries.isNotEmpty)
@@ -121,7 +123,9 @@ class LeaderboardPodiumWidget extends StatelessWidget {
                     delay: Duration.zero,
                     isFirst: true,
                   ),
-                ),
+                )
+              else
+                const Expanded(child: SizedBox.shrink()),
 
               // ── Rank 3 (Bronze) ──────────────────────────────────────────
               if (entries.length >= 3)
@@ -137,7 +141,9 @@ class LeaderboardPodiumWidget extends StatelessWidget {
                     avatarSize: 48,
                     delay: const Duration(milliseconds: 220),
                   ),
-                ),
+                )
+              else
+                const Expanded(child: SizedBox.shrink()),
             ],
           ),
         ],

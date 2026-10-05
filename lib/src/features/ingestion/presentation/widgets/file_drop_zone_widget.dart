@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:auto_route/auto_route.dart';
 import 'package:crypto/crypto.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -168,7 +169,9 @@ class FileDropZoneWidget extends HookWidget {
             onPressed: () => Navigator.of(dialogCtx).pop(),
             child: Text(
               'Dismiss',
-              style: context.typography.body.regular.copyWith(color: colors.textSecondary),
+              style: context.typography.body.regular.copyWith(
+                color: colors.textSecondary,
+              ),
             ),
           ),
           FilledButton.icon(
@@ -242,7 +245,9 @@ class FileDropZoneWidget extends HookWidget {
             onPressed: () => Navigator.of(dialogCtx).pop(),
             child: Text(
               'Dismiss',
-              style: context.typography.body.regular.copyWith(color: colors.textSecondary),
+              style: context.typography.body.regular.copyWith(
+                color: colors.textSecondary,
+              ),
             ),
           ),
           FilledButton.icon(
@@ -323,7 +328,9 @@ class FileDropZoneWidget extends HookWidget {
             onPressed: () => Navigator.of(dialogCtx).pop(),
             child: Text(
               'Cancel',
-              style: context.typography.body.regular.copyWith(color: colors.textSecondary),
+              style: context.typography.body.regular.copyWith(
+                color: colors.textSecondary,
+              ),
             ),
           ),
           OutlinedButton(
@@ -407,6 +414,77 @@ class FileDropZoneWidget extends HookWidget {
     final isDark = context.isDarkMode;
 
     final isHovering = useState<bool>(false);
+    final isDragging = useState<bool>(false);
+
+    Future<void> processPickedFileBytes(
+      BuildContext context, {
+      required String filename,
+      required String extension,
+      required Uint8List bytes,
+    }) async {
+      final guard = locator.isRegistered<SubscriptionGuard>()
+          ? locator<SubscriptionGuard>()
+          : null;
+      final isPro = guard?.isPro ?? false;
+
+      // 1. File Limit Enforcement (50MB Free, 200MB Pro)
+      final maxBytes = isPro
+          ? SubscriptionGuard.proMaxSizeBytes
+          : SubscriptionGuard.freeMaxSizeBytes;
+
+      if (bytes.lengthInBytes > maxBytes) {
+        if (context.mounted) {
+          await _show50MbUpgradeDialog(
+            context,
+            filename,
+            bytes.lengthInBytes,
+          );
+        }
+        return;
+      }
+
+      // 2. Daily Document Upload Limit (Free: 3/day, Pro: Unlimited)
+      if (!isPro &&
+          guard != null &&
+          !guard.canUploadDocument(
+            fileSizeBytes: bytes.lengthInBytes,
+          )) {
+        if (context.mounted) {
+          await _showDailyLimitDialog(context);
+        }
+        return;
+      }
+
+      // 3. Document Deduplication Check
+      final existingDeck = _checkExistingExtractedDeck(
+        filename,
+        bytes,
+      );
+      if (existingDeck != null && context.mounted) {
+        await _showAlreadyExtractedDialog(
+          context,
+          deckTitle: existingDeck['deckTitle']!,
+          deckId: existingDeck['deckId']!,
+          onReExtract: () {
+            unawaited(guard?.recordDocumentUpload());
+            onFilePicked(
+              filename: filename,
+              fileType: extension,
+              fileBytes: bytes,
+            );
+          },
+        );
+        return;
+      }
+
+      unawaited(guard?.recordDocumentUpload());
+
+      onFilePicked(
+        filename: filename,
+        fileType: extension,
+        fileBytes: bytes,
+      );
+    }
 
     Future<void> handlePickFile() async {
       unawaited(HapticFeedback.lightImpact());
@@ -417,68 +495,12 @@ class FileDropZoneWidget extends HookWidget {
 
         final doc = await filePickerService.pickStudyDocument();
 
-        if (doc != null && doc.bytes.isNotEmpty) {
-          final guard = locator.isRegistered<SubscriptionGuard>()
-              ? locator<SubscriptionGuard>()
-              : null;
-          final isPro = guard?.isPro ?? false;
-
-          // 1. File Limit Enforcement (50MB Free, 200MB Pro)
-          final maxBytes = isPro
-              ? SubscriptionGuard.proMaxSizeBytes
-              : SubscriptionGuard.freeMaxSizeBytes;
-
-          if (doc.bytes.lengthInBytes > maxBytes) {
-            if (context.mounted) {
-              await _show50MbUpgradeDialog(
-                context,
-                doc.name,
-                doc.bytes.lengthInBytes,
-              );
-            }
-            return;
-          }
-
-          // 2. Daily Document Upload Limit (Free: 3/day, Pro: Unlimited)
-          if (!isPro &&
-              guard != null &&
-              !guard.canUploadDocument(
-                fileSizeBytes: doc.bytes.lengthInBytes,
-              )) {
-            if (context.mounted) {
-              await _showDailyLimitDialog(context);
-            }
-            return;
-          }
-
-          // 3. Document Deduplication Check (Item 7)
-          final existingDeck = _checkExistingExtractedDeck(
-            doc.name,
-            doc.bytes,
-          );
-          if (existingDeck != null && context.mounted) {
-            await _showAlreadyExtractedDialog(
-              context,
-              deckTitle: existingDeck['deckTitle']!,
-              deckId: existingDeck['deckId']!,
-              onReExtract: () {
-                unawaited(guard?.recordDocumentUpload());
-                onFilePicked(
-                  filename: doc.name,
-                  fileType: doc.extension,
-                  fileBytes: doc.bytes,
-                );
-              },
-            );
-            return;
-          }
-
-          unawaited(guard?.recordDocumentUpload());
-
-          onFilePicked(
+        if (doc != null && doc.bytes.isNotEmpty && context.mounted) {
+          await processPickedFileBytes(
+            context,
             filename: doc.name,
-            fileType: doc.extension,
-            fileBytes: doc.bytes,
+            extension: doc.extension,
+            bytes: doc.bytes,
           );
         }
       } on Object {
@@ -491,287 +513,332 @@ class FileDropZoneWidget extends HookWidget {
       }
     }
 
-    return Semantics(
-      label: l10n.dragAndDropHint,
-      button: true,
-      child: MouseRegion(
-        onEnter: (_) => isHovering.value = true,
-        onExit: (_) => isHovering.value = false,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          decoration: BoxDecoration(
-            color: isHovering.value
-                ? colors.surfaceSecondary
-                : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
-            borderRadius: AppRadius.radiusDialog,
-            border: Border.all(
-              color: isHovering.value
-                  ? colors.primary
-                  : colors.primary.withAlpha(isDark ? 80 : 40),
-              width: 1.5,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Icon container with pulsating gradient glow
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colors.primary.withAlpha(isDark ? 30 : 20),
-                  border: Border.all(
-                    color: colors.primary.withAlpha(isDark ? 60 : 40),
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.cloud_upload_outlined,
-                    size: 34,
-                    color: colors.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // Title & Hint
-              Text(
-                l10n.dragAndDropHint,
-                textAlign: TextAlign.center,
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                l10n.supportedFormatsNotice,
-                textAlign: TextAlign.center,
-                style: typography.footnote.regular.copyWith(
-                  color: colors.textSecondary,
+    return DropTarget(
+      onDragEntered: (_) => isDragging.value = true,
+      onDragExited: (_) => isDragging.value = false,
+      onDragDone: (details) async {
+        isDragging.value = false;
+        if (details.files.isNotEmpty) {
+          final file = details.files.first;
+          final filename = file.name;
+          final bytes = await file.readAsBytes();
+          final ext = filename.contains('.')
+              ? filename.split('.').last.toLowerCase()
+              : '';
+          if (context.mounted) {
+            await processPickedFileBytes(
+              context,
+              filename: filename,
+              extension: ext,
+              bytes: bytes,
+            );
+          }
+        }
+      },
+      child: Semantics(
+        label: l10n.dragAndDropHint,
+        button: true,
+        child: GestureDetector(
+          onTap: handlePickFile,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            onEnter: (_) => isHovering.value = true,
+            onExit: (_) => isHovering.value = false,
+            child: AnimatedContainer(
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              decoration: BoxDecoration(
+                color: isDragging.value
+                    ? colors.primary.withAlpha(isDark ? 50 : 30)
+                    : (isHovering.value
+                          ? colors.surfaceSecondary
+                          : (isDark
+                                ? colors.surfaceSecondary
+                                : colors.surfacePrimary)),
+                borderRadius: AppRadius.radiusDialog,
+                border: Border.all(
+                  color: (isDragging.value || isHovering.value)
+                      ? colors.primary
+                      : colors.primary.withAlpha(isDark ? 80 : 40),
+                  width: isDragging.value ? 2.5 : 1.5,
                 ),
               ),
-              if (!SubscriptionGuard().isPro) ...[
-                const SizedBox(height: 12),
-                Builder(
-                  builder: (ctx) {
-                    final guard = SubscriptionGuard();
-                    final used = guard.getTodayUploadCount();
-                    const limit = SubscriptionGuard.freeDailyUploadLimit;
-                    final progress = (used / limit).clamp(0.0, 1.0);
-                    return Container(
-                      constraints: const BoxConstraints(maxWidth: 320),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfacePrimary.withAlpha(isDark ? 160 : 200),
-                        borderRadius: AppRadius.radiusBadge,
-                        border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(80),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Free Daily Uploads',
-                                style: typography.caption.medium.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              Text(
-                                '$used / $limit used today',
-                                style: typography.caption.bold.copyWith(
-                                  color: progress >= 1.0
-                                      ? colors.warning
-                                      : colors.primary,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              backgroundColor: colors.surfaceBorder.withAlpha(50),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                progress >= 1.0 ? colors.warning : colors.primary,
-                              ),
-                              minHeight: 5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ],
-              const SizedBox(height: 24),
-
-              // Action Buttons Row
-              Wrap(
-                spacing: 12,
-                runSpacing: 10,
-                alignment: WrapAlignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Browse Files Button
-                  PlatformHoverBuilder(
-                    builder: (context, isHovered, child) {
-                      return AnimatedScale(
-                        scale: isHovered ? 1.04 : 1.0,
-                        duration: AppMotion.snappy,
-                        curve: AppMotion.easeOutCubic,
-                        child: child,
-                      );
-                    },
-                    child: ShrinkableButton(
-                      onTap: handlePickFile,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              colors.primary,
-                              colors.primary.withAlpha(210),
-                            ],
-                          ),
-                          borderRadius: AppRadius.radiusCard,
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.black.withAlpha(isDark ? 50 : 20),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.folder_open_rounded,
-                              color: colors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.browseFilesButton,
-                              style: typography.footnote.bold.copyWith(
-                                color: colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
+                  // Icon container with pulsating gradient glow
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.primary.withAlpha(isDark ? 30 : 20),
+                      border: Border.all(
+                        color: colors.primary.withAlpha(isDark ? 60 : 40),
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.cloud_upload_outlined,
+                        size: 34,
+                        color: colors.primary,
                       ),
                     ),
                   ),
+                  const SizedBox(height: 18),
 
-                  // Camera Scanner Button
-                  if (onCameraScanTap != null)
-                    PlatformHoverBuilder(
-                      builder: (context, isHovered, child) {
-                        return AnimatedScale(
-                          scale: isHovered ? 1.04 : 1.0,
-                          duration: AppMotion.snappy,
-                          curve: AppMotion.easeOutCubic,
-                          child: child,
-                        );
-                      },
-                      child: ShrinkableButton(
-                        onTap: onCameraScanTap,
-                        child: Container(
+                  // Title & Hint
+                  Text(
+                    l10n.dragAndDropHint,
+                    textAlign: TextAlign.center,
+                    style: typography.title3.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.supportedFormatsNotice,
+                    textAlign: TextAlign.center,
+                    style: typography.footnote.regular.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  if (!SubscriptionGuard().isPro) ...[
+                    const SizedBox(height: 12),
+                    Builder(
+                      builder: (ctx) {
+                        final guard = SubscriptionGuard();
+                        final used = guard.getTodayUploadCount();
+                        const limit = SubscriptionGuard.freeDailyUploadLimit;
+                        final progress = (used / limit).clamp(0.0, 1.0);
+                        return Container(
+                          constraints: const BoxConstraints(maxWidth: 320),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 12,
+                            horizontal: 14,
+                            vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? colors.surfaceTertiary
-                                : colors.surfaceSecondary,
-                            borderRadius: AppRadius.radiusCard,
+                            color: colors.surfacePrimary.withAlpha(
+                              isDark ? 160 : 200,
+                            ),
+                            borderRadius: AppRadius.radiusBadge,
                             border: Border.all(
-                              color: colors.primary.withAlpha(isDark ? 90 : 60),
+                              color: colors.surfaceBorder.withAlpha(80),
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          child: Column(
                             children: [
-                              Icon(
-                                Icons.camera_alt_outlined,
-                                color: colors.primary,
-                                size: 18,
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Free Daily Uploads',
+                                    style: typography.caption.medium.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  Text(
+                                    '$used / $limit used today',
+                                    style: typography.caption.bold.copyWith(
+                                      color: progress >= 1.0
+                                          ? colors.warning
+                                          : colors.primary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                l10n.cameraCaptureButton,
-                                style: typography.footnote.bold.copyWith(
-                                  color: colors.primary,
+                              const SizedBox(height: 6),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: progress,
+                                  backgroundColor: colors.surfaceBorder
+                                      .withAlpha(50),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    progress >= 1.0
+                                        ? colors.warning
+                                        : colors.primary,
+                                  ),
+                                  minHeight: 5,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                    ),
-                  if (onLmsImportTap != null)
-                    PlatformHoverBuilder(
-                      builder: (context, isHovered, child) {
-                        return AnimatedScale(
-                          scale: isHovered ? 1.04 : 1.0,
-                          duration: AppMotion.snappy,
-                          curve: AppMotion.easeOutCubic,
-                          child: child,
                         );
                       },
-                      child: ShrinkableButton(
-                        onTap: onLmsImportTap,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? colors.surfaceTertiary
-                                : colors.surfaceSecondary,
-                            borderRadius: AppRadius.radiusCard,
-                            border: Border.all(
-                              color: colors.primary.withAlpha(isDark ? 90 : 60),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+
+                  // Action Buttons Row
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 10,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      // Browse Files Button
+                      PlatformHoverBuilder(
+                        builder: (context, isHovered, child) {
+                          return AnimatedScale(
+                            scale: isHovered ? 1.04 : 1.0,
+                            duration: AppMotion.snappy,
+                            curve: AppMotion.easeOutCubic,
+                            child: child,
+                          );
+                        },
+                        child: ShrinkableButton(
+                          onTap: handlePickFile,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 12,
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.school_outlined,
-                                color: colors.primary,
-                                size: 18,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  colors.primary,
+                                  colors.primary.withAlpha(210),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Import LMS',
-                                style: typography.footnote.bold.copyWith(
-                                  color: colors.primary,
+                              borderRadius: AppRadius.radiusCard,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.black.withAlpha(
+                                    isDark ? 50 : 20,
+                                  ),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.folder_open_rounded,
+                                  color: colors.white,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  l10n.browseFilesButton,
+                                  style: typography.footnote.bold.copyWith(
+                                    color: colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
+
+                      // Camera Scanner Button
+                      if (onCameraScanTap != null)
+                        PlatformHoverBuilder(
+                          builder: (context, isHovered, child) {
+                            return AnimatedScale(
+                              scale: isHovered ? 1.04 : 1.0,
+                              duration: AppMotion.snappy,
+                              curve: AppMotion.easeOutCubic,
+                              child: child,
+                            );
+                          },
+                          child: ShrinkableButton(
+                            onTap: onCameraScanTap,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colors.surfaceTertiary
+                                    : colors.surfaceSecondary,
+                                borderRadius: AppRadius.radiusCard,
+                                border: Border.all(
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 90 : 60,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.camera_alt_outlined,
+                                    color: colors.primary,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    l10n.cameraCaptureButton,
+                                    style: typography.footnote.bold.copyWith(
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (onLmsImportTap != null)
+                        PlatformHoverBuilder(
+                          builder: (context, isHovered, child) {
+                            return AnimatedScale(
+                              scale: isHovered ? 1.04 : 1.0,
+                              duration: AppMotion.snappy,
+                              curve: AppMotion.easeOutCubic,
+                              child: child,
+                            );
+                          },
+                          child: ShrinkableButton(
+                            onTap: onLmsImportTap,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colors.surfaceTertiary
+                                    : colors.surfaceSecondary,
+                                borderRadius: AppRadius.radiusCard,
+                                border: Border.all(
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 90 : 60,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.school_outlined,
+                                    color: colors.primary,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Import LMS',
+                                    style: typography.footnote.bold.copyWith(
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),

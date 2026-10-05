@@ -155,7 +155,8 @@ class _SyllabotChatView extends HookWidget {
       lastAutoScrollTime.value = now;
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (scrollController.hasClients) {
+        if (scrollController.hasClients &&
+            scrollController.position.hasContentDimensions) {
           final maxExtent = scrollController.position.maxScrollExtent;
           final currentOffset = scrollController.offset;
           final isNearBottom = (maxExtent - currentOffset) < 90;
@@ -185,16 +186,6 @@ class _SyllabotChatView extends HookWidget {
       ExecutionEngineType targetEngine,
     ) async {
       if (targetEngine == ExecutionEngineType.cloudRemote) {
-        final guard = locator.isRegistered<SubscriptionGuard>()
-            ? locator<SubscriptionGuard>()
-            : SubscriptionGuard();
-        if (!guard.canAccessCloudAi()) {
-          final upgraded = await guard.requirePro(
-            pageContext,
-            featureName: 'Cloud AI Streaming Engine',
-          );
-          if (!upgraded) return;
-        }
         if (!pageContext.mounted) return;
         pageContext.read<SyllabotChatBloc>().add(
           const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
@@ -1088,6 +1079,9 @@ class _SyllabotChatView extends HookWidget {
                       final isPro = guard.isPro;
                       final usedQueries = guard.getTodaySyllabotQueryCount();
                       const limit = SubscriptionGuard.freeDailySyllabotLimit;
+                      final isLocalEngine =
+                          state.engineType == ExecutionEngineType.localOnDevice;
+                      final isExhausted = !isLocalEngine && usedQueries >= limit;
 
                       return Column(
                         mainAxisSize: MainAxisSize.min,
@@ -1102,7 +1096,9 @@ class _SyllabotChatView extends HookWidget {
                               child: ShrinkableButton(
                                 onTap: () => guard.requirePro(
                                   context,
-                                  featureName: 'Unlimited Syllabot AI Queries',
+                                  featureName: isLocalEngine
+                                      ? 'Unlimited Cloud AI Queries'
+                                      : 'Unlimited Syllabot AI Queries',
                                 ),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -1110,7 +1106,7 @@ class _SyllabotChatView extends HookWidget {
                                     vertical: 5,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: (usedQueries >= limit
+                                    color: (isExhausted
                                             ? colors.error
                                             : colors.primary)
                                         .withAlpha(isDark ? 30 : 16),
@@ -1118,7 +1114,7 @@ class _SyllabotChatView extends HookWidget {
                                       AppRadius.card,
                                     ),
                                     border: Border.all(
-                                      color: (usedQueries >= limit
+                                      color: (isExhausted
                                               ? colors.error
                                               : colors.primary)
                                           .withAlpha(isDark ? 80 : 50),
@@ -1128,15 +1124,19 @@ class _SyllabotChatView extends HookWidget {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
-                                        Icons.auto_awesome_rounded,
+                                        isLocalEngine
+                                            ? Icons.offline_bolt_rounded
+                                            : Icons.auto_awesome_rounded,
                                         size: 13,
-                                        color: usedQueries >= limit
+                                        color: isExhausted
                                             ? colors.error
                                             : colors.primary,
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        '$usedQueries / $limit free queries used today',
+                                        isLocalEngine
+                                            ? 'On-Device AI • Unlimited queries'
+                                            : '$usedQueries / $limit free queries used today',
                                         style: typography.caption.medium
                                             .copyWith(
                                               color: colors.textSecondary,
@@ -1199,12 +1199,14 @@ class _SyllabotChatView extends HookWidget {
                                                 ? locator<SubscriptionGuard>()
                                                 : SubscriptionGuard();
 
-                                            if (!guard.canQuerySyllabot()) {
+                                            if (!guard.canQuerySyllabot(
+                                              engineType: state.engineType,
+                                            )) {
                                               final isPro = await guard
                                                   .requirePro(
                                                     context,
                                                     featureName:
-                                                        'Unlimited Syllabot AI Queries',
+                                                        'Unlimited Syllabot Cloud AI Queries',
                                                   );
                                               if (!isPro || !context.mounted) {
                                                 return;
@@ -1212,7 +1214,9 @@ class _SyllabotChatView extends HookWidget {
                                             }
 
                                             unawaited(
-                                              guard.recordSyllabotQuery(),
+                                              guard.recordSyllabotQuery(
+                                                engineType: state.engineType,
+                                              ),
                                             );
 
                                             final sid =
@@ -1386,7 +1390,8 @@ class _SyllabotChatView extends HookWidget {
   ) {
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
-        if (scrollController.hasClients) {
+        if (scrollController.hasClients &&
+            scrollController.position.hasContentDimensions) {
           final maxExtent = scrollController.position.maxScrollExtent;
           userIsAtBottom.value = (maxExtent - scrollController.offset) < 90;
         }

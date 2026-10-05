@@ -77,6 +77,11 @@ class InMemoryLocalStorageService implements LocalStorageService {
   Future<void> deletePreference({required String key}) async {
     data.remove(key);
   }
+
+  @override
+  Future<void> clearAllPreferences() async {
+    data.clear();
+  }
 }
 
 void main() {

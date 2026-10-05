@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/sync/app_sync_engine.dart';
+import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
@@ -19,6 +21,7 @@ import 'package:kortex/src/features/auth/domain/use_cases/register_with_email_us
 import 'package:kortex/src/features/auth/domain/use_cases/reset_password_use_case.dart';
 import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_use_case.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
@@ -27,6 +30,7 @@ import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/monetization/domain/use_cases/redeem_promo_code_use_case.dart';
 import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
+import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 
@@ -63,6 +67,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthDisplayNameUpdated>(_onDisplayNameUpdated);
     on<AuthStreakIncremented>(_onStreakIncremented);
     on<AuthSignOutRequested>(_onSignOutRequested);
+    on<AuthAccountDeleteRequested>(_onAccountDeleteRequested);
     on<AuthSubscriptionUpdated>(_onSubscriptionUpdated);
     on<AuthAppResumed>(_onAppResumed);
 
@@ -996,6 +1001,62 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (locator.isRegistered<AutoCommunityCubit>()) {
       locator<AutoCommunityCubit>().reset();
     }
+    emit(
+      const AuthState(
+        status: AuthStatus.unauthenticated,
+      ),
+    );
+  }
+
+  Future<void> _onAccountDeleteRequested(
+    AuthAccountDeleteRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(status: AuthStatus.loading));
+
+    // 1. Delete Remote Account & User Profile Data
+    try {
+      if (locator.isRegistered<DeleteAccountUseCase>()) {
+        await locator<DeleteAccountUseCase>()(const NoParams());
+      }
+    } on Object catch (_) {}
+
+    // 2. Purge Local Drift SQLite Database (All tables: decks, flashcards, review logs, past questions)
+    try {
+      if (locator.isRegistered<AppDatabase>()) {
+        await locator<AppDatabase>().clearAllTables();
+      }
+    } on Object catch (_) {}
+
+    // 3. Clear Local Storage preferences
+    try {
+      if (locator.isRegistered<LocalStorageService>()) {
+        await locator<LocalStorageService>().clearAllPreferences();
+      }
+    } on Object catch (_) {}
+
+    // 4. Clear User Session & Secure Storage credentials
+    try {
+      if (locator.isRegistered<UserStorageService>()) {
+        locator<UserStorageService>().clearStorage();
+      }
+    } on Object catch (_) {}
+
+    // 5. Reset Auth Mode & Community Cubits
+    try {
+      if (locator.isRegistered<AuthModeCubit>()) {
+        locator<AuthModeCubit>().resetToAiChat();
+      }
+      if (locator.isRegistered<AutoCommunityCubit>()) {
+        locator<AutoCommunityCubit>().reset();
+      }
+    } on Object catch (_) {}
+
+    // 6. Sign out session from backend
+    try {
+      await _authRepository.signOut();
+    } on Object catch (_) {}
+
     emit(
       const AuthState(
         status: AuthStatus.unauthenticated,

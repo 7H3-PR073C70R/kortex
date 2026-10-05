@@ -251,4 +251,9 @@ class _FakeLocalStorageService implements LocalStorageService {
   Future<void> deletePreference({required String key}) async {
     storage.remove(key);
   }
+
+  @override
+  Future<void> clearAllPreferences() async {
+    storage.clear();
+  }
 }

@@ -42,7 +42,7 @@ class StreakLeaderboardWidget extends StatelessWidget {
           const SizedBox(height: 12),
 
           // ── Prestigious 3D Podium for Top 3 ───────────────────────────
-          if (entries.length >= 3)
+          if (entries.isNotEmpty)
             LeaderboardPodiumWidget(entries: entries.take(3).toList()),
 
           const SizedBox(height: 12),

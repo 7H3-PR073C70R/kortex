@@ -76,63 +76,75 @@ class LiveFocusRoomCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Top Row: Category badge + Soundtrack Chip + Live presence indicator
+                    // Top Row: Category badge + Soundtrack Chip + Live presence indicator
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(30),
-                            borderRadius: AppRadius.radiusBadge,
-                          ),
-                          child: Text(
-                            room.category.toUpperCase(),
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ),
-                        if (room.ambientSoundTrack.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceTertiary.withAlpha(160)
-                                  : colors.surfaceSecondary,
-                              borderRadius: AppRadius.radiusBadge,
-                              border: Border.all(
-                                color: colors.primary.withAlpha(isDark ? 40 : 25),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.music_note_rounded,
-                                  size: 11,
-                                  color: colors.primary,
+                        Expanded(
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3.5,
                                 ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  room.ambientSoundTrack,
-                                  style: typography.caption.medium.copyWith(
-                                    color: colors.textSecondary,
-                                    fontSize: 10.5,
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withAlpha(30),
+                                  borderRadius: AppRadius.radiusBadge,
+                                ),
+                                child: Text(
+                                  room.category.toUpperCase(),
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    letterSpacing: 0.8,
+                                    fontSize: 10,
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                              if (room.ambientSoundTrack.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 3.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfaceTertiary.withAlpha(160)
+                                        : colors.surfaceSecondary,
+                                    borderRadius: AppRadius.radiusBadge,
+                                    border: Border.all(
+                                      color: colors.primary.withAlpha(
+                                        isDark ? 40 : 25,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.music_note_rounded,
+                                        size: 11,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        room.ambientSoundTrack,
+                                        style: typography.caption.medium
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                              fontSize: 10,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
                           ),
-                        ],
-                        const Spacer(),
+                        ),
+                        const SizedBox(width: 6),
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
                               width: 8,
@@ -148,13 +160,17 @@ class LiveFocusRoomCard extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                            ).animate(onPlay: (controller) => controller.repeat())
-                             .fadeIn(duration: 800.ms)
-                             .then(delay: 200.ms)
-                             .fadeOut(duration: 800.ms),
+                            )
+                                .animate(
+                                  onPlay: (controller) => controller.repeat(),
+                                )
+                                .fadeIn(duration: 800.ms)
+                                .then(delay: 200.ms)
+                                .fadeOut(duration: 800.ms),
                             const SizedBox(width: 6),
                             Transform.translate(
-                              offset: const Offset(0, 0.5), // Optical alignment
+                              offset:
+                                  const Offset(0, 0.5), // Optical alignment
                               child: Text(
                                 room.isFocusing
                                     ? l10n.pomodoroFocus
@@ -198,48 +214,59 @@ class LiveFocusRoomCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildAvatarStack(context, room.participantAvatars, room.activeParticipantsCount),
-                    PlatformHoverBuilder(
-                      builder: (context, isBtnHovered, child) {
-                        return ShrinkableButton(
-                          onTap: onJoinTap,
-                          child: AnimatedContainer(
-                            duration: AppMotion.snappy,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 9,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  colors.primary,
-                                  colors.primary.withAlpha(
-                                    isBtnHovered ? 250 : 220,
-                                  ),
-                                ],
+                    Expanded(
+                      child: _buildAvatarStack(
+                        context,
+                        room.participantAvatars,
+                        room.activeParticipantsCount,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: PlatformHoverBuilder(
+                        builder: (context, isBtnHovered, child) {
+                          return ShrinkableButton(
+                            onTap: onJoinTap,
+                            child: AnimatedContainer(
+                              duration: AppMotion.snappy,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
                               ),
-                              borderRadius: AppRadius.radiusCard,
-                              boxShadow: isBtnHovered
-                                  ? [
-                                      BoxShadow(
-                                        color: colors.black.withAlpha(
-                                          isDark ? 50 : 20,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colors.primary,
+                                    colors.primary.withAlpha(
+                                      isBtnHovered ? 250 : 220,
+                                    ),
+                                  ],
+                                ),
+                                borderRadius: AppRadius.radiusCard,
+                                boxShadow: isBtnHovered
+                                    ? [
+                                        BoxShadow(
+                                          color: colors.black.withAlpha(
+                                            isDark ? 50 : 20,
+                                          ),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 3),
                                         ),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Text(
-                              l10n.joinRoomButton,
-                              style: typography.footnote.bold.copyWith(
-                                color: colors.white,
+                                      ]
+                                    : null,
+                              ),
+                              child: Text(
+                                l10n.joinRoomButton,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.footnote.bold.copyWith(
+                                  color: colors.white,
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),

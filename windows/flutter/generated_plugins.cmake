@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   connectivity_plus
+  desktop_drop
   file_selector_windows
   firebase_auth
   firebase_core

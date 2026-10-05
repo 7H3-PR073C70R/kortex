@@ -346,7 +346,7 @@ class _ProfileView extends HookWidget {
       case ProfileSettingsSection.membershipPro:
         return const KeyedSubtree(
           key: ValueKey('membership_pro'),
-          child: PaywallScreen(),
+          child: PaywallScreen(isEmbedded: true),
         );
       case ProfileSettingsSection.appPreferences:
         return const KeyedSubtree(

@@ -9,6 +9,7 @@ import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 
 enum DeckExportFormat {
   csv,
@@ -64,9 +65,10 @@ class SubscriptionGuard {
 
   // --- Feature Restrictions ---
 
-  /// Cloud AI engines (Gemini/Edge Functions) require Pro.
-  /// Local on-device GGUF inference is ALWAYS free for all users.
-  bool canAccessCloudAi() => isPro;
+  /// Cloud AI engines (Gemini/Edge Functions) are accessible to all users.
+  /// Free tier users get 20 queries/day for Cloud AI, while Pro users get unlimited queries.
+  /// Local on-device GGUF inference is ALWAYS free and unlimited for all users.
+  bool canAccessCloudAi() => true;
 
   /// Free users get up to 50MB per file and 3 uploads per day.
   /// Pro users get up to 200MB per file and unlimited daily uploads.
@@ -118,7 +120,8 @@ class SubscriptionGuard {
     return getTodayUploadCount() < freeDailyUploadLimit;
   }
 
-  /// Free users get 20 Syllabot queries per day. Pro is unlimited (MON-04).
+  /// Free users get 20 Syllabot Cloud AI queries per day. Pro is unlimited (MON-04).
+  /// On-Device AI queries are unlimited for all users.
   static const int freeDailySyllabotLimit = 20;
 
   int getTodaySyllabotQueryCount() {
@@ -139,7 +142,10 @@ class SubscriptionGuard {
     }
   }
 
-  Future<void> recordSyllabotQuery() async {
+  Future<void> recordSyllabotQuery({
+    ExecutionEngineType engineType = ExecutionEngineType.cloudRemote,
+  }) async {
+    if (engineType == ExecutionEngineType.localOnDevice) return;
     try {
       final todayStr = DateTime.now().toIso8601String().substring(0, 10);
       final current = getTodaySyllabotQueryCount();
@@ -154,7 +160,10 @@ class SubscriptionGuard {
     } on Object catch (_) {}
   }
 
-  bool canQuerySyllabot() {
+  bool canQuerySyllabot({
+    ExecutionEngineType engineType = ExecutionEngineType.cloudRemote,
+  }) {
+    if (engineType == ExecutionEngineType.localOnDevice) return true;
     if (isPro) return true;
     return getTodaySyllabotQueryCount() < freeDailySyllabotLimit;
   }

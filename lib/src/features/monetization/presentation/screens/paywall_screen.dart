@@ -44,9 +44,15 @@ class PaywallScreen extends StatefulWidget {
   const PaywallScreen({
     super.key,
     this.onPurchaseSuccess,
+    this.onClose,
+    this.isEmbedded = false,
+    this.isSlideOverlay = false,
   });
 
   final VoidCallback? onPurchaseSuccess;
+  final VoidCallback? onClose;
+  final bool isEmbedded;
+  final bool isSlideOverlay;
 
   static const String privacyPolicyUrl = 'https://kortexify.com/privacy';
   static const String termsOfServiceUrl = 'https://kortexify.com/terms';
@@ -62,6 +68,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _isProcessing = false;
   String? _errorMessage;
   int _selectedPlanIndex = 0; // 0 = Annual, 1 = Monthly
+
+  void _dismissPaywall([bool result = false]) {
+    if (widget.onClose != null) {
+      widget.onClose!();
+      return;
+    }
+    if (!mounted) return;
+    if (context.router.canPop()) {
+      context.router.pop(result);
+    } else {
+      unawaited(Navigator.of(context).maybePop(result));
+    }
+  }
 
   @override
   void initState() {
@@ -147,7 +166,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             type: SnackBarType.success,
           );
           widget.onPurchaseSuccess?.call();
-          await Navigator.of(context).maybePop(true);
+          _dismissPaywall(true);
           return;
         }
 
@@ -186,7 +205,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             type: SnackBarType.success,
           );
           widget.onPurchaseSuccess?.call();
-          await Navigator.of(context).maybePop(true);
+          _dismissPaywall(true);
         } else {
           context.showSnackBar(
             message: 'Purchase was cancelled or could not be completed.',
@@ -228,7 +247,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               type: SnackBarType.success,
             );
             widget.onPurchaseSuccess?.call();
-            await Navigator.of(context).maybePop(true);
+            _dismissPaywall(true);
           }
         } else {
           context.showSnackBar(
@@ -257,7 +276,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final redeemed = await PromoCodeModalSheet.show(context);
     if (redeemed == true && mounted) {
       widget.onPurchaseSuccess?.call();
-      Navigator.of(context).pop(true);
+      _dismissPaywall(true);
     }
   }
 
@@ -298,7 +317,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     size: 18,
                   ),
                 ),
-                onPressed: () => Navigator.of(context).maybePop(false),
+                onPressed: _dismissPaywall,
               );
             },
           ),
@@ -371,17 +390,36 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final isDark = context.isDarkMode;
     final size = MediaQuery.sizeOf(context);
 
+    final isLandscape = size.width > size.height;
+    final isWide = size.width >= 720;
+    final useTwoColumnLayout = (isLandscape && size.width >= 560) || isWide;
     final isDesktop = size.width >= 900;
 
-    if (isDesktop) {
+    // Embedded inside a parent detail panel (e.g. Profile detail panel on desktop)
+    if (widget.isEmbedded) {
+      return ColoredBox(
+        color: colors.backgroundPrimary,
+        child: SafeArea(
+          child: _isLoading
+              ? const Center(child: AppLogoLoader(size: 56))
+              : (useTwoColumnLayout
+                  ? _buildTwoColumnLayout(colors, typography, l10n, isDark, size)
+                  : _buildOneColumnLayout(colors, typography, l10n, isDark)),
+        ),
+      );
+    }
+
+    // Slide-in drawer overlay mode (for quick feature gate popups on desktop)
+    if (widget.isSlideOverlay && isDesktop) {
       return Scaffold(
         backgroundColor: Colors.transparent,
         body: Stack(
           children: [
-            // Ambient Dimmed Backdrop Overlay
+            // Ambient Dimmed Backdrop Overlay with opaque hit testing for auto-closing
             Positioned.fill(
               child: GestureDetector(
-                onTap: () => unawaited(Navigator.of(context).maybePop(false)),
+                behavior: HitTestBehavior.opaque,
+                onTap: _dismissPaywall,
                 child: ColoredBox(
                   color: Colors.black.withAlpha(isDark ? 140 : 80),
                   child: BackdropFilter(
@@ -402,7 +440,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 elevation: 16,
                 color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
                 shape: Border(
-                  right: BorderSide(
+                  left: BorderSide(
                     color: colors.primary.withAlpha(isDark ? 80 : 50),
                     width: 1.5,
                   ),
@@ -413,7 +451,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     onKeyEvent: (node, event) {
                       if (event is KeyDownEvent &&
                           event.logicalKey == LogicalKeyboardKey.escape) {
-                        unawaited(Navigator.of(context).maybePop(false));
+                        _dismissPaywall();
                         return KeyEventResult.handled;
                       }
                       return KeyEventResult.ignored;
@@ -438,7 +476,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               )
                   .animate()
                   .slideX(
-                    begin: -1,
+                    begin: 1,
                     end: 0,
                     duration: 320.ms,
                     curve: Curves.easeOutCubic,
@@ -449,13 +487,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
       );
     }
-
-    // Responsive breakpoints:
-    // When in landscape on phones/tablets or on wide viewports (desktop/web/tablet >= 720),
-    // switch to a balanced 2-column layout to prevent sticky bottom docks from covering the screen.
-    final isLandscape = size.width > size.height;
-    final isWide = size.width >= 720;
-    final useTwoColumnLayout = (isLandscape && size.width >= 560) || isWide;
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
@@ -491,7 +522,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   size: 18,
                 ),
               ),
-              onPressed: () => Navigator.of(context).maybePop(false),
+              onPressed: _dismissPaywall,
             );
           },
         ),
@@ -633,7 +664,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  /// Two-column layout for landscape smartphones, tablets, and desktop/web
+  /// Two-column layout for landscape smartphones, tablets, and desktop/web.
+  /// Delivers a unified, elevated dual-stage experience without split-scroll jank.
   Widget _buildTwoColumnLayout(
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
@@ -641,54 +673,81 @@ class _PaywallScreenState extends State<PaywallScreen> {
     bool isDark,
     Size size,
   ) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1040),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1140),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left Column: Value Proposition & Feature Matrix
+              // Left Column: Hero Value Proposition Showcase Card
               Expanded(
-                flex: 5,
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(right: 12),
+                flex: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary.withAlpha(160)
+                        : colors.surfacePrimary.withAlpha(220),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(isDark ? 55 : 35),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.black.withAlpha(isDark ? 65 : 15),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildHeroHeader(colors, typography, l10n, isDark),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       _buildSocialProofStrip(colors, typography, l10n, isDark),
-                      const SizedBox(height: 14),
-                      _buildFeatureMatrix(colors, typography, l10n, isDark),
                       const SizedBox(height: 20),
+                      _buildFeatureMatrix(colors, typography, l10n, isDark),
                     ],
                   ),
                 ),
               ),
 
-              // Subtle vertical divider
-              Container(
-                width: 1,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                color: colors.surfaceBorder.withAlpha(isDark ? 50 : 70),
-              ),
+              const SizedBox(width: 20),
 
-              // Right Column: Plan Selection, Timeline & Checkout Engine
+              // Right Column: Premium Checkout Engine & Plan Selector Card
               Expanded(
                 flex: 5,
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(left: 12),
+                child: Container(
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary.withAlpha(190)
+                        : colors.surfacePrimary.withAlpha(240),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(isDark ? 90 : 60),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.primary.withAlpha(isDark ? 35 : 15),
+                        blurRadius: 28,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildTierPlansSelector(colors, typography, l10n, isDark),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       _buildTransparentTimeline(colors, typography, l10n, isDark),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 18),
                       _buildCheckoutControls(
                         colors: colors,
                         typography: typography,
@@ -696,9 +755,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         isDark: isDark,
                         isInline: true,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       _buildFooter(colors, typography, l10n),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -1381,73 +1439,99 @@ class _PaywallScreenState extends State<PaywallScreen> {
     ];
 
     return ClipRRect(
-      borderRadius: AppRadius.radiusDialog,
+      borderRadius: AppRadius.radiusPanel,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isDark
                 ? colors.surfaceSecondary.withAlpha(200)
                 : colors.surfacePrimary.withAlpha(220),
-            borderRadius: AppRadius.radiusDialog,
+            borderRadius: AppRadius.radiusPanel,
             border: Border.all(
               color: colors.surfaceBorder.withAlpha(isDark ? 90 : 60),
             ),
           ),
           child: Column(
             children: features
+                .asMap()
+                .entries
                 .map(
-                  (f) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
+                  (entry) {
+                    final f = entry.value;
+                    return PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedContainer(
+                          duration: AppMotion.snappy,
+                          curve: AppMotion.easeOutCubic,
+                          margin: const EdgeInsets.symmetric(vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(28),
-                            borderRadius: AppRadius.radiusBadge,
+                            color: isHovered
+                                ? colors.primary.withAlpha(isDark ? 30 : 18)
+                                : Colors.transparent,
+                            borderRadius: AppRadius.radiusPanel,
+                            border: Border.all(
+                              color: isHovered
+                                  ? colors.primary.withAlpha(90)
+                                  : Colors.transparent,
+                            ),
                           ),
-                          child: Icon(
-                            f.icon,
-                            color: colors.primary,
-                            size: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                f.title,
-                                style: typography.body.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 12.5,
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withAlpha(35),
+                                  borderRadius: AppRadius.radiusCard,
+                                ),
+                                child: Icon(
+                                  f.icon,
+                                  color: colors.primary,
+                                  size: 17,
                                 ),
                               ),
-                              const SizedBox(height: 1),
-                              Text(
-                                f.subtitle,
-                                style: typography.caption.regular.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 10.5,
-                                  height: 1.3,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      f.title,
+                                      style: typography.body.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      f.subtitle,
+                                      style: typography.caption.regular.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 11,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.check_circle_rounded,
+                                color: colors.success,
+                                size: 18,
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.check_circle_rounded,
-                          color: colors.success,
-                          size: 16,
-                        ),
-                      ],
-                    ),
-                  ),
+                        );
+                      },
+                    );
+                  },
                 )
                 .toList()
                 .animate(interval: 50.ms)

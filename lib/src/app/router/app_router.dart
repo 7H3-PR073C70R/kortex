@@ -42,10 +42,9 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: CourseQuestionsRoute.page),
     AutoRoute(page: QuizWorkspaceRoute.page),
     AutoRoute(page: QuizResultsRoute.page),
-    CustomRoute(
+    CustomRoute<void>(
       page: PaywallRoute.page,
       opaque: false,
-      barrierDismissible: true,
       transitionsBuilder: TransitionsBuilders.fadeIn,
     ),
     AutoRoute(page: SyllabotChatRoute.page),

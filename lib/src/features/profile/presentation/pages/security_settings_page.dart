@@ -24,7 +24,6 @@ import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
-import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
@@ -1603,18 +1602,13 @@ class _SecuritySettingsView extends HookWidget {
             TextButton(
               onPressed: () async {
                 Navigator.of(ctx).pop();
-                await locator<DeleteAccountUseCase>()(const NoParams());
-
+                context.read<AuthBloc>().add(const AuthAccountDeleteRequested());
+                await context.router.root.replaceAll([const AuthRoute()]);
                 if (context.mounted) {
-                  locator<AuthModeCubit>().resetToAiChat();
-                  context.read<AuthBloc>().add(const AuthSignOutRequested());
-                  await context.router.root.replaceAll([const AuthRoute()]);
-                  if (context.mounted) {
-                    context.showSnackBar(
-                      message: 'Your account and data have been purged.',
-                      type: SnackBarType.success,
-                    );
-                  }
+                  context.showSnackBar(
+                    message: 'Your account and data have been completely purged.',
+                    type: SnackBarType.success,
+                  );
                 }
               },
               child: Text(

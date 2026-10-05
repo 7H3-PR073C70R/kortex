@@ -165,3 +165,8 @@ class AuthSubscriptionUpdated extends AuthEvent {
 class AuthAppResumed extends AuthEvent {
   const AuthAppResumed();
 }
+
+/// Dispatched when user requests permanent account deletion and data purge.
+class AuthAccountDeleteRequested extends AuthEvent {
+  const AuthAccountDeleteRequested();
+}

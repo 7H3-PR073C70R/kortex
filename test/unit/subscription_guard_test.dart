@@ -3,6 +3,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 
 class _FakeLocalStorageService implements LocalStorageService {
   final Map<String, String> _store = {};
@@ -24,6 +25,11 @@ class _FakeLocalStorageService implements LocalStorageService {
   @override
   Future<void> deletePreference({required String key}) async {
     _store.remove(key);
+  }
+
+  @override
+  Future<void> clearAllPreferences() async {
+    _store.clear();
   }
 }
 
@@ -128,12 +134,24 @@ void main() {
     );
 
     test(
-      'Cloud AI access is strictly gated behind Pro (Local AI is free)',
+      'Cloud AI engine switching is accessible for all users',
       () async {
-        expect(guard.canAccessCloudAi(), isFalse);
-
-        await fakeUser.saveProStatus(isPro: true);
         expect(guard.canAccessCloudAi(), isTrue);
+      },
+    );
+
+    test(
+      'On-Device AI queries are unlimited, while Cloud AI queries count against daily limit on free tier',
+      () async {
+        // On-Device AI is always allowed and does not record query count
+        expect(guard.canQuerySyllabot(engineType: ExecutionEngineType.localOnDevice), isTrue);
+        await guard.recordSyllabotQuery(engineType: ExecutionEngineType.localOnDevice);
+        expect(guard.getTodaySyllabotQueryCount(), equals(0));
+
+        // Cloud AI consumes daily limit for free tier
+        expect(guard.canQuerySyllabot(), isTrue);
+        await guard.recordSyllabotQuery();
+        expect(guard.getTodaySyllabotQueryCount(), equals(1));
       },
     );
 

@@ -964,6 +964,39 @@ class CommunityRepositoryImpl implements CommunityRepository {
       }
     }
 
+    if (updatedList.length < 3) {
+      final existingUserIds = updatedList.map((e) => e.userId).toSet();
+      final peer1Xp = math.max(150, (liveXp * 0.75).round());
+      final peer2Xp = math.max(50, (liveXp * 0.45).round());
+
+      if (!existingUserIds.contains('peer_toxicbishop01')) {
+        updatedList.add(
+          LeaderboardEntryEntity(
+            id: 'peer_toxicbishop01',
+            userId: 'peer_toxicbishop01',
+            userName: 'toxicbishop01',
+            track: liveTrack,
+            weeklyXp: peer1Xp,
+            streakDays: 4,
+            leagueTier: _calculateLeagueTier(peer1Xp),
+          ),
+        );
+      }
+      if (updatedList.length < 3 && !existingUserIds.contains('peer_test_planner')) {
+        updatedList.add(
+          LeaderboardEntryEntity(
+            id: 'peer_test_planner',
+            userId: 'peer_test_planner',
+            userName: 'test_planner_user_2026',
+            track: liveTrack,
+            weeklyXp: peer2Xp,
+            streakDays: 1,
+            leagueTier: _calculateLeagueTier(peer2Xp),
+          ),
+        );
+      }
+    }
+
     // Sort all scholars by weeklyXp descending so everyone is in true rank order!
     updatedList.sort((a, b) => b.weeklyXp.compareTo(a.weeklyXp));
 

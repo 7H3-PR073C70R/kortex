@@ -39,6 +39,23 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 6;
 
+  /// Completely purges all user data tables upon account deletion.
+  Future<void> clearAllTables() async {
+    await transaction(() async {
+      await delete(flashcards).go();
+      await delete(decks).go();
+      await delete(fsrsReviewLogs).go();
+      await delete(pastQuestions).go();
+      await delete(courseModules).go();
+      await delete(examEvents).go();
+      await delete(forumPosts).go();
+      await delete(forumReplies).go();
+      await delete(syllabotMessages).go();
+      await delete(syllabotSessions).go();
+      await delete(thoughtParkingLots).go();
+    });
+  }
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
     beforeOpen: (details) async {

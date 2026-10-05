@@ -165,6 +165,7 @@ class _DocumentIngestionView extends HookWidget {
                 backgroundColor: colors.transparent,
                 elevation: 0,
                 pinned: true,
+                automaticallyImplyLeading: false,
                 leading: AppBackButton.adaptiveLeading(context),
                 leadingWidth: AppBackButton.shouldShow(context) ? null : 0,
                 flexibleSpace: ClipRect(

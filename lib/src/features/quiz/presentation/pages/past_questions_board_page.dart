@@ -19,6 +19,7 @@ import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/add_past_question_modal_sheet.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/past_question_card.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_filter_bar.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_test_config_sheet.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
@@ -138,6 +139,9 @@ class _PastQuestionsBoardView extends HookWidget {
       const [],
     );
 
+    final selectedCourseTitle = useState<String?>(null);
+    final isDesktop = MediaQuery.of(context).size.width >= 900;
+
     return Scaffold(
       backgroundColor: isDark
           ? colors.backgroundPrimary
@@ -217,122 +221,388 @@ class _PastQuestionsBoardView extends HookWidget {
         ],
       ),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 960),
-            child: Column(
-              children: [
-                // 1. Hero Practice Banner (CBT Test & 1v1 Duel Quick Actions)
-                _HeroTrackBanner(userTrack: userTrack),
+        child: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
+          builder: (context, state) {
+            final courses = _groupQuestionsByCourse(
+              state.questions,
+              state.availableSubjects,
+              state.selectedSubject,
+              state.searchQuery,
+            );
 
-                // 2. Search Field with Year Filter Button
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: AppTextField(
-                          controller: searchController,
-                          hintText: 'Search subjects and topics',
-                          prefixIcon: Icon(
-                            Icons.search_rounded,
-                            color: colors.textSecondary,
-                            size: 19,
+            final activeTitle = (selectedCourseTitle.value != null &&
+                    courses.any((c) => c.title == selectedCourseTitle.value))
+                ? selectedCourseTitle.value!
+                : (courses.isNotEmpty ? courses.first.title : '');
+
+            final activeCourse = courses.firstWhere(
+              (c) => c.title == activeTitle,
+              orElse: () => _CourseSummary(
+                title: activeTitle,
+                totalQuestions: 0,
+                answeredQuestions: 0,
+                yearRange: 'All',
+                iconData: Icons.school_outlined,
+              ),
+            );
+
+            final courseQuestions = state.questions
+                .where((q) => q.subject.toLowerCase() == activeTitle.toLowerCase())
+                .toList();
+
+            if (isDesktop) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // LEFT PANEL: Subject Directory & Filters
+                    SizedBox(
+                      width: 440,
+                      child: Column(
+                        children: [
+                          _HeroTrackBanner(userTrack: userTrack),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: AppTextField(
+                                    controller: searchController,
+                                    hintText: 'Search subjects...',
+                                    prefixIcon: Icon(
+                                      Icons.search_rounded,
+                                      color: colors.textSecondary,
+                                      size: 19,
+                                    ),
+                                    onChanged: (query) {
+                                      debounceTimer.value?.cancel();
+                                      debounceTimer.value = Timer(
+                                        const Duration(milliseconds: 300),
+                                        () {
+                                          if (context.mounted) {
+                                            context.read<PastQuestionsBloc>().add(
+                                                  LoadPastQuestionsEvent(
+                                                      searchQuery: query),
+                                                );
+                                          }
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const YearFilterButton(),
+                              ],
+                            ),
                           ),
-                          onChanged: (query) {
-                            debounceTimer.value?.cancel();
-                            debounceTimer.value = Timer(
-                              const Duration(milliseconds: 300),
-                              () {
-                                if (context.mounted) {
-                                  context.read<PastQuestionsBloc>().add(
-                                    LoadPastQuestionsEvent(searchQuery: query),
-                                  );
-                                }
-                              },
-                            );
-                          },
-                        ),
+                          const SubjectFilterBar(),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: state.status == PastQuestionsStatus.loading
+                                ? ListView.separated(
+                                    itemCount: 4,
+                                    separatorBuilder: (context, index) =>
+                                        const SizedBox(height: 10),
+                                    itemBuilder: (context, index) =>
+                                        const ShimmerPlaceholder(
+                                      height: 90,
+                                      borderRadius: AppRadius.panel,
+                                    ),
+                                  )
+                                : (courses.isEmpty
+                                    ? const QuizEmptyState(
+                                        icon: Icons.search_off_rounded,
+                                        headline: 'No matching subjects',
+                                        message:
+                                            'Try a different filter or search.',
+                                      )
+                                    : ListView.separated(
+                                        itemCount: courses.length,
+                                        separatorBuilder: (context, index) =>
+                                            const SizedBox(height: 10),
+                                        itemBuilder: (context, index) {
+                                          final course = courses[index];
+                                          return _CourseOverviewCard(
+                                            courseSummary: course,
+                                            examCategory: state.selectedExam,
+                                            selectedYear: state.selectedYear,
+                                            isSelected: course.title == activeTitle,
+                                            onTap: () {
+                                              selectedCourseTitle.value =
+                                                  course.title;
+                                            },
+                                          );
+                                        },
+                                      )),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      const YearFilterButton(),
-                    ],
-                  ),
-                ),
+                    ),
+                    const SizedBox(width: 16),
 
-                // 3. Subject Filter Chips (All, Mathematics, English, etc.)
-                const SubjectFilterBar(),
-                const SizedBox(height: 8),
-
-                // 4. Course Cards Grid/List
-                Expanded(
-                  child: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
-                    builder: (context, state) {
-                      if (state.status == PastQuestionsStatus.loading) {
-                        return ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                          itemCount: 4,
-                          separatorBuilder: (_, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (_, index) => const ShimmerPlaceholder(
-                            height: 108,
-                            borderRadius: AppRadius.panel,
+                    // RIGHT PANEL: Active Subject Questions & Practice Workspace
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceSecondary.withAlpha(160)
+                              : colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(AppRadius.panel),
+                          border: Border.all(
+                            color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
                           ),
-                        );
-                      }
+                        ),
+                        child: state.status == PastQuestionsStatus.loading
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          ShimmerPlaceholder(
+                                            width: 160,
+                                            height: 24,
+                                            borderRadius: AppRadius.badge,
+                                          ),
+                                          SizedBox(height: 6),
+                                          ShimmerPlaceholder(
+                                            width: 240,
+                                            height: 14,
+                                            borderRadius: AppRadius.micro,
+                                          ),
+                                        ],
+                                      ),
+                                      ShimmerPlaceholder(
+                                        width: 110,
+                                        height: 40,
+                                        borderRadius: AppRadius.card,
+                                      ),
+                                    ],
+                                  ),
+                                  const Divider(height: 28),
+                                  Expanded(
+                                    child: ListView.separated(
+                                      itemCount: 3,
+                                      separatorBuilder: (context, index) =>
+                                          const SizedBox(height: 16),
+                                      itemBuilder: (context, index) =>
+                                          const ShimmerPlaceholder(
+                                        height: 160,
+                                        borderRadius: AppRadius.panel,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Subject Header & Action Bar
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              activeCourse.title,
+                                              style: typography.title2.bold
+                                                  .copyWith(
+                                                color: colors.textPrimary,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${state.selectedExam.displayName} • ${courseQuestions.length} questions • Years: ${activeCourse.yearRange}',
+                                              style: typography.footnote.regular
+                                                  .copyWith(
+                                                color: colors.textSecondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      ShrinkableButton(
+                                        onTap: () {
+                                          AppFeedback.medium();
+                                          showPastQuestionsTestConfigSheet(
+                                              context, state);
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colors.primary,
+                                            borderRadius: BorderRadius.circular(
+                                                AppRadius.card),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.play_arrow_rounded,
+                                                color: colors.white,
+                                                size: 18,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'Start Test',
+                                                style: typography.caption.bold
+                                                    .copyWith(
+                                                  color: colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Divider(height: 28),
 
-                      final courses = _groupQuestionsByCourse(
-                        state.questions,
-                        state.availableSubjects,
-                        state.selectedSubject,
-                        state.searchQuery,
-                      );
-
-                      if (courses.isEmpty) {
-                        return const QuizEmptyState(
-                          icon: Icons.search_off_rounded,
-                          headline: 'No subjects match your filters',
-                          message:
-                              'Try a different search, clear the subject filter, or change the exam year.',
-                        );
-                      }
-
-                      return ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                        physics: const ClampingScrollPhysics(),
-                        itemCount: courses.length,
-                        separatorBuilder: (_, index) =>
-                            const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final course = courses[index];
-                          final card = _CourseOverviewCard(
-                            courseSummary: course,
-                            examCategory: state.selectedExam,
-                            selectedYear: state.selectedYear,
-                          );
-                          // Only the first screenful animates in; recycled
-                          // cards while scrolling stay put.
-                          if (index >= 10) return card;
-                          return QuizStaggeredFade(
-                            index: index,
-                            distance: 10,
-                            reduceMotion: reduceMotion,
-                            child: card,
-                          );
-                        },
-                      );
-                    },
-                  ),
+                                  // Questions Stream / List
+                                  Expanded(
+                                    child: courseQuestions.isEmpty
+                                        ? QuizEmptyState(
+                                            icon: Icons.assignment_outlined,
+                                            headline:
+                                                'No questions loaded for ${activeCourse.title}',
+                                            message:
+                                                'Click "Start Test" to launch a practice session or select another year.',
+                                          )
+                                        : ListView.builder(
+                                            itemCount: courseQuestions.length,
+                                            itemBuilder: (context, index) {
+                                              return PastQuestionCard(
+                                                question: courseQuestions[index],
+                                                isInstantFeedback:
+                                                    state.isInstantFeedbackMode,
+                                              );
+                                            },
+                                          ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              );
+            }
+
+            // MOBILE SINGLE-COLUMN VIEW
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 960),
+                child: Column(
+                  children: [
+                    _HeroTrackBanner(userTrack: userTrack),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              controller: searchController,
+                              hintText: 'Search subjects and topics',
+                              prefixIcon: Icon(
+                                Icons.search_rounded,
+                                color: colors.textSecondary,
+                                size: 19,
+                              ),
+                              onChanged: (query) {
+                                debounceTimer.value?.cancel();
+                                debounceTimer.value = Timer(
+                                  const Duration(milliseconds: 300),
+                                  () {
+                                    if (context.mounted) {
+                                      context.read<PastQuestionsBloc>().add(
+                                            LoadPastQuestionsEvent(
+                                                searchQuery: query),
+                                          );
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const YearFilterButton(),
+                        ],
+                      ),
+                    ),
+                    const SubjectFilterBar(),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: state.status == PastQuestionsStatus.loading
+                          ? ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                              itemCount: 4,
+                              separatorBuilder: (_, index) =>
+                                  const SizedBox(height: 12),
+                              itemBuilder: (_, index) =>
+                                  const ShimmerPlaceholder(
+                                height: 108,
+                                borderRadius: AppRadius.panel,
+                              ),
+                            )
+                          : (courses.isEmpty
+                              ? const QuizEmptyState(
+                                  icon: Icons.search_off_rounded,
+                                  headline: 'No subjects match your filters',
+                                  message:
+                                      'Try a different search, clear the subject filter, or change the exam year.',
+                                )
+                              : ListView.separated(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      16, 8, 16, 24),
+                                  physics: const ClampingScrollPhysics(),
+                                  itemCount: courses.length,
+                                  separatorBuilder: (_, index) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    final course = courses[index];
+                                    final card = _CourseOverviewCard(
+                                      courseSummary: course,
+                                      examCategory: state.selectedExam,
+                                      selectedYear: state.selectedYear,
+                                    );
+                                    if (index >= 10) return card;
+                                    return QuizStaggeredFade(
+                                      index: index,
+                                      distance: 10,
+                                      reduceMotion: reduceMotion,
+                                      child: card,
+                                    );
+                                  },
+                                )),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
       bottomNavigationBar: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
         builder: (context, state) {
           if (state.status == PastQuestionsStatus.loading ||
-              state.totalQuestions == 0) {
+              state.totalQuestions == 0 ||
+              isDesktop) {
             return const SizedBox.shrink();
           }
           return SafeArea(
@@ -507,11 +777,15 @@ class _CourseOverviewCard extends StatelessWidget {
     required this.courseSummary,
     required this.examCategory,
     this.selectedYear,
+    this.isSelected = false,
+    this.onTap,
   });
 
   final _CourseSummary courseSummary;
   final ExamCategory examCategory;
   final int? selectedYear;
+  final bool isSelected;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -530,32 +804,41 @@ class _CourseOverviewCard extends StatelessWidget {
         return ShrinkableButton(
           onTap: () {
             AppFeedback.light();
-            unawaited(
-              context.router.push(
-                CourseQuestionsRoute(
-                  courseTitle: courseSummary.title,
-                  courseCode: courseSummary.courseCode,
-                  examCategory: examCategory,
-                  initialYear: selectedYear,
+            if (onTap != null) {
+              onTap!();
+            } else {
+              unawaited(
+                context.router.push(
+                  CourseQuestionsRoute(
+                    courseTitle: courseSummary.title,
+                    courseCode: courseSummary.courseCode,
+                    examCategory: examCategory,
+                    initialYear: selectedYear,
+                  ),
                 ),
-              ),
-            );
+              );
+            }
           },
           child: AnimatedContainer(
             duration: AppMotion.snappy,
             curve: AppMotion.snappyCurve,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isHovered
-                  ? (isDark
-                        ? colors.surfaceSecondary.withAlpha(245)
-                        : colors.surfacePrimary.withAlpha(245))
-                  : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+              color: isSelected
+                  ? colors.primary.withAlpha(isDark ? 50 : 25)
+                  : (isHovered
+                      ? (isDark
+                            ? colors.surfaceSecondary.withAlpha(245)
+                            : colors.surfacePrimary.withAlpha(245))
+                      : (isDark ? colors.surfaceSecondary : colors.surfacePrimary)),
               borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(
-                color: isHovered
-                    ? colors.primary.withAlpha(isDark ? 110 : 70)
-                    : colors.primary.withAlpha(isDark ? 50 : 25),
+                color: isSelected
+                    ? colors.primary
+                    : (isHovered
+                        ? colors.primary.withAlpha(isDark ? 110 : 70)
+                        : colors.primary.withAlpha(isDark ? 50 : 25)),
+                width: isSelected ? 1.5 : 1.0,
               ),
               boxShadow: [
                 BoxShadow(
@@ -745,122 +1028,118 @@ class _HeroTrackBanner extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Track Scope Toggle Segment
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colors.surfaceSecondary.withAlpha(200)
-                              : colors.surfaceSecondary.withAlpha(120),
-                          borderRadius: BorderRadius.circular(AppRadius.badge),
-                          border: Border.all(
-                            color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Track Scope Toggle Segment
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? colors.surfaceSecondary.withAlpha(200)
+                                : colors.surfaceSecondary.withAlpha(120),
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            border: Border.all(
+                              color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                AppFeedback.selection();
-                                context.read<PastQuestionsBloc>().add(
-                                  const SetTrackScopeEvent(isScopedToUserTrack: true),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: state.isScopedToUserTrack
-                                      ? colors.primary
-                                      : colors.transparent,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.badge - 2),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.tune_rounded,
-                                      size: 12,
-                                      color: state.isScopedToUserTrack
-                                          ? colors.white
-                                          : colors.textSecondary,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'My Track Scope',
-                                      style: typography.caption.bold.copyWith(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  AppFeedback.selection();
+                                  context.read<PastQuestionsBloc>().add(
+                                    const SetTrackScopeEvent(isScopedToUserTrack: true),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: state.isScopedToUserTrack
+                                        ? colors.primary
+                                        : colors.transparent,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.badge - 2),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.tune_rounded,
+                                        size: 12,
                                         color: state.isScopedToUserTrack
                                             ? colors.white
                                             : colors.textSecondary,
-                                        fontSize: 11,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'My Track Scope',
+                                        style: typography.caption.bold.copyWith(
+                                          color: state.isScopedToUserTrack
+                                              ? colors.white
+                                              : colors.textSecondary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            GestureDetector(
-                              onTap: () {
-                                AppFeedback.selection();
-                                context.read<PastQuestionsBloc>().add(
-                                  const SetTrackScopeEvent(isScopedToUserTrack: false),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: !state.isScopedToUserTrack
-                                      ? colors.primary
-                                      : colors.transparent,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.badge - 2),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.public_rounded,
-                                      size: 12,
-                                      color: !state.isScopedToUserTrack
-                                          ? colors.white
-                                          : colors.textSecondary,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Explore All Tracks',
-                                      style: typography.caption.bold.copyWith(
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                onTap: () {
+                                  AppFeedback.selection();
+                                  context.read<PastQuestionsBloc>().add(
+                                    const SetTrackScopeEvent(isScopedToUserTrack: false),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: !state.isScopedToUserTrack
+                                        ? colors.primary
+                                        : colors.transparent,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.badge - 2),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.public_rounded,
+                                        size: 12,
                                         color: !state.isScopedToUserTrack
                                             ? colors.white
                                             : colors.textSecondary,
-                                        fontSize: 11,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Explore All Tracks',
+                                        style: typography.caption.bold.copyWith(
+                                          color: !state.isScopedToUserTrack
+                                              ? colors.white
+                                              : colors.textSecondary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      Text(
-                        '${state.totalQuestions} questions available',
-                        style: typography.caption.medium.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Row(

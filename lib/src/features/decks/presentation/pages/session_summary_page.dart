@@ -1,18 +1,28 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 
 import 'package:auto_route/auto_route.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/cbt_readiness_impact_card.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/fsrs_retrievability_visualizer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -59,15 +69,11 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
 
   void _handleSafeExit(BuildContext context) {
     unawaited(HapticFeedback.lightImpact());
-    if (context.router.canPop()) {
-      context.router.pop();
-    } else {
-      unawaited(
-        context.router.replaceAll([
-          const MainRoute(children: [DashboardRoute()]),
-        ]),
-      );
-    }
+    unawaited(
+      context.router.replaceAll([
+        const MainRoute(children: [DashboardRoute()]),
+      ]),
+    );
   }
 
   @override
@@ -114,6 +120,483 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
         ? l10n.sessionSummaryDeckConquered
         : l10n.sessionSummaryTitle;
 
+    final authState = context.watch<AuthBloc?>()?.state;
+    final targetTrack = authState?.userProfile?.targetTrack;
+    final localStorage = locator.isRegistered<LocalStorageService>()
+        ? locator<LocalStorageService>()
+        : null;
+    final savedTrack = localStorage?.getPreference(key: PrefKeys.userTargetTrack);
+    final examTitle = (targetTrack != null && targetTrack.trim().isNotEmpty)
+        ? targetTrack.trim()
+        : ((savedTrack != null && savedTrack.trim().isNotEmpty)
+            ? savedTrack.trim()
+            : 'JAMB');
+
+    var syllabusCoverage = 0.78;
+    var mockScore = 0.75;
+    if (locator.isRegistered<UserActivityService>()) {
+      final activityService = locator<UserActivityService>();
+      final quizMetrics = activityService.getQuizPerformanceMetrics();
+      if (quizMetrics.overallMockAccuracy > 0) {
+        mockScore = quizMetrics.overallMockAccuracy;
+      }
+      final summary = activityService.getAnalyticsSummary();
+      if (summary.overallRetentionRate > 0) {
+        syllabusCoverage = summary.overallRetentionRate;
+      }
+    }
+
+    final isDesktop = MediaQuery.of(context).size.width >= 900;
+
+    final cbtCardWidget = CbtReadinessImpactCard(
+      cardsReviewed: cardsReviewed,
+      retentionScore: retentionScore,
+      examTitle: examTitle,
+      syllabusCoverage: syllabusCoverage,
+      mockScore: mockScore,
+    );
+
+    final summaryHeaderContent = Column(
+      children: [
+        const SizedBox(height: 12),
+        _OrbEntrance(
+          reduceMotion: reduceMotion,
+          child: Container(
+            width: 92,
+            height: 92,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: celebrate
+                    ? [colors.success, colors.syllabotAccent]
+                    : [
+                        colors.primary.withAlpha(isDark ? 170 : 140),
+                        colors.syllabotAccent.withAlpha(isDark ? 170 : 140),
+                      ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (celebrate ? colors.success : colors.primary)
+                      .withAlpha(isDark ? 70 : 35),
+                  blurRadius: celebrate ? 28 : 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(
+              celebrate
+                  ? (isMastery
+                      ? Icons.emoji_events_rounded
+                      : Icons.check_rounded)
+                  : Icons.task_alt_rounded,
+              color: colors.white,
+              size: 48,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          summaryTitle,
+          textAlign: TextAlign.center,
+          style: typography.title2.bold.copyWith(
+            color: colors.textPrimary,
+            fontSize: 24,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          l10n.sessionSummarySubtitle,
+          textAlign: TextAlign.center,
+          style: typography.footnote.regular.copyWith(
+            color: colors.textSecondary,
+            fontSize: 13,
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color: colors.warning.withAlpha(isDark ? 45 : 20),
+            borderRadius: BorderRadius.circular(AppRadius.badge),
+            border: Border.all(
+              color: colors.warning.withAlpha(120),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.local_fire_department_rounded,
+                color: colors.warning,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  l10n.sessionSummaryStreakBonus(50),
+                  textAlign: TextAlign.center,
+                  style: typography.caption.bold.copyWith(
+                    color: colors.warning,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark
+                ? colors.surfaceSecondary.withAlpha(160)
+                : colors.surfacePrimary,
+            borderRadius: BorderRadius.circular(AppRadius.dialog),
+            border: Border.all(
+              color: isDark
+                  ? colors.surfaceBorderHighlight.withAlpha(70)
+                  : colors.surfaceBorder.withAlpha(130),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _StatItem(
+                  label: l10n.sessionSummaryCardsReviewed,
+                  countTo: cardsReviewed,
+                  format: (value) => '$value',
+                  color: colors.primary,
+                  colors: colors,
+                  reduceMotion: reduceMotion,
+                  staggerIndex: 0,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 36,
+                color: colors.surfaceBorder,
+              ),
+              Expanded(
+                child: _StatItem(
+                  label: l10n.sessionSummaryRetentionRate,
+                  countTo: scorePercent,
+                  format: (value) => '$value%',
+                  color: colors.success,
+                  colors: colors,
+                  reduceMotion: reduceMotion,
+                  staggerIndex: 1,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 36,
+                color: colors.surfaceBorder,
+              ),
+              Expanded(
+                child: _StatItem(
+                  label: l10n.sessionSummaryTimeSpent,
+                  display: durationFormatted,
+                  color: colors.syllabotAccent,
+                  colors: colors,
+                  reduceMotion: reduceMotion,
+                  staggerIndex: 2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );    final visualizerAndActions = Column(
+      children: [
+        // FSRS Memory Forgetting Curve Visualizer
+        FsrsRetrievabilityVisualizer(
+          stabilityDays: (cardsReviewed * 1.5).clamp(2.0, 30.0),
+          targetRetention: retentionScore.clamp(0.70, 0.95),
+          subjectTitle: 'Overall Session Memory Strength',
+        ),
+
+        // Forward-looking line: what the effort buys later.
+        if (widget.nextReviewInDays > 0) ...[
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.schedule_rounded,
+                size: 14,
+                color: colors.textMuted,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  l10n.sessionSummaryNextReview(
+                    widget.nextReviewInDays,
+                  ),
+                  textAlign: TextAlign.center,
+                  style: typography.footnote.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 32),
+
+        // Action Buttons
+        if (deckId.startsWith('sprint:')) ...[
+          AppButton(
+            text: '🚀 Next Focus Sprint',
+            onPressed: () {
+              unawaited(
+                context.router.replace(
+                  StudySessionRoute(deckId: deckId),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          AppButton(
+            text: 'Done for Now',
+            variant: AppButtonVariant.outline,
+            onPressed: () {
+              unawaited(
+                context.router.replaceAll([
+                  const MainRoute(children: [DashboardRoute()]),
+                ]),
+              );
+            },
+          ),
+        ] else ...[
+          // Bidirectional Bridge: Checkpoint Quiz (Phase 2 Pillar 2 & 3)
+          if (widget.cardsReviewed > 0) ...[
+            AppButton(
+              text: '🎯 Validate with Checkpoint Quiz',
+              onPressed: () {
+                unawaited(
+                  context.router.push(
+                    QuizWorkspaceRoute(
+                      deckId: _effectiveDeckId,
+                      deckTitle: 'Checkpoint Quiz',
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Replay Study Session Action
+          AppButton(
+            text: l10n.sessionSummaryStudyAgain,
+            variant: AppButtonVariant.secondary,
+            onPressed: () {
+              unawaited(
+                context.router.replace(
+                  StudySessionRoute(deckId: deckId),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // Return to Dashboard Action
+          AppButton(
+            text: l10n.sessionSummaryReturnDashboard,
+            variant: AppButtonVariant.outline,
+            onPressed: () {
+              unawaited(
+                context.router.replaceAll([
+                  const MainRoute(children: [DashboardRoute()]),
+                ]),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // Browse All Decks Action
+          AppButton(
+            text: l10n.sessionSummaryBrowseDecks,
+            variant: AppButtonVariant.ghost,
+            onPressed: () {
+              unawaited(
+                context.router.replaceAll([
+                  const MainRoute(children: [DecksRoute()]),
+                ]),
+              );
+            },
+          ),
+        ],
+        const SizedBox(height: 24),
+      ],
+    );
+
+    if (isDesktop) {
+      return CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () =>
+              _handleSafeExit(context),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Stack(
+              children: [
+                // Dimmed Backdrop Overlay with opaque hit testing
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _handleSafeExit(context),
+                    child: ColoredBox(
+                      color: Colors.black.withAlpha(isDark ? 150 : 90),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Confetti overlay on celebration
+                if (celebrate && !reduceMotion)
+                  Positioned(
+                    top: 0,
+                    right: 280,
+                    child: ConfettiWidget(
+                      confettiController: _confettiController,
+                      blastDirection: math.pi / 2,
+                      maxBlastForce: 25,
+                      minBlastForce: 10,
+                      emissionFrequency: 0.05,
+                      numberOfParticles: 35,
+                      gravity: 0.15,
+                      colors: [
+                        colors.primary,
+                        colors.success,
+                        colors.warning,
+                        colors.secondary,
+                        colors.deepBronze,
+                        colors.quartzCyan,
+                      ],
+                    ),
+                  ),
+
+                // Right Slide-in Compact Panel (Width 560px)
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  right: 0,
+                  width: 560,
+                  child: Material(
+                    elevation: 16,
+                    color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+                    shape: Border(
+                      left: BorderSide(
+                        color: colors.primary.withAlpha(isDark ? 80 : 50),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: Column(
+                        children: [
+                          // Panel Header
+                          Container(
+                            height: 56,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                PlatformHoverBuilder(
+                                  builder: (context, isHovered, child) {
+                                    return IconButton(
+                                      icon: AnimatedContainer(
+                                        duration: AppMotion.snappy,
+                                        curve: AppMotion.easeOutCubic,
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: isHovered
+                                              ? (isDark
+                                                    ? colors.surfaceSecondary
+                                                    : colors.surfacePrimary)
+                                              : (isDark
+                                                    ? colors.surfaceSecondary.withAlpha(180)
+                                                    : colors.surfacePrimary.withAlpha(200)),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: isHovered
+                                                ? colors.primary.withAlpha(120)
+                                                : colors.surfaceBorder.withAlpha(80),
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.close_rounded,
+                                          color: isHovered ? colors.primary : colors.textPrimary,
+                                          size: 18,
+                                        ),
+                                      ),
+                                      onPressed: () => _handleSafeExit(context),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Session Summary',
+                                  style: typography.title3.bold.copyWith(
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: colors.surfaceBorder.withAlpha(isDark ? 50 : 80),
+                          ),
+
+                          // Panel Body Content
+                          Expanded(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              child: Column(
+                                children: [
+                                  summaryHeaderContent,
+                                  const SizedBox(height: 16),
+                                  cbtCardWidget,
+                                  const SizedBox(height: 16),
+                                  visualizerAndActions,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                      .animate()
+                      .slideX(
+                        begin: 1,
+                        end: 0,
+                        duration: 320.ms,
+                        curve: Curves.easeOutCubic,
+                      )
+                      .fadeIn(duration: 200.ms),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.escape): () =>
@@ -128,402 +611,116 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
           body: Stack(
             alignment: Alignment.topCenter,
             children: [
-          if (celebrate && !reduceMotion)
-            Positioned(
-              top: 0,
-              child: ConfettiWidget(
-                confettiController: _confettiController,
-                blastDirection: math.pi / 2,
-                maxBlastForce: 25,
-                minBlastForce: 10,
-                emissionFrequency: 0.05,
-                numberOfParticles: 35,
-                gravity: 0.15,
-                colors: [
-                  colors.primary,
-                  colors.success,
-                  colors.warning,
-                  colors.secondary,
-                  colors.deepBronze,
-                  colors.quartzCyan,
-                ],
-              ),
-            ),
-          SafeArea(
-            child: Column(
-              children: [
-                // Top App Navigation Bar with Safe Exit
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Semantics(
-                        button: true,
-                        label: 'Close summary',
-                        child: ShrinkableButton(
-                          onTap: () => _handleSafeExit(context),
-                          child: Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceSecondary.withAlpha(160)
-                                  : colors.surfacePrimary.withAlpha(220),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isDark
-                                    ? colors.surfaceBorderHighlight.withAlpha(80)
-                                    : colors.surfaceBorder.withAlpha(140),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.black.withAlpha(isDark ? 30 : 10),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.close_rounded,
-                              size: 20,
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Text(
-                        'Session Summary',
-                        style: typography.subhead.bold.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(width: 38),
+              if (celebrate && !reduceMotion)
+                Positioned(
+                  top: 0,
+                  child: ConfettiWidget(
+                    confettiController: _confettiController,
+                    blastDirection: math.pi / 2,
+                    maxBlastForce: 25,
+                    minBlastForce: 10,
+                    emissionFrequency: 0.05,
+                    numberOfParticles: 35,
+                    gravity: 0.15,
+                    colors: [
+                      colors.primary,
+                      colors.success,
+                      colors.warning,
+                      colors.secondary,
+                      colors.deepBronze,
+                      colors.quartzCyan,
                     ],
                   ),
                 ),
-                Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 580),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const SizedBox(height: 12),
-
-                            // Result Orb — enters from 0.9 scale, never from zero.
-                            _OrbEntrance(
-                              reduceMotion: reduceMotion,
+              SafeArea(
+                child: Column(
+                  children: [
+                    // Top App Navigation Bar with Safe Exit
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Semantics(
+                            button: true,
+                            label: 'Close summary',
+                            child: ShrinkableButton(
+                              onTap: () => _handleSafeExit(context),
                               child: Container(
-                                width: 92,
-                                height: 92,
+                                width: 38,
+                                height: 38,
                                 decoration: BoxDecoration(
+                                  color: isDark
+                                      ? colors.surfaceSecondary.withAlpha(160)
+                                      : colors.surfacePrimary.withAlpha(220),
                                   shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: celebrate
-                                        ? [colors.success, colors.syllabotAccent]
-                                        : [
-                                            colors.primary.withAlpha(
-                                              isDark ? 170 : 140,
-                                            ),
-                                            colors.syllabotAccent.withAlpha(
-                                              isDark ? 170 : 140,
-                                            ),
-                                          ],
+                                  border: Border.all(
+                                    color: isDark
+                                        ? colors.surfaceBorderHighlight.withAlpha(80)
+                                        : colors.surfaceBorder.withAlpha(140),
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: (celebrate ? colors.success : colors.primary)
-                                          .withAlpha(isDark ? 70 : 35),
-                                      blurRadius: celebrate ? 28 : 18,
-                                      offset: const Offset(0, 8),
+                                      color: colors.black.withAlpha(isDark ? 30 : 10),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
                                     ),
                                   ],
                                 ),
                                 child: Icon(
-                                  celebrate
-                                      ? (isMastery
-                                          ? Icons.emoji_events_rounded
-                                          : Icons.check_rounded)
-                                      : Icons.task_alt_rounded,
-                                  color: colors.white,
-                                  size: 48,
+                                  Icons.close_rounded,
+                                  size: 20,
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 20),
-
-                            // Title & Subtitle
-                            Text(
-                              summaryTitle,
-                              textAlign: TextAlign.center,
-                              style: typography.title2.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 24,
-                              ),
+                          ),
+                          Text(
+                            'Session Summary',
+                            style: typography.subhead.bold.copyWith(
+                              color: colors.textSecondary,
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              l10n.sessionSummarySubtitle,
-                              textAlign: TextAlign.center,
-                              style: typography.footnote.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 13,
-                                height: 1.35,
-                              ),
+                          ),
+                          const SizedBox(width: 38),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: 580,
+                          ),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
                             ),
-                            const SizedBox(height: 24),
-
-                            // XP Announcement Pill — base session XP is always
-                            // awarded by UserActivityService (+50 per session).
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.warning.withAlpha(isDark ? 45 : 20),
-                                borderRadius: BorderRadius.circular(AppRadius.badge),
-                                border: Border.all(
-                                  color: colors.warning.withAlpha(120),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.local_fire_department_rounded,
-                                    color: colors.warning,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Flexible(
-                                    child: Text(
-                                      l10n.sessionSummaryStreakBonus(50),
-                                      textAlign: TextAlign.center,
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.warning,
-                                        fontSize: 12.5,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Stats Cards Row — values count up, staggered.
-                            Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceSecondary.withAlpha(160)
-                                    : colors.surfacePrimary,
-                                borderRadius: BorderRadius.circular(AppRadius.dialog),
-                                border: Border.all(
-                                  color: isDark
-                                      ? colors.surfaceBorderHighlight.withAlpha(70)
-                                      : colors.surfaceBorder.withAlpha(130),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: _StatItem(
-                                      label: l10n.sessionSummaryCardsReviewed,
-                                      countTo: cardsReviewed,
-                                      format: (value) => '$value',
-                                      color: colors.primary,
-                                      colors: colors,
-                                      reduceMotion: reduceMotion,
-                                      staggerIndex: 0,
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 1,
-                                    height: 36,
-                                    color: colors.surfaceBorder,
-                                  ),
-                                  Expanded(
-                                    child: _StatItem(
-                                      label: l10n.sessionSummaryRetentionRate,
-                                      countTo: scorePercent,
-                                      format: (value) => '$value%',
-                                      color: colors.success,
-                                      colors: colors,
-                                      reduceMotion: reduceMotion,
-                                      staggerIndex: 1,
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 1,
-                                    height: 36,
-                                    color: colors.surfaceBorder,
-                                  ),
-                                  Expanded(
-                                    child: _StatItem(
-                                      label: l10n.sessionSummaryTimeSpent,
-                                      display: durationFormatted,
-                                      color: colors.syllabotAccent,
-                                      colors: colors,
-                                      reduceMotion: reduceMotion,
-                                      staggerIndex: 2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            // CBT Readiness Score Impact Banner
-                            CbtReadinessImpactCard(
-                              cardsReviewed: cardsReviewed,
-                              retentionScore: retentionScore,
-                            ),
-                            const SizedBox(height: 16),
-
-                            // FSRS Memory Forgetting Curve Visualizer
-                            FsrsRetrievabilityVisualizer(
-                              stabilityDays: (cardsReviewed * 1.5).clamp(2.0, 30.0),
-                              targetRetention: retentionScore.clamp(0.70, 0.95),
-                              subjectTitle: 'Overall Session Memory Strength',
-                            ),
-
-                            // Forward-looking line: what the effort buys later.
-                            if (widget.nextReviewInDays > 0) ...[
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.schedule_rounded,
-                                    size: 14,
-                                    color: colors.textMuted,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Flexible(
-                                    child: Text(
-                                      l10n.sessionSummaryNextReview(
-                                        widget.nextReviewInDays,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      style: typography.footnote.regular.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 12.5,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                            const SizedBox(height: 32),
-
-                            // Action Buttons
-                            if (deckId.startsWith('sprint:')) ...[
-                              AppButton(
-                                text: '🚀 Next Focus Sprint',
-                                onPressed: () {
-                                  unawaited(
-                                    context.router.replace(
-                                      StudySessionRoute(deckId: deckId),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                              AppButton(
-                                text: 'Done for Now',
-                                variant: AppButtonVariant.outline,
-                                onPressed: () {
-                                  unawaited(
-                                    context.router.replaceAll([
-                                      const MainRoute(children: [DashboardRoute()]),
-                                    ]),
-                                  );
-                                },
-                              ),
-                            ] else ...[
-                              // Bidirectional Bridge: Checkpoint Quiz (Phase 2 Pillar 2 & 3)
-                              if (widget.cardsReviewed > 0) ...[
-                                AppButton(
-                                  text: '🎯 Validate with Checkpoint Quiz',
-                                  onPressed: () {
-                                    unawaited(
-                                      context.router.push(
-                                        QuizWorkspaceRoute(
-                                          deckId: _effectiveDeckId,
-                                          deckTitle: 'Checkpoint Quiz',
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 12),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                summaryHeaderContent,
+                                const SizedBox(height: 16),
+                                cbtCardWidget,
+                                const SizedBox(height: 16),
+                                visualizerAndActions,
                               ],
-
-                              // Replay Study Session Action
-                              AppButton(
-                                text: l10n.sessionSummaryStudyAgain,
-                                variant: AppButtonVariant.secondary,
-                                onPressed: () {
-                                  unawaited(
-                                    context.router.replace(
-                                      StudySessionRoute(deckId: deckId),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Return to Dashboard Action
-                              AppButton(
-                                text: l10n.sessionSummaryReturnDashboard,
-                                variant: AppButtonVariant.outline,
-                                onPressed: () {
-                                  unawaited(
-                                    context.router.replaceAll([
-                                      const MainRoute(children: [DashboardRoute()]),
-                                    ]),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Browse All Decks Action
-                              AppButton(
-                                text: l10n.sessionSummaryBrowseDecks,
-                                variant: AppButtonVariant.ghost,
-                                onPressed: () {
-                                  unawaited(
-                                    context.router.replaceAll([
-                                      const MainRoute(children: [DecksRoute()]),
-                                    ]),
-                                  );
-                                },
-                              ),
-                            ],
-                            const SizedBox(height: 24),
-                          ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
-    ),
-  ),
-);
+    );
   }
 }
 
