@@ -16,6 +16,7 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.da
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class CbtPracticeConfigModalSheet extends HookWidget {
@@ -103,10 +104,9 @@ class CbtPracticeConfigModalSheet extends HookWidget {
     required List<PastQuestionEntity> allQuestions,
     required bool isMockExam,
   }) {
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
+      maxWidth: 640,
       builder: (ctx) => CbtPracticeConfigModalSheet(
         title: title,
         courseId: courseId,
@@ -271,42 +271,57 @@ class CbtPracticeConfigModalSheet extends HookWidget {
         ? QuizPracticeMode.millionaire
         : (isExam.value ? QuizPracticeMode.exam : QuizPracticeMode.practice);
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: Container(
           decoration: BoxDecoration(
             color: colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
             border: Border.all(
               color: isDark
                   ? colors.surfaceBorderHighlight.withAlpha(70)
                   : colors.surfaceBorder,
             ),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: colors.black.withAlpha(isDark ? 100 : 35),
+                      blurRadius: 32,
+                      offset: const Offset(0, 12),
+                    ),
+                  ]
+                : null,
           ),
           child: SafeArea(
-            top: false,
+            top: isDesktop,
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Accessible Drag Handle
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceBorderHighlight,
-                        borderRadius: BorderRadius.circular(AppRadius.micro),
+                  if (!isDesktop) ...[
+                    // 1. Accessible Drag Handle (mobile only)
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: colors.surfaceBorderHighlight,
+                          borderRadius: BorderRadius.circular(AppRadius.micro),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 14),
+                    const SizedBox(height: 14),
+                  ],
 
                   // 2. Header
                   Row(

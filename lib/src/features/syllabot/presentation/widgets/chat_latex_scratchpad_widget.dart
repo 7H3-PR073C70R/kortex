@@ -4,6 +4,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
@@ -71,11 +72,8 @@ class ChatLatexScratchpadWidget extends HookWidget {
     BuildContext context, {
     required ValueChanged<String> onInsertLatex,
   }) {
-    final colors = context.colors;
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: colors.transparent,
       builder: (_) => ChatLatexScratchpadWidget(onInsertLatex: onInsertLatex),
     );
   }
@@ -85,6 +83,7 @@ class ChatLatexScratchpadWidget extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     final strokes = useState<List<ScratchpadStroke>>([]);
     final currentStroke = useState<List<Offset>>([]);
@@ -104,42 +103,57 @@ class ChatLatexScratchpadWidget extends HookWidget {
     }
 
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: Container(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+            maxHeight: MediaQuery.sizeOf(context).height * (isDesktop ? 0.8 : 0.85),
           ),
           padding: EdgeInsets.only(
             top: 20,
             left: 20,
             right: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            bottom: isDesktop
+                ? 20
+                : MediaQuery.of(context).viewInsets.bottom + 20,
           ),
           decoration: BoxDecoration(
             color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
             border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 28,
+                      offset: const Offset(0, 14),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.textSecondary.withValues(alpha: 0.3),
-                    borderRadius: AppRadius.radiusMicro,
+              if (!isDesktop) ...[
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.textSecondary.withValues(alpha: 0.3),
+                      borderRadius: AppRadius.radiusMicro,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
               // Header & Tools
               Row(
                 children: [

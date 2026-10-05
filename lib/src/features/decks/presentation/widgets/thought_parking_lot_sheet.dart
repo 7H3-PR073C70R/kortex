@@ -8,16 +8,15 @@ import 'package:kortex/src/features/decks/presentation/bloc/focus_session_cubit.
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_state.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_sheet_scaffold.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 
 class ThoughtParkingLotSheet extends StatefulWidget {
   const ThoughtParkingLotSheet({super.key});
 
   static Future<void> show(BuildContext context) {
     final cubit = context.read<FocusSessionCubit>();
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
       builder: (ctx) => BlocProvider.value(
         value: cubit,
         child: const ThoughtParkingLotSheet(),

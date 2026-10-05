@@ -41,6 +41,7 @@ import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_re
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -113,7 +114,9 @@ class ForumThreadDetailPage extends HookWidget {
     final replyVoiceTranscript = useState<String>('');
     final showFormattingTools = useState<bool>(false);
     final isAnonymousReply = useState<bool>(false);
-    final replyRecorderController = useMemoized(VoiceNoteRecorderController.new);
+    final replyRecorderController = useMemoized(
+      VoiceNoteRecorderController.new,
+    );
 
     final repo = locator<CommunityRepository>();
 
@@ -159,7 +162,10 @@ class ForumThreadDetailPage extends HookWidget {
               existingMap[r.id] = r;
             }
             localReplies.value = existingMap.values.toList();
-            topLevelOffset.value = math.max(topLevelOffset.value, fetched.length);
+            topLevelOffset.value = math.max(
+              topLevelOffset.value,
+              fetched.length,
+            );
             hasMoreTopLevel.value = fetched.length >= fetchLimit;
           }
         },
@@ -227,7 +233,6 @@ class ForumThreadDetailPage extends HookWidget {
       }
     }
 
-
     // Initial check for thread subscription and bookmark state
     useEffect(() {
       Future<void> checkSubscriptionAndBookmark() async {
@@ -276,12 +281,15 @@ class ForumThreadDetailPage extends HookWidget {
       }
 
       // WebSocket Realtime Stream for live thread replies
-      final wsSubscription = repo.watchForumReplies(post.id).listen((incomingReplies) {
+      final wsSubscription = repo.watchForumReplies(post.id).listen((
+        incomingReplies,
+      ) {
         if (incomingReplies.isNotEmpty) {
           final existingMap = {for (final r in localReplies.value) r.id: r};
           var updated = false;
           for (final reply in incomingReplies) {
-            if (!existingMap.containsKey(reply.id) || existingMap[reply.id] != reply) {
+            if (!existingMap.containsKey(reply.id) ||
+                existingMap[reply.id] != reply) {
               existingMap[reply.id] = reply;
               updated = true;
             }
@@ -407,7 +415,6 @@ class ForumThreadDetailPage extends HookWidget {
       }
       return null;
     }, [highlightReplyId, localReplies.value.length]);
-
 
     void votePost(int direction) {
       final p = currentPost.value;
@@ -608,27 +615,44 @@ class ForumThreadDetailPage extends HookWidget {
     }
 
     Future<void> showEditPostSheet(BuildContext context) async {
-      final titleEditController =
-          TextEditingController(text: currentPost.value.title);
-      final contentEditController =
-          TextEditingController(text: currentPost.value.content);
+      final titleEditController = TextEditingController(
+        text: currentPost.value.title,
+      );
+      final contentEditController = TextEditingController(
+        text: currentPost.value.content,
+      );
       final isSubmittingEdit = ValueNotifier<bool>(false);
 
-      await showModalBottomSheet<void>(
+      await AppAdaptiveSheet.showModal<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor:
-            isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
         builder: (sheetCtx) {
-          return Padding(
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(sheetCtx);
+          return Container(
+            decoration: isDesktop
+                ? BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
+                    borderRadius: BorderRadius.circular(AppRadius.dialog),
+                    border: Border.all(
+                      color: colors.surfaceBorder.withValues(alpha: 0.5),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 28,
+                        offset: const Offset(0, 14),
+                      ),
+                    ],
+                  )
+                : null,
             padding: EdgeInsets.only(
               left: 16,
               right: 16,
               top: 16,
-              bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 16,
+              bottom: isDesktop
+                  ? 20
+                  : (MediaQuery.of(sheetCtx).viewInsets.bottom + 16),
             ),
             child: ValueListenableBuilder<bool>(
               valueListenable: isSubmittingEdit,
@@ -696,9 +720,11 @@ class ForumThreadDetailPage extends HookWidget {
                           ? null
                           : () async {
                               final newTitle = titleEditController.text.trim();
-                              final newContent =
-                                  contentEditController.text.trim();
-                              if (newTitle.isEmpty || newContent.isEmpty) return;
+                              final newContent = contentEditController.text
+                                  .trim();
+                              if (newTitle.isEmpty || newContent.isEmpty) {
+                                return;
+                              }
 
                               const mod = ContentModerationService();
                               final modRes = mod.validatePost(
@@ -728,17 +754,19 @@ class ForumThreadDetailPage extends HookWidget {
                                 (failure) {
                                   if (context.mounted) {
                                     context.showSnackBar(
-                                      message: failure.message ??
+                                      message:
+                                          failure.message ??
                                           'Failed to update discussion',
                                       type: SnackBarType.error,
                                     );
                                   }
                                 },
                                 (updated) {
-                                  currentPost.value = currentPost.value.copyWith(
-                                    title: updated.title,
-                                    content: updated.content,
-                                  );
+                                  currentPost.value = currentPost.value
+                                      .copyWith(
+                                        title: updated.title,
+                                        content: updated.content,
+                                      );
                                   if (context.mounted) {
                                     Navigator.of(sheetCtx).pop();
                                     context.showSnackBar(
@@ -775,21 +803,36 @@ class ForumThreadDetailPage extends HookWidget {
       final editController = TextEditingController(text: reply.content);
       final isSubmitting = ValueNotifier<bool>(false);
 
-      await showModalBottomSheet<void>(
+      await AppAdaptiveSheet.showModal<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor:
-            isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
         builder: (sheetCtx) {
-          return Padding(
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(sheetCtx);
+          return Container(
+            decoration: isDesktop
+                ? BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
+                    borderRadius: BorderRadius.circular(AppRadius.dialog),
+                    border: Border.all(
+                      color: colors.surfaceBorder.withValues(alpha: 0.5),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 28,
+                        offset: const Offset(0, 14),
+                      ),
+                    ],
+                  )
+                : null,
             padding: EdgeInsets.only(
               left: 16,
               right: 16,
               top: 16,
-              bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 16,
+              bottom: isDesktop
+                  ? 20
+                  : (MediaQuery.of(sheetCtx).viewInsets.bottom + 16),
             ),
             child: ValueListenableBuilder<bool>(
               valueListenable: isSubmitting,
@@ -845,7 +888,9 @@ class ForumThreadDetailPage extends HookWidget {
                               if (newText.isEmpty) return;
 
                               const mod = ContentModerationService();
-                              final modRes = mod.validateReply(content: newText);
+                              final modRes = mod.validateReply(
+                                content: newText,
+                              );
                               if (!modRes.isValid) {
                                 unawaited(
                                   ModerationFeedbackDialog.show(
@@ -868,21 +913,24 @@ class ForumThreadDetailPage extends HookWidget {
                                 (failure) {
                                   if (context.mounted) {
                                     context.showSnackBar(
-                                      message: failure.message ??
+                                      message:
+                                          failure.message ??
                                           'Failed to update reply',
                                       type: SnackBarType.error,
                                     );
                                   }
                                 },
                                 (updated) {
-                                  localReplies.value = localReplies.value.map<ForumReplyEntity>((r) {
-                                    if (r.id == reply.id) {
-                                      return r.copyWith(
-                                        content: updated.content,
-                                      );
-                                    }
-                                    return r;
-                                  }).toList();
+                                  localReplies.value = localReplies.value
+                                      .map<ForumReplyEntity>((r) {
+                                        if (r.id == reply.id) {
+                                          return r.copyWith(
+                                            content: updated.content,
+                                          );
+                                        }
+                                        return r;
+                                      })
+                                      .toList();
                                   if (context.mounted) {
                                     Navigator.of(sheetCtx).pop();
                                     context.showSnackBar(
@@ -919,8 +967,9 @@ class ForumThreadDetailPage extends HookWidget {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          backgroundColor:
-              isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+          backgroundColor: isDark
+              ? colors.surfaceSecondary
+              : colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -962,7 +1011,10 @@ class ForumThreadDetailPage extends HookWidget {
       );
 
       if (confirmed == true && context.mounted) {
-        final res = await repo.deleteForumReply(postId: post.id, replyId: reply.id);
+        final res = await repo.deleteForumReply(
+          postId: post.id,
+          replyId: reply.id,
+        );
         res.fold(
           (failure) {
             if (context.mounted) {
@@ -973,8 +1025,9 @@ class ForumThreadDetailPage extends HookWidget {
             }
           },
           (_) {
-            localReplies.value =
-                localReplies.value.where((r) => r.id != reply.id).toList();
+            localReplies.value = localReplies.value
+                .where((r) => r.id != reply.id)
+                .toList();
             currentPost.value = currentPost.value.copyWith(
               repliesCount: math.max(0, currentPost.value.repliesCount - 1),
             );
@@ -999,17 +1052,31 @@ class ForumThreadDetailPage extends HookWidget {
                   currentPost.value.authorName.toLowerCase());
 
       unawaited(
-        showModalBottomSheet<void>(
+        AppAdaptiveSheet.showActionMenu<void>(
           context: context,
-          backgroundColor: isDark
-              ? colors.surfaceSecondary
-              : colors.surfacePrimary,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
+          maxWidth: 420,
           builder: (ctx) {
+            final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
             return SafeArea(
-              child: Padding(
+              child: Container(
+                decoration: isDesktop
+                    ? BoxDecoration(
+                        color: isDark
+                            ? colors.surfaceSecondary
+                            : colors.surfacePrimary,
+                        borderRadius: BorderRadius.circular(AppRadius.dialog),
+                        border: Border.all(
+                          color: colors.surfaceBorder.withValues(alpha: 0.5),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 28,
+                            offset: const Offset(0, 14),
+                          ),
+                        ],
+                      )
+                    : null,
                 padding: const EdgeInsets.symmetric(
                   vertical: 16,
                   horizontal: 8,
@@ -1017,15 +1084,16 @@ class ForumThreadDetailPage extends HookWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 36,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: colors.textSecondary.withAlpha(60),
-                        borderRadius: BorderRadius.circular(2),
+                    if (!isDesktop)
+                      Container(
+                        width: 36,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: colors.textSecondary.withAlpha(60),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    ),
                     ListTile(
                       leading: Icon(
                         isBookmarked.value
@@ -1100,12 +1168,16 @@ class ForumThreadDetailPage extends HookWidget {
                           id: 'room-forum-${post.id}',
                           title: 'Focus Room: ${post.title}',
                           subject: post.track,
-                          description: 'Live focus room created for thread: ${post.title}',
+                          description:
+                              'Live focus room created for thread: ${post.title}',
                           category: post.syllabusTag,
                         );
-                        unawaited(context.router.push(LiveStudyRoomRoute(room: room)));
+                        unawaited(
+                          context.router.push(LiveStudyRoomRoute(room: room)),
+                        );
                         context.showSnackBar(
-                          message: 'Live Focus Room launched for this thread 🎧',
+                          message:
+                              'Live Focus Room launched for this thread 🎧',
                           type: SnackBarType.success,
                         );
                       },
@@ -1123,13 +1195,15 @@ class ForumThreadDetailPage extends HookWidget {
                       ),
                       onTap: () async {
                         Navigator.of(ctx).pop();
-                        final result = await locator<LinkSharingService>().shareForumPost(
-                          postId: post.id,
-                          title: currentPost.value.title,
-                          authorName: currentPost.value.authorName,
-                          subjectTrack: currentPost.value.track,
-                        );
-                        final copied = await locator<LinkSharingService>().copyLinkToClipboard(result.linkUri);
+                        final result = await locator<LinkSharingService>()
+                            .shareForumPost(
+                              postId: post.id,
+                              title: currentPost.value.title,
+                              authorName: currentPost.value.authorName,
+                              subjectTrack: currentPost.value.track,
+                            );
+                        final copied = await locator<LinkSharingService>()
+                            .copyLinkToClipboard(result.linkUri);
                         if (copied && context.mounted) {
                           context.showSnackBar(
                             message: 'Post link copied to clipboard',
@@ -1427,9 +1501,15 @@ class ForumThreadDetailPage extends HookWidget {
                       await Future.wait<void>([
                         fetchTopLevelReplies(),
                         () async {
-                          final subRes = await repo.isForumPostSubscribed(post.id);
-                          subRes.fold((_) {}, (sub) => isSubscribed.value = sub);
-                          final bookRes = await repo.getBookmarkedForumPostIds();
+                          final subRes = await repo.isForumPostSubscribed(
+                            post.id,
+                          );
+                          subRes.fold(
+                            (_) {},
+                            (sub) => isSubscribed.value = sub,
+                          );
+                          final bookRes = await repo
+                              .getBookmarkedForumPostIds();
                           bookRes.fold(
                             (_) {},
                             (ids) => isBookmarked.value = ids.contains(post.id),
@@ -1443,402 +1523,517 @@ class ForumThreadDetailPage extends HookWidget {
                       ),
                       controller: scrollController,
                       slivers: [
-                      // Breadcrumb Return Bar & Original Post Card
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Original Post Card
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? colors.surfaceSecondary
-                                      : colors.surfacePrimary,
-                                  borderRadius: BorderRadius.circular(16),
-                                  // Removed border
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: colors.black.withAlpha(
-                                        isDark ? 30 : 10,
+                        // Breadcrumb Return Bar & Original Post Card
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Original Post Card
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfaceSecondary
+                                        : colors.surfacePrimary,
+                                    borderRadius: BorderRadius.circular(16),
+                                    // Removed border
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colors.black.withAlpha(
+                                          isDark ? 30 : 10,
+                                        ),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
                                       ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Channel Pill & Meta Bar
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 9,
-                                            vertical: 3.5,
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Channel Pill & Meta Bar
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 9,
+                                              vertical: 3.5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isDark
+                                                  ? colors.surfacePrimary
+                                                        .withAlpha(
+                                                          180,
+                                                        )
+                                                  : colors.primary.withAlpha(
+                                                      isDark ? 50 : 25,
+                                                    ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    10,
+                                                  ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.widgets_outlined,
+                                                  size: 12,
+                                                  color: colors.primary,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'c/${currentPost.value.track}',
+                                                  style: typography.caption.bold
+                                                      .copyWith(
+                                                        color: colors.primary,
+                                                        fontSize: 11,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            width: 3.5,
+                                            height: 3.5,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: colors.textSecondary
+                                                  .withAlpha(
+                                                    120,
+                                                  ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Posted ${_formatTime(currentPost.value.createdAt, l10n)}',
+                                            style: typography.caption.regular
+                                                .copyWith(
+                                                  color: colors.textSecondary,
+                                                  fontSize: 11.5,
+                                                ),
+                                          ),
+                                          const Spacer(),
+                                          ShrinkableButton(
+                                            onTap: showPostOptionsMenu,
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(4),
+                                              child: Icon(
+                                                Icons.more_horiz_rounded,
+                                                size: 20,
+                                                color: colors.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      // Author Profile Row
+                                      Row(
+                                        children: [
+                                          if (currentPost.value.isAnonymous)
+                                            Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: isDark
+                                                    ? colors.surfaceSecondary
+                                                    : colors.surfaceBorder
+                                                          .withAlpha(40),
+                                                border: Border.all(
+                                                  color: colors.textSecondary
+                                                      .withAlpha(
+                                                        isDark ? 60 : 35,
+                                                      ),
+                                                ),
+                                              ),
+                                              child: Icon(
+                                                Icons.visibility_off_rounded,
+                                                size: 20,
+                                                color: colors.textSecondary,
+                                              ),
+                                            )
+                                          else
+                                            AppAvatar(
+                                              customDimension: 40,
+                                              name:
+                                                  currentPost.value.authorName,
+                                              backgroundColor: colors.primary
+                                                  .withAlpha(isDark ? 50 : 35),
+                                              foregroundColor: colors.primary,
+                                              badgeColor: colors.success,
+                                              badgeBorderColor: isDark
+                                                  ? colors.surfaceSecondary
+                                                  : colors.surfacePrimary,
+                                            ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Flexible(
+                                                      child: Text(
+                                                        currentPost
+                                                                .value
+                                                                .isAnonymous
+                                                            ? currentPost
+                                                                  .value
+                                                                  .authorName
+                                                            : '@${currentPost.value.authorName}',
+                                                        style: typography
+                                                            .subhead
+                                                            .bold
+                                                            .copyWith(
+                                                              color:
+                                                                  currentPost
+                                                                      .value
+                                                                      .isAnonymous
+                                                                  ? colors
+                                                                        .textSecondary
+                                                                  : colors
+                                                                        .textPrimary,
+                                                              fontSize: 14.5,
+                                                              fontStyle:
+                                                                  currentPost
+                                                                      .value
+                                                                      .isAnonymous
+                                                                  ? FontStyle
+                                                                        .italic
+                                                                  : FontStyle
+                                                                        .normal,
+                                                            ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    if (currentPost
+                                                        .value
+                                                        .isAnonymous)
+                                                      Container(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 6,
+                                                              vertical: 1.5,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: colors
+                                                              .textSecondary
+                                                              .withAlpha(
+                                                                isDark
+                                                                    ? 40
+                                                                    : 25,
+                                                              ),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                4,
+                                                              ),
+                                                          border: Border.all(
+                                                            color: colors
+                                                                .textSecondary
+                                                                .withAlpha(
+                                                                  isDark
+                                                                      ? 70
+                                                                      : 40,
+                                                                ),
+                                                            width: 0.8,
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            Icon(
+                                                              Icons
+                                                                  .shield_outlined,
+                                                              size: 10,
+                                                              color: colors
+                                                                  .textSecondary,
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 3,
+                                                            ),
+                                                            Text(
+                                                              'Incognito OP',
+                                                              style: typography
+                                                                  .caption
+                                                                  .bold
+                                                                  .copyWith(
+                                                                    color: colors
+                                                                        .textSecondary,
+                                                                    fontSize:
+                                                                        9.5,
+                                                                  ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      )
+                                                    else ...[
+                                                      Container(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 5,
+                                                              vertical: 1,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: colors.primary,
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                4,
+                                                              ),
+                                                        ),
+                                                        child: Text(
+                                                          'OP',
+                                                          style: typography
+                                                              .caption
+                                                              .bold
+                                                              .copyWith(
+                                                                color: colors
+                                                                    .white,
+                                                                fontSize: 9.5,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      SubjectMasterBadge(
+                                                        track: currentPost
+                                                            .value
+                                                            .track,
+                                                        compact: true,
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  currentPost.value.isAnonymous
+                                                      ? 'Incognito Mode • Identities are protected'
+                                                      : (currentPost
+                                                                .value
+                                                                .syllabusTag
+                                                                .isNotEmpty
+                                                            ? 'Staff Level Scholar • ${currentPost.value.syllabusTag}'
+                                                            : 'Staff Level Scholar'),
+                                                  style: typography
+                                                      .caption
+                                                      .regular
+                                                      .copyWith(
+                                                        color: colors
+                                                            .textSecondary,
+                                                        fontSize: 11.5,
+                                                      ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 14),
+
+                                      // Title
+                                      Text(
+                                        _cleanTitle(
+                                          currentPost.value.title,
+                                          currentPost.value.syllabusTag,
+                                          currentPost.value.track,
+                                        ),
+                                        style: typography.title2.bold.copyWith(
+                                          color: colors.textPrimary,
+                                          fontSize: 18,
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      // Structured Content Body Card
+                                      _ForumThreadStructuredBody(
+                                        post: currentPost.value,
+                                      ),
+
+                                      // LaTeX Formula block
+                                      if (currentPost.value.latexContent !=
+                                              null &&
+                                          currentPost
+                                              .value
+                                              .latexContent!
+                                              .isNotEmpty) ...[
+                                        const SizedBox(height: 14),
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(14),
                                           decoration: BoxDecoration(
                                             color: isDark
                                                 ? colors.surfacePrimary
+                                                : colors.surfaceSecondary
                                                       .withAlpha(
-                                                        180,
-                                                      )
-                                                : colors.primary.withAlpha(
-                                                    isDark ? 50 : 25,
-                                                  ),
+                                                        140,
+                                                      ),
                                             borderRadius: BorderRadius.circular(
-                                              10,
+                                              14,
+                                            ),
+                                            border: Border.all(
+                                              color: colors.primary.withAlpha(
+                                                40,
+                                              ),
                                             ),
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
-                                              Icon(
-                                                Icons.widgets_outlined,
-                                                size: 12,
-                                                color: colors.primary,
-                                              ),
-                                              const SizedBox(width: 4),
                                               Text(
-                                                'c/${currentPost.value.track}',
+                                                l10n.formulaEquation,
+                                                style: typography.caption.bold
+                                                    .copyWith(
+                                                      color: colors.primary,
+                                                      letterSpacing: 1.1,
+                                                    ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              LatexFormulaBlock(
+                                                formula: currentPost
+                                                    .value
+                                                    .latexContent!,
+                                                backgroundColor:
+                                                    Colors.transparent,
+                                                borderColor: colors.primary
+                                                    .withAlpha(
+                                                      isDark ? 50 : 30,
+                                                    ),
+                                                textStyle: typography.body.bold
+                                                    .copyWith(
+                                                      color: colors.primary,
+                                                      fontSize: 16,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+
+                                      // Voice note player preview if present
+                                      if (currentPost.value.voiceNoteUrl !=
+                                              null &&
+                                          currentPost.value.voiceNoteUrl!
+                                              .trim()
+                                              .isNotEmpty) ...[
+                                        const SizedBox(height: 14),
+                                        VoiceNotePlayerWidget(
+                                          audioUrl:
+                                              currentPost.value.voiceNoteUrl!,
+                                          postId: currentPost.value.id,
+                                          durationSeconds: currentPost
+                                              .value
+                                              .voiceNoteDurationSeconds,
+                                          transcript: currentPost
+                                              .value
+                                              .voiceNoteTranscript,
+                                          onTranscriptLoaded: (newTranscript) {
+                                            currentPost.value = currentPost
+                                                .value
+                                                .copyWith(
+                                                  voiceNoteTranscript:
+                                                      newTranscript,
+                                                );
+                                          },
+                                        ),
+                                      ],
+
+                                      // Media Images preview if present
+                                      if (currentPost
+                                          .value
+                                          .mediaUrls
+                                          .isNotEmpty) ...[
+                                        const SizedBox(height: 14),
+                                        ForumPostMediaPreview(
+                                          mediaUrls:
+                                              currentPost.value.mediaUrls,
+                                          heroHeight: 165,
+                                        ),
+                                      ],
+
+                                      // Semantic Tags Wrap
+                                      if (currentPost
+                                          .value
+                                          .tags
+                                          .isNotEmpty) ...[
+                                        const SizedBox(height: 14),
+                                        Wrap(
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: currentPost.value.tags.map((
+                                            tag,
+                                          ) {
+                                            final displayTag =
+                                                tag.startsWith('#')
+                                                ? tag
+                                                : '#$tag';
+                                            return Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 4,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: isDark
+                                                    ? colors.surfacePrimary
+                                                          .withAlpha(
+                                                            160,
+                                                          )
+                                                    : colors.primary.withAlpha(
+                                                        isDark ? 40 : 20,
+                                                      ),
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      12,
+                                                    ),
+                                              ),
+                                              child: Text(
+                                                displayTag,
                                                 style: typography.caption.bold
                                                     .copyWith(
                                                       color: colors.primary,
                                                       fontSize: 11,
                                                     ),
                                               ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          width: 3.5,
-                                          height: 3.5,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: colors.textSecondary
-                                                .withAlpha(
-                                                  120,
-                                                ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Posted ${_formatTime(currentPost.value.createdAt, l10n)}',
-                                          style: typography.caption.regular
-                                              .copyWith(
-                                                color: colors.textSecondary,
-                                                fontSize: 11.5,
-                                              ),
-                                        ),
-                                        const Spacer(),
-                                        ShrinkableButton(
-                                          onTap: showPostOptionsMenu,
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(4),
-                                            child: Icon(
-                                              Icons.more_horiz_rounded,
-                                              size: 20,
-                                              color: colors.textSecondary,
-                                            ),
-                                          ),
+                                            );
+                                          }).toList(),
                                         ),
                                       ],
-                                    ),
-                                    const SizedBox(height: 12),
 
-                                    // Author Profile Row
-                                    Row(
-                                      children: [
-                                        if (currentPost.value.isAnonymous)
+                                      const SizedBox(height: 16),
+
+                                      // OP Interactive Action Bar (Vote Group Pill, Replies Count, Bookmark, Share)
+                                      Row(
+                                        children: [
+                                          // Vote Group Pill
+                                          _ForumPostVotePill(
+                                            netVotes:
+                                                currentPost.value.netVotes,
+                                            userVote:
+                                                currentPost.value.userVote,
+                                            onUpvote: () => votePost(1),
+                                            onDownvote: () => votePost(-1),
+                                          ),
+                                          const SizedBox(width: 8),
+
+                                          // Replies Count Indicator
                                           Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: isDark
-                                                  ? colors.surfaceSecondary
-                                                  : colors.surfaceBorder
-                                                      .withAlpha(40),
-                                              border: Border.all(
-                                                color: colors.textSecondary
-                                                    .withAlpha(isDark ? 60 : 35),
-                                              ),
-                                            ),
-                                            child: Icon(
-                                              Icons.visibility_off_rounded,
-                                              size: 20,
-                                              color: colors.textSecondary,
-                                            ),
-                                          )
-                                        else
-                                          AppAvatar(
-                                            customDimension: 40,
-                                            name: currentPost.value.authorName,
-                                            backgroundColor: colors.primary
-                                                .withAlpha(isDark ? 50 : 35),
-                                            foregroundColor: colors.primary,
-                                            badgeColor: colors.success,
-                                            badgeBorderColor: isDark
-                                                ? colors.surfaceSecondary
-                                                : colors.surfacePrimary,
-                                          ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Flexible(
-                                                    child: Text(
-                                                      currentPost.value.isAnonymous
-                                                          ? currentPost.value.authorName
-                                                          : '@${currentPost.value.authorName}',
-                                                      style: typography
-                                                          .subhead
-                                                          .bold
-                                                          .copyWith(
-                                                            color: currentPost.value.isAnonymous
-                                                                ? colors.textSecondary
-                                                                : colors.textPrimary,
-                                                            fontSize: 14.5,
-                                                            fontStyle: currentPost.value.isAnonymous
-                                                                ? FontStyle.italic
-                                                                : FontStyle.normal,
-                                                          ),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  if (currentPost.value.isAnonymous)
-                                                    Container(
-                                                      padding: const EdgeInsets.symmetric(
-                                                        horizontal: 6,
-                                                        vertical: 1.5,
-                                                      ),
-                                                      decoration: BoxDecoration(
-                                                        color: colors.textSecondary
-                                                            .withAlpha(isDark ? 40 : 25),
-                                                        borderRadius:
-                                                            BorderRadius.circular(4),
-                                                        border: Border.all(
-                                                          color: colors.textSecondary
-                                                              .withAlpha(isDark ? 70 : 40),
-                                                          width: 0.8,
-                                                        ),
-                                                      ),
-                                                      child: Row(
-                                                        mainAxisSize: MainAxisSize.min,
-                                                        children: [
-                                                          Icon(
-                                                            Icons.shield_outlined,
-                                                            size: 10,
-                                                            color: colors.textSecondary,
-                                                          ),
-                                                          const SizedBox(width: 3),
-                                                          Text(
-                                                            'Incognito OP',
-                                                            style: typography.caption.bold.copyWith(
-                                                              color: colors.textSecondary,
-                                                              fontSize: 9.5,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    )
-                                                  else ...[
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 5,
-                                                            vertical: 1,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: colors.primary,
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              4,
-                                                            ),
-                                                      ),
-                                                      child: Text(
-                                                        'OP',
-                                                        style: typography.caption.bold.copyWith(
-                                                          color: colors.white,
-                                                          fontSize: 9.5,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 6),
-                                                    SubjectMasterBadge(
-                                                      track: currentPost.value.track,
-                                                      compact: true,
-                                                    ),
-                                                  ],
-                                                ],
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                currentPost.value.isAnonymous
-                                                    ? 'Incognito Mode • Identities are protected'
-                                                    : (currentPost
-                                                            .value
-                                                            .syllabusTag
-                                                            .isNotEmpty
-                                                        ? 'Staff Level Scholar • ${currentPost.value.syllabusTag}'
-                                                        : 'Staff Level Scholar'),
-                                                style: typography
-                                                    .caption
-                                                    .regular
-                                                    .copyWith(
-                                                      color:
-                                                          colors.textSecondary,
-                                                      fontSize: 11.5,
-                                                    ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 14),
-
-                                    // Title
-                                    Text(
-                                      _cleanTitle(
-                                        currentPost.value.title,
-                                        currentPost.value.syllabusTag,
-                                        currentPost.value.track,
-                                      ),
-                                      style: typography.title2.bold.copyWith(
-                                        color: colors.textPrimary,
-                                        fontSize: 18,
-                                        height: 1.3,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-
-                                    // Structured Content Body Card
-                                    _ForumThreadStructuredBody(
-                                      post: currentPost.value,
-                                    ),
-
-                                    // LaTeX Formula block
-                                    if (currentPost.value.latexContent !=
-                                            null &&
-                                        currentPost
-                                            .value
-                                            .latexContent!
-                                            .isNotEmpty) ...[
-                                      const SizedBox(height: 14),
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(14),
-                                        decoration: BoxDecoration(
-                                          color: isDark
-                                              ? colors.surfacePrimary
-                                              : colors.surfaceSecondary
-                                                    .withAlpha(
-                                                      140,
-                                                    ),
-                                          borderRadius: BorderRadius.circular(
-                                            14,
-                                          ),
-                                          border: Border.all(
-                                            color: colors.primary.withAlpha(40),
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              l10n.formulaEquation,
-                                              style: typography.caption.bold
-                                                  .copyWith(
-                                                    color: colors.primary,
-                                                    letterSpacing: 1.1,
-                                                  ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            LatexFormulaBlock(
-                                              formula: currentPost
-                                                  .value
-                                                  .latexContent!,
-                                              backgroundColor:
-                                                  Colors.transparent,
-                                              borderColor: colors.primary
-                                                  .withAlpha(isDark ? 50 : 30),
-                                              textStyle: typography.body.bold
-                                                  .copyWith(
-                                                    color: colors.primary,
-                                                    fontSize: 16,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-
-                                    // Voice note player preview if present
-                                    if (currentPost.value.voiceNoteUrl !=
-                                            null &&
-                                        currentPost.value.voiceNoteUrl!
-                                            .trim()
-                                            .isNotEmpty) ...[
-                                      const SizedBox(height: 14),
-                                      VoiceNotePlayerWidget(
-                                        audioUrl:
-                                            currentPost.value.voiceNoteUrl!,
-                                        postId: currentPost.value.id,
-                                        durationSeconds: currentPost
-                                            .value
-                                            .voiceNoteDurationSeconds,
-                                        transcript:
-                                            currentPost.value.voiceNoteTranscript,
-                                        onTranscriptLoaded: (newTranscript) {
-                                          currentPost.value = currentPost.value
-                                              .copyWith(voiceNoteTranscript: newTranscript);
-                                        },
-                                      ),
-                                    ],
-
-                                    // Media Images preview if present
-                                    if (currentPost
-                                        .value
-                                        .mediaUrls
-                                        .isNotEmpty) ...[
-                                      const SizedBox(height: 14),
-                                      ForumPostMediaPreview(
-                                        mediaUrls: currentPost.value.mediaUrls,
-                                        heroHeight: 165,
-                                      ),
-                                    ],
-
-                                    // Semantic Tags Wrap
-                                    if (currentPost.value.tags.isNotEmpty) ...[
-                                      const SizedBox(height: 14),
-                                      Wrap(
-                                        spacing: 6,
-                                        runSpacing: 6,
-                                        children: currentPost.value.tags.map((
-                                          tag,
-                                        ) {
-                                          final displayTag = tag.startsWith('#')
-                                              ? tag
-                                              : '#$tag';
-                                          return Container(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 10,
-                                              vertical: 4,
+                                              vertical: 6,
                                             ),
                                             decoration: BoxDecoration(
                                               color: isDark
@@ -1846,762 +2041,795 @@ class ForumThreadDetailPage extends HookWidget {
                                                         .withAlpha(
                                                           160,
                                                         )
-                                                  : colors.primary.withAlpha(
-                                                      isDark ? 40 : 20,
-                                                    ),
+                                                  : colors.surfaceSecondary
+                                                        .withAlpha(
+                                                          120,
+                                                        ),
                                               borderRadius:
                                                   BorderRadius.circular(
-                                                    12,
+                                                    16,
                                                   ),
                                             ),
-                                            child: Text(
-                                              displayTag,
-                                              style: typography.caption.bold
-                                                  .copyWith(
-                                                    color: colors.primary,
-                                                    fontSize: 11,
-                                                  ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ],
-
-                                    const SizedBox(height: 16),
-
-                                    // OP Interactive Action Bar (Vote Group Pill, Replies Count, Bookmark, Share)
-                                    Row(
-                                      children: [
-                                        // Vote Group Pill
-                                        _ForumPostVotePill(
-                                          netVotes: currentPost.value.netVotes,
-                                          userVote: currentPost.value.userVote,
-                                          onUpvote: () => votePost(1),
-                                          onDownvote: () => votePost(-1),
-                                        ),
-                                        const SizedBox(width: 8),
-
-                                        // Replies Count Indicator
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: isDark
-                                                ? colors.surfacePrimary
-                                                      .withAlpha(
-                                                        160,
-                                                      )
-                                                : colors.surfaceSecondary
-                                                      .withAlpha(
-                                                        120,
-                                                      ),
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons
-                                                    .chat_bubble_outline_rounded,
-                                                size: 15,
-                                                color: colors.textSecondary,
-                                              ),
-                                              const SizedBox(width: 5),
-                                              Text(
-                                                '${localReplies.value.length}',
-                                                style: typography.caption.bold
-                                                    .copyWith(
-                                                      color:
-                                                          colors.textSecondary,
-                                                      fontSize: 12,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const Spacer(),
-
-                                        // Bookmark Button
-                                        ShrinkableButton(
-                                          onTap: () =>
-                                              unawaited(toggleBookmark()),
-                                          child: Container(
-                                            width: 34,
-                                            height: 34,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: isBookmarked.value
-                                                  ? colors.primary.withAlpha(
-                                                      isDark ? 35 : 20,
-                                                    )
-                                                  : colors.transparent,
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Icon(
-                                              isBookmarked.value
-                                                  ? Icons.bookmark_rounded
-                                                  : Icons
-                                                        .bookmark_border_rounded,
-                                              size: 19,
-                                              color: isBookmarked.value
-                                                  ? colors.primary
-                                                  : colors.textSecondary,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-
-                                        // Generate Deck Button
-                                        ShrinkableButton(
-                                          onTap: () => unawaited(
-                                            ForumGenerateDeckSheet.show(
-                                              context,
-                                              post: currentPost.value,
-                                              replies: localReplies.value,
-                                            ),
-                                          ),
-                                          child: Container(
-                                            width: 34,
-                                            height: 34,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: colors.primary
-                                                  .withValues(alpha: 0.1),
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Icon(
-                                              Icons.auto_awesome_rounded,
-                                              size: 17,
-                                              color: colors.primary,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-
-                                        // Share Button
-                                        ShrinkableButton(
-                                          onTap: shareThread,
-                                          child: Container(
-                                            width: 34,
-                                            height: 34,
-                                            decoration: const BoxDecoration(
-                                              shape: BoxShape.circle,
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Icon(
-                                              Icons.share_outlined,
-                                              size: 19,
-                                              color: colors.textSecondary,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // Discussion River Section Header (Replies + Count + Sort Filter Pill)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 22, 16, 10),
-                          child: Row(
-                            children: [
-                              Text(
-                                'Replies',
-                                style: typography.title3.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 17,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? colors.surfaceSecondary
-                                      : colors.surfaceTertiary,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '${localReplies.value.length}',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.textSecondary,
-                                    fontSize: 11.5,
-                                  ),
-                                ),
-                              ),
-                              const Spacer(),
-
-                                PopupMenuButton<ForumSortFilter>(
-                                  initialValue: sortFilter.value,
-                                  tooltip: l10n.tooltipSortReplies,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  side: BorderSide(
-                                    color: colors.surfaceBorder.withAlpha(
-                                      isDark ? 60 : 30,
-                                    ),
-                                  ),
-                                ),
-                                color: isDark
-                                    ? colors.surfaceSecondary
-                                    : colors.surfacePrimary,
-                                onSelected: (filter) {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  sortFilter.value = filter;
-                                },
-                                itemBuilder: (context) =>
-                                    ForumSortFilter.values.map((f) {
-                                      final isSelected = f == sortFilter.value;
-                                      return PopupMenuItem<ForumSortFilter>(
-                                        value: f,
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              f.icon,
-                                              size: 16,
-                                              color: isSelected
-                                                  ? colors.primary
-                                                  : colors.textSecondary,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              f.label,
-                                              style: typography.footnote.medium
-                                                  .copyWith(
-                                                    color: isSelected
-                                                        ? colors.primary
-                                                        : colors.textPrimary,
-                                                    fontWeight: isSelected
-                                                        ? FontWeight.bold
-                                                        : FontWeight.normal,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? colors.surfaceSecondary.withAlpha(160)
-                                        : colors.surfaceSecondary.withAlpha(
-                                            110,
-                                          ),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        sortFilter.value.icon,
-                                        size: 14,
-                                        color: colors.primary,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        sortFilter.value.label,
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.textPrimary,
-                                          fontSize: 11.5,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Icon(
-                                        Icons.expand_more_rounded,
-                                        size: 15,
-                                        color: colors.textSecondary,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // Replies List
-                      Builder(
-                        builder: (context) {
-                          final allReplies = localReplies.value;
-
-                          // Filter & sort top-level replies
-                          final topLevelReplies =
-                              (allReplies
-                                    .where(
-                                      (r) =>
-                                          r.parentReplyId == null ||
-                                          r.parentReplyId!.isEmpty,
-                                    )
-                                    .toList())
-                                ..sort((a, b) {
-                                  if (a.isVerifiedSolution !=
-                                      b.isVerifiedSolution) {
-                                    return a.isVerifiedSolution ? -1 : 1;
-                                  }
-
-                                  switch (sortFilter.value) {
-                                    case ForumSortFilter.mostRecent:
-                                      return b.createdAt.compareTo(a.createdAt);
-                                    case ForumSortFilter.topVoted:
-                                      final voteComp = b.netVotes.compareTo(
-                                        a.netVotes,
-                                      );
-                                      if (voteComp != 0) return voteComp;
-                                      return b.createdAt.compareTo(a.createdAt);
-                                    case ForumSortFilter.aiFirst:
-                                      final aIsAi =
-                                          a.authorName.toLowerCase().contains(
-                                            'syllabot',
-                                          ) ||
-                                          a.content.contains('🤖');
-                                      final bIsAi =
-                                          b.authorName.toLowerCase().contains(
-                                            'syllabot',
-                                          ) ||
-                                          b.content.contains('🤖');
-                                      if (aIsAi != bIsAi) return aIsAi ? -1 : 1;
-                                      return b.netVotes.compareTo(a.netVotes);
-                                    case ForumSortFilter.unanswered:
-                                      final aHasChildren = allReplies.any(
-                                        (r) => r.parentReplyId == a.id,
-                                      );
-                                      final bHasChildren = allReplies.any(
-                                        (r) => r.parentReplyId == b.id,
-                                      );
-                                      if (aHasChildren != bHasChildren) {
-                                        return aHasChildren ? 1 : -1;
-                                      }
-                                      return b.createdAt.compareTo(a.createdAt);
-                                  }
-                                });
-
-                          // Group nested replies recursively by root top-level parent ID
-                          final replyById = {for (final r in allReplies) r.id: r};
-                          String getRootParentId(ForumReplyEntity r) {
-                            var current = r;
-                            final visited = <String>{current.id};
-                            while (current.parentReplyId != null &&
-                                current.parentReplyId!.isNotEmpty &&
-                                replyById.containsKey(current.parentReplyId)) {
-                              final parent = replyById[current.parentReplyId!]!;
-                              if (visited.contains(parent.id)) break;
-                              visited.add(parent.id);
-                              current = parent;
-                            }
-                            return current.id;
-                          }
-
-                          final nestedRepliesMap = <String, List<ForumReplyEntity>>{};
-                          for (final reply in allReplies) {
-                            if (reply.parentReplyId != null &&
-                                reply.parentReplyId!.isNotEmpty) {
-                              final rootId = getRootParentId(reply);
-                              nestedRepliesMap
-                                  .putIfAbsent(rootId, () => [])
-                                  .add(reply);
-                            }
-                          }
-                          for (final list in nestedRepliesMap.values) {
-                            list.sort(
-                              (a, b) => a.createdAt.compareTo(b.createdAt),
-                            );
-                          }
-
-                          final hasAiHintInEmpty = allReplies.any(
-                            (r) =>
-                                r.authorName.toLowerCase().contains(
-                                  'syllabot',
-                                ) ||
-                                r.content.contains('Syllabot') ||
-                                r.content.contains('🤖') ||
-                                r.content.contains('Socratic Hint'),
-                          );
-
-                          if (isInitialLoadingReplies.value &&
-                              topLevelReplies.isEmpty) {
-                            return SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 36,
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                colors.primary,
-                                              ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'Loading replies...',
-                                        style: typography.caption.medium
-                                            .copyWith(
-                                              color: colors.textSecondary,
-                                              fontSize: 12,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-
-                          if (topLevelReplies.isEmpty) {
-                            return SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 36,
-                                ),
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: colors.primary.withAlpha(
-                                          isDark ? 25 : 15,
-                                        ),
-                                      ),
-                                      child: Icon(
-                                        Icons.chat_bubble_outline_rounded,
-                                        size: 36,
-                                        color: colors.primary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      l10n.noRepliesYet,
-                                      style: typography.subhead.bold.copyWith(
-                                        color: colors.textPrimary,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Be the first to share an answer or solution.',
-                                      style: typography.caption.regular
-                                          .copyWith(
-                                            color: colors.textSecondary,
-                                          ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    if (!hasAiHintInEmpty) ...[
-                                      const SizedBox(height: 18),
-                                      ShrinkableButton(
-                                        onTap: isGeneratingAiHint.value
-                                            ? null
-                                            : generateSyllabotHint,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 18,
-                                            vertical: 11,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: colors.syllabotAccent,
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: AnimatedSwitcher(
-                                            duration: AppMotion.snappy,
-                                            switchInCurve:
-                                                AppMotion.easeOutCubic,
                                             child: Row(
-                                              key: ValueKey(
-                                                isGeneratingAiHint.value,
-                                              ),
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                if (isGeneratingAiHint.value)
-                                                  SizedBox(
-                                                    width: 15,
-                                                    height: 15,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      valueColor:
-                                                          AlwaysStoppedAnimation<
-                                                            Color
-                                                          >(colors.white),
-                                                    ),
-                                                  )
-                                                else
-                                                  Icon(
-                                                    Icons.auto_awesome_rounded,
-                                                    size: 16,
-                                                    color: colors.white,
-                                                  ),
-                                                const SizedBox(width: 8),
+                                                Icon(
+                                                  Icons
+                                                      .chat_bubble_outline_rounded,
+                                                  size: 15,
+                                                  color: colors.textSecondary,
+                                                ),
+                                                const SizedBox(width: 5),
                                                 Text(
-                                                  isGeneratingAiHint.value
-                                                      ? 'Consulting Syllabot...'
-                                                      : 'Ask Syllabot for Socratic Hint 🤖',
-                                                  style: typography
-                                                      .caption
-                                                      .bold
+                                                  '${localReplies.value.length}',
+                                                  style: typography.caption.bold
                                                       .copyWith(
-                                                        color: colors.white,
-                                                        letterSpacing: 0.2,
+                                                        color: colors
+                                                            .textSecondary,
+                                                        fontSize: 12,
                                                       ),
                                                 ),
                                               ],
                                             ),
                                           ),
-                                        ),
+                                          const Spacer(),
+
+                                          // Bookmark Button
+                                          ShrinkableButton(
+                                            onTap: () =>
+                                                unawaited(toggleBookmark()),
+                                            child: Container(
+                                              width: 34,
+                                              height: 34,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: isBookmarked.value
+                                                    ? colors.primary.withAlpha(
+                                                        isDark ? 35 : 20,
+                                                      )
+                                                    : colors.transparent,
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Icon(
+                                                isBookmarked.value
+                                                    ? Icons.bookmark_rounded
+                                                    : Icons
+                                                          .bookmark_border_rounded,
+                                                size: 19,
+                                                color: isBookmarked.value
+                                                    ? colors.primary
+                                                    : colors.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+
+                                          // Generate Deck Button
+                                          ShrinkableButton(
+                                            onTap: () => unawaited(
+                                              ForumGenerateDeckSheet.show(
+                                                context,
+                                                post: currentPost.value,
+                                                replies: localReplies.value,
+                                              ),
+                                            ),
+                                            child: Container(
+                                              width: 34,
+                                              height: 34,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: colors.primary
+                                                    .withValues(alpha: 0.1),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Icon(
+                                                Icons.auto_awesome_rounded,
+                                                size: 17,
+                                                color: colors.primary,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+
+                                          // Share Button
+                                          ShrinkableButton(
+                                            onTap: shareThread,
+                                            child: Container(
+                                              width: 34,
+                                              height: 34,
+                                              decoration: const BoxDecoration(
+                                                shape: BoxShape.circle,
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Icon(
+                                                Icons.share_outlined,
+                                                size: 19,
+                                                color: colors.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          }
-
-                          return SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final reply = topLevelReplies[index];
-                                final children =
-                                    nestedRepliesMap[reply.id] ?? const [];
-                                final hasVerifiedSolution = allReplies.any(
-                                  (r) => r.isVerifiedSolution,
-                                );
-                                final userStorage =
-                                    locator<UserStorageService>();
-                                final currentUserId = userStorage.getUserId();
-                                final isAuthor =
-                                    currentUserId == null ||
-                                    currentUserId == currentPost.value.authorId;
-
-                                return Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    0,
-                                    16,
-                                    12,
-                                  ),
-                                  child: _DiscussionThreadGroupCard(
-                                    parentReply: reply,
-                                    children: children,
-                                    highlightReplyId: highlightReplyId,
-                                    opAuthorName: currentPost.value.authorName,
-                                    isQuestion: currentPost.value.isQuestion,
-                                    isAuthor: isAuthor,
-                                    hasVerifiedSolution: hasVerifiedSolution,
-                                    isExpanded: expandedParentReplyIds.value
-                                        .contains(reply.id),
-                                    isLoadingChildren: loadingParentReplyIds
-                                        .value
-                                        .contains(reply.id),
-                                    hasMoreChildren:
-                                        hasMoreSubRepliesMap.value[reply.id] ??
-                                        false,
-                                    onToggleExpand: () =>
-                                        toggleSubRepliesExpansion(reply.id),
-                                    onLoadMoreChildren: () =>
-                                        loadSubRepliesForParent(
-                                          reply.id,
-                                          isLoadMore: true,
-                                        ),
-                                    onVote: (direction) =>
-                                        voteReply(reply, direction),
-                                    onChildVote: voteReply,
-                                    onReplyTap: () {
-                                      replyingToReply.value = reply;
-                                      focusNode.requestFocus();
-                                    },
-                                    onChildReplyTap: (target) {
-                                      replyingToReply.value = target;
-                                      focusNode.requestFocus();
-                                    },
-                                    onSaveFlashcard: (target) => unawaited(saveSolutionToFlashcard(target)),
-                                    onEditReply: () => unawaited(showEditReplySheet(context, reply)),
-                                    onDeleteReply: () => unawaited(confirmDeleteReply(context, reply)),
-                                    onEditChildReply: (child) => unawaited(showEditReplySheet(context, child)),
-                                    onDeleteChildReply: (child) => unawaited(confirmDeleteReply(context, child)),
-                                    onTranscriptUpdated: (targetReplyId, newTranscript) {
-                                      localReplies.value = localReplies.value.map((r) {
-                                        if (r.id == targetReplyId) {
-                                          return r.copyWith(voiceNoteTranscript: newTranscript);
-                                        }
-                                        return r;
-                                      }).toList();
-                                    },
-                                    onVerifySolution: () async {
-                                      final res = await repo.verifyForumReply(
-                                        postId: currentPost.value.id,
-                                        replyId: reply.id,
-                                      );
-                                      res.fold(
-                                        (failure) {
-                                          if (context.mounted) {
-                                            context.showSnackBar(
-                                              message:
-                                                  failure.message ??
-                                                  'Failed to verify solution',
-                                              type: SnackBarType.error,
-                                            );
-                                          }
-                                        },
-                                        (_) {
-                                          unawaited(HapticFeedback.heavyImpact());
-                                          currentPost.value = currentPost.value
-                                              .copyWith(isVerifiedSolution: true);
-                                          if (locator.isRegistered<CommunityHubBloc>()) {
-                                            locator<CommunityHubBloc>().add(
-                                              VerifyForumReplyEvent(
-                                                postId: currentPost.value.id,
-                                                replyId: reply.id,
-                                              ),
-                                            );
-                                          }
-                                          localReplies.value = localReplies
-                                              .value
-                                              .map(
-                                                (r) => r.id == reply.id
-                                                    ? r.copyWith(
-                                                        isVerifiedSolution:
-                                                            true,
-                                                      )
-                                                    : r,
-                                              )
-                                              .toList();
-                                          if (context.mounted) {
-                                            context.showSnackBar(
-                                              message:
-                                                  'Marked as verified solution! ${currentPost.value.karmaBounty > 0 ? currentPost.value.karmaBounty : 100} XP Karma bounty awarded to ${reply.authorName}! 🏆',
-                                              type: SnackBarType.success,
-                                            );
-                                          }
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ).animate(delay: (index.clamp(0, 5) * 80).ms).fadeIn(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOutCubic);
-                              },
-                              childCount: topLevelReplies.length,
+                              ],
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        ),
 
-                      // Top-Level Pagination trigger
-                      if (hasMoreTopLevel.value) ...[
+                        // Discussion River Section Header (Replies + Count + Sort Filter Pill)
                         SliverToBoxAdapter(
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                            child: Center(
-                              child: ShrinkableButton(
-                                onTap: isLoadingMoreTopLevel.value
-                                    ? null
-                                    : () => fetchTopLevelReplies(
-                                        isLoadMore: true,
-                                      ),
-                                child: Container(
+                            padding: const EdgeInsets.fromLTRB(16, 22, 16, 10),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Replies',
+                                  style: typography.title3.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 17,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                    vertical: 10,
+                                    horizontal: 8,
+                                    vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
                                     color: isDark
                                         ? colors.surfaceSecondary
-                                        : colors.surfacePrimary,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? colors.surfaceBorder.withAlpha(40)
-                                          : colors.surfaceBorder,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.black.withAlpha(
-                                          isDark ? 20 : 6,
-                                        ),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
+                                        : colors.surfaceTertiary,
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (isLoadingMoreTopLevel.value) ...[
+                                  child: Text(
+                                    '${localReplies.value.length}',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+
+                                PopupMenuButton<ForumSortFilter>(
+                                  initialValue: sortFilter.value,
+                                  tooltip: l10n.tooltipSortReplies,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    side: BorderSide(
+                                      color: colors.surfaceBorder.withAlpha(
+                                        isDark ? 60 : 30,
+                                      ),
+                                    ),
+                                  ),
+                                  color: isDark
+                                      ? colors.surfaceSecondary
+                                      : colors.surfacePrimary,
+                                  onSelected: (filter) {
+                                    unawaited(HapticFeedback.selectionClick());
+                                    sortFilter.value = filter;
+                                  },
+                                  itemBuilder: (context) =>
+                                      ForumSortFilter.values.map((f) {
+                                        final isSelected =
+                                            f == sortFilter.value;
+                                        return PopupMenuItem<ForumSortFilter>(
+                                          value: f,
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                f.icon,
+                                                size: 16,
+                                                color: isSelected
+                                                    ? colors.primary
+                                                    : colors.textSecondary,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                f.label,
+                                                style: typography
+                                                    .footnote
+                                                    .medium
+                                                    .copyWith(
+                                                      color: isSelected
+                                                          ? colors.primary
+                                                          : colors.textPrimary,
+                                                      fontWeight: isSelected
+                                                          ? FontWeight.bold
+                                                          : FontWeight.normal,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? colors.surfaceSecondary.withAlpha(
+                                              160,
+                                            )
+                                          : colors.surfaceSecondary.withAlpha(
+                                              110,
+                                            ),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          sortFilter.value.icon,
+                                          size: 14,
+                                          color: colors.primary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          sortFilter.value.label,
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.textPrimary,
+                                                fontSize: 11.5,
+                                              ),
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Icon(
+                                          Icons.expand_more_rounded,
+                                          size: 15,
+                                          color: colors.textSecondary,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Replies List
+                        Builder(
+                          builder: (context) {
+                            final allReplies = localReplies.value;
+
+                            // Filter & sort top-level replies
+                            final topLevelReplies =
+                                (allReplies
+                                      .where(
+                                        (r) =>
+                                            r.parentReplyId == null ||
+                                            r.parentReplyId!.isEmpty,
+                                      )
+                                      .toList())
+                                  ..sort((a, b) {
+                                    if (a.isVerifiedSolution !=
+                                        b.isVerifiedSolution) {
+                                      return a.isVerifiedSolution ? -1 : 1;
+                                    }
+
+                                    switch (sortFilter.value) {
+                                      case ForumSortFilter.mostRecent:
+                                        return b.createdAt.compareTo(
+                                          a.createdAt,
+                                        );
+                                      case ForumSortFilter.topVoted:
+                                        final voteComp = b.netVotes.compareTo(
+                                          a.netVotes,
+                                        );
+                                        if (voteComp != 0) return voteComp;
+                                        return b.createdAt.compareTo(
+                                          a.createdAt,
+                                        );
+                                      case ForumSortFilter.aiFirst:
+                                        final aIsAi =
+                                            a.authorName.toLowerCase().contains(
+                                              'syllabot',
+                                            ) ||
+                                            a.content.contains('🤖');
+                                        final bIsAi =
+                                            b.authorName.toLowerCase().contains(
+                                              'syllabot',
+                                            ) ||
+                                            b.content.contains('🤖');
+                                        if (aIsAi != bIsAi) {
+                                          return aIsAi ? -1 : 1;
+                                        }
+                                        return b.netVotes.compareTo(a.netVotes);
+                                      case ForumSortFilter.unanswered:
+                                        final aHasChildren = allReplies.any(
+                                          (r) => r.parentReplyId == a.id,
+                                        );
+                                        final bHasChildren = allReplies.any(
+                                          (r) => r.parentReplyId == b.id,
+                                        );
+                                        if (aHasChildren != bHasChildren) {
+                                          return aHasChildren ? 1 : -1;
+                                        }
+                                        return b.createdAt.compareTo(
+                                          a.createdAt,
+                                        );
+                                    }
+                                  });
+
+                            // Group nested replies recursively by root top-level parent ID
+                            final replyById = {
+                              for (final r in allReplies) r.id: r,
+                            };
+                            String getRootParentId(ForumReplyEntity r) {
+                              var current = r;
+                              final visited = <String>{current.id};
+                              while (current.parentReplyId != null &&
+                                  current.parentReplyId!.isNotEmpty &&
+                                  replyById.containsKey(
+                                    current.parentReplyId,
+                                  )) {
+                                final parent =
+                                    replyById[current.parentReplyId!]!;
+                                if (visited.contains(parent.id)) break;
+                                visited.add(parent.id);
+                                current = parent;
+                              }
+                              return current.id;
+                            }
+
+                            final nestedRepliesMap =
+                                <String, List<ForumReplyEntity>>{};
+                            for (final reply in allReplies) {
+                              if (reply.parentReplyId != null &&
+                                  reply.parentReplyId!.isNotEmpty) {
+                                final rootId = getRootParentId(reply);
+                                nestedRepliesMap
+                                    .putIfAbsent(rootId, () => [])
+                                    .add(reply);
+                              }
+                            }
+                            for (final list in nestedRepliesMap.values) {
+                              list.sort(
+                                (a, b) => a.createdAt.compareTo(b.createdAt),
+                              );
+                            }
+
+                            final hasAiHintInEmpty = allReplies.any(
+                              (r) =>
+                                  r.authorName.toLowerCase().contains(
+                                    'syllabot',
+                                  ) ||
+                                  r.content.contains('Syllabot') ||
+                                  r.content.contains('🤖') ||
+                                  r.content.contains('Socratic Hint'),
+                            );
+
+                            if (isInitialLoadingReplies.value &&
+                                topLevelReplies.isEmpty) {
+                              return SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 36,
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
                                         SizedBox(
-                                          width: 14,
-                                          height: 14,
+                                          width: 24,
+                                          height: 24,
                                           child: CircularProgressIndicator(
-                                            strokeWidth: 2,
+                                            strokeWidth: 2.2,
                                             valueColor:
                                                 AlwaysStoppedAnimation<Color>(
                                                   colors.primary,
                                                 ),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
+                                        const SizedBox(height: 12),
                                         Text(
-                                          'Loading more discussions...',
-                                          style: typography.footnote.bold
+                                          'Loading replies...',
+                                          style: typography.caption.medium
                                               .copyWith(
-                                                color: colors.primary,
+                                                color: colors.textSecondary,
+                                                fontSize: 12,
                                               ),
                                         ),
-                                      ] else ...[
-                                        Icon(
-                                          Icons.expand_circle_down_outlined,
-                                          size: 16,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            if (topLevelReplies.isEmpty) {
+                              return SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 36,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: colors.primary.withAlpha(
+                                            isDark ? 25 : 15,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.chat_bubble_outline_rounded,
+                                          size: 36,
                                           color: colors.primary,
                                         ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Load more discussions',
-                                          style: typography.footnote.bold
-                                              .copyWith(
-                                                color: colors.primary,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        l10n.noRepliesYet,
+                                        style: typography.subhead.bold.copyWith(
+                                          color: colors.textPrimary,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Be the first to share an answer or solution.',
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                            ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      if (!hasAiHintInEmpty) ...[
+                                        const SizedBox(height: 18),
+                                        ShrinkableButton(
+                                          onTap: isGeneratingAiHint.value
+                                              ? null
+                                              : generateSyllabotHint,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 18,
+                                              vertical: 11,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: colors.syllabotAccent,
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    12,
+                                                  ),
+                                            ),
+                                            child: AnimatedSwitcher(
+                                              duration: AppMotion.snappy,
+                                              switchInCurve:
+                                                  AppMotion.easeOutCubic,
+                                              child: Row(
+                                                key: ValueKey(
+                                                  isGeneratingAiHint.value,
+                                                ),
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  if (isGeneratingAiHint.value)
+                                                    SizedBox(
+                                                      width: 15,
+                                                      height: 15,
+                                                      child: CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        valueColor:
+                                                            AlwaysStoppedAnimation<
+                                                              Color
+                                                            >(colors.white),
+                                                      ),
+                                                    )
+                                                  else
+                                                    Icon(
+                                                      Icons
+                                                          .auto_awesome_rounded,
+                                                      size: 16,
+                                                      color: colors.white,
+                                                    ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    isGeneratingAiHint.value
+                                                        ? 'Consulting Syllabot...'
+                                                        : 'Ask Syllabot for Socratic Hint 🤖',
+                                                    style: typography
+                                                        .caption
+                                                        .bold
+                                                        .copyWith(
+                                                          color: colors.white,
+                                                          letterSpacing: 0.2,
+                                                        ),
+                                                  ),
+                                                ],
                                               ),
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ],
                                   ),
                                 ),
+                              );
+                            }
+
+                            return SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  final reply = topLevelReplies[index];
+                                  final children =
+                                      nestedRepliesMap[reply.id] ?? const [];
+                                  final hasVerifiedSolution = allReplies.any(
+                                    (r) => r.isVerifiedSolution,
+                                  );
+                                  final userStorage =
+                                      locator<UserStorageService>();
+                                  final currentUserId = userStorage.getUserId();
+                                  final isAuthor =
+                                      currentUserId == null ||
+                                      currentUserId ==
+                                          currentPost.value.authorId;
+
+                                  return Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          16,
+                                          0,
+                                          16,
+                                          12,
+                                        ),
+                                        child: _DiscussionThreadGroupCard(
+                                          parentReply: reply,
+                                          children: children,
+                                          highlightReplyId: highlightReplyId,
+                                          opAuthorName:
+                                              currentPost.value.authorName,
+                                          isQuestion:
+                                              currentPost.value.isQuestion,
+                                          isAuthor: isAuthor,
+                                          hasVerifiedSolution:
+                                              hasVerifiedSolution,
+                                          isExpanded: expandedParentReplyIds
+                                              .value
+                                              .contains(reply.id),
+                                          isLoadingChildren:
+                                              loadingParentReplyIds.value
+                                                  .contains(reply.id),
+                                          hasMoreChildren:
+                                              hasMoreSubRepliesMap.value[reply
+                                                  .id] ??
+                                              false,
+                                          onToggleExpand: () =>
+                                              toggleSubRepliesExpansion(
+                                                reply.id,
+                                              ),
+                                          onLoadMoreChildren: () =>
+                                              loadSubRepliesForParent(
+                                                reply.id,
+                                                isLoadMore: true,
+                                              ),
+                                          onVote: (direction) =>
+                                              voteReply(reply, direction),
+                                          onChildVote: voteReply,
+                                          onReplyTap: () {
+                                            replyingToReply.value = reply;
+                                            focusNode.requestFocus();
+                                          },
+                                          onChildReplyTap: (target) {
+                                            replyingToReply.value = target;
+                                            focusNode.requestFocus();
+                                          },
+                                          onSaveFlashcard: (target) =>
+                                              unawaited(
+                                                saveSolutionToFlashcard(target),
+                                              ),
+                                          onEditReply: () => unawaited(
+                                            showEditReplySheet(context, reply),
+                                          ),
+                                          onDeleteReply: () => unawaited(
+                                            confirmDeleteReply(context, reply),
+                                          ),
+                                          onEditChildReply: (child) =>
+                                              unawaited(
+                                                showEditReplySheet(
+                                                  context,
+                                                  child,
+                                                ),
+                                              ),
+                                          onDeleteChildReply: (child) =>
+                                              unawaited(
+                                                confirmDeleteReply(
+                                                  context,
+                                                  child,
+                                                ),
+                                              ),
+                                          onTranscriptUpdated:
+                                              (targetReplyId, newTranscript) {
+                                                localReplies.value =
+                                                    localReplies.value.map((r) {
+                                                      if (r.id ==
+                                                          targetReplyId) {
+                                                        return r.copyWith(
+                                                          voiceNoteTranscript:
+                                                              newTranscript,
+                                                        );
+                                                      }
+                                                      return r;
+                                                    }).toList();
+                                              },
+                                          onVerifySolution: () async {
+                                            final res = await repo
+                                                .verifyForumReply(
+                                                  postId: currentPost.value.id,
+                                                  replyId: reply.id,
+                                                );
+                                            res.fold(
+                                              (failure) {
+                                                if (context.mounted) {
+                                                  context.showSnackBar(
+                                                    message:
+                                                        failure.message ??
+                                                        'Failed to verify solution',
+                                                    type: SnackBarType.error,
+                                                  );
+                                                }
+                                              },
+                                              (_) {
+                                                unawaited(
+                                                  HapticFeedback.heavyImpact(),
+                                                );
+                                                currentPost.value = currentPost
+                                                    .value
+                                                    .copyWith(
+                                                      isVerifiedSolution: true,
+                                                    );
+                                                if (locator
+                                                    .isRegistered<
+                                                      CommunityHubBloc
+                                                    >()) {
+                                                  locator<CommunityHubBloc>()
+                                                      .add(
+                                                        VerifyForumReplyEvent(
+                                                          postId: currentPost
+                                                              .value
+                                                              .id,
+                                                          replyId: reply.id,
+                                                        ),
+                                                      );
+                                                }
+                                                localReplies
+                                                    .value = localReplies.value
+                                                    .map(
+                                                      (r) => r.id == reply.id
+                                                          ? r.copyWith(
+                                                              isVerifiedSolution:
+                                                                  true,
+                                                            )
+                                                          : r,
+                                                    )
+                                                    .toList();
+                                                if (context.mounted) {
+                                                  context.showSnackBar(
+                                                    message:
+                                                        'Marked as verified solution! ${currentPost.value.karmaBounty > 0 ? currentPost.value.karmaBounty : 100} XP Karma bounty awarded to ${reply.authorName}! 🏆',
+                                                    type: SnackBarType.success,
+                                                  );
+                                                }
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      )
+                                      .animate(
+                                        delay: (index.clamp(0, 5) * 80).ms,
+                                      )
+                                      .fadeIn(
+                                        duration: 300.ms,
+                                        curve: Curves.easeOutCubic,
+                                      )
+                                      .slideY(
+                                        begin: 0.05,
+                                        end: 0,
+                                        duration: 300.ms,
+                                        curve: Curves.easeOutCubic,
+                                      );
+                                },
+                                childCount: topLevelReplies.length,
+                              ),
+                            );
+                          },
+                        ),
+
+                        // Top-Level Pagination trigger
+                        if (hasMoreTopLevel.value) ...[
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                              child: Center(
+                                child: ShrinkableButton(
+                                  onTap: isLoadingMoreTopLevel.value
+                                      ? null
+                                      : () => fetchTopLevelReplies(
+                                          isLoadMore: true,
+                                        ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? colors.surfaceSecondary
+                                          : colors.surfacePrimary,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: isDark
+                                            ? colors.surfaceBorder.withAlpha(40)
+                                            : colors.surfaceBorder,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.black.withAlpha(
+                                            isDark ? 20 : 6,
+                                          ),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (isLoadingMoreTopLevel.value) ...[
+                                          SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    colors.primary,
+                                                  ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Loading more discussions...',
+                                            style: typography.footnote.bold
+                                                .copyWith(
+                                                  color: colors.primary,
+                                                ),
+                                          ),
+                                        ] else ...[
+                                          Icon(
+                                            Icons.expand_circle_down_outlined,
+                                            size: 16,
+                                            color: colors.primary,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Load more discussions',
+                                            style: typography.footnote.bold
+                                                .copyWith(
+                                                  color: colors.primary,
+                                                ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
 
-                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                    ],
+                        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                      ],
+                    ),
                   ),
                 ),
-              ),
               ),
             ),
 
@@ -2844,9 +3072,9 @@ class ForumThreadDetailPage extends HookWidget {
                               transcriptText: replyVoiceTranscript.value,
                               amplitudeStream:
                                   locator.isRegistered<AudioRecordingService>()
-                                      ? locator<AudioRecordingService>()
-                                          .amplitudeStream
-                                      : null,
+                                  ? locator<AudioRecordingService>()
+                                        .amplitudeStream
+                                  : null,
                               onCancel: () {
                                 unawaited(replyRecorderController.cancel());
                               },
@@ -2871,10 +3099,10 @@ class ForumThreadDetailPage extends HookWidget {
                                   : null,
                               transcript:
                                   replyVoiceTranscript.value.trim().isNotEmpty
-                                      ? replyVoiceTranscript.value.trim()
-                                      : (replyController.text.trim().isNotEmpty
-                                          ? replyController.text.trim()
-                                          : null),
+                                  ? replyVoiceTranscript.value.trim()
+                                  : (replyController.text.trim().isNotEmpty
+                                        ? replyController.text.trim()
+                                        : null),
                               compact: true,
                               showTranscript: false,
                               onDelete: () {
@@ -2993,28 +3221,33 @@ class ForumThreadDetailPage extends HookWidget {
                                 compact: true,
                                 controller: replyController,
                                 recorderController: replyRecorderController,
-                                onRecordingStateChanged: ({
-                                  required isRecording,
-                                  required isLocked,
-                                  required durationSeconds,
-                                  required transcript,
-                                }) {
-                                  isRecordingReplyVoice.value = isRecording;
-                                  isReplyVoiceLocked.value = isLocked;
-                                  replyVoiceNoteDuration.value = durationSeconds;
-                                  replyVoiceTranscript.value = transcript;
-                                },
-                                onRecordingComplete: ({
-                                  required audioUrl,
-                                  required durationSeconds,
-                                  required transcript,
-                                }) {
-                                  replyVoiceNoteUrl.value = audioUrl;
-                                  replyVoiceNoteDuration.value = durationSeconds;
-                                  if (transcript.trim().isNotEmpty) {
-                                    replyVoiceTranscript.value = transcript.trim();
-                                  }
-                                },
+                                onRecordingStateChanged:
+                                    ({
+                                      required isRecording,
+                                      required isLocked,
+                                      required durationSeconds,
+                                      required transcript,
+                                    }) {
+                                      isRecordingReplyVoice.value = isRecording;
+                                      isReplyVoiceLocked.value = isLocked;
+                                      replyVoiceNoteDuration.value =
+                                          durationSeconds;
+                                      replyVoiceTranscript.value = transcript;
+                                    },
+                                onRecordingComplete:
+                                    ({
+                                      required audioUrl,
+                                      required durationSeconds,
+                                      required transcript,
+                                    }) {
+                                      replyVoiceNoteUrl.value = audioUrl;
+                                      replyVoiceNoteDuration.value =
+                                          durationSeconds;
+                                      if (transcript.trim().isNotEmpty) {
+                                        replyVoiceTranscript.value = transcript
+                                            .trim();
+                                      }
+                                    },
                                 onCancel: () {
                                   replyVoiceNoteUrl.value = null;
                                   replyVoiceNoteDuration.value = 0;
@@ -3087,8 +3320,9 @@ class ForumThreadDetailPage extends HookWidget {
                                     boxShadow: isRecordingReplyVoice.value
                                         ? [
                                             BoxShadow(
-                                              color: colors.error
-                                                  .withAlpha(isDark ? 80 : 50),
+                                              color: colors.error.withAlpha(
+                                                isDark ? 80 : 50,
+                                              ),
                                               blurRadius: 8,
                                               spreadRadius: 1,
                                             ),
@@ -3106,28 +3340,32 @@ class ForumThreadDetailPage extends HookWidget {
                                       hintText: isRecordingReplyVoice.value
                                           ? 'Transcribing speech live…'
                                           : isAnonymousReply.value
-                                              ? (replyingToReply.value != null
-                                                  ? 'Reply anonymously to @${replyingToReply.value!.authorName}…'
-                                                  : 'Reply anonymously as Anonymous Scholar…')
-                                              : replyingToReply.value != null
-                                                  ? 'Reply to @${replyingToReply.value!.authorName}…'
-                                                  : 'Add a reply…',
-                                      hintStyle: typography.body.regular.copyWith(
-                                        color: isRecordingReplyVoice.value
-                                            ? colors.error.withAlpha(180)
-                                            : colors.textSecondary,
-                                        fontSize: 14,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                                          ? (replyingToReply.value != null
+                                                ? 'Reply anonymously to @${replyingToReply.value!.authorName}…'
+                                                : 'Reply anonymously as Anonymous Scholar…')
+                                          : replyingToReply.value != null
+                                          ? 'Reply to @${replyingToReply.value!.authorName}…'
+                                          : 'Add a reply…',
+                                      hintStyle: typography.body.regular
+                                          .copyWith(
+                                            color: isRecordingReplyVoice.value
+                                                ? colors.error.withAlpha(180)
+                                                : colors.textSecondary,
+                                            fontSize: 14,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                       filled: true,
                                       fillColor: isRecordingReplyVoice.value
-                                          ? colors.error
-                                              .withAlpha(isDark ? 30 : 16)
+                                          ? colors.error.withAlpha(
+                                              isDark ? 30 : 16,
+                                            )
                                           : isDark
-                                              ? colors.surfaceSecondary
-                                                  .withAlpha(160)
-                                              : colors.surfaceSecondary
-                                                  .withAlpha(130),
+                                          ? colors.surfaceSecondary.withAlpha(
+                                              160,
+                                            )
+                                          : colors.surfaceSecondary.withAlpha(
+                                              130,
+                                            ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(22),
                                         borderSide: BorderSide(
@@ -3163,10 +3401,11 @@ class ForumThreadDetailPage extends HookWidget {
                                           width: 1.8,
                                         ),
                                       ),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 10,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 10,
+                                          ),
                                     ),
                                   ),
                                 ),
@@ -3197,8 +3436,10 @@ class ForumThreadDetailPage extends HookWidget {
 
                                           // Content safety & anti-abuse moderation check for replies
                                           if (text.isNotEmpty) {
-                                            const moderation = ContentModerationService();
-                                            final modResult = moderation.validateReply(content: text);
+                                            const moderation =
+                                                ContentModerationService();
+                                            final modResult = moderation
+                                                .validateReply(content: text);
                                             if (!modResult.isValid) {
                                               unawaited(
                                                 ModerationFeedbackDialog.show(
@@ -3212,7 +3453,9 @@ class ForumThreadDetailPage extends HookWidget {
                                           }
 
                                           final sanitizedText =
-                                              ContentModerationService.sanitizeText(text);
+                                              ContentModerationService.sanitizeText(
+                                                text,
+                                              );
 
                                           final targetParentId =
                                               replyingToReply.value?.id;
@@ -3220,18 +3463,33 @@ class ForumThreadDetailPage extends HookWidget {
 
                                           var finalReplyImages = <String>[];
                                           if (replyImages.value.isNotEmpty &&
-                                              locator.isRegistered<MediaUploadService>()) {
-                                            final uploadService = locator<MediaUploadService>();
-                                            for (final imgPath in replyImages.value) {
-                                              if (imgPath.startsWith('http://') ||
-                                                  imgPath.startsWith('https://')) {
+                                              locator
+                                                  .isRegistered<
+                                                    MediaUploadService
+                                                  >()) {
+                                            final uploadService =
+                                                locator<MediaUploadService>();
+                                            for (final imgPath
+                                                in replyImages.value) {
+                                              if (imgPath.startsWith(
+                                                    'http://',
+                                                  ) ||
+                                                  imgPath.startsWith(
+                                                    'https://',
+                                                  )) {
                                                 finalReplyImages.add(imgPath);
-                                              } else if (File(imgPath).existsSync()) {
+                                              } else if (File(
+                                                imgPath,
+                                              ).existsSync()) {
                                                 try {
-                                                  final r2Url = await uploadService.uploadMedia(
-                                                    file: File(imgPath),
-                                                    mediaType: ForumMediaType.image,
-                                                  );
+                                                  final r2Url =
+                                                      await uploadService
+                                                          .uploadMedia(
+                                                            file: File(imgPath),
+                                                            mediaType:
+                                                                ForumMediaType
+                                                                    .image,
+                                                          );
                                                   finalReplyImages.add(r2Url);
                                                 } on Object catch (_) {
                                                   finalReplyImages.add(imgPath);
@@ -3239,21 +3497,35 @@ class ForumThreadDetailPage extends HookWidget {
                                               }
                                             }
                                           } else {
-                                            finalReplyImages = replyImages.value;
+                                            finalReplyImages =
+                                                replyImages.value;
                                           }
 
-                                          var finalReplyVoiceNoteUrl = replyVoiceNoteUrl.value;
+                                          var finalReplyVoiceNoteUrl =
+                                              replyVoiceNoteUrl.value;
                                           if (finalReplyVoiceNoteUrl != null &&
-                                              !finalReplyVoiceNoteUrl.startsWith('http://') &&
-                                              !finalReplyVoiceNoteUrl.startsWith('https://') &&
-                                              locator.isRegistered<MediaUploadService>()) {
-                                            final uploadService = locator<MediaUploadService>();
-                                            if (File(finalReplyVoiceNoteUrl).existsSync()) {
+                                              !finalReplyVoiceNoteUrl
+                                                  .startsWith('http://') &&
+                                              !finalReplyVoiceNoteUrl
+                                                  .startsWith('https://') &&
+                                              locator
+                                                  .isRegistered<
+                                                    MediaUploadService
+                                                  >()) {
+                                            final uploadService =
+                                                locator<MediaUploadService>();
+                                            if (File(
+                                              finalReplyVoiceNoteUrl,
+                                            ).existsSync()) {
                                               try {
-                                                final r2Url = await uploadService.uploadMedia(
-                                                  file: File(finalReplyVoiceNoteUrl),
-                                                  mediaType: ForumMediaType.voice,
-                                                );
+                                                final r2Url = await uploadService
+                                                    .uploadMedia(
+                                                      file: File(
+                                                        finalReplyVoiceNoteUrl,
+                                                      ),
+                                                      mediaType:
+                                                          ForumMediaType.voice,
+                                                    );
                                                 finalReplyVoiceNoteUrl = r2Url;
                                               } on Object catch (_) {}
                                             }
@@ -3262,12 +3534,14 @@ class ForumThreadDetailPage extends HookWidget {
                                           final res = await repo
                                               .replyToForumPost(
                                                 postId: currentPost.value.id,
-                                                content: sanitizedText.isNotEmpty
+                                                content:
+                                                    sanitizedText.isNotEmpty
                                                     ? sanitizedText
                                                     : 'Shared media attachment',
                                                 parentReplyId: targetParentId,
                                                 mediaUrls: finalReplyImages,
-                                                voiceNoteUrl: finalReplyVoiceNoteUrl,
+                                                voiceNoteUrl:
+                                                    finalReplyVoiceNoteUrl,
                                                 voiceNoteDurationSeconds:
                                                     replyVoiceNoteDuration
                                                             .value >
@@ -3276,14 +3550,12 @@ class ForumThreadDetailPage extends HookWidget {
                                                           .value
                                                     : null,
                                                 voiceNoteTranscript:
-                                                    replyVoiceTranscript
-                                                            .value
-                                                            .trim()
-                                                            .isNotEmpty
-                                                        ? replyVoiceTranscript
-                                                            .value
-                                                            .trim()
-                                                        : null,
+                                                    replyVoiceTranscript.value
+                                                        .trim()
+                                                        .isNotEmpty
+                                                    ? replyVoiceTranscript.value
+                                                          .trim()
+                                                    : null,
                                                 isAnonymous:
                                                     isAnonymousReply.value,
                                               );
@@ -3319,16 +3591,21 @@ class ForumThreadDetailPage extends HookWidget {
                                               // The edge function calls Groq Whisper on the R2 audio URL and patches
                                               // voice_note_transcript in the DB — transcripts are viewer-only, never
                                               // shown to the person who recorded the voice note.
-                                              final vnUrl = createdReply.voiceNoteUrl;
+                                              final vnUrl =
+                                                  createdReply.voiceNoteUrl;
                                               if (vnUrl != null &&
                                                   vnUrl.trim().isNotEmpty &&
-                                                  locator.isRegistered<MediaUploadService>()) {
+                                                  locator
+                                                      .isRegistered<
+                                                        MediaUploadService
+                                                      >()) {
                                                 unawaited(
                                                   locator<MediaUploadService>()
                                                       .triggerVoiceNoteTranscription(
-                                                    audioUrl: vnUrl,
-                                                    replyId: createdReply.id,
-                                                  ),
+                                                        audioUrl: vnUrl,
+                                                        replyId:
+                                                            createdReply.id,
+                                                      ),
                                                 );
                                               }
                                               if (targetParentId != null) {
@@ -3434,77 +3711,93 @@ class ForumThreadDetailPage extends HookWidget {
     ];
 
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        backgroundColor: isDark
-            ? colors.surfaceSecondary
-            : colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (ctx) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Insert LaTeX Formula',
-                  style: typography.headline.bold.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: snippets.map((s) {
-                    return ShrinkableButton(
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        onInsert(s['snippet']!);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+        maxWidth: 480,
+        builder: (ctx) {
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
+          return SafeArea(
+            child: Container(
+              decoration: isDesktop
+                  ? BoxDecoration(
+                      color: isDark
+                          ? colors.surfaceSecondary
+                          : colors.surfacePrimary,
+                      borderRadius: BorderRadius.circular(AppRadius.dialog),
+                      border: Border.all(
+                        color: colors.surfaceBorder.withValues(alpha: 0.5),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 28,
+                          offset: const Offset(0, 14),
                         ),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(isDark ? 30 : 15),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(50),
+                      ],
+                    )
+                  : null,
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Insert LaTeX Formula',
+                    style: typography.headline.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: snippets.map((s) {
+                      return ShrinkableButton(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onInsert(s['snippet']!);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(isDark ? 30 : 15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(50),
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                s['label']!,
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                s['snippet']!,
+                                style: typography.caption.regular.copyWith(
+                                  color: colors.textSecondary,
+                                  fontFamily: 'monospace',
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              s['label']!,
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              s['snippet']!,
-                              style: typography.caption.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontFamily: 'monospace',
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -3541,68 +3834,85 @@ class ForumThreadDetailPage extends HookWidget {
     ];
 
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        backgroundColor: isDark
-            ? colors.surfaceSecondary
-            : colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (ctx) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Insert Math & Greek Symbol',
-                  style: typography.headline.bold.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 1.5,
-                  ),
-                  itemCount: symbols.length,
-                  itemBuilder: (ctx, idx) {
-                    final sym = symbols[idx];
-                    return ShrinkableButton(
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        onInsert(sym);
-                      },
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(isDark ? 25 : 12),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(40),
-                          ),
-                        ),
-                        child: Text(
-                          sym,
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
+        maxWidth: 480,
+        builder: (ctx) {
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
+          return SafeArea(
+            child: Container(
+              decoration: isDesktop
+                  ? BoxDecoration(
+                      color: isDark
+                          ? colors.surfaceSecondary
+                          : colors.surfacePrimary,
+                      borderRadius: BorderRadius.circular(AppRadius.dialog),
+                      border: Border.all(
+                        color: colors.surfaceBorder.withValues(alpha: 0.5),
                       ),
-                    );
-                  },
-                ),
-              ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 28,
+                          offset: const Offset(0, 14),
+                        ),
+                      ],
+                    )
+                  : null,
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Insert Math & Greek Symbol',
+                    style: typography.headline.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 5,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 1.5,
+                        ),
+                    itemCount: symbols.length,
+                    itemBuilder: (ctx, idx) {
+                      final sym = symbols[idx];
+                      return ShrinkableButton(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onInsert(sym);
+                        },
+                        child: Container(
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(isDark ? 25 : 12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(40),
+                            ),
+                          ),
+                          child: Text(
+                            sym,
+                            style: typography.title3.bold.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -3855,7 +4165,8 @@ class _DiscussionThreadGroupCard extends HookWidget {
   final void Function(int direction) onVote;
   final void Function(ForumReplyEntity child, int direction) onChildVote;
   final VoidCallback onReplyTap;
-  final void Function(String replyId, String newTranscript)? onTranscriptUpdated;
+  final void Function(String replyId, String newTranscript)?
+  onTranscriptUpdated;
   final void Function(ForumReplyEntity child) onChildReplyTap;
   final VoidCallback onVerifySolution;
   final void Function(ForumReplyEntity target)? onSaveFlashcard;
@@ -3980,8 +4291,9 @@ class _DiscussionThreadGroupCard extends HookWidget {
                             ? colors.surfaceSecondary
                             : colors.surfaceBorder.withAlpha(40),
                         border: Border.all(
-                          color: colors.textSecondary
-                              .withAlpha(isDark ? 60 : 35),
+                          color: colors.textSecondary.withAlpha(
+                            isDark ? 60 : 35,
+                          ),
                           width: 0.8,
                         ),
                       ),
@@ -4016,8 +4328,8 @@ class _DiscussionThreadGroupCard extends HookWidget {
                                   color: isAiReply
                                       ? colors.syllabotAccent
                                       : (parentReply.isAnonymous
-                                          ? colors.textSecondary
-                                          : colors.textPrimary),
+                                            ? colors.textSecondary
+                                            : colors.textPrimary),
                                   fontSize: 13.5,
                                   fontStyle: parentReply.isAnonymous
                                       ? FontStyle.italic
@@ -4173,8 +4485,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
                   backgroundColor: isDark
                       ? colors.surfacePrimary
                       : colors.surfaceSecondary.withAlpha(120),
-                  borderColor:
-                      colors.surfaceBorder.withAlpha(isDark ? 30 : 20),
+                  borderColor: colors.surfaceBorder.withAlpha(isDark ? 30 : 20),
                   textStyle: typography.caption.bold.copyWith(
                     color: colors.primary,
                     fontSize: 13,
@@ -4684,28 +4995,45 @@ void _showForumReplyOptionsMenu(
           currentUserName.toLowerCase() == reply.authorName.toLowerCase());
 
   unawaited(
-    showModalBottomSheet<void>(
+    AppAdaptiveSheet.showActionMenu<void>(
       context: context,
-      backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      maxWidth: 420,
       builder: (sheetCtx) {
+        final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(sheetCtx);
         return SafeArea(
-          child: Padding(
+          child: Container(
+            decoration: isDesktop
+                ? BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
+                    borderRadius: BorderRadius.circular(AppRadius.dialog),
+                    border: Border.all(
+                      color: colors.surfaceBorder.withValues(alpha: 0.5),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 28,
+                        offset: const Offset(0, 14),
+                      ),
+                    ],
+                  )
+                : null,
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: colors.textSecondary.withAlpha(60),
-                    borderRadius: BorderRadius.circular(2),
+                if (!isDesktop)
+                  Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: colors.textSecondary.withAlpha(60),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
                 if (isReplyAuthor) ...[
                   ListTile(
                     leading: Icon(
@@ -4795,7 +5123,8 @@ class _Level2ChildReplyCard extends HookWidget {
   final bool isHighlighted;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
-  final void Function(String replyId, String newTranscript)? onTranscriptUpdated;
+  final void Function(String replyId, String newTranscript)?
+  onTranscriptUpdated;
 
   @override
   Widget build(BuildContext context) {
@@ -4957,8 +5286,9 @@ class _Level2ChildReplyCard extends HookWidget {
                                       ? colors.surfaceSecondary
                                       : colors.surfaceBorder.withAlpha(40),
                                   border: Border.all(
-                                    color: colors.textSecondary
-                                        .withAlpha(isDark ? 60 : 35),
+                                    color: colors.textSecondary.withAlpha(
+                                      isDark ? 60 : 35,
+                                    ),
                                     width: 0.8,
                                   ),
                                 ),
@@ -4987,8 +5317,8 @@ class _Level2ChildReplyCard extends HookWidget {
                                   color: isAiReply
                                       ? colors.syllabotAccent
                                       : (childReply.isAnonymous
-                                          ? colors.textSecondary
-                                          : colors.textPrimary),
+                                            ? colors.textSecondary
+                                            : colors.textPrimary),
                                   fontSize: 12.5,
                                   fontStyle: childReply.isAnonymous
                                       ? FontStyle.italic
@@ -5117,8 +5447,9 @@ class _Level2ChildReplyCard extends HookWidget {
                       backgroundColor: isDark
                           ? colors.surfacePrimary
                           : colors.surfaceSecondary.withAlpha(120),
-                      borderColor:
-                          colors.surfaceBorder.withAlpha(isDark ? 30 : 20),
+                      borderColor: colors.surfaceBorder.withAlpha(
+                        isDark ? 30 : 20,
+                      ),
                       textStyle: typography.caption.bold.copyWith(
                         color: colors.primary,
                         fontSize: 12,

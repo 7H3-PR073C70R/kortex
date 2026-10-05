@@ -17,6 +17,7 @@ import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class ExamCountdownBanner extends StatelessWidget {
@@ -861,43 +862,60 @@ void _showCbtReadinessBreakdownSheet(
 ) {
   final neural = context.neural;
   final typography = context.typography;
+  final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
   unawaited(
-    showModalBottomSheet<void>(
+    AppAdaptiveSheet.showSideDrawer<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
+      drawerWidth: 500,
       builder: (sheetContext) {
         return ClipRRect(
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.dialog),
-          ),
+          borderRadius: isDesktop
+              ? const BorderRadius.horizontal(left: Radius.circular(AppRadius.dialog))
+              : const BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.dialog),
+                ),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
+              height: isDesktop ? double.infinity : null,
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
               decoration: BoxDecoration(
                 color: neural.obsidian900.withAlpha(245),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.dialog),
-                ),
+                borderRadius: isDesktop
+                    ? const BorderRadius.horizontal(left: Radius.circular(AppRadius.dialog))
+                    : const BorderRadius.vertical(
+                        top: Radius.circular(AppRadius.dialog),
+                      ),
                 border: Border.all(
                   color: readiness.statusColor.withAlpha(90),
                 ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Handle
-                  Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: neural.slate400.withAlpha(120),
-                      borderRadius: BorderRadius.circular(AppRadius.micro),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isDesktop) ...[
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: IconButton(
+                          icon: Icon(Icons.close_rounded, color: neural.slate400),
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                        ),
+                      ),
+                    ],
+                    // Handle (mobile only)
+                    if (!isDesktop) ...[
+                      Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: neural.slate400.withAlpha(120),
+                          borderRadius: BorderRadius.circular(AppRadius.micro),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                   // Score Ring Header
                   Container(
@@ -1022,8 +1040,9 @@ void _showCbtReadinessBreakdownSheet(
               ),
             ),
           ),
-        );
-      },
+        ),
+      );
+    },
     ),
   );
 }

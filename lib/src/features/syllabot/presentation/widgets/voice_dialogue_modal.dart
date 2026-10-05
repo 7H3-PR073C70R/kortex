@@ -11,6 +11,7 @@ import 'package:kortex/src/features/syllabot/presentation/widgets/chat_bubble_wi
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -48,12 +49,8 @@ class VoiceDialogueModal extends StatefulWidget {
     Stream<String> Function(String prompt)? onStreamPrompt,
     SocraticMode initialMode = SocraticMode.stepByStep,
   }) {
-    final colors = context.colors;
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: colors.transparent,
       builder: (context) => VoiceDialogueModal(
         onSendPrompt: onSendPrompt,
         onStreamPrompt: onStreamPrompt,
@@ -447,16 +444,34 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                 ? colors.warning
                 : colors.primary;
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
+        constraints: BoxConstraints(
+          maxWidth: 600,
+          maxHeight: isDesktop
+              ? MediaQuery.sizeOf(context).height * 0.85
+              : double.infinity,
+        ),
         child: Container(
           decoration: BoxDecoration(
             color: colors.backgroundPrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 28,
+                      offset: const Offset(0, 14),
+                    ),
+                  ]
+                : null,
           ),
           child: SafeArea(
             child: Padding(
@@ -524,14 +539,17 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                       ),
 
                       // Drag indicator
-                      Container(
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: colors.textSecondary.withAlpha(60),
-                          borderRadius: AppRadius.radiusMicro,
-                        ),
-                      ),
+                      if (!isDesktop)
+                        Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: colors.textSecondary.withAlpha(60),
+                            borderRadius: AppRadius.radiusMicro,
+                          ),
+                        )
+                      else
+                        const SizedBox.shrink(),
 
                       // Close Button
                       PlatformHoverBuilder(

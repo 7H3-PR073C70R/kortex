@@ -3,9 +3,11 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
-/// Modal bottom sheet container featuring an accessible drag handle and header.
+/// Modal bottom sheet container featuring an accessible drag handle and header,
+/// which automatically adapts to a centered dialog on Desktop and Web.
 class AppBottomSheet extends StatelessWidget {
   const AppBottomSheet({
     required this.child,
@@ -15,6 +17,7 @@ class AppBottomSheet extends StatelessWidget {
     this.showDragHandle = true,
     this.showCloseButton = true,
     this.padding,
+    this.backgroundColor,
     this.semanticLabel,
   });
 
@@ -24,9 +27,10 @@ class AppBottomSheet extends StatelessWidget {
   final bool showDragHandle;
   final bool showCloseButton;
   final EdgeInsetsGeometry? padding;
+  final Color? backgroundColor;
   final String? semanticLabel;
 
-  /// Convenience method to display an [AppBottomSheet].
+  /// Convenience method to display an [AppBottomSheet] adaptively.
   static Future<T?> show<T>({
     required BuildContext context,
     required Widget child,
@@ -41,26 +45,19 @@ class AppBottomSheet extends StatelessWidget {
     Color? backgroundColor,
     String? semanticLabel,
   }) {
-    final colors = context.colors;
-
-    return showModalBottomSheet<T>(
+    return AppAdaptiveSheet.showModal<T>(
       context: context,
-      isScrollControlled: isScrollControlled,
       isDismissible: isDismissible,
+      isScrollControlled: isScrollControlled,
       enableDrag: enableDrag,
-      backgroundColor: backgroundColor ?? colors.surfacePrimary,
-      elevation: 0,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadius.dialog),
-        ),
-      ),
+      semanticLabel: semanticLabel,
       builder: (context) => AppBottomSheet(
         title: title,
         subtitle: subtitle,
         showDragHandle: showDragHandle,
         showCloseButton: showCloseButton,
         padding: padding,
+        backgroundColor: backgroundColor,
         semanticLabel: semanticLabel,
         child: child,
       ),
@@ -72,133 +69,164 @@ class AppBottomSheet extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
+    final effectiveBg = backgroundColor ?? colors.surfacePrimary;
 
     return Semantics(
       scopesRoute: true,
       explicitChildNodes: true,
       label: semanticLabel ?? title ?? l10n.defaultBottomSheetTitle,
       child: SafeArea(
-        top: false,
+        top: isDesktop,
         child: Padding(
           padding: MediaQuery.of(context).viewInsets,
           child: Align(
-            alignment: Alignment.bottomCenter,
+            alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 640),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (showDragHandle) ...[
-                    const SizedBox(height: 12),
-                    Center(
-                      child: Semantics(
-                        button: true,
-                        label: l10n.dismissSheet,
-                        child: GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: Container(
-                            width: 48,
-                            height: 24,
-                            alignment: Alignment.center,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: effectiveBg,
+                  borderRadius: isDesktop
+                      ? BorderRadius.circular(AppRadius.dialog)
+                      : const BorderRadius.vertical(
+                          top: Radius.circular(AppRadius.dialog),
+                        ),
+                  border: isDesktop
+                      ? Border.all(
+                          color: colors.surfaceBorder.withAlpha(
+                            isDark ? 90 : 60,
+                          ),
+                        )
+                      : null,
+                  boxShadow: isDesktop
+                      ? [
+                          BoxShadow(
+                            color: colors.black.withAlpha(isDark ? 100 : 35),
+                            blurRadius: 32,
+                            offset: const Offset(0, 12),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (!isDesktop && showDragHandle) ...[
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Semantics(
+                          button: true,
+                          label: l10n.dismissSheet,
+                          child: GestureDetector(
+                            onTap: () => Navigator.of(context).pop(),
                             child: Container(
-                              width: 36,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: colors.surfaceBorderHighlight,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.micro,
+                              width: 48,
+                              height: 24,
+                              alignment: Alignment.center,
+                              child: Container(
+                                width: 36,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceBorderHighlight,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.micro,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (title != null || showCloseButton) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (title != null)
-                                  Text(
-                                    title!,
-                                    style: typography.title3.bold.copyWith(
-                                      color: colors.textPrimary,
+                      const SizedBox(height: 12),
+                    ],
+                    if (title != null || showCloseButton) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (title != null)
+                                    Text(
+                                      title!,
+                                      style: typography.title3.bold.copyWith(
+                                        color: colors.textPrimary,
+                                      ),
                                     ),
-                                  ),
-                                if (subtitle != null) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    subtitle!,
-                                    style: typography.caption.regular.copyWith(
-                                      color: colors.textSecondary,
+                                  if (subtitle != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      subtitle!,
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                          ),
                                     ),
-                                  ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
-                          ),
-                          if (showCloseButton)
-                            Semantics(
-                              button: true,
-                              label: l10n.closeSheet,
-                              child: PlatformHoverBuilder(
-                                builder: (context, isHovered, child) {
-                                  return AnimatedScale(
-                                    scale: isHovered ? 1.08 : 1.0,
-                                    duration: AppMotion.snappy,
-                                    curve: AppMotion.easeOutCubic,
-                                    child: child,
-                                  );
-                                },
-                                child: SizedBox(
-                                  width: 48,
-                                  height: 48,
-                                  child: IconButton(
-                                    icon: Icon(
-                                      Icons.close,
-                                      color: colors.textMuted,
-                                      size: 20,
+                            if (showCloseButton)
+                              Semantics(
+                                button: true,
+                                label: l10n.closeSheet,
+                                child: PlatformHoverBuilder(
+                                  builder: (context, isHovered, child) {
+                                    return AnimatedScale(
+                                      scale: isHovered ? 1.08 : 1.0,
+                                      duration: AppMotion.snappy,
+                                      curve: AppMotion.easeOutCubic,
+                                      child: child,
+                                    );
+                                  },
+                                  child: SizedBox(
+                                    width: 48,
+                                    height: 48,
+                                    child: IconButton(
+                                      icon: Icon(
+                                        Icons.close,
+                                        color: colors.textMuted,
+                                        size: 20,
+                                      ),
+                                      splashRadius: 20,
+                                      tooltip: l10n.closeSheet,
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(),
                                     ),
-                                    splashRadius: 20,
-                                    tooltip: l10n.closeSheet,
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    ExcludeSemantics(
-                      child: Divider(
-                        color: colors.surfaceBorder,
-                        height: 1,
-                        thickness: 1,
+                      const SizedBox(height: 12),
+                      ExcludeSemantics(
+                        child: Divider(
+                          color: colors.surfaceBorder,
+                          height: 1,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],
+                    Flexible(
+                      child: Padding(
+                        padding:
+                            padding ??
+                            const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                        child: child,
                       ),
                     ),
                   ],
-                  Flexible(
-                    child: Padding(
-                      padding:
-                          padding ??
-                          const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                      child: child,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),

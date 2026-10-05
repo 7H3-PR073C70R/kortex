@@ -26,7 +26,11 @@ void _initExternal() {
       Logger.new,
     )
     ..registerLazySingleton<FlutterSecureStorage>(
-      () => const FlutterSecureStorage(),
+      () => const FlutterSecureStorage(
+        mOptions: MacOsOptions(
+          accessibility: KeychainAccessibility.first_unlock,
+        ),
+      ),
     )
     ..registerLazySingleton<AppDatabase>(
       AppDatabase.new,

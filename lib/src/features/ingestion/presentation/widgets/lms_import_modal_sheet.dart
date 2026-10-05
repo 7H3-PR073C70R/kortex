@@ -16,6 +16,7 @@ import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -43,12 +44,10 @@ class LmsImportModalSheet extends HookWidget {
     BuildContext context, {
     IngestionBloc? bloc,
   }) {
-    final colors = context.colors;
     final ingestionBloc = bloc ?? context.read<IngestionBloc>();
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: colors.transparent,
+      maxWidth: 640,
       builder: (bottomSheetContext) => BlocProvider.value(
         value: ingestionBloc,
         child: const LmsImportModalSheet(),
@@ -115,8 +114,10 @@ class LmsImportModalSheet extends HookWidget {
       }
     }
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: 640,
@@ -127,16 +128,27 @@ class LmsImportModalSheet extends HookWidget {
             top: 20,
             left: 20,
             right: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            bottom: isDesktop ? 20 : MediaQuery.of(context).viewInsets.bottom + 20,
           ),
           decoration: BoxDecoration(
             color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
             border: Border.all(
               color: colors.surfaceBorder.withAlpha(80),
             ),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: colors.black.withAlpha(isDark ? 80 : 30),
+                      blurRadius: 32,
+                      offset: const Offset(0, 12),
+                    ),
+                  ]
+                : null,
           ),
           child: BlocConsumer<IngestionBloc, IngestionState>(
             listener: (context, state) {
@@ -167,17 +179,19 @@ class LmsImportModalSheet extends HookWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: colors.surfaceBorder,
-                          borderRadius: BorderRadius.circular(AppRadius.micro),
+                    if (!isDesktop) ...[
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: colors.surfaceBorder,
+                            borderRadius: BorderRadius.circular(AppRadius.micro),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 18),
+                      const SizedBox(height: 18),
+                    ],
                     Row(
                       children: [
                         Container(
@@ -212,6 +226,13 @@ class LmsImportModalSheet extends HookWidget {
                             ],
                           ),
                         ),
+                        if (isDesktop)
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: () => Navigator.of(context).pop(),
+                            color: colors.textMuted,
+                            tooltip: 'Close',
+                          ),
                       ],
                     ),
                     const SizedBox(height: 20),

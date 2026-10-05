@@ -82,14 +82,7 @@ class _LeaderboardHeroTierCardState extends State<LeaderboardHeroTierCard> {
     return GestureDetector(
       onTap: () {
         unawaited(HapticFeedback.selectionClick());
-        unawaited(
-          showModalBottomSheet<void>(
-            context: context,
-            backgroundColor: context.colors.transparent,
-            isScrollControlled: true,
-            builder: (context) => const LeaderboardLeagueRulesSheet(),
-          ),
-        );
+        unawaited(LeaderboardLeagueRulesSheet.show(context));
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),

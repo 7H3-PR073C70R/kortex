@@ -13,6 +13,7 @@ import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_so
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -60,10 +61,9 @@ class PublishDeckModalSheet extends HookWidget {
 
     if (!context.mounted) return;
 
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
+      maxWidth: 640,
       builder: (ctx) => PublishDeckModalSheet(onSubmit: onSubmit),
     );
   }
@@ -120,8 +120,10 @@ class PublishDeckModalSheet extends HookWidget {
       };
     }, []);
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: Container(
@@ -129,16 +131,27 @@ class PublishDeckModalSheet extends HookWidget {
             top: 24,
             left: 20,
             right: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+            bottom: isDesktop ? 24 : MediaQuery.of(context).viewInsets.bottom + 28,
           ),
           decoration: BoxDecoration(
             color: colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
             border: Border.all(
               color: colors.primary.withAlpha(isDark ? 60 : 30),
             ),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: colors.black.withAlpha(isDark ? 80 : 30),
+                      blurRadius: 32,
+                      offset: const Offset(0, 12),
+                    ),
+                  ]
+                : null,
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -146,17 +159,19 @@ class PublishDeckModalSheet extends HookWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Grabber handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withAlpha(80),
-                      borderRadius: AppRadius.radiusMicro,
+                if (!isDesktop) ...[
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textSecondary.withAlpha(80),
+                        borderRadius: AppRadius.radiusMicro,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 18),
+                  const SizedBox(height: 18),
+                ],
 
                 // Sheet Title
                 Row(
@@ -174,30 +189,46 @@ class PublishDeckModalSheet extends HookWidget {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text(
-                      'Share Deck to Marketplace',
-                      style: typography.title2.bold.copyWith(
-                        color: colors.textPrimary,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Share Deck to Marketplace',
+                              style: typography.title2.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [colors.primary, colors.primary.withAlpha(200)],
+                              ),
+                              borderRadius: BorderRadius.circular(AppRadius.badge),
+                            ),
+                            child: Text(
+                              'PRO',
+                              style: typography.caption.bold.copyWith(
+                                color: Colors.white,
+                                fontSize: 10,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [colors.primary, colors.primary.withAlpha(200)],
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                    if (isDesktop)
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.of(context).pop(),
+                        color: colors.textMuted,
+                        tooltip: 'Close',
                       ),
-                      child: Text(
-                        'PRO',
-                        style: typography.caption.bold.copyWith(
-                          color: Colors.white,
-                          fontSize: 10,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 16),

@@ -10,6 +10,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 
@@ -27,19 +28,12 @@ class PostponeExamModalSheet extends StatefulWidget {
     CramPlannerCubit? cubit,
   }) {
     final cramPlannerCubit = cubit ?? context.read<CramPlannerCubit>();
-    return showModalBottomSheet(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
+      maxWidth: 620,
       builder: (sheetContext) => BlocProvider.value(
         value: cramPlannerCubit,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 620),
-            child: PostponeExamModalSheet(exam: exam),
-          ),
-        ),
+        child: PostponeExamModalSheet(exam: exam),
       ),
     );
   }
@@ -176,6 +170,8 @@ class _PostponeExamModalSheetState extends State<PostponeExamModalSheet> {
     final newDateStr = DateFormat('EEE, d MMM y').format(_newDate);
     final timeStr = _newTime.format(context);
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -184,30 +180,43 @@ class _PostponeExamModalSheetState extends State<PostponeExamModalSheet> {
         padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
         decoration: BoxDecoration(
           color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.dialog),
-          ),
+          borderRadius: isDesktop
+              ? BorderRadius.circular(AppRadius.dialog)
+              : const BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.dialog),
+                ),
           border: Border.all(
             color: colors.primary.withAlpha(isDark ? 60 : 30),
           ),
+          boxShadow: isDesktop
+              ? [
+                  BoxShadow(
+                    color: colors.black.withAlpha(isDark ? 100 : 35),
+                    blurRadius: 28,
+                    offset: const Offset(0, 10),
+                  ),
+                ]
+              : null,
         ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 14),
-                  decoration: BoxDecoration(
-                    color: colors.textSecondary.withAlpha(80),
-                    borderRadius: BorderRadius.circular(2),
+              // Drag Handle (Mobile only)
+              if (!isDesktop) ...[
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: colors.textSecondary.withAlpha(80),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
+              ],
 
               // Header
               Row(

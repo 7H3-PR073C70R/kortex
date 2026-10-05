@@ -9,6 +9,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -26,10 +27,8 @@ class LocalLlmCapacityPromptModalSheet extends StatefulWidget {
     BuildContext context, {
     VoidCallback? onDownloadComplete,
   }) {
-    return showModalBottomSheet<bool>(
+    return AppAdaptiveSheet.showModal<bool>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
       builder: (_) => LocalLlmCapacityPromptModalSheet(
         onDownloadComplete: onDownloadComplete,
       ),
@@ -166,44 +165,61 @@ class _LocalLlmCapacityPromptModalSheetState
         ? 'Sufficient space available (${selectedModel.sizeLabel} required)'
         : 'Low storage warning (${selectedModel.sizeLabel} required)';
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: Container(
           padding: EdgeInsets.only(
             left: 20,
             right: 20,
-            top: 16,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+            top: isDesktop ? 24 : 16,
+            bottom: isDesktop
+                ? 24
+                : MediaQuery.of(context).viewInsets.bottom + 28,
           ),
           decoration: BoxDecoration(
             color: isDark ? colors.surfacePrimary : colors.backgroundPrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
             border: Border.all(
               color: isDark
                   ? colors.surfaceBorderHighlight.withAlpha(50)
                   : colors.surfaceBorder.withAlpha(120),
             ),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 28,
+                      offset: const Offset(0, 14),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 38,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    color: colors.textSecondary.withAlpha(80),
-                    borderRadius: AppRadius.radiusMicro,
+              if (!isDesktop) ...[
+                // Drag Handle
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: colors.textSecondary.withAlpha(80),
+                      borderRadius: AppRadius.radiusMicro,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 18),
+                const SizedBox(height: 18),
+              ],
 
               // Header
               Row(

@@ -10,9 +10,10 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.da
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-/// Bottom modal sheet allowing students to configure and start a timed CBT practice test.
+/// Modal sheet allowing students to configure and start a timed CBT practice test.
 void showPastQuestionsTestConfigSheet(
   BuildContext context,
   PastQuestionsState state,
@@ -20,6 +21,7 @@ void showPastQuestionsTestConfigSheet(
   final colors = context.colors;
   final typography = context.typography;
   final isDark = context.isDarkMode;
+  final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
   final availableYears = state.availableYears.isNotEmpty
       ? state.availableYears
@@ -37,15 +39,9 @@ void showPastQuestionsTestConfigSheet(
   var selectedCount = defaultCount;
 
   unawaited(
-    showModalBottomSheet<void>(
+    AppAdaptiveSheet.showModal<void>(
       context: context,
-      backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadius.dialog),
-        ),
-      ),
+      maxWidth: 640,
       builder: (bottomSheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
@@ -57,33 +53,53 @@ void showPastQuestionsTestConfigSheet(
                 : filteredPool.length;
 
             return SafeArea(
-              top: false,
+              top: isDesktop,
               child: Align(
-                alignment: Alignment.bottomCenter,
+                alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
                 heightFactor: 1,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 640),
-                  child: Padding(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                      borderRadius: isDesktop
+                          ? BorderRadius.circular(AppRadius.dialog)
+                          : const BorderRadius.vertical(
+                              top: Radius.circular(AppRadius.dialog),
+                            ),
+                      border: isDesktop ? Border.all(color: colors.surfaceBorder) : null,
+                      boxShadow: isDesktop
+                          ? [
+                              BoxShadow(
+                                color: colors.black.withAlpha(isDark ? 100 : 35),
+                                blurRadius: 32,
+                                offset: const Offset(0, 12),
+                              ),
+                            ]
+                          : null,
+                    ),
                     padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
                     child: SingleChildScrollView(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 1. Accessible Drag Handle
-                          Center(
-                            child: Container(
-                              width: 36,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: colors.surfaceBorderHighlight,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.micro,
+                          if (!isDesktop) ...[
+                            // 1. Accessible Drag Handle (mobile only)
+                            Center(
+                              child: Container(
+                                width: 36,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceBorderHighlight,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.micro,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 14),
+                            const SizedBox(height: 14),
+                          ],
 
                           // 2. Header
                           Row(

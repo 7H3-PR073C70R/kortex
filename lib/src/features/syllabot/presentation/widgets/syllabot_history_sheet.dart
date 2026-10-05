@@ -17,6 +17,7 @@ import 'package:kortex/src/features/syllabot/domain/repositories/syllabot_reposi
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_bloc.dart';
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -34,11 +35,8 @@ class SyllabotHistorySheet extends StatefulWidget {
     BuildContext context, {
     required String currentSessionId,
   }) {
-    final colors = context.colors;
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showSideDrawer<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: colors.transparent,
       builder: (_) => SyllabotHistorySheet(
         currentSessionId: currentSessionId,
       ),
@@ -124,40 +122,58 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.centerRight : Alignment.bottomCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
+        constraints: BoxConstraints(
+          maxWidth: isDesktop ? 460 : 640,
+          maxHeight: isDesktop
+              ? double.infinity
+              : MediaQuery.sizeOf(context).height * 0.78,
+        ),
         child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.78,
-          ),
           decoration: BoxDecoration(
             color: isDark
                 ? colors.surfacePrimary.withAlpha(245)
                 : colors.surfacePrimary.withAlpha(250),
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? const BorderRadius.horizontal(
+                    left: Radius.circular(AppRadius.dialog),
+                  )
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
             border: Border.all(
               color: colors.surfaceBorder.withAlpha(80),
             ),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 28,
+                      offset: const Offset(-8, 0),
+                    ),
+                  ]
+                : null,
           ),
           child: SafeArea(
-            top: false,
+            top: isDesktop,
             child: Column(
               children: [
-                const SizedBox(height: 12),
-
-                // Top Drag Handle
-                Container(
-                  width: 40,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    color: colors.surfaceBorder.withAlpha(140),
-                    borderRadius: AppRadius.radiusMicro,
+                if (!isDesktop) ...[
+                  const SizedBox(height: 12),
+                  // Top Drag Handle
+                  Container(
+                    width: 40,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: colors.surfaceBorder.withAlpha(140),
+                      borderRadius: AppRadius.radiusMicro,
+                    ),
                   ),
-                ),
+                ],
 
                 const SizedBox(height: 16),
 
@@ -167,89 +183,111 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Conversation History',
-                            style: typography.title2.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 18,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Conversation History',
+                              style: typography.title2.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 18,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Resume or manage your study sessions',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 12,
+                            const SizedBox(height: 2),
+                            Text(
+                              'Resume or manage your study sessions',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      PlatformHoverBuilder(
-                        builder: (context, isHovered, child) {
-                          return ShrinkableButton(
-                            onTap: () {
-                              if (locator<SyllabotChatBloc>().state.isGeneratingDeck) {
-                                Navigator.pop(context);
-                                context.showSnackBar(
-                                  message:
-                                      'Please wait while deck is being generated.',
-                                );
-                                return;
+                      const SizedBox(width: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          PlatformHoverBuilder(
+                            builder: (context, isHovered, child) {
+                              return ShrinkableButton(
+                                onTap: () {
+                                  if (locator<SyllabotChatBloc>().state.isGeneratingDeck) {
+                                    Navigator.pop(context);
+                                    context.showSnackBar(
+                                      message:
+                                          'Please wait while deck is being generated.',
+                                    );
+                                    return;
+                                  }
+                                  unawaited(HapticFeedback.lightImpact());
+                                  Navigator.pop(context);
+                                  locator<SyllabotChatBloc>().add(
+                                    const StartNewSessionEvent(),
+                                  );
+                                },
 
-                              }
-                              unawaited(HapticFeedback.lightImpact());
-                              Navigator.pop(context);
-                              locator<SyllabotChatBloc>().add(
-                                const StartNewSessionEvent(),
-                              );
-                            },
-
-                            child: AnimatedContainer(
-                              duration: AppMotion.snappy,
-                              curve: AppMotion.snappyCurve,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 7,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isHovered
-                                    ? colors.primary.withAlpha(isDark ? 80 : 45)
-                                    : colors.primary.withAlpha(
-                                        isDark ? 50 : 25,
-                                      ),
-                                borderRadius: AppRadius.radiusBadge,
-                                border: Border.all(
-                                  color: isHovered
-                                      ? colors.primary.withAlpha(160)
-                                      : colors.primary.withAlpha(
-                                          isDark ? 90 : 60,
-                                        ),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.add_rounded,
-                                    size: 16,
-                                    color: colors.primary,
+                                child: AnimatedContainer(
+                                  duration: AppMotion.snappy,
+                                  curve: AppMotion.snappyCurve,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'New Chat',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.primary,
-                                      fontSize: 12,
+                                  decoration: BoxDecoration(
+                                    color: isHovered
+                                        ? colors.primary.withAlpha(isDark ? 80 : 45)
+                                        : colors.primary.withAlpha(
+                                            isDark ? 50 : 25,
+                                          ),
+                                    borderRadius: AppRadius.radiusBadge,
+                                    border: Border.all(
+                                      color: isHovered
+                                          ? colors.primary.withAlpha(160)
+                                          : colors.primary.withAlpha(
+                                              isDark ? 90 : 60,
+                                            ),
                                     ),
                                   ),
-                                ],
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.add_rounded,
+                                        size: 16,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'New Chat',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          if (isDesktop) ...[
+                            const SizedBox(width: 6),
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 20),
+                              tooltip: 'Close',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
                               ),
+                              onPressed: () => Navigator.of(context).pop(),
+                              color: colors.textSecondary,
                             ),
-                          );
-                        },
+                          ],
+                        ],
                       ),
                     ],
                   ),

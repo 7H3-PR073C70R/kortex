@@ -23,6 +23,7 @@ import 'package:kortex/src/features/community/presentation/widgets/subject_maste
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -64,22 +65,36 @@ class TrackForumPostCard extends HookWidget {
     final isSubmitting = ValueNotifier<bool>(false);
 
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: isDark
-            ? colors.surfaceSecondary
-            : colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
         builder: (sheetCtx) {
-          return Padding(
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(sheetCtx);
+          return Container(
+            decoration: isDesktop
+                ? BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
+                    borderRadius: BorderRadius.circular(AppRadius.dialog),
+                    border: Border.all(
+                      color: colors.surfaceBorder.withValues(alpha: 0.5),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 28,
+                        offset: const Offset(0, 14),
+                      ),
+                    ],
+                  )
+                : null,
             padding: EdgeInsets.only(
               left: 16,
               right: 16,
               top: 16,
-              bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 16,
+              bottom: isDesktop
+                  ? 20
+                  : (MediaQuery.of(sheetCtx).viewInsets.bottom + 16),
             ),
             child: ValueListenableBuilder<bool>(
               valueListenable: isSubmitting,
@@ -232,25 +247,37 @@ class TrackForumPostCard extends HookWidget {
     final l10n = context.l10n;
 
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showActionMenu<void>(
         context: context,
-        backgroundColor: isDark
-            ? colors.surfaceSecondary
-            : colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppRadius.dialog),
-          ),
-        ),
+        maxWidth: 420,
         builder: (ctx) {
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
           return SafeArea(
             top: false,
             child: Align(
-              alignment: Alignment.bottomCenter,
+              alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
               heightFactor: 1,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 580),
-                child: Padding(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Container(
+                  decoration: isDesktop
+                      ? BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceSecondary
+                              : colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(AppRadius.dialog),
+                          border: Border.all(
+                            color: colors.surfaceBorder.withValues(alpha: 0.5),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 28,
+                              offset: const Offset(0, 14),
+                            ),
+                          ],
+                        )
+                      : null,
                   padding: const EdgeInsets.symmetric(
                     vertical: 16,
                     horizontal: 8,
@@ -258,15 +285,16 @@ class TrackForumPostCard extends HookWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 36,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: colors.textSecondary.withAlpha(80),
-                          borderRadius: AppRadius.radiusMicro,
+                      if (!isDesktop)
+                        Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: colors.textSecondary.withAlpha(80),
+                            borderRadius: AppRadius.radiusMicro,
+                          ),
                         ),
-                      ),
                       ListTile(
                         leading: Icon(
                           Icons.ios_share_rounded,

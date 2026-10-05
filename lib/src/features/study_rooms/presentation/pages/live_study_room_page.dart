@@ -27,6 +27,7 @@ import 'package:kortex/src/features/study_rooms/presentation/widgets/in_room_dec
 import 'package:kortex/src/features/study_rooms/presentation/widgets/room_chat_drawer.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/whiteboard_canvas_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
@@ -1714,10 +1715,10 @@ class _AmbientSoundscapeBar extends StatelessWidget {
     final cubit = context.read<LiveRoomCubit>();
 
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        backgroundColor: colors.transparent,
         builder: (ctx) {
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
           return BlocProvider.value(
             value: cubit,
             child: BlocBuilder<LiveRoomCubit, LiveRoomState>(
@@ -1725,42 +1726,55 @@ class _AmbientSoundscapeBar extends StatelessWidget {
                 final volumePercent = (roomState.ambientAudioVolume * 100)
                     .round();
                 return Align(
-                  alignment: Alignment.bottomCenter,
+                  alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 600),
+                    constraints: const BoxConstraints(maxWidth: 540),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 20,
                       ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary
-                        : colors.surfacePrimary,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(24),
-                    ),
-                    border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 50 : 25),
-                    ),
-                  ),
-                  child: SafeArea(
-                    top: false,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: colors.textSecondary.withAlpha(80),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? colors.surfaceSecondary
+                            : colors.surfacePrimary,
+                        borderRadius: isDesktop
+                            ? BorderRadius.circular(AppRadius.dialog)
+                            : const BorderRadius.vertical(
+                                top: Radius.circular(24),
+                              ),
+                        border: Border.all(
+                          color: colors.primary.withAlpha(isDark ? 50 : 25),
                         ),
-                        const SizedBox(height: 16),
+                        boxShadow: isDesktop
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 28,
+                                  offset: const Offset(0, 14),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: SafeArea(
+                        top: false,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (!isDesktop) ...[
+                              Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: colors.textSecondary.withAlpha(80),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [

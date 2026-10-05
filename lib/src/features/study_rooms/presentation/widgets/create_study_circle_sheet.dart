@@ -7,6 +7,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -35,10 +36,9 @@ class CreateStudyCircleSheet extends HookWidget {
     onSubmit,
     String initialTrack = 'General',
   }) {
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
+      maxWidth: 600,
       builder: (_) => CreateStudyCircleSheet(
         onSubmit: onSubmit,
         initialTrack: initialTrack,
@@ -57,46 +57,66 @@ class CreateStudyCircleSheet extends HookWidget {
     final selectedTrack = useState<String>(initialTrack);
     final targetMinutes = useState<int>(600);
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     const tracks = ['WAEC', 'JAMB', 'SAT', 'University', 'STEM', 'General'];
 
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: isDesktop ? 0 : MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Align(
-        alignment: Alignment.bottomCenter,
+        alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: isDark ? colors.surfacePrimary : colors.surfacePrimary,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.dialog),
-              ),
-              border: Border(
-                top: BorderSide(
-                  color: colors.primary.withAlpha(isDark ? 80 : 40),
-                  width: 1.2,
-                ),
-              ),
+              color: colors.surfacePrimary,
+              borderRadius: isDesktop
+                  ? BorderRadius.circular(AppRadius.dialog)
+                  : const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.dialog),
+                    ),
+              border: isDesktop
+                  ? Border.all(
+                      color: colors.primary.withAlpha(isDark ? 80 : 40),
+                      width: 1.2,
+                    )
+                  : Border(
+                      top: BorderSide(
+                        color: colors.primary.withAlpha(isDark ? 80 : 40),
+                        width: 1.2,
+                      ),
+                    ),
+              boxShadow: isDesktop
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(isDark ? 100 : 30),
+                        blurRadius: 28,
+                        offset: const Offset(0, 14),
+                      ),
+                    ]
+                  : null,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Grabber handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withAlpha(80),
-                      borderRadius: AppRadius.radiusMicro,
+                if (!isDesktop) ...[
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: colors.textSecondary.withAlpha(80),
+                        borderRadius: AppRadius.radiusMicro,
+                      ),
                     ),
                   ),
-                ),
+                ],
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

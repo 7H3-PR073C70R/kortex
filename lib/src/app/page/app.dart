@@ -269,6 +269,8 @@ class _AppState extends State<App> with WidgetsBindingObserver {
             child: ScreenUtilInit(
               designSize: const Size(375, 812),
               builder: (context, _) => MaterialApp.router(
+                title: 'Kortexify',
+                onGenerateTitle: (context) => 'Kortexify',
                 theme: state.lightTheme,
                 darkTheme: state.darkTheme,
                 themeMode: state.themeMode,

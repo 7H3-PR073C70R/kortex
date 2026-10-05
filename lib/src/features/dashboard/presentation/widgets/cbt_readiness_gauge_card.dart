@@ -11,6 +11,7 @@ import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calcula
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Interactive glassmorphic CBT Readiness Score progress gauge widget for the executive dashboard.
@@ -286,11 +287,24 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
 
   void _showDiagnosticSheet(BuildContext context) {
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showSideDrawer<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
         builder: (bottomSheetContext) {
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(bottomSheetContext);
+          if (isDesktop) {
+            return Align(
+              alignment: Alignment.centerRight,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 540),
+                child: _CbtReadinessBreakdownSheet(
+                  readinessResult: widget.readinessResult,
+                  examTitle: widget.examTitle,
+                  daysRemaining: widget.daysRemaining,
+                  scrollController: ScrollController(),
+                ),
+              ),
+            );
+          }
           return DraggableScrollableSheet(
             initialChildSize: 0.82,
             maxChildSize: 0.94,
@@ -441,12 +455,27 @@ class _CbtReadinessBreakdownSheetState
       readiness.targetExamType,
     );
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppRadius.sheet),
-        ),
+        borderRadius: isDesktop
+            ? const BorderRadius.horizontal(
+                left: Radius.circular(AppRadius.sheet),
+              )
+            : const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.sheet),
+              ),
+        boxShadow: isDesktop
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 28,
+                  offset: const Offset(-8, 0),
+                ),
+              ]
+            : null,
       ),
       child: Center(
         child: ConstrainedBox(
@@ -456,18 +485,20 @@ class _CbtReadinessBreakdownSheetState
             child: ListView(
               controller: widget.scrollController,
               children: [
-                // Drag handle
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.surfaceBorder.withAlpha(isDark ? 100 : 160),
-                      borderRadius: BorderRadius.circular(2),
+                if (!isDesktop) ...[
+                  // Drag handle
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.surfaceBorder.withAlpha(isDark ? 100 : 160),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
+                  const SizedBox(height: 14),
+                ],
 
                 // Sheet Header: Responsive layout allowing multiline title without clipping badge
                 Row(
@@ -517,6 +548,20 @@ class _CbtReadinessBreakdownSheetState
                         ),
                       ),
                     ),
+                    if (isDesktop) ...[
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        tooltip: 'Close',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        color: colors.textSecondary,
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 16),

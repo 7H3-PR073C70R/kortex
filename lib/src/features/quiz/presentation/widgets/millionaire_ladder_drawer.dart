@@ -5,6 +5,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Modal bottom sheet visualizing the 12-tier Millionaire prize ascent ladder.
@@ -20,10 +21,9 @@ class MillionaireLadderDrawer extends StatelessWidget {
 
   static void show(BuildContext context, QuizSessionState state) {
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showSideDrawer<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: context.colors.transparent,
+        drawerWidth: 460,
         builder: (modalContext) => MillionaireLadderDrawer(
           state: state,
           onClose: () => Navigator.of(modalContext).pop(),
@@ -38,6 +38,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
     final reduceMotion = quizReduceMotion(context);
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     final tiersReversed = List.generate(
       QuizSessionState.millionaireTiersXp.length,
@@ -45,36 +46,56 @@ class MillionaireLadderDrawer extends StatelessWidget {
     );
 
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.centerRight : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 580,
-          maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+          maxWidth: isDesktop ? 460 : 580,
+          maxHeight: isDesktop
+              ? double.infinity
+              : MediaQuery.sizeOf(context).height * 0.85,
         ),
         child: Container(
+          height: isDesktop ? double.infinity : null,
           decoration: BoxDecoration(
             color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
-            border: Border.all(
-              color: colors.surfaceBorder,
-            ),
+            borderRadius: isDesktop
+                ? const BorderRadius.horizontal(
+                    left: Radius.circular(AppRadius.dialog),
+                  )
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
+            border: isDesktop
+                ? Border(
+                    left: BorderSide(color: colors.surfaceBorder, width: 1.2),
+                  )
+                : Border.all(color: colors.surfaceBorder),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: colors.black.withAlpha(isDark ? 90 : 35),
+                      blurRadius: 28,
+                      offset: const Offset(-8, 0),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             children: [
-              const SizedBox(height: 12),
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: colors.surfaceBorder,
-                    borderRadius: BorderRadius.circular(AppRadius.micro),
+              if (!isDesktop) ...[
+                const SizedBox(height: 12),
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: colors.surfaceBorder,
+                      borderRadius: BorderRadius.circular(AppRadius.micro),
+                    ),
                   ),
                 ),
-              ),
+              ],
               const SizedBox(height: 16),
 
               // Header

@@ -29,6 +29,7 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/streak_shield
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -138,10 +139,15 @@ class _AnalyticsDetailView extends HookWidget {
                 ? analytics.overallRetentionRate
                 : 0.85;
 
-            final projectionDays = filterIndex == 0 ? 7 : (filterIndex == 1 ? 14 : 28);
+            final projectionDays = filterIndex == 0
+                ? 7
+                : (filterIndex == 1 ? 14 : 28);
             final empiricalStability = effectiveRate >= 0.99
                 ? 14.0
-                : (-1.0 / math.log(effectiveRate.clamp(0.01, 0.98))).clamp(2.0, 30.0);
+                : (-1.0 / math.log(effectiveRate.clamp(0.01, 0.98))).clamp(
+                    2.0,
+                    30.0,
+                  );
 
             retentionPoints = decayCalculator.calculateProjection(
               projectionDays: projectionDays,
@@ -1660,7 +1666,9 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
         ? locator<UserActivityService>()
         : null;
     final breakdown = activityService?.getSubjectBreakdown() ?? const {};
-    final weakEntry = breakdown.entries.where((e) => e.value.avgRetention < 0.80).firstOrNull;
+    final weakEntry = breakdown.entries
+        .where((e) => e.value.avgRetention < 0.80)
+        .firstOrNull;
     final subscriptionGuard = locator.isRegistered<SubscriptionGuard>()
         ? locator<SubscriptionGuard>()
         : SubscriptionGuard();
@@ -1706,10 +1714,16 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                   ),
                   if (!isPro)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [colors.primary, colors.primary.withAlpha(200)],
+                          colors: [
+                            colors.primary,
+                            colors.primary.withAlpha(200),
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
@@ -1738,7 +1752,10 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                 const SizedBox(height: 14),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.primary.withAlpha(isDark ? 30 : 16),
                     borderRadius: BorderRadius.circular(AppRadius.badge),
@@ -1748,7 +1765,11 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.auto_awesome_rounded, color: colors.primary, size: 20),
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        color: colors.primary,
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -1784,9 +1805,14 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colors.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
                           ),
                         ),
                         child: const Text('Unlock'),
@@ -1857,15 +1883,21 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                         onPressed: () {
                           AppFeedback.selection();
                           context.showSnackBar(
-                            message: 'Syllabot: "Reviewing your study trends. Your memory retention is strongest during morning sessions!"',
+                            message:
+                                'Syllabot: "Reviewing your study trends. Your memory retention is strongest during morning sessions!"',
                           );
                         },
-                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 15),
+                        icon: const Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          size: 15,
+                        ),
                         label: const Text('Ask Syllabot AI'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
                           ),
                         ),
                       ),
@@ -1876,7 +1908,9 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                         onPressed: () {
                           AppFeedback.celebration();
                           try {
-                            unawaited(context.router.push(const ExamTimetableRoute()));
+                            unawaited(
+                              context.router.push(const ExamTimetableRoute()),
+                            );
                           } on Object catch (_) {}
                         },
                         icon: const Icon(Icons.tune_rounded, size: 15),
@@ -1886,7 +1920,9 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
                           ),
                         ),
                       ),
@@ -1965,110 +2001,136 @@ void _showNeuralRepairBottomSheet(
   final percent = (retrievability * 100).toInt();
 
   unawaited(
-    showModalBottomSheet<void>(
+    AppAdaptiveSheet.showModal<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
       builder: (modalContext) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: colors.surfaceBorder),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.textSecondary.withAlpha(80),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+        final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(modalContext);
+        return Align(
+          alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                borderRadius: isDesktop
+                    ? BorderRadius.circular(AppRadius.dialog)
+                    : const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(color: colors.surfaceBorder),
+                boxShadow: isDesktop
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 28,
+                          offset: const Offset(0, 14),
+                        ),
+                      ]
+                    : null,
               ),
-              const SizedBox(height: 18),
-              Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(25),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.bolt_rounded, color: colors.primary, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '1-Tap Neural Repair (Day $day)',
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
+                  if (!isDesktop) ...[
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: colors.textSecondary.withAlpha(80),
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                        Text(
-                          'Targeted memory reinforcement ($percent% recall chance)',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
+                    const SizedBox(height: 18),
+                  ],
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(25),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.bolt_rounded,
+                          color: colors.primary,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '1-Tap Neural Repair (Day $day)',
+                              style: typography.title3.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              'Targeted memory reinforcement ($percent% recall chance)',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 20),
+                  _NeuralRepairOptionTile(
+                    icon: Icons.style_rounded,
+                    title: 'Quick Flashcard Memory Refresh',
+                    subtitle:
+                        'Focus on due cards to strengthen memory retention',
+                    color: colors.primary,
+                    onTap: () {
+                      Navigator.of(modalContext).pop();
+                      try {
+                        unawaited(
+                          context.router.push(
+                            const MainRoute(children: [DecksRoute()]),
+                          ),
+                        );
+                      } on Object catch (_) {}
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _NeuralRepairOptionTile(
+                    icon: Icons.quiz_rounded,
+                    title: '10-Question Diagnostic Drill',
+                    subtitle: 'Fast CBT mock quiz to lock in fading concepts',
+                    color: colors.secondary,
+                    onTap: () {
+                      Navigator.of(modalContext).pop();
+                      try {
+                        unawaited(
+                          context.router.push(PastQuestionsBoardRoute()),
+                        );
+                      } on Object catch (_) {}
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _NeuralRepairOptionTile(
+                    icon: Icons.psychology_rounded,
+                    title: 'Ask Syllabot AI Coach',
+                    subtitle: 'Get a personalized 3-step study action plan',
+                    color: const Color(0xFF10B981),
+                    onTap: () {
+                      Navigator.of(modalContext).pop();
+                      context.showSnackBar(
+                        message:
+                            'Syllabot: Analyzing Day $day memory decay. Focus 15 mins on Organic Chemistry mechanisms today!',
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
-              const SizedBox(height: 20),
-              _NeuralRepairOptionTile(
-                icon: Icons.style_rounded,
-                title: 'Quick Flashcard Memory Refresh',
-                subtitle: 'Focus on due cards to strengthen memory retention',
-                color: colors.primary,
-                onTap: () {
-                  Navigator.of(modalContext).pop();
-                  try {
-                    unawaited(
-                      context.router.push(
-                        const MainRoute(children: [DecksRoute()]),
-                      ),
-                    );
-                  } on Object catch (_) {}
-                },
-              ),
-              const SizedBox(height: 10),
-              _NeuralRepairOptionTile(
-                icon: Icons.quiz_rounded,
-                title: '10-Question Diagnostic Drill',
-                subtitle: 'Fast CBT mock quiz to lock in fading concepts',
-                color: colors.secondary,
-                onTap: () {
-                  Navigator.of(modalContext).pop();
-                  try {
-                    unawaited(context.router.push(PastQuestionsBoardRoute()));
-                  } on Object catch (_) {}
-                },
-              ),
-              const SizedBox(height: 10),
-              _NeuralRepairOptionTile(
-                icon: Icons.psychology_rounded,
-                title: 'Ask Syllabot AI Coach',
-                subtitle: 'Get a personalized 3-step study action plan',
-                color: const Color(0xFF10B981),
-                onTap: () {
-                  Navigator.of(modalContext).pop();
-                  context.showSnackBar(
-                    message: 'Syllabot: Analyzing Day $day memory decay. Focus 15 mins on Organic Chemistry mechanisms today!',
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
+            ),
           ),
         );
       },

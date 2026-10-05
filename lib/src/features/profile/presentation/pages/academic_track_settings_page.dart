@@ -22,6 +22,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.d
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -580,39 +581,52 @@ class _AcademicTrackSettingsView extends HookWidget {
   ) {
     AppFeedback.selection();
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: colors.transparent,
+        maxWidth: 600,
         builder: (ctx) {
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
           const tracks = CourseTrackEntity.defaultTracks;
           return Align(
-            alignment: Alignment.bottomCenter,
+            alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
               child: Container(
-                height: MediaQuery.of(ctx).size.height * 0.72,
+                height: isDesktop ? 600 : MediaQuery.of(ctx).size.height * 0.72,
                 decoration: BoxDecoration(
                   color: colors.surfacePrimary,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppRadius.dialog),
-                  ),
+                  borderRadius: isDesktop
+                      ? BorderRadius.circular(AppRadius.dialog)
+                      : const BorderRadius.vertical(
+                          top: Radius.circular(AppRadius.dialog),
+                        ),
                   border: Border.all(
                     color: colors.surfaceBorder.withAlpha(80),
                   ),
+                  boxShadow: isDesktop
+                      ? [
+                          BoxShadow(
+                            color: colors.black.withAlpha(isDark ? 80 : 30),
+                            blurRadius: 32,
+                            offset: const Offset(0, 12),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Column(
                   children: [
-                    const SizedBox(height: 10),
-                    // Handle bar
-                    Container(
-                      width: 38,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceBorder,
-                        borderRadius: AppRadius.radiusMicro,
+                    if (!isDesktop) ...[
+                      const SizedBox(height: 10),
+                      // Handle bar
+                      Container(
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: colors.surfaceBorder,
+                          borderRadius: AppRadius.radiusMicro,
+                        ),
                       ),
-                    ),
+                    ],
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
                       child: Row(

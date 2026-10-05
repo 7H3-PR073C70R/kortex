@@ -22,6 +22,7 @@ import 'package:kortex/src/features/decks/domain/repositories/decks_repository.d
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 
 /// Bottom sheet that lets the student pick which deck a forum solution should
@@ -41,10 +42,9 @@ class ForumSaveFlashcardSheet extends HookWidget {
     required ForumPostEntity post,
     required ForumReplyEntity reply,
   }) {
-    return showModalBottomSheet<DeckEntity?>(
+    return AppAdaptiveSheet.showModal<DeckEntity?>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
+      maxWidth: 600,
       builder: (_) => ForumSaveFlashcardSheet(post: post, reply: reply),
     );
   }
@@ -157,43 +157,58 @@ class ForumSaveFlashcardSheet extends HookWidget {
       }
     }
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 640,
-          maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+          maxWidth: 600,
+          maxHeight: MediaQuery.sizeOf(context).height * (isDesktop ? 0.82 : 0.90),
         ),
         child: Container(
           decoration: BoxDecoration(
             color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
             border: Border.all(
               color: colors.surfaceBorder.withValues(alpha: 0.5),
             ),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 28,
+                      offset: const Offset(0, 14),
+                    ),
+                  ]
+                : null,
           ),
           child: SafeArea(
             top: false,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              padding: EdgeInsets.fromLTRB(24, isDesktop ? 24 : 12, 24, 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Drag handle
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceBorder,
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                  if (!isDesktop) ...[
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: colors.surfaceBorder,
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
+                  ],
 
                   // Header
                   Row(
@@ -590,10 +605,9 @@ class ForumGenerateDeckSheet extends HookWidget {
     required ForumPostEntity post,
     required List<ForumReplyEntity> replies,
   }) {
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
+      maxWidth: 600,
       builder: (_) =>
           ForumGenerateDeckSheet(post: post, replies: replies),
     );
@@ -760,43 +774,58 @@ class ForumGenerateDeckSheet extends HookWidget {
       }
     }
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 640,
-          maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+          maxWidth: 600,
+          maxHeight: MediaQuery.sizeOf(context).height * (isDesktop ? 0.82 : 0.90),
         ),
         child: Container(
           decoration: BoxDecoration(
             color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
             border: Border.all(
               color: colors.surfaceBorder.withValues(alpha: 0.5),
             ),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 28,
+                      offset: const Offset(0, 14),
+                    ),
+                  ]
+                : null,
           ),
           child: SafeArea(
             top: false,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              padding: EdgeInsets.fromLTRB(24, isDesktop ? 24 : 12, 24, 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Drag handle
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceBorder,
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                  if (!isDesktop) ...[
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: colors.surfaceBorder,
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
+                  ],
 
                   // Header
                   Row(

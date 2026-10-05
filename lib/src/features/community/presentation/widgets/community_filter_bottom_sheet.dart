@@ -8,6 +8,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -144,12 +145,9 @@ void showCommunityFilterSheet({
 }) {
   final bloc = context.read<CommunityHubBloc>();
   unawaited(
-    showModalBottomSheet<void>(
+    AppAdaptiveSheet.showSideDrawer<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor:
-          context.colors.black.withAlpha(context.isDarkMode ? 170 : 110),
+      width: 440,
       builder: (sheetContext) => BlocProvider.value(
         value: bloc,
         child: CommunityFilterBottomSheet(
@@ -177,6 +175,7 @@ class CommunityFilterBottomSheet extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
     final bloc = context.read<CommunityHubBloc>();
 
     final currentSelectedTrack = bloc.state.selectedTrack;
@@ -187,52 +186,69 @@ class CommunityFilterBottomSheet extends HookWidget {
 
     final isDefault = tempTrack.value == 'All' && tempSort.value == 'trending';
 
-    final activeFilterCount = (tempTrack.value != 'All' ? 1 : 0) +
+    final activeFilterCount =
+        (tempTrack.value != 'All' ? 1 : 0) +
         (tempSort.value != 'trending' ? 1 : 0);
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
+        maxHeight: isDesktop
+            ? double.infinity
+            : MediaQuery.of(context).size.height * 0.85,
       ),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(
-          top: BorderSide(
-            color: isDark
-                ? colors.surfaceBorder.withAlpha(50)
-                : colors.surfaceBorder.withAlpha(30),
-            width: 1.2,
-          ),
-        ),
+        borderRadius: isDesktop
+            ? const BorderRadius.horizontal(
+                left: Radius.circular(AppRadius.dialog),
+              )
+            : const BorderRadius.vertical(top: Radius.circular(28)),
+        border: isDesktop
+            ? Border(
+                left: BorderSide(
+                  color: isDark
+                      ? colors.surfaceBorder.withAlpha(50)
+                      : colors.surfaceBorder.withAlpha(30),
+                  width: 1.2,
+                ),
+              )
+            : Border(
+                top: BorderSide(
+                  color: isDark
+                      ? colors.surfaceBorder.withAlpha(50)
+                      : colors.surfaceBorder.withAlpha(30),
+                  width: 1.2,
+                ),
+              ),
         boxShadow: [
           BoxShadow(
             color: colors.black.withAlpha(isDark ? 80 : 30),
             blurRadius: 28,
-            offset: const Offset(0, -6),
+            offset: isDesktop ? const Offset(-6, 0) : const Offset(0, -6),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: isDesktop ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Drag Indicator Handle
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 8),
-                width: 36,
-                height: 4.5,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colors.surfaceBorder.withAlpha(80)
-                      : colors.surfaceBorder.withAlpha(60),
-                  borderRadius: BorderRadius.circular(3),
+            if (!isDesktop)
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 10, bottom: 8),
+                  width: 36,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceBorder.withAlpha(80)
+                        : colors.surfaceBorder.withAlpha(60),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
               ),
-            ),
 
             // Sheet Header
             Padding(
@@ -354,9 +370,11 @@ class CommunityFilterBottomSheet extends HookWidget {
                           },
                         ),
                         ...availableTracks.map((track) {
-                          final isSelected = tempTrack.value.toLowerCase() ==
+                          final isSelected =
+                              tempTrack.value.toLowerCase() ==
                               track.toLowerCase();
-                          final isHomeTrack = track.toLowerCase() ==
+                          final isHomeTrack =
+                              track.toLowerCase() ==
                               effectiveTrack.toLowerCase();
                           return CommunityFilterOptionChip(
                             label: track,
@@ -444,7 +462,9 @@ class CommunityFilterBottomSheet extends HookWidget {
                               borderRadius: AppRadius.radiusPanel,
                               boxShadow: [
                                 BoxShadow(
-                                  color: colors.primary.withAlpha(isDark ? 80 : 50),
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 80 : 50,
+                                  ),
                                   blurRadius: 14,
                                   offset: const Offset(0, 4),
                                 ),
@@ -527,20 +547,21 @@ class CommunityFilterOptionChip extends StatelessWidget {
               color: isSelected
                   ? colors.primary
                   : (isHovered
-                      ? colors.primary.withAlpha(isDark ? 30 : 20)
-                      : (isDark
-                          ? colors.surfaceSecondary
-                          : colors.surfaceSecondary.withAlpha(120))),
+                        ? colors.primary.withAlpha(isDark ? 30 : 20)
+                        : (isDark
+                              ? colors.surfaceSecondary
+                              : colors.surfaceSecondary.withAlpha(120))),
               borderRadius: AppRadius.radiusPanel,
               border: Border.all(
                 color: isSelected
                     ? colors.primary
                     : (isHighlighted
-                        ? colors.syllabotAccent.withAlpha(isDark ? 120 : 90)
-                        : (isHovered
-                            ? colors.primary.withAlpha(isDark ? 70 : 50)
-                            : colors.surfaceBorder
-                                .withAlpha(isDark ? 40 : 25))),
+                          ? colors.syllabotAccent.withAlpha(isDark ? 120 : 90)
+                          : (isHovered
+                                ? colors.primary.withAlpha(isDark ? 70 : 50)
+                                : colors.surfaceBorder.withAlpha(
+                                    isDark ? 40 : 25,
+                                  ))),
                 width: isSelected ? 1.4 : 1.0,
               ),
               boxShadow: isSelected

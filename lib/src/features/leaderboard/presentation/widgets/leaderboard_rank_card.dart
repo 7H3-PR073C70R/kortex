@@ -76,12 +76,7 @@ class _LeaderboardRankCardState extends State<LeaderboardRankCard> {
       onTap: () {
         unawaited(HapticFeedback.lightImpact());
         unawaited(
-          showModalBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: context.colors.transparent,
-            builder: (context) => LeaderboardScholarSheet(entry: entry),
-          ),
+          LeaderboardScholarSheet.show(context, entry: entry),
         );
       },
       child: AnimatedScale(

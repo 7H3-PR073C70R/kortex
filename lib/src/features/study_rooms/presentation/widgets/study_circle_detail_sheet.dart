@@ -11,6 +11,7 @@ import 'package:kortex/src/features/community/presentation/bloc/community_event.
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_circle_entity.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -28,10 +29,9 @@ class StudyCircleDetailSheet extends StatelessWidget {
     CommunityHubBloc? bloc,
   }) {
     final hubBloc = bloc ?? context.read<CommunityHubBloc>();
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showSideDrawer<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      width: 440,
       builder: (_) => BlocProvider.value(
         value: hubBloc,
         child: StudyCircleDetailSheet(circle: circle),
@@ -44,6 +44,7 @@ class StudyCircleDetailSheet extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     final progress = circle.weeklyProgressPercent;
     final isJoined = circle.isCurrentUserMember;
@@ -51,20 +52,28 @@ class StudyCircleDetailSheet extends StatelessWidget {
 
     return ConstrainedBox(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
+        maxHeight: isDesktop ? double.infinity : MediaQuery.of(context).size.height * 0.85,
       ),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(
-            color: colors.primary.withAlpha(isDark ? 40 : 20),
-          ),
+          borderRadius: isDesktop
+              ? const BorderRadius.horizontal(left: Radius.circular(AppRadius.dialog))
+              : const BorderRadius.vertical(top: Radius.circular(24)),
+          border: isDesktop
+              ? Border(
+                  left: BorderSide(
+                    color: colors.primary.withAlpha(isDark ? 40 : 20),
+                  ),
+                )
+              : Border.all(
+                  color: colors.primary.withAlpha(isDark ? 40 : 20),
+                ),
           boxShadow: [
             BoxShadow(
               color: colors.black.withAlpha(isDark ? 80 : 30),
               blurRadius: 20,
-              offset: const Offset(0, -4),
+              offset: isDesktop ? const Offset(-4, 0) : const Offset(0, -4),
             ),
           ],
         ),
@@ -72,24 +81,28 @@ class StudyCircleDetailSheet extends StatelessWidget {
           left: 20,
           right: 20,
           top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          bottom: isDesktop
+              ? 24
+              : (MediaQuery.of(context).viewInsets.bottom + 24),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: isDesktop ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Drag Handle
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.textSecondary.withAlpha(80),
-                  borderRadius: AppRadius.radiusMicro,
+            if (!isDesktop) ...[
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.textSecondary.withAlpha(80),
+                    borderRadius: AppRadius.radiusMicro,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ],
 
             // Header Row
             Row(

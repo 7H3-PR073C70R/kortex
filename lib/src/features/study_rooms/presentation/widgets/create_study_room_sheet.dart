@@ -8,6 +8,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -52,10 +53,8 @@ class CreateStudyRoomSheet extends HookWidget {
     String? initialSubject,
     String? initialCategory,
   }) {
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
       builder: (ctx) => CreateStudyRoomSheet(
         onSubmit: onSubmit,
         initialTitle: initialTitle,
@@ -102,8 +101,10 @@ class CreateStudyRoomSheet extends HookWidget {
       (id: 'none', label: 'Mute Sound', icon: Icons.volume_off_rounded),
     ];
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: Container(
@@ -111,34 +112,49 @@ class CreateStudyRoomSheet extends HookWidget {
             top: 24,
             left: 20,
             right: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+            bottom: isDesktop
+                ? 24
+                : MediaQuery.of(context).viewInsets.bottom + 28,
           ),
           decoration: BoxDecoration(
-            color: isDark ? colors.surfacePrimary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            color: colors.surfacePrimary,
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
             border: Border.all(
               color: colors.primary.withAlpha(isDark ? 60 : 30),
             ),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 28,
+                      offset: const Offset(0, 14),
+                    ),
+                  ]
+                : null,
           ),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Grabber handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withAlpha(80),
-                      borderRadius: AppRadius.radiusMicro,
+                if (!isDesktop) ...[
+                  // Grabber handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textSecondary.withAlpha(80),
+                        borderRadius: AppRadius.radiusMicro,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 18),
+                  const SizedBox(height: 18),
+                ],
 
                 // Sheet Title
                 Row(

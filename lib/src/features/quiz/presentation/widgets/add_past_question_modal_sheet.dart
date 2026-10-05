@@ -15,6 +15,7 @@ import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.da
 import 'package:kortex/src/features/quiz/domain/services/past_question_ai_extractor_service.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -68,10 +69,9 @@ class AddPastQuestionModalSheet extends HookWidget {
                       : null))
             : null);
 
-    return showModalBottomSheet<bool>(
+    return AppAdaptiveSheet.showModal<bool>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
+      maxWidth: 640,
       builder: (ctx) => AddPastQuestionModalSheet(
         courseId: effectiveCourseId,
         courseCode: effectiveCourseCode,
@@ -322,8 +322,10 @@ class AddPastQuestionModalSheet extends HookWidget {
       }
     }
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: 720,
@@ -332,12 +334,26 @@ class AddPastQuestionModalSheet extends HookWidget {
         child: Container(
           decoration: BoxDecoration(
             color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
+            border: isDesktop
+                ? Border.all(color: colors.surfaceBorder)
+                : null,
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: colors.black.withAlpha(isDark ? 100 : 35),
+                      blurRadius: 32,
+                      offset: const Offset(0, 12),
+                    ),
+                  ]
+                : null,
           ),
           child: SafeArea(
-            top: false,
+            top: isDesktop,
             child: Column(
               children: [
                 // Sheet Drag Handle & Header
@@ -345,19 +361,21 @@ class AddPastQuestionModalSheet extends HookWidget {
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                   child: Column(
                     children: [
-                      Center(
-                        child: Container(
-                          width: 42,
-                          height: 4.5,
-                          decoration: BoxDecoration(
-                            color: colors.surfaceBorder,
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.micro,
+                      if (!isDesktop) ...[
+                        Center(
+                          child: Container(
+                            width: 42,
+                            height: 4.5,
+                            decoration: BoxDecoration(
+                              color: colors.surfaceBorder,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.micro,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 14),
+                        const SizedBox(height: 14),
+                      ],
                       Row(
                         children: [
                           Container(

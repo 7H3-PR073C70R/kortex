@@ -5,7 +5,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
-import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/widgets.dart';
 
 /// Categories of quality issues reported for past questions.
 enum FlagQuestionReason {
@@ -20,7 +20,6 @@ enum FlagQuestionReason {
   final String label;
 }
 
-/// Community quality audit modal for flagging flawed quiz questions (QZ-14).
 class FlagQuestionBottomSheet extends HookWidget {
   const FlagQuestionBottomSheet({
     required this.questionId,
@@ -45,11 +44,8 @@ class FlagQuestionBottomSheet extends HookWidget {
     void Function(String questionId, FlagQuestionReason reason, String notes)?
     onSubmitReport,
   }) {
-    final colors = context.colors;
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: colors.transparent,
       builder: (_) => FlagQuestionBottomSheet(
         questionId: questionId,
         questionSnippet: questionSnippet,
@@ -70,8 +66,10 @@ class FlagQuestionBottomSheet extends HookWidget {
     final commentController = useTextEditingController();
     final isSubmitting = useState<bool>(false);
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: 580,
@@ -86,28 +84,41 @@ class FlagQuestionBottomSheet extends HookWidget {
           ),
           decoration: BoxDecoration(
             color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
             border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: colors.black.withAlpha(isDark ? 100 : 35),
+                      blurRadius: 32,
+                      offset: const Offset(0, 12),
+                    ),
+                  ]
+                : null,
           ),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Drag handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(AppRadius.micro),
+                // Drag handle (Mobile only)
+                if (!isDesktop) ...[
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textSecondary.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(AppRadius.micro),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                ],
                 // Header
                 Row(
                   children: [

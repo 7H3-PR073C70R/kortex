@@ -8,6 +8,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/audio_pronounce_button.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class FeynmanActiveRecallSheet extends HookWidget {
@@ -25,10 +26,9 @@ class FeynmanActiveRecallSheet extends HookWidget {
     required FlashcardEntity card,
     required VoidCallback onRevealCard,
   }) {
-    return showModalBottomSheet(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      maxWidth: 600,
       builder: (context) => FeynmanActiveRecallSheet(
         card: card,
         onRevealCard: onRevealCard,
@@ -92,16 +92,20 @@ class FeynmanActiveRecallSheet extends HookWidget {
       return (matches / answerWords.length).clamp(0.0, 1.0);
     }, [transcript.value, card.back]);
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Container(
-      margin: const EdgeInsets.only(top: 60),
+      margin: isDesktop ? EdgeInsets.zero : const EdgeInsets.only(top: 60),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: isDesktop
+            ? BorderRadius.circular(AppRadius.dialog)
+            : const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
             color: colors.black.withAlpha(isDark ? 80 : 30),
             blurRadius: 24,
-            offset: const Offset(0, -6),
+            offset: isDesktop ? const Offset(0, 8) : const Offset(0, -6),
           ),
         ],
       ),
@@ -111,17 +115,19 @@ class FeynmanActiveRecallSheet extends HookWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4.5,
-              decoration: BoxDecoration(
-                color: colors.textMuted.withAlpha(80),
-                borderRadius: BorderRadius.circular(3),
+          if (!isDesktop) ...[
+            Center(
+              child: Container(
+                width: 40,
+                height: 4.5,
+                decoration: BoxDecoration(
+                  color: colors.textMuted.withAlpha(80),
+                  borderRadius: BorderRadius.circular(3),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
 
           // Header
           Row(

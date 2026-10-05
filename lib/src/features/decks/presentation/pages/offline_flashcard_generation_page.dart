@@ -21,6 +21,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -121,48 +122,64 @@ class _OfflineFlashcardGenerationPageState
     );
 
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: isDark
-            ? colors.surfaceSecondary
-            : colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppRadius.dialog),
-          ),
-        ),
         builder: (sheetContext) {
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(sheetContext);
           return SafeArea(
             top: false,
             child: Align(
-              alignment: Alignment.bottomCenter,
+              alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
               heightFactor: 1,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-                ),
-                child: SingleChildScrollView(
-                  physics: const ClampingScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 28.h),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40.w,
-                          height: 4.h,
-                          decoration: BoxDecoration(
-                            color: colors.surfaceBorder,
-                            borderRadius: AppRadius.radiusMicro,
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
+                    borderRadius: isDesktop
+                        ? BorderRadius.circular(AppRadius.dialog)
+                        : const BorderRadius.vertical(
+                            top: Radius.circular(AppRadius.dialog),
                           ),
-                        ),
-                      ),
-                      SizedBox(height: 18.h),
-                      Text(
+                    boxShadow: isDesktop
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 28,
+                              offset: const Offset(0, 14),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: isDesktop
+                          ? 0
+                          : MediaQuery.of(sheetContext).viewInsets.bottom,
+                    ),
+                    child: SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 28.h),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (!isDesktop) ...[
+                            Center(
+                              child: Container(
+                                width: 40.w,
+                                height: 4.h,
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceBorder,
+                                  borderRadius: AppRadius.radiusMicro,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 18.h),
+                          ],
+                          Text(
                         'Save to Study Decks',
                         style: typography.title3.bold.copyWith(
                           color: colors.textPrimary,
@@ -234,7 +251,7 @@ class _OfflineFlashcardGenerationPageState
                 ),
               ),
             ),
-          ));
+          ),),);
         },
       ),
     );

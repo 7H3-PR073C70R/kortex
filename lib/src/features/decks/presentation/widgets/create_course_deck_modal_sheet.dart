@@ -14,6 +14,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_sheet_scaffold.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 
 class CreateCourseDeckModalSheet extends HookWidget {
@@ -34,10 +35,8 @@ class CreateCourseDeckModalSheet extends HookWidget {
     required String courseCode,
     required String courseTitle,
   }) {
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
       builder: (ctx) => CreateCourseDeckModalSheet(
         courseId: courseId,
         courseCode: courseCode,

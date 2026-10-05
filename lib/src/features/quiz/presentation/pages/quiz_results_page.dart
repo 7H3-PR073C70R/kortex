@@ -31,6 +31,7 @@ import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.da
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -1430,15 +1431,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     }
 
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: context.isDarkMode
-            ? context.colors.surfaceSecondary
-            : context.colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
+        maxWidth: 600,
         builder: (sheetCtx) {
           return _QuizForumQuestionSelectorSheet(
             questions: allQuestions,
@@ -1944,6 +1939,7 @@ class _QuizForumQuestionSelectorSheetState
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     final selectedCount =
         _isMultipleMode ? _selectedMultipleIndices.length : 1;
@@ -1951,24 +1947,42 @@ class _QuizForumQuestionSelectorSheetState
     return SafeArea(
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
+          maxWidth: 600,
+          maxHeight: MediaQuery.of(context).size.height * (isDesktop ? 0.80 : 0.85),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: isDesktop
+            ? BoxDecoration(
+                color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                borderRadius: BorderRadius.circular(AppRadius.dialog),
+                border: Border.all(
+                  color: colors.surfaceBorder.withValues(alpha: 0.5),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 28,
+                    offset: const Offset(0, 14),
+                  ),
+                ],
+              )
+            : null,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: colors.textSecondary.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
+            if (!isDesktop)
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: colors.textSecondary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
             Row(
               children: [
                 Expanded(

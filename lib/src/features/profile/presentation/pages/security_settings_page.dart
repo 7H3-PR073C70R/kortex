@@ -38,6 +38,7 @@ import 'package:kortex/src/l10n/l10n.dart';
 
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
@@ -1420,31 +1421,56 @@ class _SecuritySettingsView extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
 
-    await showModalBottomSheet<void>(
+    await AppAdaptiveSheet.showModal<void>(
       context: context,
-      backgroundColor: colors.transparent,
+      maxWidth: 600,
       builder: (sheetContext) {
+        final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(sheetContext);
+        final isDark = sheetContext.isDarkMode;
         return Align(
-          alignment: Alignment.bottomCenter,
+          alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
             child: Container(
               decoration: BoxDecoration(
                 color: sheetContext.colors.surfacePrimary,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.dialog),
-                ),
+                borderRadius: isDesktop
+                    ? BorderRadius.circular(AppRadius.dialog)
+                    : const BorderRadius.vertical(
+                        top: Radius.circular(AppRadius.dialog),
+                      ),
+                boxShadow: isDesktop
+                    ? [
+                        BoxShadow(
+                          color: colors.black.withAlpha(isDark ? 80 : 30),
+                          blurRadius: 32,
+                          offset: const Offset(0, 12),
+                        ),
+                      ]
+                    : null,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Select Deck to Export',
-                    style: typography.title3.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Select Deck to Export',
+                        style: typography.title3.bold.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      if (isDesktop)
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                          color: colors.textMuted,
+                          tooltip: 'Close',
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Flexible(

@@ -24,6 +24,7 @@ import 'package:kortex/src/features/quiz/presentation/pages/quiz_duel_arena_page
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_elo_tier_badge.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_leaderboard_sheet.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_missing_questions_sheet.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -44,12 +45,10 @@ class QuizDuelMatchmakingSheet extends HookWidget {
     String initialSubject = 'Physics',
     String initialExamBoard = 'WAEC',
   }) {
-    final colors = context.colors;
     final cubit = locator<QuizDuelCubit>();
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: colors.transparent,
+      maxWidth: 640,
       builder: (_) => BlocProvider<QuizDuelCubit>.value(
         value: cubit,
         child: QuizDuelMatchmakingSheet(
@@ -65,6 +64,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     final activeTab = useState<int>(0); // 0: Quick Match, 1: Invite with Code, 2: Join with Code
     final selectedSubject = useState<String>(initialSubject);
@@ -244,21 +244,32 @@ class QuizDuelMatchmakingSheet extends HookWidget {
         }
       },
       child: Align(
-        alignment: Alignment.bottomCenter,
+        alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: 640,
-            maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+            maxHeight: MediaQuery.sizeOf(context).height * (isDesktop ? 0.85 : 0.90),
           ),
           child: Container(
             decoration: BoxDecoration(
               color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.dialog),
-              ),
+              borderRadius: isDesktop
+                  ? BorderRadius.circular(AppRadius.dialog)
+                  : const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.dialog),
+                    ),
               border: Border.all(
                 color: colors.surfaceBorder.withValues(alpha: 0.5),
               ),
+              boxShadow: isDesktop
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 28,
+                        offset: const Offset(0, 14),
+                      ),
+                    ]
+                  : null,
             ),
             child: SafeArea(
               top: false,
@@ -273,17 +284,19 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Drag Handle
-                        Center(
-                          child: Container(
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: colors.textSecondary.withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(AppRadius.micro),
+                        if (!isDesktop) ...[
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: colors.textSecondary.withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(AppRadius.micro),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
+                        ],
 
                         // Title & ELO Banner Row
                         Row(

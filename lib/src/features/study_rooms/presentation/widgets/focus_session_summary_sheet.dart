@@ -7,6 +7,7 @@ import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -43,10 +44,8 @@ class FocusSessionSummarySheet extends StatelessWidget {
     required bool isGoalAchieved,
     required VoidCallback onDone,
   }) {
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
       builder: (_) => FocusSessionSummarySheet(
         roomTitle: roomTitle,
         subject: subject,
@@ -85,27 +84,30 @@ class FocusSessionSummarySheet extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: isDesktop ? 0 : MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Align(
-        alignment: Alignment.bottomCenter,
+        alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 580),
           child: Container(
-            padding: const EdgeInsets.only(
-              top: 14,
+            padding: EdgeInsets.only(
+              top: isDesktop ? 24 : 14,
               left: 20,
               right: 20,
               bottom: 28,
             ),
             decoration: BoxDecoration(
               color: isDark ? colors.surfacePrimary : colors.surfaceSecondary,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.dialog),
-              ),
+              borderRadius: isDesktop
+                  ? BorderRadius.circular(AppRadius.dialog)
+                  : const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.dialog),
+                    ),
               border: Border.all(
                 color: colors.primary.withAlpha(isDark ? 60 : 30),
               ),
@@ -113,7 +115,7 @@ class FocusSessionSummarySheet extends StatelessWidget {
                 BoxShadow(
                   color: colors.black.withAlpha(isDark ? 100 : 30),
                   blurRadius: 30,
-                  offset: const Offset(0, -10),
+                  offset: isDesktop ? const Offset(0, 14) : const Offset(0, -10),
                 ),
               ],
             ),
@@ -121,18 +123,20 @@ class FocusSessionSummarySheet extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Grabber handle
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withAlpha(60),
-                      borderRadius: AppRadius.radiusMicro,
+                if (!isDesktop) ...[
+                  // Grabber handle
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textSecondary.withAlpha(60),
+                        borderRadius: AppRadius.radiusMicro,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 18),
+                  const SizedBox(height: 18),
+                ],
 
                 // Header with celebratory trophy badge
                 Row(

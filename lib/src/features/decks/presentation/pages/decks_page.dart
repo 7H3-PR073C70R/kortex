@@ -20,6 +20,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_list_tile_card.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_empty_state.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -54,25 +55,35 @@ class _DecksView extends HookWidget {
     final isDark = context.isDarkMode;
 
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showActionMenu<void>(
         context: context,
-        backgroundColor: isDark
-            ? colors.surfaceSecondary
-            : colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppRadius.dialog),
-          ),
-        ),
         builder: (bottomSheetContext) {
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(bottomSheetContext);
           return SafeArea(
             top: false,
             child: Align(
-              alignment: Alignment.bottomCenter,
+              alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
               heightFactor: 1,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: Padding(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                    borderRadius: isDesktop
+                        ? BorderRadius.circular(AppRadius.dialog)
+                        : const BorderRadius.vertical(
+                            top: Radius.circular(AppRadius.dialog),
+                          ),
+                    boxShadow: isDesktop
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 28,
+                              offset: const Offset(0, 14),
+                            ),
+                          ]
+                        : null,
+                  ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 20,
@@ -81,24 +92,43 @@ class _DecksView extends HookWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: colors.surfaceBorder,
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.micro,
+                      if (!isDesktop) ...[
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: colors.surfaceBorder,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.micro,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        context.l10n.decksCreateSheetTitle,
-                        style: typography.title3.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
+                        const SizedBox(height: 18),
+                      ],
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            context.l10n.decksCreateSheetTitle,
+                            style: typography.title3.bold.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                          if (isDesktop)
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 20),
+                              tooltip: 'Close',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 28,
+                              ),
+                              onPressed: () => Navigator.of(bottomSheetContext).pop(),
+                              color: colors.textSecondary,
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 6),
                       Text(

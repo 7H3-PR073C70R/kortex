@@ -27,6 +27,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_lifeli
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_audio_reader_button.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -977,20 +978,10 @@ class _QuizWorkspaceView extends HookWidget {
     QuizSessionCubit cubit,
     QuizSessionState state,
   ) {
-    final colors = context.colors;
-
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showSideDrawer<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: context.isDarkMode
-            ? colors.backgroundPrimary
-            : colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppRadius.dialog),
-          ),
-        ),
+        width: 440,
         builder: (sheetCtx) => _QuestionPaletteSheet(
           state: state,
           onJump: (index) {
@@ -1404,26 +1395,29 @@ class _QuestionPaletteSheet extends StatelessWidget {
     final typography = context.typography;
     final reduceMotion = quizReduceMotion(context);
     final isExam = isExamSession(state);
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 640),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: EdgeInsets.fromLTRB(20, isDesktop ? 20 : 12, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.surfaceBorder,
-                    borderRadius: AppRadius.radiusMicro,
+              if (!isDesktop) ...[
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.surfaceBorder,
+                      borderRadius: AppRadius.radiusMicro,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

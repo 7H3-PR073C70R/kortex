@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 
 /// Shared bottom-sheet skeleton for the decks flow.
 ///
@@ -52,23 +53,26 @@ class DeckSheetScaffold extends StatelessWidget {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     final body = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Grab handle
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colors.surfaceBorder,
-              borderRadius: BorderRadius.circular(AppRadius.micro),
+        if (!isDesktop) ...[
+          // Grab handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colors.surfaceBorder,
+                borderRadius: BorderRadius.circular(AppRadius.micro),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 14),
+          const SizedBox(height: 14),
+        ],
 
         // Header
         Row(
@@ -122,10 +126,10 @@ class DeckSheetScaffold extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: isDesktop ? 0 : MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Align(
-        alignment: Alignment.bottomCenter,
+        alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: maxWidth,
@@ -134,9 +138,11 @@ class DeckSheetScaffold extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.dialog),
-              ),
+              borderRadius: isDesktop
+                  ? BorderRadius.circular(AppRadius.dialog)
+                  : const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.dialog),
+                    ),
               border: Border.all(
                 color: isDark
                     ? colors.surfaceBorderHighlight.withAlpha(70)
@@ -146,14 +152,14 @@ class DeckSheetScaffold extends StatelessWidget {
                 BoxShadow(
                   color: colors.black.withAlpha(isDark ? 70 : 30),
                   blurRadius: 28,
-                  offset: const Offset(0, -4),
+                  offset: isDesktop ? const Offset(0, 14) : const Offset(0, -4),
                 ),
               ],
             ),
             child: SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                padding: EdgeInsets.fromLTRB(20, isDesktop ? 20 : 12, 20, 24),
                 child: scrollable
                     ? SingleChildScrollView(
                         physics: const ClampingScrollPhysics(),

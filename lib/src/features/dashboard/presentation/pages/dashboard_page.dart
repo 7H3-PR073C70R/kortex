@@ -46,6 +46,7 @@ import 'package:kortex/src/features/study_rooms/domain/entities/study_circle_ent
 import 'package:kortex/src/features/study_rooms/presentation/widgets/create_study_circle_sheet.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/study_circle_detail_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
@@ -195,11 +196,12 @@ class _DashboardView extends HookWidget {
         }
 
         final profileTrack = authState?.userProfile?.targetTrack;
-        final effectiveTrack = (profileTrack != null && profileTrack.trim().isNotEmpty)
+        final effectiveTrack =
+            (profileTrack != null && profileTrack.trim().isNotEmpty)
             ? profileTrack.trim()
             : (targetTrack != null && targetTrack.trim().isNotEmpty
-                ? targetTrack.trim()
-                : '');
+                  ? targetTrack.trim()
+                  : '');
         final hasTrack = effectiveTrack.isNotEmpty;
 
         if (hasTrack && userId.isNotEmpty) {
@@ -503,8 +505,9 @@ class _CompactDashboardLayout extends StatelessWidget {
                     'tour_header_profile',
                   ),
                   analytics: feed.analyticsSummary,
-                  isProfileUncalibrated:
-                      feed.isProfileUncalibratedFor(targetTrack),
+                  isProfileUncalibrated: feed.isProfileUncalibratedFor(
+                    targetTrack,
+                  ),
                   userName: userName,
                   userPhotoUrl: userPhotoUrl,
                 ),
@@ -648,7 +651,8 @@ class DashboardCbtReadinessGaugeCard extends StatelessWidget {
       effectiveExamTitle = 'Standardized CBT Track';
     }
 
-    final effectiveExamType = (selectedExam != null && selectedExam.subjectTrack.isNotEmpty)
+    final effectiveExamType =
+        (selectedExam != null && selectedExam.subjectTrack.isNotEmpty)
         ? selectedExam.subjectTrack
         : (targetTrack ?? 'JAMB');
 
@@ -659,7 +663,10 @@ class DashboardCbtReadinessGaugeCard extends StatelessWidget {
         0,
         (sum, c) => sum + c.syllabusCoverage.clamp(0.0, 1.0),
       );
-      realSyllabusCoverage = (total / feed.curatedCourses.length).clamp(0.0, 1.0);
+      realSyllabusCoverage = (total / feed.curatedCourses.length).clamp(
+        0.0,
+        1.0,
+      );
     } else {
       realSyllabusCoverage = 0.0;
     }
@@ -841,7 +848,7 @@ class DailyRecallStatusBanner extends StatelessWidget {
                                       child: Text(
                                         hasDueCards
                                             ? l10n.dashboardReviewDeck
-                                                .toUpperCase()
+                                                  .toUpperCase()
                                             : 'SYNCED',
                                         style: typography.caption.bold.copyWith(
                                           color: accent300,
@@ -1024,114 +1031,141 @@ class _QuickActionsGrid extends StatelessWidget {
   }
 
   void _showUploadSheet(BuildContext context) {
-    // Delegates to QuickActionSpeedDial's upload sheet logic via same bottom sheet
+    // Delegates to QuickActionSpeedDial's upload sheet logic via same modal dialog
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        backgroundColor: colors.transparent,
-        isScrollControlled: true,
         builder: (context) {
-          return ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colors.surfaceSecondary.withAlpha(240)
-                      : colors.surfacePrimary.withAlpha(245),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppRadius.dialog),
-                  ),
-                  border: Border.all(
-                    color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.textMuted.withAlpha(100),
-                        borderRadius: BorderRadius.circular(AppRadius.micro),
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+          return Align(
+            alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: ClipRRect(
+                borderRadius: isDesktop
+                    ? BorderRadius.circular(AppRadius.dialog)
+                    : const BorderRadius.vertical(
+                        top: Radius.circular(AppRadius.dialog),
                       ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    padding: EdgeInsets.fromLTRB(
+                      24,
+                      isDesktop ? 24 : 16,
+                      24,
+                      32,
                     ),
-                    const SizedBox(height: 18),
-                    Text(
-                      l10n.dashboardIngestTitle,
-                      style: typography.title3.bold.copyWith(
-                        color: colors.textPrimary,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? colors.surfaceSecondary.withAlpha(240)
+                          : colors.surfacePrimary.withAlpha(245),
+                      borderRadius: isDesktop
+                          ? BorderRadius.circular(AppRadius.dialog)
+                          : const BorderRadius.vertical(
+                              top: Radius.circular(AppRadius.dialog),
+                            ),
+                      border: Border.all(
+                        color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
                       ),
+                      boxShadow: isDesktop
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 28,
+                                offset: const Offset(0, 14),
+                              ),
+                            ]
+                          : null,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      l10n.dashboardIngestSubtitle,
-                      textAlign: TextAlign.center,
-                      style: typography.footnote.regular.copyWith(
-                        color: colors.textSecondary,
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ShrinkableButton(
-                      onTap: () {
-                        Navigator.pop(context);
-                        unawaited(
-                          context.router.push(DocumentIngestionRoute()),
-                        );
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          color: colors.primary,
-                          borderRadius: AppRadius.radiusCard,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          l10n.dashboardUploadNotes,
-                          style: typography.callout.bold.copyWith(
-                            color: colors.white,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!isDesktop) ...[
+                          Container(
+                            width: 36,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: colors.textMuted.withAlpha(100),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.micro,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                        ],
+                        Text(
+                          l10n.dashboardIngestTitle,
+                          style: typography.title3.bold.copyWith(
+                            color: colors.textPrimary,
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ShrinkableButton(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          color: colors.surfacePrimary.withAlpha(
-                            isDark ? 180 : 230,
+                        const SizedBox(height: 6),
+                        Text(
+                          l10n.dashboardIngestSubtitle,
+                          textAlign: TextAlign.center,
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textSecondary,
+                            height: 1.35,
                           ),
-                          borderRadius: AppRadius.radiusCard,
-                          border: Border.all(
-                            color: colors.surfaceBorder.withAlpha(
-                              isDark ? 50 : 30,
+                        ),
+                        const SizedBox(height: 20),
+                        ShrinkableButton(
+                          onTap: () {
+                            Navigator.pop(context);
+                            unawaited(
+                              context.router.push(DocumentIngestionRoute()),
+                            );
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: colors.primary,
+                              borderRadius: AppRadius.radiusCard,
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              l10n.dashboardUploadNotes,
+                              style: typography.callout.bold.copyWith(
+                                color: colors.white,
+                              ),
                             ),
                           ),
                         ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          l10n.cancelAction,
-                          style: typography.callout.medium.copyWith(
-                            color: colors.textSecondary,
+                        const SizedBox(height: 10),
+                        ShrinkableButton(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: colors.surfacePrimary.withAlpha(
+                                isDark ? 180 : 230,
+                              ),
+                              borderRadius: AppRadius.radiusCard,
+                              border: Border.all(
+                                color: colors.surfaceBorder.withAlpha(
+                                  isDark ? 50 : 30,
+                                ),
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              l10n.cancelAction,
+                              style: typography.callout.medium.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -1370,8 +1404,9 @@ class _MediumDashboardLayout extends StatelessWidget {
           <Widget>[
                 HeaderProfileBar(
                   analytics: feed.analyticsSummary,
-                  isProfileUncalibrated:
-                      feed.isProfileUncalibratedFor(targetTrack),
+                  isProfileUncalibrated: feed.isProfileUncalibratedFor(
+                    targetTrack,
+                  ),
                   userName: userName,
                   userPhotoUrl: userPhotoUrl,
                 ),
@@ -1531,8 +1566,9 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     // 1. Identity & Retention Anchor Header
                     HeaderProfileBar(
                       analytics: feed.analyticsSummary,
-                      isProfileUncalibrated:
-                          feed.isProfileUncalibratedFor(targetTrack),
+                      isProfileUncalibrated: feed.isProfileUncalibratedFor(
+                        targetTrack,
+                      ),
                       userName: userName,
                       userPhotoUrl: userPhotoUrl,
                     ),
@@ -1925,7 +1961,8 @@ class _StudyCirclePodPulseCardState extends State<_StudyCirclePodPulseCard> {
         ? targetTrack.trim()
         : 'All Tracks';
 
-    final communityBloc = _bloc ??
+    final communityBloc =
+        _bloc ??
         (locator.isRegistered<CommunityHubBloc>()
             ? locator<CommunityHubBloc>()
             : null);
@@ -1938,19 +1975,21 @@ class _StudyCirclePodPulseCardState extends State<_StudyCirclePodPulseCard> {
     Widget contentBuilder(CommunityState state) {
       final allCircles = state.studyCircles;
       final effectiveTrack = targetTrack?.trim();
-      final trackCircles = (effectiveTrack != null &&
+      final trackCircles =
+          (effectiveTrack != null &&
               effectiveTrack.isNotEmpty &&
               effectiveTrack != 'All Tracks' &&
               effectiveTrack != 'All')
           ? allCircles
-              .where(
-                (c) => c.track.toLowerCase() == effectiveTrack.toLowerCase(),
-              )
-              .toList()
+                .where(
+                  (c) => c.track.toLowerCase() == effectiveTrack.toLowerCase(),
+                )
+                .toList()
           : allCircles;
 
-      final joinedCircles =
-          allCircles.where((c) => c.isCurrentUserMember).toList();
+      final joinedCircles = allCircles
+          .where((c) => c.isCurrentUserMember)
+          .toList();
       final combinedMap = <String, StudyCircleEntity>{};
       for (final c in joinedCircles) {
         combinedMap[c.id] = c;
@@ -2043,7 +2082,10 @@ class _StudyCirclePodPulseCardState extends State<_StudyCirclePodPulseCard> {
                       InkWell(
                         onTap: () {
                           unawaited(HapticFeedback.lightImpact());
-                          AppTabNavigation.navigateTo(context, AppMainTab.forum);
+                          AppTabNavigation.navigateTo(
+                            context,
+                            AppMainTab.forum,
+                          );
                         },
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
@@ -2151,25 +2193,26 @@ class _StudyCirclePodPulseCardState extends State<_StudyCirclePodPulseCard> {
                         CreateStudyCircleSheet.show(
                           context,
                           initialTrack: targetTrack ?? 'General',
-                          onSubmit: ({
-                            required name,
-                            required track,
-                            required targetWeeklyMinutes,
-                          }) {
-                            if (communityBloc != null) {
-                              communityBloc.add(
-                                CreateStudyCircleEvent(
-                                  name: name,
-                                  track: track,
-                                  targetWeeklyMinutes: targetWeeklyMinutes,
-                                ),
-                              );
-                              context.showSnackBar(
-                                message:
-                                    'Study Pod "$name" created successfully!',
-                              );
-                            }
-                          },
+                          onSubmit:
+                              ({
+                                required name,
+                                required track,
+                                required targetWeeklyMinutes,
+                              }) {
+                                if (communityBloc != null) {
+                                  communityBloc.add(
+                                    CreateStudyCircleEvent(
+                                      name: name,
+                                      track: track,
+                                      targetWeeklyMinutes: targetWeeklyMinutes,
+                                    ),
+                                  );
+                                  context.showSnackBar(
+                                    message:
+                                        'Study Pod "$name" created successfully!',
+                                  );
+                                }
+                              },
                         ),
                       );
                     },
@@ -2227,25 +2270,27 @@ class _StudyCirclePodPulseCardState extends State<_StudyCirclePodPulseCard> {
                             CreateStudyCircleSheet.show(
                               context,
                               initialTrack: targetTrack ?? 'General',
-                              onSubmit: ({
-                                required name,
-                                required track,
-                                required targetWeeklyMinutes,
-                              }) {
-                                if (communityBloc != null) {
-                                  communityBloc.add(
-                                    CreateStudyCircleEvent(
-                                      name: name,
-                                      track: track,
-                                      targetWeeklyMinutes: targetWeeklyMinutes,
-                                    ),
-                                  );
-                                  context.showSnackBar(
-                                    message:
-                                        'Study Pod "$name" created successfully!',
-                                  );
-                                }
-                              },
+                              onSubmit:
+                                  ({
+                                    required name,
+                                    required track,
+                                    required targetWeeklyMinutes,
+                                  }) {
+                                    if (communityBloc != null) {
+                                      communityBloc.add(
+                                        CreateStudyCircleEvent(
+                                          name: name,
+                                          track: track,
+                                          targetWeeklyMinutes:
+                                              targetWeeklyMinutes,
+                                        ),
+                                      );
+                                      context.showSnackBar(
+                                        message:
+                                            'Study Pod "$name" created successfully!',
+                                      );
+                                    }
+                                  },
                             ),
                           );
                         },
@@ -2366,8 +2411,8 @@ class _PodPulseCardItem extends StatelessWidget {
                 color: isJoined
                     ? neural.emerald.withAlpha(128)
                     : (isHovered
-                        ? neural.emerald.withAlpha(77)
-                        : neural.hairlineSoft),
+                          ? neural.emerald.withAlpha(77)
+                          : neural.hairlineSoft),
               ),
             ),
             child: Column(
@@ -2397,8 +2442,8 @@ class _PodPulseCardItem extends StatelessWidget {
                         color: isJoined
                             ? neural.emerald.withAlpha(38)
                             : (isFull
-                                ? neural.amber400.withAlpha(25)
-                                : neural.cyan.withAlpha(25)),
+                                  ? neural.amber400.withAlpha(25)
+                                  : neural.cyan.withAlpha(25)),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -2408,9 +2453,7 @@ class _PodPulseCardItem extends StatelessWidget {
                         style: typography.caption.bold.copyWith(
                           color: isJoined
                               ? neural.emerald400
-                              : (isFull
-                                  ? neural.amber400
-                                  : neural.cyan300),
+                              : (isFull ? neural.amber400 : neural.cyan300),
                           fontSize: 9,
                         ),
                       ),
@@ -2472,9 +2515,11 @@ class _PodPulseCardItem extends StatelessWidget {
                     // Member Avatar Stack
                     Row(
                       children: [
-                        for (var i = 0;
-                            i < (circle.members.length.clamp(0, 3));
-                            i++)
+                        for (
+                          var i = 0;
+                          i < (circle.members.length.clamp(0, 3));
+                          i++
+                        )
                           Align(
                             widthFactor: 0.6,
                             child: CircleAvatar(
@@ -2482,7 +2527,8 @@ class _PodPulseCardItem extends StatelessWidget {
                               backgroundColor: neural.emerald.withAlpha(200),
                               child: Text(
                                 circle.members[i].userName.isNotEmpty
-                                    ? circle.members[i].userName[0].toUpperCase()
+                                    ? circle.members[i].userName[0]
+                                          .toUpperCase()
                                     : 'S',
                                 style: const TextStyle(
                                   color: Colors.white,
@@ -2784,7 +2830,9 @@ class _SprintModeChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
-            color: isRecommended ? colors.warning : colors.warning.withAlpha(30),
+            color: isRecommended
+                ? colors.warning
+                : colors.warning.withAlpha(30),
             borderRadius: AppRadius.radiusBadge,
             border: Border.all(
               color: colors.warning.withAlpha(isRecommended ? 255 : 80),

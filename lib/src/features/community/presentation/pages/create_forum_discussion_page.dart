@@ -29,6 +29,7 @@ import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_ty
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -78,7 +79,9 @@ class CreateForumDiscussionPage extends HookWidget {
     final userHandle = userDisplayName.toLowerCase().replaceAll(' ', '_');
 
     final titleController = useTextEditingController(text: initialTitle ?? '');
-    final contentController = useTextEditingController(text: initialContent ?? '');
+    final contentController = useTextEditingController(
+      text: initialContent ?? '',
+    );
     final tagInputController = useTextEditingController();
 
     final selectedTrack = useState<String>(
@@ -101,8 +104,9 @@ class CreateForumDiscussionPage extends HookWidget {
     final recordedVoiceNoteTranscript = useState<String?>(null);
     final isRecordingVoice = useState<bool>(false);
     final voiceRecordingDuration = useState<int>(0);
-    final voiceRecorderController =
-        useMemoized(VoiceNoteRecorderController.new);
+    final voiceRecorderController = useMemoized(
+      VoiceNoteRecorderController.new,
+    );
 
     final characterCount = useState<int>(0);
     final lastSavedTime = useState<String>('Draft');
@@ -191,65 +195,84 @@ class CreateForumDiscussionPage extends HookWidget {
 
     void showImagePickerModal() {
       unawaited(
-        showModalBottomSheet<void>(
+        AppAdaptiveSheet.showActionMenu<void>(
           context: context,
-          backgroundColor: isDark
-              ? colors.surfaceSecondary
-              : colors.surfacePrimary,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          builder: (ctx) => SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withAlpha(60),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.photo_library_rounded,
-                      color: colors.primary,
-                    ),
-                    title: Text(
-                      'Choose from Gallery',
-                      style: typography.body.medium.copyWith(
-                        color: colors.textPrimary,
+          builder: (ctx) {
+            final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
+            return SafeArea(
+              child: Container(
+                decoration: isDesktop
+                    ? BoxDecoration(
+                        color: isDark
+                            ? colors.surfaceSecondary
+                            : colors.surfacePrimary,
+                        borderRadius: BorderRadius.circular(AppRadius.dialog),
+                        border: Border.all(
+                          color: colors.surfaceBorder.withValues(alpha: 0.5),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 28,
+                            offset: const Offset(0, 14),
+                          ),
+                        ],
+                      )
+                    : null,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 8,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!isDesktop)
+                      Container(
+                        width: 36,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: colors.textSecondary.withAlpha(60),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    ),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      unawaited(pickImage(ImageSource.gallery));
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.camera_alt_rounded,
-                      color: colors.primary,
-                    ),
-                    title: Text(
-                      'Take a Photo',
-                      style: typography.body.medium.copyWith(
-                        color: colors.textPrimary,
+                    ListTile(
+                      leading: Icon(
+                        Icons.photo_library_rounded,
+                        color: colors.primary,
                       ),
+                      title: Text(
+                        'Choose from Gallery',
+                        style: typography.body.medium.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        unawaited(pickImage(ImageSource.gallery));
+                      },
                     ),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      unawaited(pickImage(ImageSource.camera));
-                    },
-                  ),
-                ],
+                    ListTile(
+                      leading: Icon(
+                        Icons.camera_alt_rounded,
+                        color: colors.primary,
+                      ),
+                      title: Text(
+                        'Take a Photo',
+                        style: typography.body.medium.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        unawaited(pickImage(ImageSource.camera));
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       );
     }
@@ -264,51 +287,70 @@ class CreateForumDiscussionPage extends HookWidget {
       ];
 
       unawaited(
-        showModalBottomSheet<void>(
+        AppAdaptiveSheet.showModal<void>(
           context: context,
-          backgroundColor: isDark
-              ? colors.surfaceSecondary
-              : colors.surfacePrimary,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          builder: (ctx) => SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Insert LaTeX Formula',
-                    style: typography.headline.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ...formulas.map(
-                    (form) => ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        form,
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          fontFamily: 'monospace',
+          maxWidth: 480,
+          builder: (ctx) {
+            final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
+            return SafeArea(
+              child: Container(
+                decoration: isDesktop
+                    ? BoxDecoration(
+                        color: isDark
+                            ? colors.surfaceSecondary
+                            : colors.surfacePrimary,
+                        borderRadius: BorderRadius.circular(AppRadius.dialog),
+                        border: Border.all(
+                          color: colors.surfaceBorder.withValues(alpha: 0.5),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 28,
+                            offset: const Offset(0, 14),
+                          ),
+                        ],
+                      )
+                    : null,
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Insert LaTeX Formula',
+                      style: typography.headline.bold.copyWith(
+                        color: colors.textPrimary,
                       ),
-                      trailing: Icon(Icons.add_rounded, color: colors.primary),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        insertSnippet('\n$form\n');
-                      },
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    ...formulas.map(
+                      (form) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          form,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.primary,
+                            fontFamily: 'monospace',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: Icon(
+                          Icons.add_rounded,
+                          color: colors.primary,
+                        ),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          insertSnippet('\n$form\n');
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       );
     }
@@ -338,69 +380,85 @@ class CreateForumDiscussionPage extends HookWidget {
       ];
 
       unawaited(
-        showModalBottomSheet<void>(
+        AppAdaptiveSheet.showModal<void>(
           context: context,
-          backgroundColor: isDark
-              ? colors.surfaceSecondary
-              : colors.surfacePrimary,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          builder: (ctx) => SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Insert Math & Greek Symbol',
-                    style: typography.headline.bold.copyWith(
-                      color: colors.textPrimary,
+          maxWidth: 480,
+          builder: (ctx) {
+            final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
+            return SafeArea(
+              child: Container(
+                decoration: isDesktop
+                    ? BoxDecoration(
+                        color: isDark
+                            ? colors.surfaceSecondary
+                            : colors.surfacePrimary,
+                        borderRadius: BorderRadius.circular(AppRadius.dialog),
+                        border: Border.all(
+                          color: colors.surfaceBorder.withValues(alpha: 0.5),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 28,
+                            offset: const Offset(0, 14),
+                          ),
+                        ],
+                      )
+                    : null,
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Insert Math & Greek Symbol',
+                      style: typography.headline.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 5,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                          childAspectRatio: 1.5,
-                        ),
-                    itemCount: symbols.length,
-                    itemBuilder: (ctx, idx) {
-                      final sym = symbols[idx];
-                      return ShrinkableButton(
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          insertSnippet(sym);
-                        },
-                        child: Container(
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(isDark ? 25 : 12),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(40),
+                    const SizedBox(height: 12),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 5,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                            childAspectRatio: 1.5,
+                          ),
+                      itemCount: symbols.length,
+                      itemBuilder: (ctx, idx) {
+                        final sym = symbols[idx];
+                        return ShrinkableButton(
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            insertSnippet(sym);
+                          },
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(isDark ? 25 : 12),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(40),
+                              ),
+                            ),
+                            child: Text(
+                              sym,
+                              style: typography.title3.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
                             ),
                           ),
-                          child: Text(
-                            sym,
-                            style: typography.title3.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       );
     }
@@ -658,7 +716,9 @@ class CreateForumDiscussionPage extends HookWidget {
       if (onSubmit != null) {
         onSubmit!(
           title: sanitizedTitle,
-          content: sanitizedContent.isNotEmpty ? sanitizedContent : sanitizedTitle,
+          content: sanitizedContent.isNotEmpty
+              ? sanitizedContent
+              : sanitizedTitle,
           track: selectedTrack.value,
           latexContent: latexSnippet,
           isQuestion: true,
@@ -686,7 +746,9 @@ class CreateForumDiscussionPage extends HookWidget {
       try {
         final result = await locator<CommunityRepository>().createForumPost(
           title: sanitizedTitle,
-          content: sanitizedContent.isNotEmpty ? sanitizedContent : sanitizedTitle,
+          content: sanitizedContent.isNotEmpty
+              ? sanitizedContent
+              : sanitizedTitle,
           track: selectedTrack.value,
           latexContent: latexSnippet,
           isQuestion: true,
@@ -699,8 +761,8 @@ class CreateForumDiscussionPage extends HookWidget {
               : null,
           voiceNoteTranscript:
               recordedVoiceNoteTranscript.value?.trim().isNotEmpty == true
-                  ? recordedVoiceNoteTranscript.value!.trim()
-                  : null,
+              ? recordedVoiceNoteTranscript.value!.trim()
+              : null,
           isAnonymous: isAnonymous.value,
         );
 
@@ -916,7 +978,9 @@ class CreateForumDiscussionPage extends HookWidget {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: colors.primary.withAlpha(isDark ? 35 : 20),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 35 : 20,
+                                ),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: DropdownButtonHideUnderline(
@@ -943,7 +1007,8 @@ class CreateForumDiscussionPage extends HookWidget {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Icon(
-                                                Icons.chat_bubble_outline_rounded,
+                                                Icons
+                                                    .chat_bubble_outline_rounded,
                                                 size: 14,
                                                 color: colors.primary,
                                               ),
@@ -1003,12 +1068,12 @@ class CreateForumDiscussionPage extends HookWidget {
                             switchOutCurve: AppMotion.easeOutCubic,
                             transitionBuilder: (child, animation) =>
                                 ScaleTransition(
-                              scale: animation,
-                              child: FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              ),
-                            ),
+                                  scale: animation,
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                ),
                             child: isAnonymous.value
                                 ? AppAvatar(
                                     key: const ValueKey('anon_avatar'),
@@ -1055,9 +1120,12 @@ class CreateForumDiscussionPage extends HookWidget {
                                               ),
                                               TextSpan(
                                                 text: '@incognito',
-                                                style: typography.caption.regular
+                                                style: typography
+                                                    .caption
+                                                    .regular
                                                     .copyWith(
-                                                      color: colors.textSecondary,
+                                                      color:
+                                                          colors.textSecondary,
                                                       fontSize: 12,
                                                     ),
                                               ),
@@ -1073,9 +1141,12 @@ class CreateForumDiscussionPage extends HookWidget {
                                               ),
                                               TextSpan(
                                                 text: '@$userHandle',
-                                                style: typography.caption.regular
+                                                style: typography
+                                                    .caption
+                                                    .regular
                                                     .copyWith(
-                                                      color: colors.textSecondary,
+                                                      color:
+                                                          colors.textSecondary,
                                                       fontSize: 12,
                                                     ),
                                               ),
@@ -1109,8 +1180,7 @@ class CreateForumDiscussionPage extends HookWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: isAnonymous.value
-                                    ? colors.primary
-                                        .withAlpha(isDark ? 40 : 25)
+                                    ? colors.primary.withAlpha(isDark ? 40 : 25)
                                     : (isDark
                                           ? colors.surfaceSecondary
                                           : colors.surfaceSecondary.withAlpha(
@@ -1546,27 +1616,33 @@ class CreateForumDiscussionPage extends HookWidget {
                             compact: true,
                             controller: contentController,
                             recorderController: voiceRecorderController,
-                            onRecordingStateChanged: ({
-                              required isRecording,
-                              required isLocked,
-                              required durationSeconds,
-                              required transcript,
-                            }) {
-                              isRecordingVoice.value = isRecording;
-                              voiceRecordingDuration.value = durationSeconds;
-                              if (transcript.trim().isNotEmpty) {
-                                recordedVoiceNoteTranscript.value = transcript;
-                              }
-                            },
-                            onRecordingComplete: ({
-                              required audioUrl,
-                              required durationSeconds,
-                              required transcript,
-                            }) {
-                              recordedVoiceNoteUrl.value = audioUrl;
-                              voiceNoteDurationSeconds.value = durationSeconds;
-                              recordedVoiceNoteTranscript.value = transcript;
-                            },
+                            onRecordingStateChanged:
+                                ({
+                                  required isRecording,
+                                  required isLocked,
+                                  required durationSeconds,
+                                  required transcript,
+                                }) {
+                                  isRecordingVoice.value = isRecording;
+                                  voiceRecordingDuration.value =
+                                      durationSeconds;
+                                  if (transcript.trim().isNotEmpty) {
+                                    recordedVoiceNoteTranscript.value =
+                                        transcript;
+                                  }
+                                },
+                            onRecordingComplete:
+                                ({
+                                  required audioUrl,
+                                  required durationSeconds,
+                                  required transcript,
+                                }) {
+                                  recordedVoiceNoteUrl.value = audioUrl;
+                                  voiceNoteDurationSeconds.value =
+                                      durationSeconds;
+                                  recordedVoiceNoteTranscript.value =
+                                      transcript;
+                                },
                             onCancel: () {
                               recordedVoiceNoteUrl.value = null;
                               voiceNoteDurationSeconds.value = 0;
@@ -1585,9 +1661,8 @@ class CreateForumDiscussionPage extends HookWidget {
                               recordedVoiceNoteTranscript.value ?? '',
                           amplitudeStream:
                               locator.isRegistered<AudioRecordingService>()
-                                  ? locator<AudioRecordingService>()
-                                      .amplitudeStream
-                                  : null,
+                              ? locator<AudioRecordingService>().amplitudeStream
+                              : null,
                           onCancel: () =>
                               unawaited(voiceRecorderController.cancel()),
                           onDone: () =>

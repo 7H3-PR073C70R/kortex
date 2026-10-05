@@ -1,45 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 
 class LeaderboardLeagueRulesSheet extends StatelessWidget {
   const LeaderboardLeagueRulesSheet({super.key});
+
+  static Future<void> show(BuildContext context) {
+    return AppAdaptiveSheet.showModal<void>(
+      context: context,
+      maxWidth: 520,
+      builder: (_) => const LeaderboardLeagueRulesSheet(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceElevated : colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppRadius.dialog),
-        ),
+        borderRadius: isDesktop
+            ? BorderRadius.circular(AppRadius.dialog)
+            : const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.dialog),
+              ),
+        boxShadow: isDesktop
+            ? [
+                BoxShadow(
+                  color: colors.black.withAlpha(isDark ? 80 : 30),
+                  blurRadius: 32,
+                  offset: const Offset(0, 12),
+                ),
+              ]
+            : null,
       ),
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 24),
-                decoration: BoxDecoration(
-                  color: colors.gray.withAlpha(50),
-                  borderRadius: BorderRadius.circular(2),
+            if (!isDesktop) ...[
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 24),
+                  decoration: BoxDecoration(
+                    color: colors.gray.withAlpha(50),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            Text(
-              'League Rules & Prizes',
-              style: typography.title2.bold.copyWith(
-                color: colors.textPrimary,
-              ),
+            ],
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'League Rules & Prizes',
+                  style: typography.title2.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                if (isDesktop)
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.of(context).pop(),
+                    color: colors.textMuted,
+                    tooltip: 'Close',
+                  ),
+              ],
             ),
             const SizedBox(height: 24),
             _RuleItem(

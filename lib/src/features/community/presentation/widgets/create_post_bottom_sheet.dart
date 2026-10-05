@@ -19,6 +19,7 @@ import 'package:kortex/src/features/community/presentation/widgets/voice_note_re
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -75,15 +76,10 @@ class CreatePostBottomSheet extends HookWidget {
     bool initialIsQuestion = false,
     String? contextBadge,
   }) {
-    final colors = context.colors;
-    final isDark = context.isDarkMode;
-
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
       useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: colors.transparent,
-      barrierColor: colors.black.withAlpha(isDark ? 160 : 100),
+      maxWidth: 640,
       builder: (sheetContext) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: CreatePostBottomSheet(
@@ -121,6 +117,8 @@ class CreatePostBottomSheet extends HookWidget {
     final voiceNoteDurationSeconds = useState<int>(0);
     final recordedVoiceNoteTranscript = useState<String?>(null);
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     final authState = context.watch<AuthBloc?>()?.state;
     final userTrack = authState?.userProfile?.targetTrack;
     final activeTrack = (lockedTrack != null && lockedTrack!.trim().isNotEmpty)
@@ -130,7 +128,7 @@ class CreatePostBottomSheet extends HookWidget {
               : 'General');
 
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: Container(
@@ -138,19 +136,37 @@ class CreatePostBottomSheet extends HookWidget {
             top: 24,
             left: 20,
             right: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            bottom: isDesktop
+                ? 24
+                : (MediaQuery.of(context).viewInsets.bottom + 24),
           ),
           decoration: BoxDecoration(
-            color: isDark ? colors.surfacePrimary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
-            border: Border(
-              top: BorderSide(
-                color: colors.primary.withAlpha(isDark ? 80 : 40),
-                width: 1.2,
-              ),
-            ),
+            color: colors.surfacePrimary,
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
+            border: isDesktop
+                ? Border.all(
+                    color: colors.primary.withAlpha(isDark ? 80 : 40),
+                    width: 1.2,
+                  )
+                : Border(
+                    top: BorderSide(
+                      color: colors.primary.withAlpha(isDark ? 80 : 40),
+                      width: 1.2,
+                    ),
+                  ),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: colors.black.withAlpha(80),
+                      blurRadius: 28,
+                      offset: const Offset(0, 14),
+                    ),
+                  ]
+                : null,
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -158,17 +174,19 @@ class CreatePostBottomSheet extends HookWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Grabber handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withAlpha(80),
-                      borderRadius: AppRadius.radiusMicro,
+                if (!isDesktop) ...[
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textSecondary.withAlpha(80),
+                        borderRadius: AppRadius.radiusMicro,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 18),
+                  const SizedBox(height: 18),
+                ],
 
                 // Context Badge if prefilled from card or question review
                 if (contextBadge != null && contextBadge!.isNotEmpty) ...[

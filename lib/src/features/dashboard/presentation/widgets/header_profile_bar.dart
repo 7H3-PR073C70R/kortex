@@ -17,6 +17,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -445,9 +446,10 @@ class _HeaderIconButton extends StatelessWidget {
                       ),
                       border: Border.all(
                         color: isHovered
-                            ? (borderHighlightColor ?? neural.emerald).withAlpha(
-                                110,
-                              )
+                            ? (borderHighlightColor ?? neural.emerald)
+                                  .withAlpha(
+                                    110,
+                                  )
                             : neural.hairlineStrong,
                       ),
                     ),
@@ -522,227 +524,253 @@ void _showRankProgressSheet(
   final userLevel = (authProfile as dynamic)?.level ?? 1;
 
   unawaited(
-    showModalBottomSheet<void>(
+    AppAdaptiveSheet.showModal<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
       builder: (sheetContext) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.dialog),
-          ),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-              decoration: BoxDecoration(
-                color: neural.obsidian900.withAlpha(245),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.dialog),
-                ),
-                border: Border.all(
-                  color: neural.amber.withAlpha(80),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Handle
-                  Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: neural.slate400.withAlpha(120),
-                      borderRadius: BorderRadius.circular(AppRadius.micro),
+        final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(sheetContext);
+        return Align(
+          alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: ClipRRect(
+              borderRadius: isDesktop
+                  ? BorderRadius.circular(AppRadius.dialog)
+                  : const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.dialog),
                     ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(24, isDesktop ? 24 : 16, 24, 32),
+                  decoration: BoxDecoration(
+                    color: neural.obsidian900.withAlpha(245),
+                    borderRadius: isDesktop
+                        ? BorderRadius.circular(AppRadius.dialog)
+                        : const BorderRadius.vertical(
+                            top: Radius.circular(AppRadius.dialog),
+                          ),
+                    border: Border.all(
+                      color: neural.amber.withAlpha(80),
+                    ),
+                    boxShadow: isDesktop
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 28,
+                              offset: const Offset(0, 14),
+                            ),
+                          ]
+                        : null,
                   ),
-                  const SizedBox(height: 20),
-
-                  // Rank Badge Icon
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          neural.amber400,
-                          neural.amber,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: neural.amber.withAlpha(120),
-                          blurRadius: 20,
-                          spreadRadius: 2,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isDesktop) ...[
+                        // Handle
+                        Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: neural.slate400.withAlpha(120),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.micro,
+                            ),
+                          ),
                         ),
+                        const SizedBox(height: 20),
                       ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.workspace_premium_rounded,
-                        size: 36,
-                        color: neural.obsidian950,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
 
-                  Text(
-                    analytics.academicRank,
-                    style: typography.title2.bold.copyWith(
-                      color: neural.slate100,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: neural.emerald.withAlpha(30),
-                      borderRadius: BorderRadius.circular(AppRadius.badge),
-                      border: Border.all(
-                        color: neural.emerald400.withAlpha(100),
+                      // Rank Badge Icon
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              neural.amber400,
+                              neural.amber,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: neural.amber.withAlpha(120),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.workspace_premium_rounded,
+                            size: 36,
+                            color: neural.obsidian950,
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      'LEVEL $userLevel SCHOLAR',
-                      style: typography.caption.bold.copyWith(
-                        color: neural.emerald400,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                      const SizedBox(height: 14),
 
-                  // Progress Bar Card
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: neural.obsidian850,
-                      borderRadius: BorderRadius.circular(AppRadius.panel),
-                      border: Border.all(color: neural.hairlineStrong),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Text(
+                        analytics.academicRank,
+                        style: typography.title2.bold.copyWith(
+                          color: neural.slate100,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: neural.emerald.withAlpha(30),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                          border: Border.all(
+                            color: neural.emerald400.withAlpha(100),
+                          ),
+                        ),
+                        child: Text(
+                          'LEVEL $userLevel SCHOLAR',
+                          style: typography.caption.bold.copyWith(
+                            color: neural.emerald400,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Progress Bar Card
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: neural.obsidian850,
+                          borderRadius: BorderRadius.circular(AppRadius.panel),
+                          border: Border.all(color: neural.hairlineStrong),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Next Rank: Master Scholar',
-                              style: typography.footnote.bold.copyWith(
-                                color: neural.slate200,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Next Rank: Master Scholar',
+                                  style: typography.footnote.bold.copyWith(
+                                    color: neural.slate200,
+                                  ),
+                                ),
+                                Text(
+                                  '$currentXp / $targetXp XP',
+                                  style: typography.footnote.bold.copyWith(
+                                    color: neural.amber300,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.micro,
+                              ),
+                              child: LinearProgressIndicator(
+                                value: progressRatio,
+                                minHeight: 8,
+                                backgroundColor: neural.obsidian800,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  neural.amber400,
+                                ),
                               ),
                             ),
+                            const SizedBox(height: 8),
                             Text(
-                              '$currentXp / $targetXp XP',
-                              style: typography.footnote.bold.copyWith(
-                                color: neural.amber300,
+                              'Earn ${(targetXp - currentXp).clamp(0, targetXp)} more XP to rank up and unlock Advanced Socratic Drills!',
+                              style: typography.caption.regular.copyWith(
+                                color: neural.slate400,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(AppRadius.micro),
-                          child: LinearProgressIndicator(
-                            value: progressRatio,
-                            minHeight: 8,
-                            backgroundColor: neural.obsidian800,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              neural.amber400,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Earn ${(targetXp - currentXp).clamp(0, targetXp)} more XP to rank up and unlock Advanced Socratic Drills!',
-                          style: typography.caption.regular.copyWith(
-                            color: neural.slate400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                      ),
+                      const SizedBox(height: 16),
 
-                  // Multipliers & Active Perks
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: neural.obsidian850,
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.badge,
-                            ),
-                            border: Border.all(
-                              color: neural.amber.withAlpha(40),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.bolt_rounded,
-                                size: 18,
-                                color: neural.amber400,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '+15% XP Active Recall Multiplier',
-                                  style: typography.caption.bold.copyWith(
-                                    color: neural.slate200,
-                                    fontSize: 11,
-                                  ),
+                      // Multipliers & Active Perks
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: neural.obsidian850,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.badge,
+                                ),
+                                border: Border.all(
+                                  color: neural.amber.withAlpha(40),
                                 ),
                               ),
-                            ],
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.bolt_rounded,
+                                    size: 18,
+                                    color: neural.amber400,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '+15% XP Active Recall Multiplier',
+                                      style: typography.caption.bold.copyWith(
+                                        color: neural.slate200,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Action Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ShrinkableButton(
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            unawaited(
+                              context.router.push(
+                                const AnalyticsDetailRoute(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [neural.amber400, neural.amber],
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.badge,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'View Full Analytics & Rank Badges',
+                                style: typography.callout.bold.copyWith(
+                                  color: neural.obsidian950,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-
-                  // Action Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ShrinkableButton(
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        unawaited(
-                          context.router.push(
-                            const AnalyticsDetailRoute(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [neural.amber400, neural.amber],
-                          ),
-                          borderRadius: BorderRadius.circular(AppRadius.badge),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'View Full Analytics & Rank Badges',
-                            style: typography.callout.bold.copyWith(
-                              color: neural.obsidian950,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),

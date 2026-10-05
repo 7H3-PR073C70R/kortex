@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/link_sharing_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
@@ -12,6 +13,7 @@ import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/export/services/anki_export_service.dart';
 import 'package:kortex/src/shared/export/services/notion_csv_formatter.dart';
 import 'package:kortex/src/shared/export/services/pdf_printable_generator.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -34,10 +36,9 @@ class ExportDeckModalSheet extends StatefulWidget {
     BuildContext context, {
     required DeckEntity deck,
   }) {
-    return showModalBottomSheet(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      backgroundColor: context.colors.transparent,
-      isScrollControlled: true,
+      maxWidth: 600,
       builder: (_) => ExportDeckModalSheet(deck: deck),
     );
   }
@@ -245,20 +246,33 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
         ? locator<SubscriptionGuard>()
         : SubscriptionGuard();
     final isPro = guard.isPro;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+    final isDark = context.isDarkMode;
 
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.2),
-        ),
-      ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+            ),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: colors.black.withAlpha(isDark ? 80 : 30),
+                      blurRadius: 32,
+                      offset: const Offset(0, 12),
+                    ),
+                  ]
+                : null,
+          ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

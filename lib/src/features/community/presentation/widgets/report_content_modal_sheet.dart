@@ -9,6 +9,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -75,10 +76,8 @@ class ReportContentModalSheet extends HookWidget {
     String? postId,
     String? contentTitle,
   }) {
-    return showModalBottomSheet<bool>(
+    return AppAdaptiveSheet.showModal<bool>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
       builder: (ctx) => ReportContentModalSheet(
         contentType: contentType,
         contentId: contentId,
@@ -141,23 +140,27 @@ class ReportContentModalSheet extends HookWidget {
       }
     }
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: isDesktop ? 0 : MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Align(
-        alignment: Alignment.bottomCenter,
+        alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 580),
           child: Container(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+              maxHeight: MediaQuery.sizeOf(context).height * (isDesktop ? 0.80 : 0.85),
             ),
             decoration: BoxDecoration(
               color: isDark ? colors.surfacePrimary : colors.surfaceSecondary,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.dialog),
-              ),
+              borderRadius: isDesktop
+                  ? BorderRadius.circular(AppRadius.dialog)
+                  : const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.dialog),
+                    ),
               border: Border.all(
                 color: colors.surfaceBorder.withAlpha(60),
               ),
@@ -165,7 +168,7 @@ class ReportContentModalSheet extends HookWidget {
                 BoxShadow(
                   color: colors.black.withAlpha(isDark ? 100 : 30),
                   blurRadius: 30,
-                  offset: const Offset(0, -10),
+                  offset: isDesktop ? const Offset(0, 14) : const Offset(0, -10),
                 ),
               ],
             ),
@@ -175,17 +178,19 @@ class ReportContentModalSheet extends HookWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Drag handle
-                  Center(
-                    child: Container(
-                      margin: const EdgeInsets.only(top: 12, bottom: 8),
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.textSecondary.withAlpha(60),
-                        borderRadius: AppRadius.radiusMicro,
+                  if (!isDesktop) ...[
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 12, bottom: 8),
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: colors.textSecondary.withAlpha(60),
+                          borderRadius: AppRadius.radiusMicro,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
 
                   // Header
                   Padding(

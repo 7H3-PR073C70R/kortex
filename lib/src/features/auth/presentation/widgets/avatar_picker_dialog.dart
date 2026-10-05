@@ -17,6 +17,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_avatar_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -46,47 +47,62 @@ void showAvatarPickerDialog(
     {'emoji': '📝', 'label': 'Author', 'id': 'emoji:📝'},
   ];
 
+  final isDark = context.isDarkMode;
+
   unawaited(
-    showModalBottomSheet<void>(
+    AppAdaptiveSheet.showModal<void>(
       context: context,
-      backgroundColor: colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 580),
-          child: Container(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 14,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-            ),
-            decoration: BoxDecoration(
-              color: colors.surfacePrimary,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.dialog),
+      builder: (ctx) {
+        final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
+        return Align(
+          alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 580),
+            child: Container(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 14,
+                bottom: isDesktop ? 20 : MediaQuery.of(ctx).viewInsets.bottom + 24,
               ),
-              border: Border.all(
-                color: colors.surfaceBorder.withAlpha(90),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.surfaceBorder,
-                      borderRadius: AppRadius.radiusMicro,
-                    ),
-                  ),
+              decoration: BoxDecoration(
+                color: colors.surfacePrimary,
+                borderRadius: isDesktop
+                    ? BorderRadius.circular(AppRadius.dialog)
+                    : const BorderRadius.vertical(
+                        top: Radius.circular(AppRadius.dialog),
+                      ),
+                border: Border.all(
+                  color: colors.surfaceBorder.withAlpha(90),
                 ),
-                const SizedBox(height: 16),
-                Row(
+                boxShadow: isDesktop
+                    ? [
+                        BoxShadow(
+                          color: colors.black.withAlpha(isDark ? 80 : 30),
+                          blurRadius: 32,
+                          offset: const Offset(0, 12),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!isDesktop) ...[
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: colors.surfaceBorder,
+                          borderRadius: AppRadius.radiusMicro,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
@@ -406,8 +422,8 @@ void showAvatarPickerDialog(
               ],
             ),
           ),
-        ),
-      ),
+        ));
+      },
     ),
   );
 }
@@ -458,36 +474,49 @@ Future<Uint8List?> _showImageCropperPreviewModal(
   final typography = context.typography;
   final isDark = context.isDarkMode;
 
-  return showModalBottomSheet<Uint8List?>(
+  return AppAdaptiveSheet.showModal<Uint8List?>(
     context: context,
-    backgroundColor: colors.transparent,
-    isScrollControlled: true,
+    maxWidth: 540,
     builder: (ctx) {
+      final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
       return Align(
-        alignment: Alignment.bottomCenter,
+        alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 540),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: colors.surfacePrimary,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.dialog),
-              ),
+              borderRadius: isDesktop
+                  ? BorderRadius.circular(AppRadius.dialog)
+                  : const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.dialog),
+                    ),
               border: Border.all(color: colors.surfaceBorder.withAlpha(90)),
+              boxShadow: isDesktop
+                  ? [
+                      BoxShadow(
+                        color: colors.black.withAlpha(isDark ? 80 : 30),
+                        blurRadius: 32,
+                        offset: const Offset(0, 12),
+                      ),
+                    ]
+                  : null,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 38,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.surfaceBorder,
-                    borderRadius: AppRadius.radiusMicro,
+                if (!isDesktop) ...[
+                  Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.surfaceBorder,
+                      borderRadius: AppRadius.radiusMicro,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                ],
                 Text(
                   'Crop & Align Avatar',
                   style: typography.title3.bold.copyWith(

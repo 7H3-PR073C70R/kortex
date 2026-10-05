@@ -33,14 +33,14 @@
 
 	<!-- Usage Descriptions -->
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Kortex requires microphone access to enable voice dialogue with Syllabot AI and record study voice notes.</string>
+	<string>Kortexify requires microphone access to enable voice dialogue with Syllabot AI and record study voice notes.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Kortex requires speech recognition to transcribe your spoken questions directly to Syllabot AI.</string>
+	<string>Kortexify requires speech recognition to transcribe your spoken questions directly to Syllabot AI.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Kortex requires camera access to scan textbook pages, handwritten STEM formulas, and study documents for OCR conversion into flashcard decks.</string>
+	<string>Kortexify requires camera access to scan textbook pages, handwritten STEM formulas, and study documents for OCR conversion into flashcard decks.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Kortex requires photo library access to upload study diagrams, notes, and PDF snapshots for document analysis.</string>
+	<string>Kortexify requires photo library access to upload study diagrams, notes, and PDF snapshots for document analysis.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Kortex requires photo library access to save generated study sheets, flashcard exports, and visual summaries.</string>
+	<string>Kortexify requires photo library access to save generated study sheets, flashcard exports, and visual summaries.</string>
 </dict>
 </plist>

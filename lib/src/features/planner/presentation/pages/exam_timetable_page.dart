@@ -26,6 +26,7 @@ import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_mod
 import 'package:kortex/src/features/planner/presentation/widgets/study_calibration_graph_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -243,32 +244,53 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        backgroundColor: colors.transparent,
+        maxWidth: 520,
         builder: (sheetCtx) => Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(top: Radius.circular(24)),
+            border: isDesktop
+                ? Border.all(
+                    color: colors.surfaceBorder.withValues(
+                      alpha: isDark ? 0.3 : 0.15,
+                    ),
+                  )
+                : null,
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: colors.black.withAlpha(isDark ? 100 : 35),
+                      blurRadius: 28,
+                      offset: const Offset(0, 10),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.textSecondary.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
+              if (!isDesktop) ...[
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.textSecondary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
               Text(
                 'No Flashcard Decks Yet',
                 style: typography.headline.bold.copyWith(color: colors.textPrimary),
@@ -432,11 +454,12 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: colors.transparent,
+        maxWidth: 600,
         builder: (sheetCtx) {
           return Container(
             constraints: BoxConstraints(
@@ -445,30 +468,42 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             ),
             decoration: BoxDecoration(
               color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: isDesktop
+                  ? BorderRadius.circular(AppRadius.dialog)
+                  : const BorderRadius.vertical(top: Radius.circular(24)),
               border: Border.all(
                 color: colors.surfaceBorder.withValues(
                   alpha: isDark ? 0.3 : 0.15,
                 ),
               ),
+              boxShadow: isDesktop
+                  ? [
+                      BoxShadow(
+                        color: colors.black.withAlpha(isDark ? 100 : 35),
+                        blurRadius: 28,
+                        offset: const Offset(0, 10),
+                      ),
+                    ]
+                  : null,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
+                if (!isDesktop) ...[
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textSecondary.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                ],
                 Text(
                   'Link Study Deck to ${exam.examName}',
                   style: typography.headline.bold.copyWith(

@@ -6,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 
@@ -29,11 +30,8 @@ class ConvertToDeckActionSheet extends HookWidget {
     String? initialTitle,
     String? initialCourseCode,
   }) {
-    final colors = context.colors;
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: colors.transparent,
       builder: (context) => ConvertToDeckActionSheet(
         onGenerateDeck: onGenerateDeck,
         initialTitle: initialTitle,
@@ -58,49 +56,66 @@ class ConvertToDeckActionSheet extends HookWidget {
     final createForum = useState<bool>(false);
     final isSubmitting = useState<bool>(false);
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
+        constraints: const BoxConstraints(maxWidth: 580),
         child: Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: isDesktop ? 0 : MediaQuery.of(context).viewInsets.bottom,
           ),
           child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
               child: Container(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                padding: EdgeInsets.fromLTRB(24, isDesktop ? 24 : 16, 24, 32),
                 decoration: BoxDecoration(
                   color: isDark
                       ? colors.surfaceSecondary.withAlpha(240)
                       : colors.surfacePrimary.withAlpha(245),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppRadius.dialog),
-                  ),
+                  borderRadius: isDesktop
+                      ? BorderRadius.circular(AppRadius.dialog)
+                      : const BorderRadius.vertical(
+                          top: Radius.circular(AppRadius.dialog),
+                        ),
                   border: Border.all(
                     color: colors.primary.withAlpha(isDark ? 60 : 30),
                   ),
+                  boxShadow: isDesktop
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 28,
+                            offset: const Offset(0, 14),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Drag handle
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: colors.textSecondary.withAlpha(60),
-                          borderRadius: AppRadius.radiusMicro,
+                    if (!isDesktop) ...[
+                      // Drag handle
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: colors.textSecondary.withAlpha(60),
+                            borderRadius: AppRadius.radiusMicro,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Title & Icon
                     Row(

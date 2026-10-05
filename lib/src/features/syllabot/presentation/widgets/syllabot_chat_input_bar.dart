@@ -9,6 +9,7 @@ import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_ty
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -237,20 +238,32 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
     final l10n = context.l10n;
 
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showActionMenu<void>(
         context: context,
-        backgroundColor: colors.surfacePrimary,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppRadius.dialog),
-          ),
-        ),
         builder: (ctx) {
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
           return SafeArea(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: Padding(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colors.surfacePrimary,
+                    borderRadius: isDesktop
+                        ? BorderRadius.circular(AppRadius.dialog)
+                        : const BorderRadius.vertical(
+                            top: Radius.circular(AppRadius.dialog),
+                          ),
+                    boxShadow: isDesktop
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 28,
+                              offset: const Offset(0, 14),
+                            ),
+                          ]
+                        : null,
+                  ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 16,
@@ -259,22 +272,41 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: colors.textSecondary.withAlpha(80),
-                            borderRadius: AppRadius.radiusMicro,
+                      if (!isDesktop) ...[
+                        Center(
+                          child: Container(
+                            width: 36,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: colors.textSecondary.withAlpha(80),
+                              borderRadius: AppRadius.radiusMicro,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        l10n.socraticModeSheetTitle,
-                        style: typography.title3.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            l10n.socraticModeSheetTitle,
+                            style: typography.title3.bold.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                          if (isDesktop)
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 20),
+                              tooltip: 'Close',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 28,
+                              ),
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              color: colors.textSecondary,
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(

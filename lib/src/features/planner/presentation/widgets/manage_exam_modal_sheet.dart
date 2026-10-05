@@ -18,6 +18,7 @@ import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state
 import 'package:kortex/src/features/planner/presentation/widgets/cancel_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/postpone_exam_modal_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -44,22 +45,15 @@ class ManageExamModalSheet extends StatelessWidget {
     CramPlannerCubit? cubit,
   }) {
     final cramPlannerCubit = cubit ?? context.read<CramPlannerCubit>();
-    return showModalBottomSheet(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
+      maxWidth: 600,
       builder: (sheetContext) => BlocProvider.value(
         value: cramPlannerCubit,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: ManageExamModalSheet(
-              scopedCourseCode: scopedCourseCode,
-              scopedCourseTitle: scopedCourseTitle,
-              initialExamId: initialExamId,
-            ),
-          ),
+        child: ManageExamModalSheet(
+          scopedCourseCode: scopedCourseCode,
+          scopedCourseTitle: scopedCourseTitle,
+          initialExamId: initialExamId,
         ),
       ),
     );
@@ -103,11 +97,12 @@ class ManageExamModalSheet extends StatelessWidget {
     var score = 85.0;
     var rollover = true;
 
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: context.colors.transparent,
+        maxWidth: 520,
         builder: (ctx) {
         return StatefulBuilder(
           builder: (dialogCtx, setModalState) {
@@ -125,9 +120,25 @@ class ManageExamModalSheet extends StatelessWidget {
                 decoration: BoxDecoration(
                   color:
                       isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppRadius.dialog),
-                  ),
+                  borderRadius: isDesktop
+                      ? BorderRadius.circular(AppRadius.dialog)
+                      : const BorderRadius.vertical(
+                          top: Radius.circular(AppRadius.dialog),
+                        ),
+                  border: isDesktop
+                      ? Border.all(
+                          color: colors.surfaceBorder.withAlpha(isDark ? 90 : 50),
+                        )
+                      : null,
+                  boxShadow: isDesktop
+                      ? [
+                          BoxShadow(
+                            color: colors.black.withAlpha(isDark ? 100 : 35),
+                            blurRadius: 28,
+                            offset: const Offset(0, 10),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -352,6 +363,8 @@ class ManageExamModalSheet extends StatelessWidget {
           ExamUrgencyLevel.critical => colors.error,
         };
 
+        final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -360,12 +373,23 @@ class ManageExamModalSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(22, 20, 22, 34),
             decoration: BoxDecoration(
               color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.dialog),
-              ),
+              borderRadius: isDesktop
+                  ? BorderRadius.circular(AppRadius.dialog)
+                  : const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.dialog),
+                    ),
               border: Border.all(
                 color: colors.primary.withAlpha(isDark ? 60 : 30),
               ),
+              boxShadow: isDesktop
+                  ? [
+                      BoxShadow(
+                        color: colors.black.withAlpha(isDark ? 100 : 35),
+                        blurRadius: 28,
+                        offset: const Offset(0, 10),
+                      ),
+                    ]
+                  : null,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

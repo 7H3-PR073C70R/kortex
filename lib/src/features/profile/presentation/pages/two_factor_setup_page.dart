@@ -19,6 +19,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_enroll_result_entity.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -870,12 +871,10 @@ class TwoFactorSetupPage extends HookWidget {
         'Keep these 8-character recovery codes in a safe place. Each code can only be used once.\n\n'
         '${backupCodes.join("\n")}';
 
-    await showModalBottomSheet<void>(
+    await AppAdaptiveSheet.showModal<void>(
       context: context,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: colors.transparent,
-      isScrollControlled: true,
       builder: (ctx) => Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 580),

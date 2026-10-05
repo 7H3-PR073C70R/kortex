@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/leaderboard/domain/entities/leaderboard_entry_entity.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 
 class LeaderboardScholarSheet extends StatelessWidget {
@@ -15,34 +16,69 @@ class LeaderboardScholarSheet extends StatelessWidget {
 
   final LeaderboardEntryEntity entry;
 
+  static Future<void> show(
+    BuildContext context, {
+    required LeaderboardEntryEntity entry,
+  }) {
+    return AppAdaptiveSheet.showModal<void>(
+      context: context,
+      maxWidth: 440,
+      builder: (context) => LeaderboardScholarSheet(entry: entry),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceElevated : colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppRadius.dialog),
-        ),
+        borderRadius: isDesktop
+            ? BorderRadius.circular(AppRadius.dialog)
+            : const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.dialog),
+              ),
+        boxShadow: isDesktop
+            ? [
+                BoxShadow(
+                  color: colors.black.withAlpha(isDark ? 80 : 30),
+                  blurRadius: 32,
+                  offset: const Offset(0, 12),
+                ),
+              ]
+            : null,
       ),
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: colors.gray.withAlpha(50),
-                borderRadius: BorderRadius.circular(2),
+            if (!isDesktop) ...[
+              // Drag handle
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  color: colors.gray.withAlpha(50),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
+            ] else ...[
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => Navigator.of(context).pop(),
+                  color: colors.textMuted,
+                  tooltip: 'Close',
+                ),
+              ),
+            ],
             
             AppAvatar(
               customDimension: 80,

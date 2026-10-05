@@ -6,12 +6,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/study_rooms/presentation/bloc/live_room_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class RoomChatDrawer extends StatefulWidget {
@@ -30,10 +32,9 @@ class RoomChatDrawer extends StatefulWidget {
     final liveRoomCubit = cubit ?? context.read<LiveRoomCubit>()
     ..markChatAsRead();
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showSideDrawer<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: context.colors.transparent,
+        width: 440,
         builder: (_) => BlocProvider.value(
           value: liveRoomCubit,
           child: RoomChatDrawer(currentUserId: currentUserId),
@@ -122,20 +123,23 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
     final l10n = context.l10n;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).padding.bottom;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+        maxHeight: isDesktop ? double.infinity : MediaQuery.sizeOf(context).height * 0.82,
       ),
       padding: EdgeInsets.only(
         top: 12,
         left: 14,
         right: 14,
-        bottom: bottomInset + math.max(12.0, safeBottom),
+        bottom: isDesktop ? 14 : (bottomInset + math.max(12.0, safeBottom)),
       ),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: isDesktop
+            ? const BorderRadius.horizontal(left: Radius.circular(AppRadius.dialog))
+            : const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(
           color: colors.surfaceBorder.withAlpha(100),
         ),
@@ -143,24 +147,26 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
           BoxShadow(
             color: colors.black.withAlpha(isDark ? 80 : 30),
             blurRadius: 20,
-            offset: const Offset(0, -4),
+            offset: isDesktop ? const Offset(-4, 0) : const Offset(0, -4),
           ),
         ],
       ),
       child: Column(
         children: [
           // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colors.surfaceBorder,
-                borderRadius: BorderRadius.circular(2),
+          if (!isDesktop) ...[
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colors.surfaceBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
+            const SizedBox(height: 10),
+          ],
 
           // Header Bar
           Row(

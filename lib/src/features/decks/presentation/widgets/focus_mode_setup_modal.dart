@@ -8,6 +8,7 @@ import 'package:kortex/src/features/decks/domain/entities/focus_session_config.d
 import 'package:kortex/src/features/decks/presentation/pages/focus_workspace_page.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_sheet_scaffold.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class FocusModeSetupModal extends StatefulWidget {
@@ -25,10 +26,8 @@ class FocusModeSetupModal extends StatefulWidget {
     required List<DeckEntity> decks,
     DeckEntity? initialDeck,
   }) {
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
       builder: (_) => FocusModeSetupModal(
         decks: decks,
         initialDeck: initialDeck,

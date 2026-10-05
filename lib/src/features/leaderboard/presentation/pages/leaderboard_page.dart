@@ -19,6 +19,7 @@ import 'package:kortex/src/features/leaderboard/presentation/widgets/leaderboard
 import 'package:kortex/src/features/leaderboard/presentation/widgets/leaderboard_shimmer_view.dart';
 import 'package:kortex/src/features/leaderboard/presentation/widgets/streak_leaderboard_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 
 // Available league tiers for the filter sheet
 const _kTiers = ['All', 'Diamond', 'Platinum', 'Gold', 'Silver', 'Bronze'];
@@ -80,12 +81,9 @@ class _LeaderboardView extends HookWidget {
     void openFilterSheet() {
       AppFeedback.selection();
       unawaited(
-        showModalBottomSheet<void>(
+        AppAdaptiveSheet.showModal<void>(
           context: context,
-          backgroundColor: colors.surfacePrimary,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
+          maxWidth: 480,
           builder: (sheetCtx) => _FilterSheet(
             selectedTier: selectedTier.value,
             onTierSelected: (tier) {
@@ -351,35 +349,66 @@ class _FilterSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = context.typography;
+    final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: c.surfaceBorder,
-                  borderRadius: BorderRadius.circular(2),
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surfacePrimary,
+        borderRadius: isDesktop
+            ? BorderRadius.circular(AppRadius.dialog)
+            : const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: isDesktop
+            ? [
+                BoxShadow(
+                  color: c.black.withAlpha(isDark ? 80 : 30),
+                  blurRadius: 32,
+                  offset: const Offset(0, 12),
                 ),
+              ]
+            : null,
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!isDesktop) ...[
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: c.surfaceBorder,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'FILTER BY LEAGUE TIER',
+                    style: t.caption.bold.copyWith(
+                      color: c.textSecondary.withAlpha(170),
+                      fontSize: 11,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  if (isDesktop)
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.of(context).pop(),
+                      color: c.textMuted,
+                      tooltip: 'Close',
+                    ),
+                ],
               ),
-            ),
-            const SizedBox(height: 20),
-            const SizedBox(height: 20),
-            Text(
-              'FILTER BY LEAGUE TIER',
-              style: t.caption.bold.copyWith(
-                color: c.textSecondary.withAlpha(170),
-                fontSize: 11,
-                letterSpacing: 0.8,
-              ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
             Wrap(
               spacing: 10,
               runSpacing: 10,
@@ -466,6 +495,7 @@ class _FilterSheet extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

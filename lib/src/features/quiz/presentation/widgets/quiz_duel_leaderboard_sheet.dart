@@ -9,17 +9,16 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_elo_tier.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_duel_repository.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 
 /// Modal bottom sheet showcasing ELO Leaderboards, Division Tiers, and Rankings (QZ-13).
 class QuizDuelLeaderboardSheet extends HookWidget {
   const QuizDuelLeaderboardSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    final colors = context.colors;
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showModal<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: colors.transparent,
+      maxWidth: 600,
       builder: (_) => const QuizDuelLeaderboardSheet(),
     );
   }
@@ -29,6 +28,7 @@ class QuizDuelLeaderboardSheet extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
     final repo = locator<QuizDuelRepository>();
     final authBloc = locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null;
@@ -71,36 +71,52 @@ class QuizDuelLeaderboardSheet extends HookWidget {
       return null;
     }, [selectedSubject.value]);
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.88,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppRadius.dialog),
+    return Align(
+      alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 600,
+          maxHeight: MediaQuery.sizeOf(context).height * (isDesktop ? 0.82 : 0.88),
         ),
-        border: Border.all(
-          color: colors.surfaceBorder.withValues(alpha: 0.5),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            // Handle bar
-            const SizedBox(height: 12),
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.textSecondary.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(AppRadius.micro),
-                ),
-              ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            borderRadius: isDesktop
+                ? BorderRadius.circular(AppRadius.dialog)
+                : const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
+            border: Border.all(
+              color: colors.surfaceBorder.withValues(alpha: 0.5),
             ),
-            const SizedBox(height: 16),
+            boxShadow: isDesktop
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 28,
+                      offset: const Offset(0, 14),
+                    ),
+                  ]
+                : null,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                if (!isDesktop) ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textSecondary.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(AppRadius.micro),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
 
             // Sheet Title Header
             Padding(
@@ -301,6 +317,8 @@ class QuizDuelLeaderboardSheet extends HookWidget {
                         ),
             ),
           ],
+        ),
+      ),
         ),
       ),
     );

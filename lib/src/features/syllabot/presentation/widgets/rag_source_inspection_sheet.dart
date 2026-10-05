@@ -7,6 +7,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/document_chunk_entity.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -22,10 +23,8 @@ class RagSourceInspectionSheet extends StatelessWidget {
     BuildContext context,
     DocumentChunkEntity chunk,
   ) {
-    return showModalBottomSheet<void>(
+    return AppAdaptiveSheet.showSideDrawer<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
       builder: (_) => RagSourceInspectionSheet(chunk: chunk),
     );
   }
@@ -35,6 +34,7 @@ class RagSourceInspectionSheet extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
     final scorePercent = (chunk.similarityScore * 100).toInt();
     final title = chunk.documentTitle ?? 'Course Material';
 
@@ -44,122 +44,163 @@ class RagSourceInspectionSheet extends StatelessWidget {
     ].join(' • ');
 
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: isDesktop ? Alignment.centerRight : Alignment.bottomCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
+        constraints: BoxConstraints(
+          maxWidth: isDesktop ? 480 : 640,
+          maxHeight: isDesktop
+              ? double.infinity
+              : MediaQuery.sizeOf(context).height * 0.85,
+        ),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              isDesktop ? 24 : 16,
+              20,
+              32,
+            ),
             decoration: BoxDecoration(
               color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.dialog),
-              ),
+              borderRadius: isDesktop
+                  ? const BorderRadius.horizontal(
+                      left: Radius.circular(AppRadius.dialog),
+                    )
+                  : const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.dialog),
+                    ),
               border: Border.all(
                 color: colors.primary.withAlpha(isDark ? 50 : 30),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.black.withAlpha(50),
-                  blurRadius: 20,
-                  offset: const Offset(0, -4),
-                ),
-              ],
+              boxShadow: isDesktop
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 28,
+                        offset: const Offset(-8, 0),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: colors.black.withAlpha(50),
+                        blurRadius: 20,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Handle bar
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withAlpha(80),
-                      borderRadius: AppRadius.radiusMicro,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Header: Icon + Title + Score Badge
-                Row(
+            child: SafeArea(
+              top: isDesktop,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(25),
-                        borderRadius: AppRadius.radiusCard,
-                      ),
-                      child: Icon(
-                        Icons.menu_book_rounded,
-                        color: colors.primary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: typography.body.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 15,
-                            ),
+                    if (!isDesktop) ...[
+                      // Handle bar
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: colors.textSecondary.withAlpha(80),
+                            borderRadius: AppRadius.radiusMicro,
                           ),
-                          if (citationDetails.isNotEmpty)
-                            Text(
-                              citationDetails,
-                              style: typography.caption.medium.copyWith(
-                                color: colors.primary,
-                                fontSize: 12,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.success.withAlpha(30),
-                        borderRadius: AppRadius.radiusBadge,
-                        border: Border.all(
-                          color: colors.success.withAlpha(80),
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.verified_rounded,
-                            size: 13,
-                            color: colors.success,
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Header: Icon + Title + Score Badge (+ Close button on Desktop)
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(25),
+                            borderRadius: AppRadius.radiusCard,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$scorePercent% Match',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.success,
-                              fontSize: 11,
+                          child: Icon(
+                            Icons.menu_book_rounded,
+                            color: colors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.body.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              if (citationDetails.isNotEmpty)
+                                Text(
+                                  citationDetails,
+                                  style: typography.caption.medium.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.success.withAlpha(30),
+                            borderRadius: AppRadius.radiusBadge,
+                            border: Border.all(
+                              color: colors.success.withAlpha(80),
                             ),
                           ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified_rounded,
+                                size: 13,
+                                color: colors.success,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$scorePercent% Match',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.success,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isDesktop) ...[
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 20),
+                            tooltip: 'Close',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
+                            color: colors.textSecondary,
+                          ),
                         ],
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                // Content excerpt card
+                    // Content excerpt card
                 Text(
                   'Retrieved Source Text',
                   style: typography.caption.bold.copyWith(
@@ -300,6 +341,8 @@ class RagSourceInspectionSheet extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 }

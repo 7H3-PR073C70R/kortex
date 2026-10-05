@@ -14,6 +14,7 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -104,7 +105,10 @@ class QuickActionSpeedDial extends StatelessWidget {
                             color: colors.success,
                             onTap: () {
                               AppFeedback.light();
-                              AppTabNavigation.navigateTo(context, AppMainTab.hub);
+                              AppTabNavigation.navigateTo(
+                                context,
+                                AppMainTab.hub,
+                              );
                             },
                           ),
                           _buildDivider(colors, isDark),
@@ -114,7 +118,10 @@ class QuickActionSpeedDial extends StatelessWidget {
                             color: colors.secondary,
                             onTap: () {
                               AppFeedback.light();
-                              AppTabNavigation.navigateTo(context, AppMainTab.decks);
+                              AppTabNavigation.navigateTo(
+                                context,
+                                AppMainTab.decks,
+                              );
                             },
                           ),
                         ]
@@ -149,98 +156,125 @@ class QuickActionSpeedDial extends StatelessWidget {
     final isDark = context.isDarkMode;
 
     unawaited(
-      showModalBottomSheet<void>(
+      AppAdaptiveSheet.showModal<void>(
         context: context,
-        backgroundColor: colors.transparent,
-        isScrollControlled: true,
         builder: (context) {
-          return ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colors.surfaceSecondary.withAlpha(240)
-                      : colors.surfacePrimary.withAlpha(245),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppRadius.dialog),
-                  ),
-                  border: Border.all(
-                    color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Handle
-                    Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.textMuted.withAlpha(100),
-                        borderRadius: BorderRadius.circular(AppRadius.micro),
+          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
+          return Align(
+            alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: ClipRRect(
+                borderRadius: isDesktop
+                    ? BorderRadius.circular(AppRadius.dialog)
+                    : const BorderRadius.vertical(
+                        top: Radius.circular(AppRadius.dialog),
                       ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    padding: EdgeInsets.fromLTRB(
+                      24,
+                      isDesktop ? 24 : 16,
+                      24,
+                      32,
                     ),
-                    const SizedBox(height: 18),
-
-                    Text(
-                      l10n.dashboardIngestTitle,
-                      style: typography.title3.bold.copyWith(
-                        color: colors.textPrimary,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? colors.surfaceSecondary.withAlpha(240)
+                          : colors.surfacePrimary.withAlpha(245),
+                      borderRadius: isDesktop
+                          ? BorderRadius.circular(AppRadius.dialog)
+                          : const BorderRadius.vertical(
+                              top: Radius.circular(AppRadius.dialog),
+                            ),
+                      border: Border.all(
+                        color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
                       ),
+                      boxShadow: isDesktop
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 28,
+                                offset: const Offset(0, 14),
+                              ),
+                            ]
+                          : null,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      l10n.dashboardIngestSubtitle,
-                      textAlign: TextAlign.center,
-                      style: typography.footnote.regular.copyWith(
-                        color: colors.textSecondary,
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Upload options
-                    Row(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: _UploadOptionCard(
-                            icon: Icons.picture_as_pdf_rounded,
-                            title: l10n.dashboardUploadPdf,
-                            subtitle: l10n.dashboardLectureSlides,
-                            onTap: () {
-                              Navigator.of(context).pop();
-                              unawaited(
-                                context.router.push(
-                                  DocumentIngestionRoute(),
-                                ),
-                              );
-                            },
+                        if (!isDesktop) ...[
+                          // Handle
+                          Container(
+                            width: 36,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: colors.textMuted.withAlpha(100),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.micro,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                        ],
+
+                        Text(
+                          l10n.dashboardIngestTitle,
+                          style: typography.title3.bold.copyWith(
+                            color: colors.textPrimary,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _UploadOptionCard(
-                            icon: Icons.camera_alt_rounded,
-                            title: l10n.dashboardScanNotes,
-                            subtitle: l10n.dashboardStemOcr,
-                            onTap: () {
-                              Navigator.of(context).pop();
-                              unawaited(
-                                context.router.push(
-                                  DocumentIngestionRoute(),
-                                ),
-                              );
-                            },
+                        const SizedBox(height: 6),
+                        Text(
+                          l10n.dashboardIngestSubtitle,
+                          textAlign: TextAlign.center,
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textSecondary,
+                            height: 1.35,
                           ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Upload options
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _UploadOptionCard(
+                                icon: Icons.picture_as_pdf_rounded,
+                                title: l10n.dashboardUploadPdf,
+                                subtitle: l10n.dashboardLectureSlides,
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  unawaited(
+                                    context.router.push(
+                                      DocumentIngestionRoute(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _UploadOptionCard(
+                                icon: Icons.camera_alt_rounded,
+                                title: l10n.dashboardScanNotes,
+                                subtitle: l10n.dashboardStemOcr,
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  unawaited(
+                                    context.router.push(
+                                      DocumentIngestionRoute(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

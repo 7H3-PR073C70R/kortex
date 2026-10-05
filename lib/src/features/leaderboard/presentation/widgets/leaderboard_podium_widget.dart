@@ -200,12 +200,7 @@ class _PodiumPedestalState extends State<_PodiumPedestal> {
       onTap: () {
         unawaited(HapticFeedback.selectionClick());
         unawaited(
-          showModalBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: context.colors.transparent,
-            builder: (context) => LeaderboardScholarSheet(entry: entry),
-          ),
+          LeaderboardScholarSheet.show(context, entry: entry),
         );
       },
       child: AnimatedScale(

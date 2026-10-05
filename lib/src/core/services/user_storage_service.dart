@@ -55,7 +55,12 @@ class UserStorageServiceImpl implements UserStorageService {
   UserStorageServiceImpl(
     this._localStorageService, {
     FlutterSecureStorage? secureStorage,
-  }) : _secureStorage = secureStorage ?? const FlutterSecureStorage();
+  }) : _secureStorage = secureStorage ??
+            const FlutterSecureStorage(
+              mOptions: MacOsOptions(
+                accessibility: KeychainAccessibility.first_unlock,
+              ),
+            );
 
   final LocalStorageService _localStorageService;
   final FlutterSecureStorage _secureStorage;
@@ -101,14 +106,28 @@ class UserStorageServiceImpl implements UserStorageService {
       _cachedEmail = _localStorageService.getPreference(key: _emailKey);
     }
 
-    // Read pro status from secure storage and seed cache.
-    final rawProStatus = await _secureStorage.read(key: _proStatusKey);
-    _cachedProStatus = rawProStatus == 'true';
+    // Hydration fallback: If secure storage read failed or returned empty on desktop OS, load from local storage
+    _cachedToken = _sanitizeToken(_cachedToken) ??
+        _sanitizeToken(_localStorageService.getPreference(key: _tokenKey));
+    _cachedRefreshToken = _sanitizeToken(_cachedRefreshToken) ??
+        _sanitizeToken(_localStorageService.getPreference(key: _refreshTokenKey));
+    _cachedEmail = _cachedEmail ?? _localStorageService.getPreference(key: _emailKey);
 
-    // Defensive migration: Purge legacy sensitive data from plaintext SharedPreferences if present.
-    unawaited(_safeLocalDelete(_tokenKey));
-    unawaited(_safeLocalDelete(_refreshTokenKey));
-    // Migrate legacy plaintext pro status flag to secure storage.
+    // Read pro status from secure storage or fallback to local storage
+    try {
+      final rawProStatus = await _secureStorage.read(key: _proStatusKey);
+      if (rawProStatus != null) {
+        _cachedProStatus = rawProStatus == 'true';
+      }
+    } on Object catch (_) {}
+    if (_cachedProStatus == null) {
+      final localPro = _localStorageService.getPreference(key: _proStatusKey);
+      if (localPro != null) {
+        _cachedProStatus = localPro == 'true';
+      }
+    }
+
+    // Migrate legacy plaintext pro status flag if present.
     final legacyPro = _localStorageService.getPreference(key: PrefKeys.isProSubscriber);
     if (legacyPro != null) {
       _cachedProStatus = legacyPro == 'true';
@@ -171,6 +190,13 @@ class UserStorageServiceImpl implements UserStorageService {
     if (_cachedToken != null && _cachedToken!.isNotEmpty && sanitized == null) {
       _cachedToken = null;
       unawaited(_safeSecureDelete(_tokenKey));
+      unawaited(_safeLocalDelete(_tokenKey));
+    }
+    if (sanitized == null || sanitized.isEmpty) {
+      final fallback = _sanitizeToken(_localStorageService.getPreference(key: _tokenKey));
+      if (fallback != null && fallback.isNotEmpty) {
+        return _cachedToken = fallback;
+      }
     }
     return _cachedToken = sanitized;
   }
@@ -183,6 +209,13 @@ class UserStorageServiceImpl implements UserStorageService {
         sanitized == null) {
       _cachedRefreshToken = null;
       unawaited(_safeSecureDelete(_refreshTokenKey));
+      unawaited(_safeLocalDelete(_refreshTokenKey));
+    }
+    if (sanitized == null || sanitized.isEmpty) {
+      final fallback = _sanitizeToken(_localStorageService.getPreference(key: _refreshTokenKey));
+      if (fallback != null && fallback.isNotEmpty) {
+        return _cachedRefreshToken = fallback;
+      }
     }
     return _cachedRefreshToken = sanitized;
   }
@@ -374,11 +407,15 @@ class UserStorageServiceImpl implements UserStorageService {
     }
     try {
       await _secureStorage.write(key: _tokenKey, value: clean);
-      // Ensure plaintext preference is deleted
-      await _safeLocalDelete(_tokenKey);
     } on Object {
-      return;
+      // Secure storage write failed on desktop without keychain sandbox permissions
     }
+    try {
+      await _localStorageService.savePreference(
+        key: _tokenKey,
+        data: clean,
+      );
+    } on Object catch (_) {}
   }
 
   @override
@@ -392,11 +429,15 @@ class UserStorageServiceImpl implements UserStorageService {
     }
     try {
       await _secureStorage.write(key: _refreshTokenKey, value: clean);
-      // Ensure plaintext preference is deleted
-      await _safeLocalDelete(_refreshTokenKey);
     } on Object {
-      return;
+      // Secure storage write failed
     }
+    try {
+      await _localStorageService.savePreference(
+        key: _refreshTokenKey,
+        data: clean,
+      );
+    } on Object catch (_) {}
   }
 
   @override
@@ -411,16 +452,20 @@ class UserStorageServiceImpl implements UserStorageService {
   @override
   Future<void> saveProStatus({required bool isPro}) async {
     _cachedProStatus = isPro;
+    final valueStr = isPro ? 'true' : 'false';
     try {
       await _secureStorage.write(
         key: _proStatusKey,
-        value: isPro ? 'true' : 'false',
+        value: valueStr,
       );
-      // Purge any legacy plaintext copy on write.
+    } on Object catch (_) {}
+    try {
+      await _localStorageService.savePreference(
+        key: _proStatusKey,
+        data: valueStr,
+      );
       unawaited(_safeLocalDelete(PrefKeys.isProSubscriber));
-    } on Object {
-      return;
-    }
+    } on Object catch (_) {}
   }
 
   @override
@@ -554,6 +599,7 @@ class UserStorageServiceImpl implements UserStorageService {
     unawaited(_safeSecureDelete(_proStatusKey));
     unawaited(_safeLocalDelete(_tokenKey));
     unawaited(_safeLocalDelete(_refreshTokenKey));
+    unawaited(_safeLocalDelete(_proStatusKey));
     // Belt-and-suspenders: also wipe legacy plaintext pro key on sign-out.
     unawaited(_safeLocalDelete(PrefKeys.isProSubscriber));
     unawaited(_safeLocalDelete(_emailKey));
