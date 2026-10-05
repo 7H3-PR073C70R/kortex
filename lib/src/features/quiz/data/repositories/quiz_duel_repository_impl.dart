@@ -270,6 +270,19 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
   }
 
   @override
+  Future<Either<Failure, void>> concludeRound({
+    required String duelId,
+    required int questionIndex,
+  }) async {
+    try {
+      _client.concludeRound(duelId, questionIndex);
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> sendDuelEmote({
     required String duelId,
     required String userId,

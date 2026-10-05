@@ -33,6 +33,7 @@ class TrackForumPostCard extends HookWidget {
     required this.onTap,
     this.onUpvoteTap,
     this.onDownvoteTap,
+    this.isSelected = false,
     super.key,
   });
 
@@ -40,6 +41,7 @@ class TrackForumPostCard extends HookWidget {
   final VoidCallback onTap;
   final VoidCallback? onUpvoteTap;
   final VoidCallback? onDownvoteTap;
+  final bool isSelected;
 
   String _formatTime(DateTime dt) {
     final now = DateTime.now();
@@ -482,27 +484,37 @@ class TrackForumPostCard extends HookWidget {
             curve: AppMotion.easeOutCubic,
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+              color: isSelected
+                  ? (isDark
+                      ? colors.primary.withAlpha(25)
+                      : colors.primary.withAlpha(12))
+                  : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
               borderRadius: AppRadius.radiusPanel,
               border: Border.all(
-                color: post.isVerifiedSolution
-                    ? colors.success.withAlpha(
-                        isDark ? (isHovered ? 120 : 60) : (isHovered ? 80 : 40),
-                      )
-                    : isHovered
-                    ? colors.primary.withAlpha(isDark ? 80 : 60)
-                    : (isDark
-                          ? colors.surfaceBorder.withAlpha(30)
-                          : colors.surfaceBorder.withAlpha(15)),
-                width: isHovered ? 1.5 : 1.0,
+                color: isSelected
+                    ? colors.primary
+                    : post.isVerifiedSolution
+                        ? colors.success.withAlpha(
+                            isDark
+                                ? (isHovered ? 120 : 60)
+                                : (isHovered ? 80 : 40),
+                          )
+                        : isHovered
+                            ? colors.primary.withAlpha(isDark ? 80 : 60)
+                            : (isDark
+                                ? colors.surfaceBorder.withAlpha(30)
+                                : colors.surfaceBorder.withAlpha(15)),
+                width: isSelected || isHovered ? 1.5 : 1.0,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: colors.black.withAlpha(
-                    isDark ? (isHovered ? 50 : 25) : (isHovered ? 16 : 6),
-                  ),
-                  blurRadius: isHovered ? 14 : 8,
-                  offset: Offset(0, isHovered ? 4 : 2),
+                  color: isSelected
+                      ? colors.primary.withAlpha(isDark ? 40 : 20)
+                      : colors.black.withAlpha(
+                          isDark ? (isHovered ? 50 : 25) : (isHovered ? 16 : 6),
+                        ),
+                  blurRadius: isSelected || isHovered ? 14 : 8,
+                  offset: Offset(0, isSelected || isHovered ? 4 : 2),
                 ),
               ],
             ),

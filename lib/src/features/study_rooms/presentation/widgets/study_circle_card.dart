@@ -22,12 +22,14 @@ class StudyCircleCard extends StatelessWidget {
     required this.circle,
     required this.onJoinTap,
     this.onTapDetails,
+    this.margin,
     super.key,
   });
 
   final StudyCircleEntity circle;
   final VoidCallback onJoinTap;
   final VoidCallback? onTapDetails;
+  final EdgeInsetsGeometry? margin;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +59,7 @@ class StudyCircleCard extends StatelessWidget {
           },
           child: AnimatedContainer(
             duration: AppMotion.snappy,
-            margin: const EdgeInsets.only(bottom: 14),
+            margin: margin ?? const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isHovered

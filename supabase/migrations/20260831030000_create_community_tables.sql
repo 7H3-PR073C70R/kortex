@@ -340,7 +340,7 @@ BEGIN
             back,
             front_latex,
             back_latex,
-            easiness_factor,
+            ease_factor,
             interval,
             repetitions,
             next_due_date

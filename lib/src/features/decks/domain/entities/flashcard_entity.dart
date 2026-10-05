@@ -62,10 +62,7 @@ class FlashcardEntity extends Equatable {
   bool get isDueToday {
     if (nextDueDate == null) return true;
     final now = DateTime.now();
-    return nextDueDate!.isBefore(now) ||
-        (nextDueDate!.year == now.year &&
-            nextDueDate!.month == now.month &&
-            nextDueDate!.day == now.day);
+    return !nextDueDate!.isAfter(now);
   }
 
   /// Whether this card has been seen before (has real FSRS state or legacy repetitions).

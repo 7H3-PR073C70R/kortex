@@ -110,13 +110,20 @@ class SyllabotAiSettingsPage extends HookWidget {
     );
 
     useEffect(() {
+      var isMounted = true;
       unawaited(
         ttsHandler.getAvailableVoices().then((voices) {
-          availableVoices.value = voices;
-          isLoadingVoices.value = false;
+          if (isMounted) {
+            availableVoices.value = voices;
+            isLoadingVoices.value = false;
+          }
         }),
       );
-      return ttsHandler.stop;
+      return () {
+        isMounted = false;
+        unawaited(ttsHandler.stop());
+        ttsHandler.dispose();
+      };
     }, const []);
 
     final activeMode = socraticMode.value;

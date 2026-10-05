@@ -27,6 +27,12 @@ abstract class QuizDuelRepository {
     required int responseTimeMs,
   });
 
+  /// Forces conclusion of a round when timer expires or all answers submitted.
+  Future<Either<Failure, void>> concludeRound({
+    required String duelId,
+    required int questionIndex,
+  });
+
   /// Broadcasts a live reaction emote (🔥, ⚡, 🤯, 👏, 🎯).
   Future<Either<Failure, void>> sendDuelEmote({
     required String duelId,

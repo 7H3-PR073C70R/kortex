@@ -323,20 +323,22 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
             .where((d) => d.id == remote.id)
             .firstOrNull;
         final dashMatch = dashDueMap[remote.id];
-
         final inMemCards = _localDeckCards[remote.id];
         final inMemDue = inMemCards != null && inMemCards.isNotEmpty
             ? inMemCards.where((c) => c.isDueToday).length
             : 0;
 
         var effectiveDue = remote.dueCards;
-        if (localMatch != null && localMatch.dueCards > effectiveDue) {
-          effectiveDue = localMatch.dueCards;
+        if (localMatch != null) {
+          if (localMatch.lastStudied != null &&
+              (remote.lastStudied == null ||
+                  localMatch.lastStudied!.isAfter(remote.lastStudied!))) {
+            effectiveDue = localMatch.dueCards;
+          } else if (localMatch.dueCards > effectiveDue) {
+            effectiveDue = localMatch.dueCards;
+          }
         }
-        if (dashMatch != null && dashMatch.dueCards > effectiveDue) {
-          effectiveDue = dashMatch.dueCards;
-        }
-        if (inMemDue > effectiveDue) {
+        if (inMemCards != null && inMemCards.isNotEmpty) {
           effectiveDue = inMemDue;
         }
 

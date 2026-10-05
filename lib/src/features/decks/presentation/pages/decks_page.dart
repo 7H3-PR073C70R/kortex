@@ -12,6 +12,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/presentation/pages/nested/deck_detail_page.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
@@ -163,6 +164,7 @@ class _DecksView extends HookWidget {
 
     final searchController = useTextEditingController();
     final searchQueryEmpty = useState(true);
+    final selectedDesktopDeck = useState<DeckEntity?>(null);
 
     useEffect(() {
       context.read<DecksBloc>().add(const DecksRefreshed());
@@ -181,36 +183,67 @@ class _DecksView extends HookWidget {
       }
     }, const []);
 
-    return Scaffold(
-      backgroundColor: colors.transparent,
-      body: SafeArea(
-        bottom: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 860),
-            child: BlocBuilder<DecksBloc, DecksState>(
-              builder: (context, state) {
-                if (state.isLoading && state.allDecks.isEmpty) {
-                  return _buildDecksShimmerSkeleton(colors, isDark);
-                }
+    return Focus(
+      onKeyEvent: (node, event) {
+        if (selectedDesktopDeck.value != null &&
+            event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
+          selectedDesktopDeck.value = null;
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Scaffold(
+        backgroundColor: colors.transparent,
+        body: SafeArea(
+          bottom: false,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth >= 1024;
+              final hasSelectedDeck =
+                  isDesktop && selectedDesktopDeck.value != null;
 
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    final completer = Completer<void>();
-                    context.read<DecksBloc>().add(const DecksRefreshed());
-                    Timer(
-                      const Duration(milliseconds: 600),
-                      completer.complete,
-                    );
-                    return completer.future;
-                  },
-                  color: colors.primary,
-                  child: ListView(
-                    physics: const ClampingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
-                    children: [
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AnimatedContainer(
+                    duration: AppMotion.expressive,
+                    curve: AppMotion.easeOutCubic,
+                    width: hasSelectedDeck ? 520 : constraints.maxWidth,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: hasSelectedDeck ? 520 : 860,
+                        ),
+                        child: BlocBuilder<DecksBloc, DecksState>(
+                          builder: (context, state) {
+                            if (state.isLoading && state.allDecks.isEmpty) {
+                              return _buildDecksShimmerSkeleton(
+                                colors,
+                                isDark,
+                              );
+                            }
+
+                            return RefreshIndicator(
+                              onRefresh: () async {
+                                final completer = Completer<void>();
+                                context.read<DecksBloc>().add(
+                                      const DecksRefreshed(),
+                                    );
+                                Timer(
+                                  const Duration(milliseconds: 600),
+                                  completer.complete,
+                                );
+                                return completer.future;
+                              },
+                              color: colors.primary,
+                              child: ListView(
+                                physics: const ClampingScrollPhysics(
+                                  parent: AlwaysScrollableScrollPhysics(),
+                                ),
+                                padding:
+                                    const EdgeInsets.fromLTRB(20, 16, 20, 140),
+                                children: [
                       // 1. Header Title & Create Action
                       Row(
                         key: AppTourKeys.decksHeaderKey = AppTourKeys.safeKey(
@@ -530,6 +563,8 @@ class _DecksView extends HookWidget {
                                         state.filteredDecks[index],
                                         index,
                                         reduceMotion,
+                                        isDesktop: isDesktop,
+                                        selectedDesktopDeck: selectedDesktopDeck,
                                       ),
                                     ),
                                 ],
@@ -547,6 +582,8 @@ class _DecksView extends HookWidget {
                                     state.filteredDecks[index],
                                     index,
                                     reduceMotion,
+                                    isDesktop: isDesktop,
+                                    selectedDesktopDeck: selectedDesktopDeck,
                                   ),
                               ],
                             );
@@ -560,6 +597,30 @@ class _DecksView extends HookWidget {
           ),
         ),
       ),
+      if (hasSelectedDeck) ...[
+        VerticalDivider(
+          width: 1,
+          thickness: 1,
+          color: isDark
+              ? colors.surfaceBorderHighlight.withAlpha(50)
+              : colors.surfaceBorder,
+        ),
+        Expanded(
+          child: DeckDetailPage(
+            key: ValueKey(selectedDesktopDeck.value!.id),
+            deckId: selectedDesktopDeck.value!.id,
+            onClose: () {
+              selectedDesktopDeck.value = null;
+            },
+          ),
+        ),
+      ],
+    ],
+  );
+            },
+          ),
+        ),
+      ),
     );
   }
 
@@ -570,12 +631,22 @@ class _DecksView extends HookWidget {
     BuildContext context,
     DeckEntity deck,
     int index,
-    bool reduceMotion,
-  ) {
+    bool reduceMotion, {
+    bool isDesktop = false,
+    ValueNotifier<DeckEntity?>? selectedDesktopDeck,
+  }) {
     Widget tile = Padding(
       key: ValueKey<String>(deck.id),
       padding: const EdgeInsets.only(bottom: 14),
-      child: DeckListTileCard(deck: deck),
+      child: DeckListTileCard(
+        deck: deck,
+        isSelected: selectedDesktopDeck?.value?.id == deck.id,
+        onSelectDeck: isDesktop && selectedDesktopDeck != null
+            ? (selectedDeck) {
+                selectedDesktopDeck.value = selectedDeck;
+              }
+            : null,
+      ),
     );
 
     if (!reduceMotion && index < 8) {

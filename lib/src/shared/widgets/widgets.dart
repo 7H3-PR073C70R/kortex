@@ -13,6 +13,7 @@ export 'app_liquid_glass_tab_bar.dart';
 export 'app_logo_loader.dart';
 export 'app_multimodal_image.dart';
 export 'app_text_field.dart';
+export 'app_three_panel_layout.dart';
 export 'app_tour_keys.dart';
 export 'biometric_lock_overlay.dart';
 export 'dismiss_keyboard.dart';

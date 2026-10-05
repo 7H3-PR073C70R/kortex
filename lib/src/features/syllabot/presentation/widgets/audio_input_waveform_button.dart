@@ -47,7 +47,6 @@ class AudioInputWaveformButton extends HookWidget {
     );
 
     useEffect(() {
-      unawaited(sttHandler.initialize());
       return sttHandler.dispose;
     }, [sttHandler]);
 

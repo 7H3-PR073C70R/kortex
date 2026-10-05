@@ -31,10 +31,14 @@ enum _DeckTileAction { details, millionaire, export, delete }
 class DeckListTileCard extends StatelessWidget {
   const DeckListTileCard({
     required this.deck,
+    this.onSelectDeck,
+    this.isSelected = false,
     super.key,
   });
 
   final DeckEntity deck;
+  final ValueChanged<DeckEntity>? onSelectDeck;
+  final bool isSelected;
 
   void _confirmDelete(BuildContext context) {
     final l10n = context.l10n;
@@ -86,7 +90,11 @@ class DeckListTileCard extends StatelessWidget {
     unawaited(HapticFeedback.lightImpact());
     switch (action) {
       case _DeckTileAction.details:
-        unawaited(context.router.push(DeckDetailRoute(deckId: deck.id)));
+        if (onSelectDeck != null) {
+          onSelectDeck!(deck);
+        } else {
+          unawaited(context.router.push(DeckDetailRoute(deckId: deck.id)));
+        }
       case _DeckTileAction.millionaire:
         unawaited(HapticFeedback.mediumImpact());
         unawaited(
@@ -143,19 +151,27 @@ class DeckListTileCard extends StatelessWidget {
             child: ShrinkableButton(
               onTap: () {
                 unawaited(HapticFeedback.lightImpact());
-                unawaited(
-                  context.router.push(
-                    StudySessionRoute(deckId: effectiveDeck.id),
-                  ),
-                );
+                if (onSelectDeck != null) {
+                  onSelectDeck!(effectiveDeck);
+                } else {
+                  unawaited(
+                    context.router.push(
+                      StudySessionRoute(deckId: effectiveDeck.id),
+                    ),
+                  );
+                }
               },
               onLongPress: () {
                 unawaited(HapticFeedback.mediumImpact());
-                unawaited(
-                  context.router.push(
-                    DeckDetailRoute(deckId: effectiveDeck.id),
-                  ),
-                );
+                if (onSelectDeck != null) {
+                  onSelectDeck!(effectiveDeck);
+                } else {
+                  unawaited(
+                    context.router.push(
+                      DeckDetailRoute(deckId: effectiveDeck.id),
+                    ),
+                  );
+                }
               },
               child: AnimatedContainer(
                 duration: AppMotion.snappy,
@@ -163,26 +179,30 @@ class DeckListTileCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.panel),
-                  color: isDark
-                      ? (isHovered
-                            ? colors.surfaceSecondary.withAlpha(200)
-                            : colors.surfaceSecondary.withAlpha(160))
-                      : (isHovered
-                            ? colors.surfacePrimary.withAlpha(240)
-                            : colors.surfacePrimary.withAlpha(215)),
+                  color: isSelected
+                      ? colors.primary.withAlpha(isDark ? 45 : 25)
+                      : (isDark
+                            ? (isHovered
+                                  ? colors.surfaceSecondary.withAlpha(200)
+                                  : colors.surfaceSecondary.withAlpha(160))
+                            : (isHovered
+                                  ? colors.surfacePrimary.withAlpha(240)
+                                  : colors.surfacePrimary.withAlpha(215))),
                   border: Border.all(
-                    color: effectiveDeck.hasDueCards
-                        ? (isHovered
-                              ? colors.primary
-                              : colors.primary.withAlpha(isDark ? 110 : 70))
-                        : (isHovered
-                              ? colors.primary.withAlpha(140)
-                              : (isDark
-                                    ? colors.surfaceBorderHighlight.withAlpha(
-                                        70,
-                                      )
-                                    : colors.surfaceBorder.withAlpha(130))),
-                    width: effectiveDeck.hasDueCards ? 1.4 : 1.0,
+                    color: isSelected
+                        ? colors.primary
+                        : (effectiveDeck.hasDueCards
+                              ? (isHovered
+                                    ? colors.primary
+                                    : colors.primary.withAlpha(isDark ? 110 : 70))
+                              : (isHovered
+                                    ? colors.primary.withAlpha(140)
+                                    : (isDark
+                                          ? colors.surfaceBorderHighlight.withAlpha(
+                                              70,
+                                            )
+                                          : colors.surfaceBorder.withAlpha(130)))),
+                    width: isSelected ? 2.0 : (effectiveDeck.hasDueCards ? 1.4 : 1.0),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -339,7 +359,7 @@ class DeckListTileCard extends StatelessWidget {
                     // Row 4: Caption + responsive start affordance (No Overflow)
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final isCompact = constraints.maxWidth < 320;
+                        final isCompact = constraints.maxWidth < 380;
                         return Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -501,11 +521,15 @@ class _StartSessionPill extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  isCompact ? l10n.studyNowAction : l10n.decksStartSession,
-                  style: typography.caption.bold.copyWith(
-                    color: colors.primary,
-                    fontSize: 11.5,
+                Flexible(
+                  child: Text(
+                    isCompact ? l10n.studyNowAction : l10n.decksStartSession,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: typography.caption.bold.copyWith(
+                      color: colors.primary,
+                      fontSize: 11.5,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 4),

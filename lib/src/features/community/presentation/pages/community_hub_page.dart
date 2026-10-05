@@ -12,11 +12,13 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
 import 'package:kortex/src/features/community/presentation/pages/create_forum_discussion_page.dart';
+import 'package:kortex/src/features/community/presentation/pages/forum_thread_detail_page.dart';
 import 'package:kortex/src/features/community/presentation/widgets/auto_community_banner_widget.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_filter_bottom_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_forum_feed_list.dart';
@@ -92,6 +94,7 @@ class _CommunityHubView extends HookWidget {
     final searchQuery = useState<String>('');
     final searchController = useTextEditingController();
     final debounceTimer = useRef<Timer?>(null);
+    final selectedDesktopPost = useState<ForumPostEntity?>(null);
 
     // Auto provision / join community for user's academic track on launch & lock forum
     useEffect(() {
@@ -316,27 +319,96 @@ class _CommunityHubView extends HookWidget {
               ),
             ),
 
-            // Forum Posts Feed
+            // Forum Posts Feed (Responsive 3-Panel support on Desktop)
             Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 860),
-                  child: BlocBuilder<CommunityHubBloc, CommunityState>(
-                    builder: (context, state) {
-                      if (state.status == CommunityStatus.loading &&
-                          state.forumPosts.isEmpty) {
-                        return const CommunityHubShimmer(tabIndex: 1);
-                      }
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isDesktop = constraints.maxWidth >= 1024;
+                  final hasSelectedPost = isDesktop && selectedDesktopPost.value != null;
 
-                      return CommunityForumFeedList(
-                        state: state,
-                        searchQuery: searchQuery.value,
-                        availableTracks: availableTracks,
-                        effectiveTrack: effectiveTrack,
-                      );
-                    },
-                  ),
-                ),
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // PANEL 2: Main List / Feed Pane (Expands to 540px when post is selected on desktop for rich content layout)
+                      AnimatedContainer(
+                        duration: AppMotion.expressive,
+                        curve: AppMotion.easeOutCubic,
+                        width: hasSelectedPost
+                            ? 540
+                            : constraints.maxWidth,
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: hasSelectedPost ? 540 : 860,
+                            ),
+                            child: BlocBuilder<CommunityHubBloc, CommunityState>(
+                              builder: (context, state) {
+                                if (state.status == CommunityStatus.loading &&
+                                    state.forumPosts.isEmpty) {
+                                  return const CommunityHubShimmer(tabIndex: 1);
+                                }
+
+                                return CommunityForumFeedList(
+                                  state: state,
+                                  searchQuery: searchQuery.value,
+                                  availableTracks: availableTracks,
+                                  effectiveTrack: effectiveTrack,
+                                  selectedPostId: selectedDesktopPost.value?.id,
+                                  onPostSelected: (post) {
+                                    final postEntity = post as ForumPostEntity;
+                                    if (isDesktop) {
+                                      selectedDesktopPost.value = postEntity;
+                                    } else {
+                                      unawaited(
+                                        context.router
+                                            .push(
+                                              ForumThreadDetailRoute(
+                                                post: postEntity,
+                                              ),
+                                            )
+                                            .then((_) {
+                                              if (context.mounted) {
+                                                final bloc = context.read<CommunityHubBloc>();
+                                                bloc.add(
+                                                  ChangeForumSortFilterEvent(
+                                                    bloc.state.selectedForumFilter,
+                                                  ),
+                                                );
+                                              }
+                                            }),
+                                      );
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Pane Divider between Panel 2 & Panel 3
+                      if (hasSelectedPost) ...[
+                        VerticalDivider(
+                          width: 1,
+                          thickness: 1,
+                          color: isDark
+                              ? colors.surfaceBorderHighlight.withAlpha(50)
+                              : colors.surfaceBorder,
+                        ),
+                        // PANEL 3: Forum Post Detail & Comments View
+                        Expanded(
+                          child: ForumThreadDetailPage(
+                            key: ValueKey(selectedDesktopPost.value!.id),
+                            post: selectedDesktopPost.value!,
+                            onClosePanel: () {
+                              selectedDesktopPost.value = null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
               ),
             ),
           ],

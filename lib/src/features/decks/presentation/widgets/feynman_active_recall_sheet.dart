@@ -62,8 +62,12 @@ class FeynmanActiveRecallSheet extends HookWidget {
     );
 
     useEffect(() {
-      unawaited(speechHandler.initialize());
-      return speechHandler.dispose;
+      return () {
+        if (speechHandler.isListening) {
+          unawaited(speechHandler.stopListening());
+        }
+        speechHandler.dispose();
+      };
     }, [speechHandler]);
 
     // Calculate keyword match percentage between transcript and card answer
@@ -87,15 +91,6 @@ class FeynmanActiveRecallSheet extends HookWidget {
       final matches = answerWords.intersection(spokenWords).length;
       return (matches / answerWords.length).clamp(0.0, 1.0);
     }, [transcript.value, card.back]);
-
-    useEffect(() {
-      unawaited(speechHandler.initialize());
-      return () {
-        if (speechHandler.isListening) {
-          unawaited(speechHandler.stopListening());
-        }
-      };
-    }, []);
 
     return Container(
       margin: const EdgeInsets.only(top: 60),

@@ -198,6 +198,14 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
       if (current <= 1) {
         timer.cancel();
         emit(state.copyWith(remainingSeconds: 0));
+        if (state.status == QuizDuelStatus.inRound && state.match != null) {
+          unawaited(
+            _repository.concludeRound(
+              duelId: state.match!.duelId,
+              questionIndex: state.match!.currentQuestionIndex,
+            ),
+          );
+        }
       } else {
         emit(state.copyWith(remainingSeconds: current - 1));
       }

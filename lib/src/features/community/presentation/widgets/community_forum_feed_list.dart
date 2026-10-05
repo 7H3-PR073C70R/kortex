@@ -22,6 +22,8 @@ class CommunityForumFeedList extends HookWidget {
     required this.searchQuery,
     required this.availableTracks,
     required this.effectiveTrack,
+    this.selectedPostId,
+    this.onPostSelected,
     super.key,
   });
 
@@ -29,6 +31,8 @@ class CommunityForumFeedList extends HookWidget {
   final String searchQuery;
   final List<String> availableTracks;
   final String effectiveTrack;
+  final String? selectedPostId;
+  final ValueChanged<dynamic>? onPostSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -168,23 +172,28 @@ class CommunityForumFeedList extends HookWidget {
                     final post = filteredPosts[index];
                     final postCard = TrackForumPostCard(
                       post: post,
+                      isSelected: selectedPostId == post.id,
                       onTap: () {
-                        unawaited(
-                          context.router
-                              .push(
-                                ForumThreadDetailRoute(post: post),
-                              )
-                              .then((_) {
-                                if (context.mounted) {
-                                  final bloc = context.read<CommunityHubBloc>();
-                                  bloc.add(
-                                    ChangeForumSortFilterEvent(
-                                      bloc.state.selectedForumFilter,
-                                    ),
-                                  );
-                                }
-                              }),
-                        );
+                        if (onPostSelected != null) {
+                          onPostSelected!(post);
+                        } else {
+                          unawaited(
+                            context.router
+                                .push(
+                                  ForumThreadDetailRoute(post: post),
+                                )
+                                .then((_) {
+                                  if (context.mounted) {
+                                    final bloc = context.read<CommunityHubBloc>();
+                                    bloc.add(
+                                      ChangeForumSortFilterEvent(
+                                        bloc.state.selectedForumFilter,
+                                      ),
+                                    );
+                                  }
+                                }),
+                          );
+                        }
                       },
                       onUpvoteTap: () {
                         final direction = post.userVote == 1 ? 0 : 1;

@@ -65,7 +65,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Advanced Organic Chemistry & Molecular Kinetics'), findsOneWidget);
-        expect(find.text('24'), findsOneWidget);
+        expect(find.textContaining('24'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 

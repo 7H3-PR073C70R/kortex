@@ -36,15 +36,21 @@ class TextToSpeechHandler {
                     onSpeakingChanged: onSpeakingChanged,
                   )) {
     _isSpeakingListener = () {
+      if (_isDisposed) return;
       final speaking = _service.isSpeaking;
-      if (isSpeakingNotifier.value != speaking) {
-        isSpeakingNotifier.value = speaking;
-        onSpeakingChanged?.call(speaking);
-      }
+      try {
+        if (isSpeakingNotifier.value != speaking) {
+          isSpeakingNotifier.value = speaking;
+          onSpeakingChanged?.call(speaking);
+        }
+      } on Object catch (_) {}
     };
     _service.isSpeakingNotifier.addListener(_isSpeakingListener);
     isSpeakingNotifier.value = _service.isSpeaking;
   }
+
+  bool _isDisposed = false;
+  bool get isDisposed => _isDisposed;
 
   final ValueChanged<bool>? onSpeakingChanged;
   final ValueChanged<String>? onError;
@@ -125,6 +131,8 @@ class TextToSpeechHandler {
 
   /// Releases resources and detaches listener.
   void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
     _service.isSpeakingNotifier.removeListener(_isSpeakingListener);
     isSpeakingNotifier.dispose();
   }

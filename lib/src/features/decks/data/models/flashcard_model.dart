@@ -37,10 +37,7 @@ abstract class FlashcardModel with _$FlashcardModel {
   bool get isDueToday {
     if (nextDueDate == null) return true;
     final now = DateTime.now();
-    return nextDueDate!.isBefore(now) ||
-        (nextDueDate!.year == now.year &&
-            nextDueDate!.month == now.month &&
-            nextDueDate!.day == now.day);
+    return !nextDueDate!.isAfter(now);
   }
 
   factory FlashcardModel.fromJson(Map<String, dynamic> json) =>

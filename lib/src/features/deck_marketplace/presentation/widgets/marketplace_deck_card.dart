@@ -12,12 +12,14 @@ class MarketplaceDeckCard extends StatelessWidget {
     required this.deck,
     required this.onTap,
     required this.onCloneTap,
+    this.isSelected = false,
     super.key,
   });
 
   final SharedDeckEntity deck;
   final VoidCallback onTap;
   final VoidCallback onCloneTap;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -43,25 +45,33 @@ class MarketplaceDeckCard extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: isHovered
+                color: isSelected
                     ? (isDark
-                          ? colors.surfaceSecondary.withAlpha(220)
+                          ? colors.surfaceSecondary.withAlpha(240)
                           : colors.surfacePrimary)
-                    : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+                    : (isHovered
+                          ? (isDark
+                                ? colors.surfaceSecondary.withAlpha(220)
+                                : colors.surfacePrimary)
+                          : (isDark ? colors.surfaceSecondary : colors.surfacePrimary)),
                 borderRadius: AppRadius.radiusPanel,
                 border: Border.all(
-                  color: isHovered
-                      ? colors.primary.withAlpha(isDark ? 140 : 100)
-                      : colors.primary.withAlpha(isDark ? 40 : 25),
-                  width: isHovered ? 1.5 : 1.0,
+                  color: isSelected
+                      ? colors.primary
+                      : (isHovered
+                            ? colors.primary.withAlpha(isDark ? 140 : 100)
+                            : colors.primary.withAlpha(isDark ? 40 : 25)),
+                  width: isSelected ? 2.0 : (isHovered ? 1.5 : 1.0),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: colors.black.withAlpha(
-                      isDark ? (isHovered ? 45 : 20) : (isHovered ? 15 : 6),
-                    ),
-                    blurRadius: isHovered ? 12 : 6,
-                    offset: Offset(0, isHovered ? 4 : 2),
+                    color: isSelected
+                        ? colors.primary.withAlpha(isDark ? 80 : 40)
+                        : colors.black.withAlpha(
+                            isDark ? (isHovered ? 45 : 20) : (isHovered ? 15 : 6),
+                          ),
+                    blurRadius: isSelected ? 14 : (isHovered ? 12 : 6),
+                    offset: Offset(0, isSelected ? 3 : (isHovered ? 4 : 2)),
                   ),
                 ],
               ),

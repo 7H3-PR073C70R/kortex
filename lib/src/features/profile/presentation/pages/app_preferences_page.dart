@@ -198,132 +198,34 @@ class AppPreferencesPage extends HookWidget {
                       'Calibrate visual accent tones for maximum study focus',
                   colors: colors,
                   typography: typography,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Active Palette Hero Display Card
-                      AnimatedContainer(
-                        duration: AppMotion.snappy,
-                        curve: Curves.easeOutCubic,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: activePreset.defaultAccent.withAlpha(
-                            isDark ? 35 : 20,
-                          ),
-                          borderRadius: AppRadius.radiusPanel,
-                          border: Border.all(
-                            color: activePreset.defaultAccent.withAlpha(
-                              isDark ? 120 : 90,
-                            ),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: activePreset.defaultAccent,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: colors.white.withAlpha(160),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: activePreset.defaultAccent.withAlpha(
-                                      90,
-                                    ),
-                                    blurRadius: 10,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.palette_rounded,
-                                color: colors.white,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        activePreset.displayName,
-                                        style: typography.body.bold.copyWith(
-                                          color: activePreset.defaultAccent,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: activePreset.defaultAccent,
-                                          borderRadius: AppRadius.radiusMicro,
-                                        ),
-                                        child: Text(
-                                          'ACTIVE',
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: colors.white,
-                                                fontSize: 9.5,
-                                                letterSpacing: 0.8,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    _getPresetDescription(activePreset),
-                                    style: typography.caption.regular.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 11.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final presets = ThemePreset.values
+                          .where(
+                            (p) =>
+                                p.name != 'emeraldStem' &&
+                                p.name != 'royalAmethyst',
+                          )
+                          .toList();
+                      final crossAxisCount = constraints.maxWidth > 480
+                          ? 4
+                          : (constraints.maxWidth > 320 ? 2 : 2);
+                      final childAspectRatio = constraints.maxWidth > 480
+                          ? 3.4
+                          : 3.1;
 
-                      // Palette Swatch Cards (2-Column Grid)
-                      GridView.builder(
+                      return GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 10,
-                              crossAxisSpacing: 10,
-                              childAspectRatio: 2.8,
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              mainAxisSpacing: 8,
+                              crossAxisSpacing: 8,
+                              childAspectRatio: childAspectRatio,
                             ),
-                        itemCount: ThemePreset.values
-                            .where(
-                              (p) =>
-                                  p.name != 'emeraldStem' &&
-                                  p.name != 'royalAmethyst',
-                            )
-                            .length,
+                        itemCount: presets.length,
                         itemBuilder: (context, index) {
-                          final presets = ThemePreset.values
-                              .where(
-                                (p) =>
-                                    p.name != 'emeraldStem' &&
-                                    p.name != 'royalAmethyst',
-                              )
-                              .toList();
                           final preset = presets[index];
                           final isSelected = activePreset == preset;
                           return PlatformHoverBuilder(
@@ -348,8 +250,8 @@ class AppPreferencesPage extends HookWidget {
                                 duration: AppMotion.snappy,
                                 curve: Curves.easeOutCubic,
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
+                                  horizontal: 10,
+                                  vertical: 7,
                                 ),
                                 decoration: BoxDecoration(
                                   color: isSelected
@@ -368,8 +270,8 @@ class AppPreferencesPage extends HookWidget {
                                 child: Row(
                                   children: [
                                     Container(
-                                      width: 24,
-                                      height: 24,
+                                      width: 20,
+                                      height: 20,
                                       decoration: BoxDecoration(
                                         color: preset.defaultAccent,
                                         shape: BoxShape.circle,
@@ -378,7 +280,7 @@ class AppPreferencesPage extends HookWidget {
                                                 BoxShadow(
                                                   color: preset.defaultAccent
                                                       .withAlpha(80),
-                                                  blurRadius: 6,
+                                                  blurRadius: 5,
                                                 ),
                                               ]
                                             : null,
@@ -387,11 +289,11 @@ class AppPreferencesPage extends HookWidget {
                                           ? Icon(
                                               Icons.check_rounded,
                                               color: colors.white,
-                                              size: 14,
+                                              size: 12,
                                             )
                                           : null,
                                     ),
-                                    const SizedBox(width: 10),
+                                    const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         preset.displayName,
@@ -401,7 +303,7 @@ class AppPreferencesPage extends HookWidget {
                                           color: isSelected
                                               ? preset.defaultAccent
                                               : colors.textPrimary,
-                                          fontSize: 12.5,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ),
@@ -411,8 +313,8 @@ class AppPreferencesPage extends HookWidget {
                             ),
                           );
                         },
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -749,31 +651,5 @@ class AppPreferencesPage extends HookWidget {
         ),
       ),
     );
-  }
-
-  String _getPresetDescription(ThemePreset preset) {
-    switch (preset) {
-      case ThemePreset.cleanLight:
-        return 'High-contrast minimal slate preset';
-      case ThemePreset.slateDark:
-        return 'Eye-strain engineering charcoal preset';
-      case ThemePreset.midnightOled:
-        return 'Pure OLED true black energy saver';
-      case ThemePreset.alpineMoss:
-        return 'Deep STEM Alpine Moss focus theme';
-      case ThemePreset.warmOchre:
-        return 'Academic Sandstone & Warm Ochre tone';
-      case ThemePreset.deepBronze:
-        return 'Editorial Amber & Deep Bronze accent';
-      case ThemePreset.slateTerracotta:
-        return 'Contrast Warmth & Slate Terracotta tint';
-      case ThemePreset.quartzCyan:
-        return 'Muted LaTeX Ink & Quartz Cyan accent';
-      // ignore: deprecated_member_use_from_same_package -- Legacy theme alias.
-      case ThemePreset.emeraldStem:
-      // ignore: deprecated_member_use_from_same_package -- Legacy theme alias.
-      case ThemePreset.royalAmethyst:
-        return 'Custom Kortexify Scholar theme preset';
-    }
   }
 }

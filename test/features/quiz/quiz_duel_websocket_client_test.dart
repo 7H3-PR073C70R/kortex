@@ -309,5 +309,33 @@ void main() {
 
       expect(match.roomCode, equals('K7X9P2'));
     });
+
+    test('concludeRound updates status to roundSummary and auto-progresses to next question', () async {
+      final questions = QuizDuelWebSocketClient.getDefaultDuelQuestions('Physics', 'WAEC', count: 2);
+      final match = await client.findOrCreateDuel(
+        subject: 'Physics',
+        examBoard: 'WAEC',
+        userId: 'player1_id',
+        displayName: 'Scholar One',
+        avatarUrl: '⚡',
+        questionCount: 2,
+        customQuestions: questions,
+      );
+
+      client
+        ..forceStartRound(match.duelId)
+        ..concludeRound(match.duelId, 0);
+
+      final summaryMatch = await client.streamDuel(match.duelId).first;
+      expect(summaryMatch.status, equals(QuizDuelStatus.roundSummary));
+      expect(summaryMatch.player1.selectedOptionIndex, equals(-1));
+
+      // Wait 1.9 seconds for transition timer to advance to question 1
+      await Future<void>.delayed(const Duration(milliseconds: 1900));
+
+      final nextMatch = await client.streamDuel(match.duelId).first;
+      expect(nextMatch.currentQuestionIndex, equals(1));
+      expect(nextMatch.status, equals(QuizDuelStatus.inRound));
+    });
   });
 }

@@ -76,8 +76,8 @@ void main() {
     await pumpTile(tester);
 
     // Due signal is on the face of the tile; delete is not.
-    expect(find.text('7'), findsOneWidget);
-    expect(find.text('due'), findsOneWidget);
+    expect(find.textContaining('7'), findsOneWidget);
+    expect(find.textContaining('due'), findsOneWidget);
     expect(find.text('Delete deck'), findsNothing);
   });
 

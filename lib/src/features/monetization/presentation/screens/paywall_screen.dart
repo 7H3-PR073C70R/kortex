@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
@@ -260,6 +261,108 @@ class _PaywallScreenState extends State<PaywallScreen> {
     }
   }
 
+  Widget _buildDesktopPanelHeader(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          PlatformHoverBuilder(
+            builder: (context, isHovered, child) {
+              return IconButton(
+                icon: AnimatedContainer(
+                  duration: AppMotion.snappy,
+                  curve: AppMotion.easeOutCubic,
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: isHovered
+                        ? (isDark ? colors.surfaceSecondary : colors.surfacePrimary)
+                        : (isDark
+                            ? colors.surfaceSecondary.withAlpha(180)
+                            : colors.surfacePrimary.withAlpha(200)),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isHovered
+                          ? colors.primary.withAlpha(120)
+                          : colors.surfaceBorder.withAlpha(80),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: isHovered ? colors.primary : colors.textPrimary,
+                    size: 18,
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).maybePop(false),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Kortexify Pro',
+            style: typography.title3.bold.copyWith(
+              color: colors.textPrimary,
+            ),
+          ),
+          const Spacer(),
+          if (!kIsWeb)
+            TextButton(
+              onPressed: _isProcessing ? null : _handleRestore,
+              child: Text(
+                l10n.paywallRestore,
+                style: typography.callout.bold.copyWith(
+                  color: colors.primary,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopPanelBody(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeroHeader(colors, typography, l10n, isDark),
+          const SizedBox(height: 14),
+          _buildSocialProofStrip(colors, typography, l10n, isDark),
+          const SizedBox(height: 16),
+          _buildTierPlansSelector(colors, typography, l10n, isDark),
+          const SizedBox(height: 14),
+          _buildTransparentTimeline(colors, typography, l10n, isDark),
+          const SizedBox(height: 16),
+          _buildCheckoutControls(
+            colors: colors,
+            typography: typography,
+            l10n: l10n,
+            isDark: isDark,
+            isInline: true,
+          ),
+          const SizedBox(height: 16),
+          _buildFeatureMatrix(colors, typography, l10n, isDark),
+          const SizedBox(height: 16),
+          _buildFooter(colors, typography, l10n),
+          const SizedBox(height: 28),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -267,6 +370,85 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
     final size = MediaQuery.sizeOf(context);
+
+    final isDesktop = size.width >= 900;
+
+    if (isDesktop) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            // Ambient Dimmed Backdrop Overlay
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => unawaited(Navigator.of(context).maybePop(false)),
+                child: ColoredBox(
+                  color: Colors.black.withAlpha(isDark ? 140 : 80),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              ),
+            ),
+
+            // Right Slide-in Compact Panel (Width 520px)
+            Positioned(
+              top: 0,
+              bottom: 0,
+              right: 0,
+              width: 520,
+              child: Material(
+                elevation: 16,
+                color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+                shape: Border(
+                  right: BorderSide(
+                    color: colors.primary.withAlpha(isDark ? 80 : 50),
+                    width: 1.5,
+                  ),
+                ),
+                child: SafeArea(
+                  child: Focus(
+                    autofocus: true,
+                    onKeyEvent: (node, event) {
+                      if (event is KeyDownEvent &&
+                          event.logicalKey == LogicalKeyboardKey.escape) {
+                        unawaited(Navigator.of(context).maybePop(false));
+                        return KeyEventResult.handled;
+                      }
+                      return KeyEventResult.ignored;
+                    },
+                    child: Column(
+                      children: [
+                        _buildDesktopPanelHeader(colors, typography, l10n, isDark),
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colors.surfaceBorder.withAlpha(isDark ? 50 : 80),
+                        ),
+                        Expanded(
+                          child: _isLoading
+                              ? const Center(child: AppLogoLoader(size: 56))
+                              : _buildDesktopPanelBody(colors, typography, l10n, isDark),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+                  .animate()
+                  .slideX(
+                    begin: -1,
+                    end: 0,
+                    duration: 320.ms,
+                    curve: Curves.easeOutCubic,
+                  )
+                  .fadeIn(duration: 200.ms),
+            ),
+          ],
+        ),
+      );
+    }
 
     // Responsive breakpoints:
     // When in landscape on phones/tablets or on wide viewports (desktop/web/tablet >= 720),

@@ -25,6 +25,8 @@ import 'package:kortex/src/features/community/presentation/widgets/community_hub
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_shimmer.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/deck_marketplace/domain/entities/shared_deck_entity.dart';
+import 'package:kortex/src/features/deck_marketplace/presentation/pages/deck_marketplace_detail_page.dart';
 import 'package:kortex/src/features/deck_marketplace/presentation/widgets/marketplace_deck_card.dart';
 import 'package:kortex/src/features/deck_marketplace/presentation/widgets/publish_deck_modal_sheet.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
@@ -292,6 +294,7 @@ class _StudyHubView extends HookWidget {
     final searchQuery = useState<String>('');
     final searchController = useTextEditingController();
     final debounceTimer = useRef<Timer?>(null);
+    final selectedDesktopDeck = useState<SharedDeckEntity?>(null);
 
     useEffect(() {
       return () => debounceTimer.value?.cancel();
@@ -333,222 +336,305 @@ class _StudyHubView extends HookWidget {
             : 0) +
         (hubState.forumSearchQuery.isNotEmpty ? 1 : 0);
 
-    return BlocListener<CommunityHubBloc, CommunityState>(
-      listenWhen: (previous, current) =>
-          current.errorMessage != null &&
-          current.errorMessage != previous.errorMessage,
-      listener: (context, state) {
-        if (state.errorMessage != null &&
-            state.errorMessage!.trim().isNotEmpty) {
-          context.showSnackBar(
-            message: state.errorMessage!,
-            type: SnackBarType.error,
-          );
-          context.read<CommunityHubBloc>().add(
-            const ClearCommunityErrorEvent(),
-          );
+    final hasSelectedDeck = isWide && selectedDesktopDeck.value != null;
+
+    return Focus(
+      autofocus: hasSelectedDeck,
+      onKeyEvent: (node, event) {
+        if (hasSelectedDeck &&
+            event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
+          selectedDesktopDeck.value = null;
+          return KeyEventResult.handled;
         }
+        return KeyEventResult.ignored;
       },
-      child: Scaffold(
-        backgroundColor: isDark
-            ? colors.backgroundPrimary
-            : colors.surfacePrimary,
-        appBar: AppBar(
-          backgroundColor: colors.transparent,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          centerTitle: false,
-          titleSpacing: 16,
-          title: AnimatedSwitcher(
-            duration: AppMotion.snappy,
-            switchInCurve: AppMotion.easeOutCubic,
-            switchOutCurve: AppMotion.easeOutCubic,
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.05),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
-            },
-            child: isSearchExpanded.value
-                ? CommunitySearchHeader(
-                    searchController: searchController,
-                    searchQuery: searchQuery,
-                    debounceTimer: debounceTimer,
-                    isSearchExpanded: isSearchExpanded,
-                    availableTracks: availableTracks,
-                    effectiveTrack: effectiveTrack,
-                    hasActiveFilters: hasActiveFilters,
-                    activeFilterCount: activeFilterCount,
-                  )
-                : Text(
-                    'Hub',
-                    style: typography.title2.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
+      child: BlocListener<CommunityHubBloc, CommunityState>(
+        listenWhen: (previous, current) =>
+            current.errorMessage != null &&
+            current.errorMessage != previous.errorMessage,
+        listener: (context, state) {
+          if (state.errorMessage != null &&
+              state.errorMessage!.trim().isNotEmpty) {
+            context.showSnackBar(
+              message: state.errorMessage!,
+              type: SnackBarType.error,
+            );
+            context.read<CommunityHubBloc>().add(
+              const ClearCommunityErrorEvent(),
+            );
+          }
+        },
+        child: Scaffold(
+          backgroundColor: isDark
+              ? colors.backgroundPrimary
+              : colors.surfacePrimary,
+          appBar: AppBar(
+            backgroundColor: colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            centerTitle: false,
+            titleSpacing: 16,
+            title: AnimatedSwitcher(
+              duration: AppMotion.snappy,
+              switchInCurve: AppMotion.easeOutCubic,
+              switchOutCurve: AppMotion.easeOutCubic,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.05),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
                   ),
-          ),
-          actions: isSearchExpanded.value
-              ? null
-              : [
-                  if (!isWide && tabController.index == 0) ...[
-                    CommunitySearchFilterCapsule(
+                );
+              },
+              child: isSearchExpanded.value
+                  ? CommunitySearchHeader(
+                      searchController: searchController,
+                      searchQuery: searchQuery,
+                      debounceTimer: debounceTimer,
+                      isSearchExpanded: isSearchExpanded,
+                      availableTracks: availableTracks,
+                      effectiveTrack: effectiveTrack,
                       hasActiveFilters: hasActiveFilters,
                       activeFilterCount: activeFilterCount,
-                      isDark: isDark,
-                      onOpenSearch: () {
-                        isSearchExpanded.value = true;
-                      },
-                      onOpenFilter: () {
-                        showCommunityFilterSheet(
-                          context: context,
-                          availableTracks: availableTracks,
-                          effectiveTrack: effectiveTrack,
-                        );
-                      },
+                    )
+                  : Text(
+                      'Hub',
+                      style: typography.title2.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
                     ),
-                    const SizedBox(width: 8),
+            ),
+            actions: isSearchExpanded.value
+                ? null
+                : [
+                    if (!isWide && tabController.index == 0) ...[
+                      CommunitySearchFilterCapsule(
+                        hasActiveFilters: hasActiveFilters,
+                        activeFilterCount: activeFilterCount,
+                        isDark: isDark,
+                        onOpenSearch: () {
+                          isSearchExpanded.value = true;
+                        },
+                        onOpenFilter: () {
+                          showCommunityFilterSheet(
+                            context: context,
+                            availableTracks: availableTracks,
+                            effectiveTrack: effectiveTrack,
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Padding(
+                      padding: const EdgeInsets.only(right: 16),
+                      child: _buildHeaderActionButton(
+                        context,
+                        tabIndex: tabController.index,
+                        isWide: isWide,
+                        targetTrack: targetTrack,
+                      ),
+                    ),
                   ],
-                  Padding(
-                    padding: const EdgeInsets.only(right: 16),
-                    child: _buildHeaderActionButton(
-                      context,
-                      tabIndex: tabController.index,
-                      isWide: isWide,
-                      targetTrack: targetTrack,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(50),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: hasSelectedDeck ? 520 : 860,
                     ),
-                  ),
-                ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(50),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 860),
-                  child: AppLiquidGlassTabBar(
-                    key: AppTourKeys.pomodoroCardKey = AppTourKeys.safeKey(
-                      AppTourKeys.pomodoroCardKey,
-                      'tour_pomodoro_card',
+                    child: AppLiquidGlassTabBar(
+                      key: AppTourKeys.pomodoroCardKey = AppTourKeys.safeKey(
+                        AppTourKeys.pomodoroCardKey,
+                        'tour_pomodoro_card',
+                      ),
+                      tabs: isWide
+                          ? [
+                              l10n.liveRoomsTab,
+                              'Study Pods',
+                              l10n.marketplaceTab,
+                            ]
+                          : [
+                              l10n.forumTab,
+                              l10n.liveRoomsTab,
+                              'Study Pods',
+                              l10n.marketplaceTab,
+                            ],
+                      selectedIndex: tabController.index,
+                      onTabSelected: tabController.animateTo,
+                      isCompact: true,
                     ),
-                    tabs: isWide
-                        ? [
-                            l10n.liveRoomsTab,
-                            'Study Pods',
-                            l10n.marketplaceTab,
-                          ]
-                        : [
-                            l10n.forumTab,
-                            l10n.liveRoomsTab,
-                            'Study Pods',
-                            l10n.marketplaceTab,
-                          ],
-                    selectedIndex: tabController.index,
-                    onTabSelected: tabController.animateTo,
-                    isCompact: true,
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        body: BlocConsumer<CommunityHubBloc, CommunityState>(
-          listenWhen: (prev, curr) =>
-              curr.lastClonedDeckId != null &&
-              prev.lastClonedDeckId != curr.lastClonedDeckId,
-          listener: (context, state) {
-            if (state.lastClonedDeckId != null) {
-              if (locator.isRegistered<DecksBloc>()) {
-                locator<DecksBloc>().add(const DecksRefreshed());
+          body: BlocConsumer<CommunityHubBloc, CommunityState>(
+            listenWhen: (prev, curr) =>
+                curr.lastClonedDeckId != null &&
+                prev.lastClonedDeckId != curr.lastClonedDeckId,
+            listener: (context, state) {
+              if (state.lastClonedDeckId != null) {
+                if (locator.isRegistered<DecksBloc>()) {
+                  locator<DecksBloc>().add(const DecksRefreshed());
+                }
+                if (locator.isRegistered<DashboardBloc>()) {
+                  locator<DashboardBloc>().add(const DashboardRefreshed());
+                }
+                context.showSnackBar(
+                  message: l10n.deckClonedSuccessNotice,
+                );
               }
-              if (locator.isRegistered<DashboardBloc>()) {
-                locator<DashboardBloc>().add(const DashboardRefreshed());
+            },
+            builder: (context, state) {
+              if (state.status == CommunityStatus.loading &&
+                  state.studyRooms.isEmpty &&
+                  state.sharedDecks.isEmpty &&
+                  state.forumPosts.isEmpty) {
+                return CommunityHubShimmer(
+                  tabIndex: tabController.index == 1 ? 0 : 2,
+                );
               }
-              context.showSnackBar(
-                message: l10n.deckClonedSuccessNotice,
+
+              final hubTabBarView = TabBarView(
+                controller: tabController,
+                children: isWide
+                    ? [
+                        // 0. Live Focus Rooms
+                        _LiveRoomsTab(
+                          key: AppTourKeys.liveRoomsCardKey = AppTourKeys.safeKey(
+                            AppTourKeys.liveRoomsCardKey,
+                            'tour_live_rooms_card',
+                          ),
+                          state: state,
+                          targetTrack: targetTrack,
+                          hasSelectedDeck: hasSelectedDeck,
+                        ),
+
+                        // 1. Study Circles
+                        _StudyCirclesTab(
+                          state: state,
+                          targetTrack: targetTrack,
+                          hasSelectedDeck: hasSelectedDeck,
+                        ),
+
+                        // 2. Deck Marketplace
+                        _DeckMarketplaceTab(
+                          key: AppTourKeys.marketplaceCardKey =
+                              AppTourKeys.safeKey(
+                            AppTourKeys.marketplaceCardKey,
+                            'tour_marketplace_card',
+                          ),
+                          state: state,
+                          selectedDeckId: selectedDesktopDeck.value?.id,
+                          hasSelectedDeck: hasSelectedDeck,
+                          onDeckSelected: (deck) {
+                            if (isWide) {
+                              selectedDesktopDeck.value = deck;
+                            } else {
+                              unawaited(
+                                context.router.push(
+                                  DeckMarketplaceDetailRoute(deck: deck),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ]
+                    : [
+                        // 0. Academic Forum Feed
+                        _ForumTab(
+                          state: state,
+                          targetTrack: targetTrack,
+                        ),
+
+                        // 1. Live Focus Rooms
+                        _LiveRoomsTab(
+                          key: AppTourKeys.liveRoomsCardKey = AppTourKeys.safeKey(
+                            AppTourKeys.liveRoomsCardKey,
+                            'tour_live_rooms_card',
+                          ),
+                          state: state,
+                          targetTrack: targetTrack,
+                          hasSelectedDeck: hasSelectedDeck,
+                        ),
+
+                        // 2. Study Circles
+                        _StudyCirclesTab(
+                          state: state,
+                          targetTrack: targetTrack,
+                          hasSelectedDeck: hasSelectedDeck,
+                        ),
+
+                        // 3. Deck Marketplace
+                        _DeckMarketplaceTab(
+                          key: AppTourKeys.marketplaceCardKey =
+                              AppTourKeys.safeKey(
+                            AppTourKeys.marketplaceCardKey,
+                            'tour_marketplace_card',
+                          ),
+                          state: state,
+                          selectedDeckId: selectedDesktopDeck.value?.id,
+                          hasSelectedDeck: hasSelectedDeck,
+                          onDeckSelected: (deck) {
+                            if (isWide) {
+                              selectedDesktopDeck.value = deck;
+                            } else {
+                              unawaited(
+                                context.router.push(
+                                  DeckMarketplaceDetailRoute(deck: deck),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
               );
-            }
-          },
-          builder: (context, state) {
-            if (state.status == CommunityStatus.loading &&
-                state.studyRooms.isEmpty &&
-                state.sharedDecks.isEmpty &&
-                state.forumPosts.isEmpty) {
-              return CommunityHubShimmer(
-                tabIndex: tabController.index == 1 ? 0 : 2,
+
+              if (!hasSelectedDeck) {
+                return hubTabBarView;
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // PANEL 2: Main Hub Tab View (Fixed 520px when Deck Detail Inspector is active on desktop)
+                  AnimatedContainer(
+                    duration: AppMotion.expressive,
+                    curve: AppMotion.easeOutCubic,
+                    width: 520,
+                    child: hubTabBarView,
+                  ),
+
+                  // Pane Divider 2
+                  VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: isDark
+                        ? colors.surfaceBorderHighlight.withAlpha(50)
+                        : colors.surfaceBorder,
+                  ),
+
+                  // PANEL 3: Deck Marketplace Detail & Preview View
+                  Expanded(
+                    child: DeckMarketplaceDetailPage(
+                      key: ValueKey(selectedDesktopDeck.value!.id),
+                      deck: selectedDesktopDeck.value!,
+                      onClosePanel: () {
+                        selectedDesktopDeck.value = null;
+                      },
+                    ),
+                  ),
+                ],
               );
-            }
-
-            return TabBarView(
-              controller: tabController,
-              children: isWide
-                  ? [
-                      // 0. Live Focus Rooms
-                      _LiveRoomsTab(
-                        key: AppTourKeys.liveRoomsCardKey = AppTourKeys.safeKey(
-                          AppTourKeys.liveRoomsCardKey,
-                          'tour_live_rooms_card',
-                        ),
-                        state: state,
-                        targetTrack: targetTrack,
-                      ),
-
-                      // 1. Study Circles
-                      _StudyCirclesTab(
-                        state: state,
-                        targetTrack: targetTrack,
-                      ),
-
-                      // 2. Deck Marketplace
-                      _DeckMarketplaceTab(
-                        key: AppTourKeys.marketplaceCardKey =
-                            AppTourKeys.safeKey(
-                          AppTourKeys.marketplaceCardKey,
-                          'tour_marketplace_card',
-                        ),
-                        state: state,
-                      ),
-                    ]
-                  : [
-                      // 0. Academic Forum Feed
-                      _ForumTab(
-                        state: state,
-                        targetTrack: targetTrack,
-                      ),
-
-                      // 1. Live Focus Rooms
-                      _LiveRoomsTab(
-                        key: AppTourKeys.liveRoomsCardKey = AppTourKeys.safeKey(
-                          AppTourKeys.liveRoomsCardKey,
-                          'tour_live_rooms_card',
-                        ),
-                        state: state,
-                        targetTrack: targetTrack,
-                      ),
-
-                      // 2. Study Circles
-                      _StudyCirclesTab(
-                        state: state,
-                        targetTrack: targetTrack,
-                      ),
-
-                      // 3. Deck Marketplace
-                      _DeckMarketplaceTab(
-                        key: AppTourKeys.marketplaceCardKey =
-                            AppTourKeys.safeKey(
-                          AppTourKeys.marketplaceCardKey,
-                          'tour_marketplace_card',
-                        ),
-                        state: state,
-                      ),
-                    ],
-            );
-          },
+            },
+          ),
         ),
       ),
     );
@@ -559,11 +645,13 @@ class _LiveRoomsTab extends StatefulWidget {
   const _LiveRoomsTab({
     required this.state,
     required this.targetTrack,
+    this.hasSelectedDeck = false,
     super.key,
   });
 
   final CommunityState state;
   final String? targetTrack;
+  final bool hasSelectedDeck;
 
   @override
   State<_LiveRoomsTab> createState() => _LiveRoomsTabState();
@@ -589,6 +677,7 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
 
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isGrid = screenWidth >= _kHubGridBreakpoint;
+    final isDesktop = screenWidth >= 1024;
     final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
 
     final userTrack = widget.targetTrack?.trim();
@@ -609,7 +698,9 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
       color: colors.primary,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 860),
+          constraints: BoxConstraints(
+            maxWidth: widget.hasSelectedDeck ? 520 : (isDesktop ? 1400 : 860),
+          ),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
@@ -831,11 +922,11 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1.45,
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 440,
+                      mainAxisExtent: 168,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 14,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -950,10 +1041,12 @@ class _StudyCirclesTab extends StatelessWidget {
   const _StudyCirclesTab({
     required this.state,
     required this.targetTrack,
+    this.hasSelectedDeck = false,
   });
 
   final CommunityState state;
   final String? targetTrack;
+  final bool hasSelectedDeck;
 
   @override
   Widget build(BuildContext context) {
@@ -961,6 +1054,9 @@ class _StudyCirclesTab extends StatelessWidget {
     final typography = context.typography;
 
     final isDark = context.isDarkMode;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isDesktop = screenWidth >= 1024;
+    final isGrid = !hasSelectedDeck && (screenWidth >= _kHubGridBreakpoint);
     final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
 
     return RefreshIndicator(
@@ -970,7 +1066,9 @@ class _StudyCirclesTab extends StatelessWidget {
       color: colors.primary,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 860),
+          constraints: BoxConstraints(
+            maxWidth: hasSelectedDeck ? 520 : (isDesktop ? 1400 : 860),
+          ),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
@@ -1099,9 +1197,50 @@ class _StudyCirclesTab extends StatelessWidget {
                     ),
                   ),
                 )
+              else if (isGrid)
+                // 2-column grid layout for tablet / desktop viewports
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: isDesktop ? 650 : 540,
+                      mainAxisExtent: 295,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 14,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final circle = state.studyCircles[index];
+                        return StudyCircleCard(
+                          circle: circle,
+                          margin: EdgeInsets.zero,
+                          onTapDetails: () {
+                            unawaited(
+                              StudyCircleDetailSheet.show(context, circle),
+                            );
+                          },
+                          onJoinTap: () {
+                            context.read<CommunityHubBloc>().add(
+                              JoinStudyCircleEvent(circle.id),
+                            );
+                          },
+                        )
+                            .animate(
+                              delay: (index < 6 ? index * 45 : 0).ms,
+                            )
+                            .fadeIn(duration: 200.ms)
+                            .slideY(
+                              begin: 0.04,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
+                            );
+                      },
+                      childCount: state.studyCircles.length,
+                    ),
+                  ),
+                )
               else
-                // Study Circles stay single-column — cards are tall/complex with
-                // progress bars and member contribution lists.
+                // Single-column list layout for narrow mobile viewports
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
                   sliver: SliverList(
@@ -1180,9 +1319,18 @@ class _StudyCirclesTab extends StatelessWidget {
 }
 
 class _DeckMarketplaceTab extends HookWidget {
-  const _DeckMarketplaceTab({required this.state, super.key});
+  const _DeckMarketplaceTab({
+    required this.state,
+    this.selectedDeckId,
+    this.hasSelectedDeck = false,
+    this.onDeckSelected,
+    super.key,
+  });
 
   final CommunityState state;
+  final String? selectedDeckId;
+  final bool hasSelectedDeck;
+  final ValueChanged<SharedDeckEntity>? onDeckSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -1191,7 +1339,9 @@ class _DeckMarketplaceTab extends HookWidget {
     final isDark = context.isDarkMode;
 
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final isGrid = screenWidth >= _kHubGridBreakpoint;
+    final isDesktop = screenWidth >= 1024;
+    final isGrid = !hasSelectedDeck && (screenWidth >= _kHubGridBreakpoint);
+    final gridCrossAxisCount = isDesktop && !hasSelectedDeck ? 3 : (isGrid ? 2 : 1);
     final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
 
     final selectedCategory = useState<String>('All');
@@ -1228,7 +1378,9 @@ class _DeckMarketplaceTab extends HookWidget {
       color: colors.primary,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 860),
+          constraints: BoxConstraints(
+            maxWidth: hasSelectedDeck ? 520 : (isDesktop ? 1400 : 860),
+          ),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
@@ -1422,33 +1574,39 @@ class _DeckMarketplaceTab extends HookWidget {
                     ),
                   ),
                 )
-              else if (isGrid)
-                // 2-column grid layout for tablet / landscape / desktop
+              else if (gridCrossAxisCount > 1)
+                // Multi-column grid layout for desktop / tablet when 3rd panel is hidden
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1.55,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: gridCrossAxisCount,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 14,
+                      childAspectRatio: gridCrossAxisCount == 3 ? 1.85 : 1.75,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final deck = filteredDecks[index];
+                        final isSelected = selectedDeckId == deck.id;
                         return MarketplaceDeckCard(
                           deck: deck,
+                          isSelected: isSelected,
                           onCloneTap: () {
                             context.read<CommunityHubBloc>().add(
                               CloneDeckEvent(deck.id),
                             );
                           },
                           onTap: () {
-                            unawaited(
-                              context.router.push(
-                                DeckMarketplaceDetailRoute(deck: deck),
-                              ),
-                            );
+                            if (onDeckSelected != null) {
+                              onDeckSelected!(deck);
+                            } else {
+                              unawaited(
+                                context.router.push(
+                                  DeckMarketplaceDetailRoute(deck: deck),
+                                ),
+                              );
+                            }
                           },
                         )
                             .animate(
@@ -1466,30 +1624,33 @@ class _DeckMarketplaceTab extends HookWidget {
                   ),
                 )
               else
-                // Single-column list for compact / portrait phone
+                // Single-column list when 3rd panel is open or phone compact view
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final deck = filteredDecks[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: MarketplaceDeckCard(
-                            deck: deck,
-                            onCloneTap: () {
-                              context.read<CommunityHubBloc>().add(
-                                CloneDeckEvent(deck.id),
-                              );
-                            },
-                            onTap: () {
+                        final isSelected = selectedDeckId == deck.id;
+                        return MarketplaceDeckCard(
+                          deck: deck,
+                          isSelected: isSelected,
+                          onCloneTap: () {
+                            context.read<CommunityHubBloc>().add(
+                              CloneDeckEvent(deck.id),
+                            );
+                          },
+                          onTap: () {
+                            if (onDeckSelected != null) {
+                              onDeckSelected!(deck);
+                            } else {
                               unawaited(
                                 context.router.push(
                                   DeckMarketplaceDetailRoute(deck: deck),
                                 ),
                               );
-                            },
-                          ),
+                            }
+                          },
                         )
                             .animate(
                               delay: (index < 6 ? index * 45 : 0).ms,

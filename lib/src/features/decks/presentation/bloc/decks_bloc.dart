@@ -35,7 +35,7 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
           final hasDiscrepancy = feed.dueStudyDecks.any((dashDeck) {
             final local =
                 state.allDecks.where((d) => d.id == dashDeck.id).firstOrNull;
-            return local != null && local.dueCards < dashDeck.dueCards;
+            return local != null && local.dueCards > dashDeck.dueCards;
           });
           if (hasDiscrepancy) {
             add(const DecksRefreshed());
@@ -101,14 +101,18 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
 
     return decks.map((deck) {
       final dashDeck = dashDueMap[deck.id];
-      if (dashDeck != null && dashDeck.dueCards > deck.dueCards) {
-        return deck.copyWith(
-          dueCards: dashDeck.dueCards,
-          totalCards: dashDeck.totalCards > deck.totalCards
-              ? dashDeck.totalCards
-              : deck.totalCards,
-          lastStudied: deck.lastStudied ?? dashDeck.lastReviewed,
-        );
+      if (dashDeck != null) {
+        final isDashNewer = deck.lastStudied == null ||
+            dashDeck.lastReviewed.isAfter(deck.lastStudied!);
+        if (isDashNewer && dashDeck.dueCards > deck.dueCards) {
+          return deck.copyWith(
+            dueCards: dashDeck.dueCards,
+            totalCards: dashDeck.totalCards > deck.totalCards
+                ? dashDeck.totalCards
+                : deck.totalCards,
+            lastStudied: deck.lastStudied ?? dashDeck.lastReviewed,
+          );
+        }
       }
       return deck;
     }).toList();

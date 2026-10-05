@@ -65,11 +65,13 @@ class ForumThreadDetailPage extends HookWidget {
   const ForumThreadDetailPage({
     required this.post,
     this.highlightReplyId,
+    this.onClosePanel,
     super.key,
   });
 
   final ForumPostEntity post;
   final String? highlightReplyId;
+  final VoidCallback? onClosePanel;
 
   @override
   Widget build(BuildContext context) {
@@ -1393,6 +1395,19 @@ class ForumThreadDetailPage extends HookWidget {
             tooltip: l10n.tooltipShareThread,
             onPressed: shareThread,
           ),
+
+          // 4. Close Panel Button (when presented inside 3-panel layout)
+          if (onClosePanel != null) ...[
+            IconButton(
+              icon: Icon(
+                Icons.close_rounded,
+                color: colors.textSecondary,
+                size: 20,
+              ),
+              tooltip: 'Close Forum Detail (Esc)',
+              onPressed: onClosePanel,
+            ),
+          ],
           const SizedBox(width: 4),
         ],
       ),

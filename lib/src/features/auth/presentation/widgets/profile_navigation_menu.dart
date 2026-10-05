@@ -14,7 +14,9 @@ enum ProfileSettingsSection {
   academicTrack,
   deckPace,
   syllabotAi,
+  leaderboard,
   security,
+  membershipPro,
   appPreferences,
   aboutSupport,
 }
@@ -128,12 +130,12 @@ class ProfileNavigationMenu extends StatelessWidget {
               hoverChipBorder: neural.amber.withValues(alpha: 0.4),
               title: 'Leaderboard & Leagues',
               subtitle: 'See where you stand with your cohort this week',
-              onTap: () {
-                AppFeedback.selection();
-                unawaited(
-                  context.router.push(const LeaderboardRoute()),
-                );
-              },
+              isSelected: selectedSection == ProfileSettingsSection.leaderboard,
+              onTap: () => _handleSection(
+                context,
+                ProfileSettingsSection.leaderboard,
+                const LeaderboardRoute(),
+              ),
               showDividerBelow: false,
             ),
           ],
@@ -178,12 +180,12 @@ class ProfileNavigationMenu extends StatelessWidget {
               title: 'Membership & Pro Tier',
               subtitle: 'Unlimited AI tutoring, sync and paper scans',
               badge: 'PRO',
-              onTap: () {
-                AppFeedback.light();
-                unawaited(
-                  context.router.push(PaywallRoute()),
-                );
-              },
+              isSelected: selectedSection == ProfileSettingsSection.membershipPro,
+              onTap: () => _handleSection(
+                context,
+                ProfileSettingsSection.membershipPro,
+                PaywallRoute(),
+              ),
               showDividerBelow: false,
             ),
           ],

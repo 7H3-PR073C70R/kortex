@@ -153,9 +153,6 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       },
     );
 
-    // Warm up speech recognition in background while initial greeting plays
-    unawaited(_sttHandler.initialize());
-
     // Speak initial AI greeting automatically, then start conversational loop
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_speakInitialGreeting());

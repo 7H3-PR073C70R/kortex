@@ -37,8 +37,7 @@ class LiveFocusRoomCard extends StatelessWidget {
         builder: (context, isHovered, child) {
           return AnimatedContainer(
             duration: AppMotion.snappy,
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isHovered
                   ? (isDark
@@ -70,119 +69,130 @@ class LiveFocusRoomCard extends StatelessWidget {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Top Row: Category badge + Soundtrack Chip + Live presence indicator
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(30),
-                        borderRadius: AppRadius.radiusBadge,
-                      ),
-                      child: Text(
-                        room.category.toUpperCase(),
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                    if (room.ambientSoundTrack.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colors.surfaceTertiary.withAlpha(160)
-                              : colors.surfaceSecondary,
-                          borderRadius: AppRadius.radiusBadge,
-                          border: Border.all(
-                            color: colors.primary.withAlpha(isDark ? 40 : 25),
+                    // Top Row: Category badge + Soundtrack Chip + Live presence indicator
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(30),
+                            borderRadius: AppRadius.radiusBadge,
+                          ),
+                          child: Text(
+                            room.category.toUpperCase(),
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                              letterSpacing: 0.8,
+                            ),
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.music_note_rounded,
-                              size: 11,
-                              color: colors.primary,
+                        if (room.ambientSoundTrack.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
                             ),
-                            const SizedBox(width: 3),
-                            Text(
-                              room.ambientSoundTrack,
-                              style: typography.caption.medium.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 10.5,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfaceTertiary.withAlpha(160)
+                                  : colors.surfaceSecondary,
+                              borderRadius: AppRadius.radiusBadge,
+                              border: Border.all(
+                                color: colors.primary.withAlpha(isDark ? 40 : 25),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.music_note_rounded,
+                                  size: 11,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  room.ambientSoundTrack,
+                                  style: typography.caption.medium.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 10.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const Spacer(),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: colors.recallEasy,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.recallEasy.withAlpha(150),
+                                    blurRadius: 6,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                            ).animate(onPlay: (controller) => controller.repeat())
+                             .fadeIn(duration: 800.ms)
+                             .then(delay: 200.ms)
+                             .fadeOut(duration: 800.ms),
+                            const SizedBox(width: 6),
+                            Transform.translate(
+                              offset: const Offset(0, 0.5), // Optical alignment
+                              child: Text(
+                                room.isFocusing
+                                    ? l10n.pomodoroFocus
+                                    : l10n.pomodoroBreak,
+                                style: typography.caption.bold.copyWith(
+                                  color: room.isFocusing
+                                      ? colors.primary
+                                      : colors.recallHard,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: colors.recallEasy,
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.recallEasy.withAlpha(150),
-                                blurRadius: 6,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                        ).animate(onPlay: (controller) => controller.repeat())
-                         .fadeIn(duration: 800.ms)
-                         .then(delay: 200.ms)
-                         .fadeOut(duration: 800.ms),
-                        const SizedBox(width: 6),
-                        Transform.translate(
-                          offset: const Offset(0, 0.5), // Optical alignment
-                          child: Text(
-                            room.isFocusing
-                                ? l10n.pomodoroFocus
-                                : l10n.pomodoroBreak,
-                            style: typography.caption.bold.copyWith(
-                              color: room.isFocusing
-                                  ? colors.primary
-                                  : colors.recallHard,
-                            ),
-                          ),
-                        ),
                       ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Title & Subject
+                    Text(
+                      room.title,
+                      style: typography.subhead.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      room.subject,
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-
-                // Title & Subject
-                Text(
-                  room.title,
-                  style: typography.title3.bold.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  room.subject,
-                  style: typography.footnote.regular.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
 
                 // Bottom Row: Active Peer Avatars & Join Button
                 Row(
@@ -197,7 +207,7 @@ class LiveFocusRoomCard extends StatelessWidget {
                             duration: AppMotion.snappy,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
-                              vertical: 10,
+                              vertical: 9,
                             ),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(

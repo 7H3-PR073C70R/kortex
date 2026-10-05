@@ -26,24 +26,30 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 class DeckDetailPage extends StatelessWidget {
   const DeckDetailPage({
     @PathParam('deckId') required this.deckId,
+    this.onClose,
     super.key,
   });
 
   final String deckId;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<DecksBloc>.value(
       value: locator<DecksBloc>(),
-      child: _DeckDetailContent(deckId: deckId),
+      child: _DeckDetailContent(deckId: deckId, onClose: onClose),
     );
   }
 }
 
 class _DeckDetailContent extends HookWidget {
-  const _DeckDetailContent({required this.deckId});
+  const _DeckDetailContent({
+    required this.deckId,
+    this.onClose,
+  });
 
   final String deckId;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +146,7 @@ class _DeckDetailContent extends HookWidget {
             },
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: EdgeInsets.only(right: onClose != null ? 6 : 12),
             child: ShrinkableButton(
               onTap: () {
                 unawaited(HapticFeedback.lightImpact());
@@ -178,6 +184,23 @@ class _DeckDetailContent extends HookWidget {
               ),
             ),
           ),
+          if (onClose != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return IconButton(
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: isHovered ? colors.primary : colors.textPrimary,
+                      size: 20,
+                    ),
+                    tooltip: 'Close Deck Details (Esc)',
+                    onPressed: onClose,
+                  );
+                },
+              ),
+            ),
         ],
       ),
       body: Center(

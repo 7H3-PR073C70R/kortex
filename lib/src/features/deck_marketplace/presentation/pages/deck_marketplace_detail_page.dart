@@ -35,10 +35,12 @@ const double _kDetailGridBreakpoint = 600;
 class DeckMarketplaceDetailPage extends HookWidget {
   const DeckMarketplaceDetailPage({
     required this.deck,
+    this.onClosePanel,
     super.key,
   });
 
   final SharedDeckEntity deck;
+  final VoidCallback? onClosePanel;
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +239,7 @@ class DeckMarketplaceDetailPage extends HookWidget {
         actions: [
           // Rating pill in AppBar for quick at-a-glance info
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 12),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -252,22 +254,35 @@ class DeckMarketplaceDetailPage extends HookWidget {
               ],
             ),
           ),
+          if (onClosePanel != null) ...[
+            IconButton(
+              icon: const Icon(Icons.close_rounded, size: 20),
+              tooltip: 'Close Deck Detail (Esc)',
+              onPressed: onClosePanel,
+            ),
+            const SizedBox(width: 4),
+          ],
         ],
       ),
-      bottomNavigationBar: bottomBar,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
-          // Wide layout: info panel (left) + card preview (right) side-by-side
-          child: isWide
-              ? _WideDetailLayout(
-                  deck: deck,
-                  isDark: isDark,
-                )
-              : _CompactDetailLayout(
-                  deck: deck,
-                  isDark: isDark,
-                ),
+      bottomNavigationBar: isWide ? null : bottomBar,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 960),
+            child: isWide
+                ? _WideDetailLayout(
+                    deck: deck,
+                    isDark: isDark,
+                    isCloning: isCloning.value,
+                    onClone: handleClone,
+                  )
+                : _CompactDetailLayout(
+                    deck: deck,
+                    isDark: isDark,
+                  ),
+          ),
         ),
       ),
     );
@@ -287,32 +302,18 @@ class _CompactDetailLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: _DeckInfoPanel(deck: deck, isDark: isDark),
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _DeckInfoPanel(deck: deck, isDark: isDark),
+        const SizedBox(height: 16),
+        _StatsRow(deck: deck),
+        const SizedBox(height: 20),
+        _CardPreviewSection(
+          deck: deck,
+          isDark: isDark,
         ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-            child: _CardPreviewSection(
-              deck: deck,
-              isDark: isDark,
-            ),
-          ),
-        ),
-        // Stats row
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-            child: _StatsRow(deck: deck),
-          ),
-        ),
-        // Extra breathing room above the bottom bar
-        const SliverToBoxAdapter(child: SizedBox(height: 32)),
+        const SizedBox(height: 32),
       ],
     );
   }
@@ -324,38 +325,44 @@ class _WideDetailLayout extends StatelessWidget {
   const _WideDetailLayout({
     required this.deck,
     required this.isDark,
+    required this.isCloning,
+    required this.onClone,
   });
 
   final SharedDeckEntity deck;
   final bool isDark;
+  final bool isCloning;
+  final VoidCallback onClone;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left: deck info + stats
-          Expanded(
-            flex: 5,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _DeckInfoPanel(deck: deck, isDark: isDark),
-                const SizedBox(height: 20),
-                _StatsRow(deck: deck),
-              ],
-            ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left: deck info + stats + primary CTA
+        Expanded(
+          flex: 5,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DeckInfoPanel(deck: deck, isDark: isDark),
+              const SizedBox(height: 16),
+              _StatsRow(deck: deck),
+              const SizedBox(height: 16),
+              _InlineCloneButton(
+                isCloning: isCloning,
+                onClone: onClone,
+              ),
+            ],
           ),
-          const SizedBox(width: 20),
-          // Right: card preview panel
-          Expanded(
-            flex: 4,
-            child: _CardPreviewSection(deck: deck, isDark: isDark),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 20),
+        // Right: card preview panel + flashcards breakdown
+        Expanded(
+          flex: 5,
+          child: _CardPreviewSection(deck: deck, isDark: isDark),
+        ),
+      ],
     );
   }
 }
@@ -602,6 +609,91 @@ class _StatDivider extends StatelessWidget {
   }
 }
 
+// ── Inline clone button (wide layout) ─────────────────────────────────────────
+
+class _InlineCloneButton extends StatelessWidget {
+  const _InlineCloneButton({
+    required this.isCloning,
+    required this.onClone,
+  });
+
+  final bool isCloning;
+  final VoidCallback onClone;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) => AnimatedScale(
+        scale: isHovered ? 1.01 : 1,
+        duration: AppMotion.snappy,
+        curve: AppMotion.easeOutCubic,
+        child: ShrinkableButton(
+          onTap: isCloning ? null : onClone,
+          child: AnimatedContainer(
+            duration: AppMotion.snappy,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isCloning
+                    ? [
+                        colors.primary.withAlpha(160),
+                        colors.primary.withAlpha(130),
+                      ]
+                    : [
+                        colors.primary,
+                        colors.primary.withAlpha(220),
+                      ],
+              ),
+              borderRadius: AppRadius.radiusCard,
+              boxShadow: [
+                BoxShadow(
+                  color: colors.primary.withAlpha(isHovered ? 80 : 40),
+                  blurRadius: isHovered ? 16 : 8,
+                  offset: Offset(0, isHovered ? 4 : 2),
+                ),
+              ],
+            ),
+            child: AnimatedSwitcher(
+              duration: AppMotion.snappy,
+              child: isCloning
+                  ? AppLogoLoader(
+                      key: const ValueKey('cloning_loader_inline'),
+                      size: 18,
+                      color: colors.white,
+                      showMessage: false,
+                    )
+                  : Row(
+                      key: const ValueKey('cloning_action_inline'),
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.copy_rounded,
+                          color: colors.white,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.cloneDeckButton,
+                          style: typography.body.bold.copyWith(
+                            color: colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Card preview section ───────────────────────────────────────────────────────
 
 class _CardPreviewSection extends StatelessWidget {
@@ -617,6 +709,24 @@ class _CardPreviewSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+
+    final displayCards = deck.cards.isNotEmpty
+        ? deck.cards.take(5).toList()
+        : [
+            FlashcardEntity(
+              id: 'preview_1',
+              deckId: 'preview',
+              front: 'Key concept: Essential foundations in ${deck.subject}',
+              back:
+                  'Comprehensive revision breakdown with memory aids and formulas.',
+            ),
+            FlashcardEntity(
+              id: 'preview_2',
+              deckId: 'preview',
+              front: 'High-yield exam application in ${deck.subject}',
+              back: 'Step-by-step problem resolution for top test scores.',
+            ),
+          ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -673,6 +783,110 @@ class _CardPreviewSection extends StatelessWidget {
           totalCards: deck.totalCards,
           subject: deck.subject,
           isDark: isDark,
+        ),
+        const SizedBox(height: 16),
+
+        // Flashcards List Breakdown
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark
+                ? colors.surfaceSecondary.withAlpha(140)
+                : colors.surfacePrimary,
+            borderRadius: AppRadius.radiusCard,
+            border: Border.all(
+              color: colors.primary.withAlpha(isDark ? 35 : 20),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.view_list_rounded,
+                    size: 16,
+                    color: colors.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Included Flashcards',
+                    style: typography.caption.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${deck.totalCards} items',
+                    style: typography.caption.regular.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 10.5,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: displayCards.length,
+                separatorBuilder: (context, index) =>
+                    Divider(height: 16, thickness: 0.5, color: colors.surfaceBorder.withAlpha(isDark ? 40 : 25)),
+                itemBuilder: (context, index) {
+                  final card = displayCards[index];
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 35 : 20),
+                          borderRadius: AppRadius.radiusMicro,
+                        ),
+                        child: Text(
+                          '${index + 1}',
+                          style: typography.caption.bold.copyWith(
+                            fontSize: 10,
+                            color: colors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              card.front,
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 12,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              card.back,
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ],
     );

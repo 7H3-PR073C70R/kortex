@@ -23,6 +23,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart'
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/profile_navigation_menu.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/scholar_hub_card.dart';
+import 'package:kortex/src/features/leaderboard/presentation/pages/leaderboard_page.dart';
+import 'package:kortex/src/features/monetization/presentation/screens/paywall_screen.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/features/profile/presentation/pages/about_support_page.dart';
 import 'package:kortex/src/features/profile/presentation/pages/academic_track_settings_page.dart';
@@ -102,7 +104,7 @@ class _ProfileView extends HookWidget {
             body: Row(
               children: [
                 SizedBox(
-                  width: 380,
+                  width: 520,
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border(
@@ -331,10 +333,20 @@ class _ProfileView extends HookWidget {
           key: ValueKey('syllabot_ai'),
           child: SyllabotAiSettingsPage(),
         );
+      case ProfileSettingsSection.leaderboard:
+        return const KeyedSubtree(
+          key: ValueKey('leaderboard'),
+          child: LeaderboardPage(),
+        );
       case ProfileSettingsSection.security:
         return const KeyedSubtree(
           key: ValueKey('security'),
           child: SecuritySettingsPage(),
+        );
+      case ProfileSettingsSection.membershipPro:
+        return const KeyedSubtree(
+          key: ValueKey('membership_pro'),
+          child: PaywallScreen(),
         );
       case ProfileSettingsSection.appPreferences:
         return const KeyedSubtree(

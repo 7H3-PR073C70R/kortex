@@ -125,7 +125,6 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
         );
       },
     );
-    unawaited(_speechHandler.initialize());
   }
 
   @override

@@ -510,7 +510,7 @@ class QuizDuelWebSocketClient {
             _applyStartRoundLocally(duelId, questionIndex);
           } else if (type == 'conclude_round') {
             final questionIndex = data['questionIndex'] as int? ?? 0;
-            _concludeRound(duelId, questionIndex);
+            concludeRound(duelId, questionIndex);
           } else if (type == 'send_emote') {
             final userId = data['userId'] as String?;
             final emote = data['emote'] as String?;
@@ -1000,7 +1000,7 @@ class QuizDuelWebSocketClient {
         updated.player1.selectedOptionIndex != null &&
         updated.player2?.selectedOptionIndex != null) {
       _roundTimers[duelId]?.cancel();
-      _concludeRound(duelId, questionIndex);
+      concludeRound(duelId, questionIndex);
     }
   }
 
@@ -1060,10 +1060,11 @@ class QuizDuelWebSocketClient {
       return;
     }
 
-    _concludeRound(duelId, questionIndex);
+    concludeRound(duelId, questionIndex);
   }
 
-  void _concludeRound(String duelId, int questionIndex) {
+  /// Concludes a round and triggers the transition to the next question or match finish.
+  void concludeRound(String duelId, int questionIndex) {
     final current = _activeMatches[duelId];
     if (current == null) return;
 
@@ -1121,7 +1122,9 @@ class QuizDuelWebSocketClient {
   }
 
   void _scheduleRoundTransition(String duelId, int questionIndex) {
-    _transitionTimers[duelId]?.cancel();
+    if (_transitionTimers[duelId]?.isActive ?? false) {
+      return;
+    }
     _transitionTimers[duelId] = Timer(const Duration(milliseconds: 1800), () {
       final latest = _activeMatches[duelId];
       if (latest == null) return;

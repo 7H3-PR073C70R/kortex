@@ -59,6 +59,7 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
   void dispose() {
     unawaited(_cubit.close());
     unawaited(_ttsHandler.stop());
+    _ttsHandler.dispose();
     super.dispose();
   }
 
