@@ -48,8 +48,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libsecret-1-dev libjson-glib-dev
 
+      - name: Create and populate ENVs
+        shell: bash
+        run: |
+          for env in development staging production; do
+            echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" > .env.$env
+            echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env.$env
+            echo "LIVEKIT_URL=${{ secrets.LIVEKIT_URL }}" >> .env.$env
+            echo "R2_PUBLIC_DOMAIN=${{ secrets.R2_PUBLIC_DOMAIN }}" >> .env.$env
+          done
+
       - name: Get Flutter Dependencies
         run: flutter pub get
+
+      - name: Generate Code via build_runner
+        run: dart run build_runner build -d
 
       - name: Build Native Windows Executable
         if: matrix.runner-os == 'windows-latest'
