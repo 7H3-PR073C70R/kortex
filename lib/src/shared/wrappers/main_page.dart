@@ -114,6 +114,7 @@ class MainPage extends HookWidget {
   static const String routeName = '/main';
   static const double desktopBreakpoint = 1024;
   static const double tabletBreakpoint = 720;
+  static const double tabletShortestSideBreakpoint = 600;
   static const double railWidth = 240;
   static const double tabletRailWidth = 72;
 
@@ -141,10 +142,14 @@ class MainPage extends HookWidget {
                 color: colors.backgroundPrimary,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
+                    final mediaQuery = MediaQuery.of(context);
                     final isDesktop = constraints.maxWidth >= desktopBreakpoint;
                     final isLandscape =
-                        MediaQuery.orientationOf(context) == Orientation.landscape;
+                        mediaQuery.orientation == Orientation.landscape;
+                    final isTablet =
+                        mediaQuery.size.shortestSide >= tabletShortestSideBreakpoint;
                     final isTabletLandscape = !isDesktop &&
+                        isTablet &&
                         constraints.maxWidth >= tabletBreakpoint &&
                         isLandscape;
 
@@ -196,11 +201,16 @@ class MainPage extends HookWidget {
               );
             },
             bottomNavigationBuilder: (context, tabsRouter) {
-              final width = MediaQuery.sizeOf(context).width;
+              final mediaQuery = MediaQuery.of(context);
+              final width = mediaQuery.size.width;
               final isLandscape =
-                  MediaQuery.orientationOf(context) == Orientation.landscape;
-              if (width >= desktopBreakpoint ||
-                  (width >= tabletBreakpoint && isLandscape)) {
+                  mediaQuery.orientation == Orientation.landscape;
+              final isTablet =
+                  mediaQuery.size.shortestSide >= tabletShortestSideBreakpoint;
+              final isTabletLandscape =
+                  isTablet && width >= tabletBreakpoint && isLandscape;
+
+              if (width >= desktopBreakpoint || isTabletLandscape) {
                 return const SizedBox.shrink();
               }
               return Align(
