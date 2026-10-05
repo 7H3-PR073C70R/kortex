@@ -990,7 +990,6 @@ class CommunityRepositoryImpl implements CommunityRepository {
             userName: 'test_planner_user_2026',
             track: liveTrack,
             weeklyXp: peer2Xp,
-            streakDays: 1,
             leagueTier: _calculateLeagueTier(peer2Xp),
           ),
         );
