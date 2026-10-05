@@ -504,9 +504,16 @@ class _DecksView extends HookWidget {
                       else
                         LayoutBuilder(
                           builder: (context, gridConstraints) {
-                            final isWideScreen = gridConstraints.maxWidth >= 640;
-                            if (isWideScreen) {
-                              final itemWidth = (gridConstraints.maxWidth - 14) / 2;
+                            final columnCount = switch (gridConstraints.maxWidth) {
+                              >= 1400 => 4,
+                              >= 900 => 3,
+                              >= 640 => 2,
+                              _ => 1,
+                            };
+                            if (columnCount > 1) {
+                              final itemWidth =
+                                  (gridConstraints.maxWidth - (14 * (columnCount - 1))) /
+                                      columnCount;
                               return Wrap(
                                 spacing: 14,
                                 runSpacing: 14,

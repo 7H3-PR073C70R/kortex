@@ -366,6 +366,10 @@ class MockLiveKitAudioService implements LiveKitAudioService {
     _speakersController.add(speakers);
   }
 
+  void emitConnectionState(LiveAudioConnectionState state) {
+    _connController.add(state);
+  }
+
   Future<void> dispose() async {
     await _speakersController.close();
     await _micController.close();
@@ -466,7 +470,25 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
     required int remainingSeconds,
     required String pomodoroState,
     required String senderId,
-  }) async {}
+    bool? isSprintActive,
+    int? sprintRemainingSeconds,
+    String? sprintDeckTitle,
+    bool isRoomEnded = false,
+  }) async {
+    _syncController.add(
+      PomodoroSyncEvent(
+        roomId: roomId,
+        remainingSeconds: remainingSeconds,
+        pomodoroState: pomodoroState,
+        senderId: senderId,
+        timestamp: DateTime.now(),
+        isSprintActive: isSprintActive,
+        sprintRemainingSeconds: sprintRemainingSeconds,
+        sprintDeckTitle: sprintDeckTitle,
+        isRoomEnded: isRoomEnded,
+      ),
+    );
+  }
 
   @override
   Future<void> broadcastHandRaise({
@@ -957,6 +979,135 @@ void main() {
       expect(cubit.state.isAmbientAudioPlaying, isFalse);
 
       await cubit.close();
+    });
+
+    test('handles network drop reconnection gracefully with status and retry tracking', () async {
+      final cubit = LiveRoomCubit(
+        initialRoom: initialRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'user-adeola',
+        currentUserName: 'Adeola',
+      );
+
+      // Wait for initial async connect to establish
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(cubit.state.isAudioConnected, isTrue);
+      expect(cubit.state.isReconnecting, isFalse);
+
+      // Simulate network drop emitting reconnecting
+      mockAudioService.emitConnectionState(LiveAudioConnectionState.reconnecting);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(cubit.state.isReconnecting, isTrue);
+      expect(cubit.state.isAudioConnected, isFalse);
+      expect(cubit.state.connectionQuality, equals('reconnecting'));
+      expect(cubit.state.reconnectAttempt, equals(1));
+
+      // Second dropped attempt
+      mockAudioService.emitConnectionState(LiveAudioConnectionState.reconnecting);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(cubit.state.reconnectAttempt, equals(2));
+
+      // Successfully reconnected
+      mockAudioService.emitConnectionState(LiveAudioConnectionState.connected);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(cubit.state.isReconnecting, isFalse);
+      expect(cubit.state.isAudioConnected, isTrue);
+      expect(cubit.state.connectionQuality, equals('excellent'));
+      expect(cubit.state.reconnectAttempt, equals(0));
+
+      await cubit.close();
+    });
+
+    test('host ends room and participants receive room-ended state', () async {
+      final hostCubit = LiveRoomCubit(
+        initialRoom: initialRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'host-user',
+        currentUserName: 'Host User',
+      );
+
+      final participantCubit = LiveRoomCubit(
+        initialRoom: initialRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'peer-user',
+        currentUserName: 'Peer User',
+      );
+
+      expect(hostCubit.state.isRoomEndedByHost, isFalse);
+      expect(participantCubit.state.isRoomEndedByHost, isFalse);
+
+      // Host closes the room for everyone
+      await hostCubit.endRoomAsHost();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(hostCubit.state.isRoomEndedByHost, isTrue);
+      expect(participantCubit.state.isRoomEndedByHost, isTrue);
+
+      await hostCubit.close();
+      await participantCubit.close();
+    });
+
+    test('synchronizes Pomodoro sprint timer across 3 simultaneous peers', () async {
+      final peer1 = LiveRoomCubit(
+        initialRoom: initialRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'peer-1',
+        currentUserName: 'Peer One',
+      );
+
+      final peer2 = LiveRoomCubit(
+        initialRoom: initialRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'peer-2',
+        currentUserName: 'Peer Two',
+      );
+
+      final peer3 = LiveRoomCubit(
+        initialRoom: initialRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'peer-3',
+        currentUserName: 'Peer Three',
+      );
+
+      expect(peer1.state.isCoOpSprintActive, isFalse);
+      expect(peer2.state.isCoOpSprintActive, isFalse);
+      expect(peer3.state.isCoOpSprintActive, isFalse);
+
+      // Peer 1 starts sprint
+      peer1.startCoOpSprint(deckTitle: 'Organic Chemistry Sprint', targetCards: 20);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Peer 2 and Peer 3 must synchronize sprint state and deck title
+      expect(peer2.state.isCoOpSprintActive, isTrue);
+      expect(peer2.state.coOpSprintDeckTitle, equals('Organic Chemistry Sprint'));
+      expect(peer3.state.isCoOpSprintActive, isTrue);
+      expect(peer3.state.coOpSprintDeckTitle, equals('Organic Chemistry Sprint'));
+
+      // Peer 1 ends sprint
+      peer1.endCoOpSprint();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(peer1.state.isCoOpSprintActive, isFalse);
+      expect(peer2.state.isCoOpSprintActive, isFalse);
+      expect(peer3.state.isCoOpSprintActive, isFalse);
+
+      await peer1.close();
+      await peer2.close();
+      await peer3.close();
     });
   });
 

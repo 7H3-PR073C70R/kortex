@@ -31,6 +31,10 @@ abstract class EphemeralRoomRepository {
     required int remainingSeconds,
     required String pomodoroState,
     required String senderId,
+    bool? isSprintActive,
+    int? sprintRemainingSeconds,
+    String? sprintDeckTitle,
+    bool isRoomEnded = false,
   });
 
   Future<void> broadcastHandRaise({

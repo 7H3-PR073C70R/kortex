@@ -108,6 +108,10 @@ class PomodoroSyncEvent {
     required this.pomodoroState,
     required this.senderId,
     required this.timestamp,
+    this.isSprintActive,
+    this.sprintRemainingSeconds,
+    this.sprintDeckTitle,
+    this.isRoomEnded = false,
   });
 
   factory PomodoroSyncEvent.fromJson(Map<String, dynamic> json) {
@@ -119,14 +123,22 @@ class PomodoroSyncEvent {
       timestamp: json['timestamp'] != null
           ? DateTime.tryParse(json['timestamp'] as String) ?? DateTime.now()
           : DateTime.now(),
+      isSprintActive: json['isSprintActive'] as bool?,
+      sprintRemainingSeconds: json['sprintRemainingSeconds'] as int?,
+      sprintDeckTitle: json['sprintDeckTitle'] as String?,
+      isRoomEnded: json['isRoomEnded'] as bool? ?? false,
     );
   }
 
   final String roomId;
   final int remainingSeconds;
-  final String pomodoroState; // 'focusing', 'break', 'paused'
+  final String pomodoroState; // 'focusing', 'break', 'paused', 'ended'
   final String senderId;
   final DateTime timestamp;
+  final bool? isSprintActive;
+  final int? sprintRemainingSeconds;
+  final String? sprintDeckTitle;
+  final bool isRoomEnded;
 
   Map<String, dynamic> toJson() {
     return {
@@ -135,6 +147,10 @@ class PomodoroSyncEvent {
       'pomodoroState': pomodoroState,
       'senderId': senderId,
       'timestamp': timestamp.toIso8601String(),
+      'isSprintActive': isSprintActive,
+      'sprintRemainingSeconds': sprintRemainingSeconds,
+      'sprintDeckTitle': sprintDeckTitle,
+      'isRoomEnded': isRoomEnded,
     };
   }
 }
@@ -308,6 +324,10 @@ abstract class EphemeralPresenceClient {
     required int remainingSeconds,
     required String pomodoroState,
     required String senderId,
+    bool? isSprintActive,
+    int? sprintRemainingSeconds,
+    String? sprintDeckTitle,
+    bool isRoomEnded = false,
   });
 
   Future<void> broadcastHandRaise({
@@ -613,6 +633,10 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
     required int remainingSeconds,
     required String pomodoroState,
     required String senderId,
+    bool? isSprintActive,
+    int? sprintRemainingSeconds,
+    String? sprintDeckTitle,
+    bool isRoomEnded = false,
   }) async {
     _realtime.broadcastPresence(
       channelName: _channelName(roomId),
@@ -625,6 +649,10 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
               pomodoroState: pomodoroState,
               senderId: senderId,
               timestamp: DateTime.now(),
+              isSprintActive: isSprintActive,
+              sprintRemainingSeconds: sprintRemainingSeconds,
+              sprintDeckTitle: sprintDeckTitle,
+              isRoomEnded: isRoomEnded,
             ).toJson(),
           ),
         ),

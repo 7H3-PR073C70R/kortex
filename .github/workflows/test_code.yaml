@@ -74,9 +74,29 @@ jobs:
       
       - name: Create and populate ENVs
         run: |
-          echo "API_BASE_URL=https://example.com" > .env.development
-          echo "API_BASE_URL=https://example.com" > .env.production
-          echo "API_BASE_URL=https://example.com" > .env.staging
+          for env in development staging production; do
+            echo "API_BASE_URL=https://example.com" > .env.$env
+            echo "SUPABASE_ANON_KEY=dummy_key" >> .env.$env
+            echo "LIVEKIT_URL=wss://example.livekit.cloud" >> .env.$env
+            echo "R2_PUBLIC_DOMAIN=https://example.r2.dev" >> .env.$env
+          done
+
+      - name: Pre-flight ENV guard
+        run: |
+          for env in development staging production; do
+            file=".env.$env"
+            if [ ! -f "$file" ]; then
+              echo "Error: Missing $file"
+              exit 1
+            fi
+            for var in API_BASE_URL SUPABASE_ANON_KEY LIVEKIT_URL R2_PUBLIC_DOMAIN; do
+              if ! grep -q "^$var=" "$file"; then
+                echo "Error: Missing required env var $var in $file"
+                exit 1
+              fi
+            done
+          done
+          echo "Pre-flight ENV check passed."
       
       - name: Upgrade Dart packages
         run: dart pub upgrade
@@ -89,7 +109,7 @@ jobs:
       
       - name: Run Flutter tests with coverage
         run: |
-          flutter test --coverage
+          flutter test --coverage --concurrency 1
           genhtml coverage/lcov.info --output-directory=coverage_report
       
       - name: Filter Test Coverage (Exclude Generated Files)

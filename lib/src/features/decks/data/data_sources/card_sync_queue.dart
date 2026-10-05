@@ -159,8 +159,9 @@ class CardSyncQueue {
 
   Future<void> _persistLogs() async {
     try {
+      final bufferSnapshot = List<FsrsReviewLog>.of(_inMemoryLogBuffer);
       if (_appDatabase != null) {
-        for (final log in _inMemoryLogBuffer) {
+        for (final log in bufferSnapshot) {
           await _appDatabase.insertReviewLogEntry(
             FsrsReviewLogsCompanion(
               id: Value(log.id),
@@ -181,7 +182,7 @@ class CardSyncQueue {
       }
 
       if (_storageService != null) {
-        final pending = _inMemoryLogBuffer.where((l) => !l.isSynced).toList();
+        final pending = bufferSnapshot.where((l) => !l.isSynced).toList();
         if (pending.isEmpty) {
           await _storageService.deletePreference(key: storageKey);
         } else {

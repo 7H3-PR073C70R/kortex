@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:auto_route/auto_route.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/dynamic_link_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -127,6 +128,17 @@ class AuthRouteGuard extends AutoRouteGuard {
               currentRouteName == ForgotPasswordRoute.name ||
               currentRouteName == OnboardingCalibrationRoute.name) {
             resolver.next(false);
+            if (locator.isRegistered<DynamicLinkService>() &&
+                locator<DynamicLinkService>().pendingPayload != null) {
+              final linkService = locator<DynamicLinkService>();
+              final payload = linkService.pendingPayload!;
+              linkService.clearPendingPayload();
+              final targetRoute = linkService.routeForPayload(payload);
+              if (targetRoute != null) {
+                unawaited(router.replaceAll([const MainRoute(), targetRoute]));
+                return;
+              }
+            }
             unawaited(router.replace(const MainRoute()));
           } else {
             resolver.next();

@@ -76,6 +76,10 @@ class _ProfileView extends HookWidget {
       return buildNumber.isNotEmpty ? '$version+$buildNumber' : version;
     }, [packageInfoSnapshot.data]);
 
+    final activeSection = useState<ProfileSettingsSection>(
+      ProfileSettingsSection.academicTrack,
+    );
+
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state.sessionStatus == AuthSessionStatus.unauthenticated ||
@@ -91,9 +95,6 @@ class _ProfileView extends HookWidget {
 
         final isDesktopMasterDetail =
             MediaQuery.sizeOf(context).width >= AppBackButton.desktopBreakpoint;
-        final activeSection = useState<ProfileSettingsSection>(
-          ProfileSettingsSection.academicTrack,
-        );
 
         if (isDesktopMasterDetail) {
           return Scaffold(

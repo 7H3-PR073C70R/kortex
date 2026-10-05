@@ -21,7 +21,7 @@ class LoggingInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (options.extra['silent'] != true) {
+    if (!kReleaseMode && options.extra['silent'] != true) {
       final dynamic data = options.data;
       String dataStr;
       if (data is String) {
@@ -30,6 +30,26 @@ class LoggingInterceptor extends Interceptor {
             : data;
       } else if (data is Map) {
         final previewMap = Map<dynamic, dynamic>.from(data);
+        const sensitiveKeys = {
+          'password',
+          'new_password',
+          'newpassword',
+          'current_password',
+          'currentpassword',
+          'refresh_token',
+          'refreshtoken',
+          'token',
+          'access_token',
+          'accesstoken',
+          'otp',
+          'email',
+        };
+        for (final key in previewMap.keys.toList()) {
+          final lower = key.toString().toLowerCase();
+          if (sensitiveKeys.contains(lower)) {
+            previewMap[key] = '[REDACTED]';
+          }
+        }
         if (previewMap.containsKey('raw_text') &&
             previewMap['raw_text'] is String) {
           final t = previewMap['raw_text'] as String;

@@ -41,6 +41,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     OnboardingStreamController? streamController,
     DeepDocumentDedupService? dedupService,
     NotificationService? notificationService,
+    LocalStorageService? localStorageService,
   }) : _upload = uploadUseCase,
        _processOcr = processOcrUseCase,
        _generateDeck = generateDeckUseCase,
@@ -52,6 +53,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
        _streamController = streamController,
        _dedupService = dedupService ?? DeepDocumentDedupService(),
        _notificationService = notificationService,
+       _localStorageService = localStorageService,
        super(const IngestionState()) {
     on<PickAndUploadFileEvent>(_onPickAndUploadFile);
     on<UploadProgressUpdatedEvent>(_onUploadProgressUpdated);
@@ -67,7 +69,11 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     on<ProcessCameraImageEvent>(_onProcessCameraImage);
     on<FetchLmsCoursesEvent>(_onFetchLmsCourses);
     on<ImportLmsCourseEvent>(_onImportLmsCourse);
+    on<CheckPendingIngestionJobEvent>(_onCheckPendingIngestionJob);
+    on<DismissPendingIngestionJobEvent>(_onDismissPendingIngestionJob);
   }
+
+  static const String pendingIngestionJobKey = 'pending_ingestion_job';
 
   final UploadStudyDocumentUseCase _upload;
   final ProcessStemOcrUseCase _processOcr;
@@ -80,6 +86,13 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
   final OnboardingStreamController? _streamController;
   final DeepDocumentDedupService _dedupService;
   final NotificationService? _notificationService;
+  final LocalStorageService? _localStorageService;
+
+  LocalStorageService? get _storage =>
+      _localStorageService ??
+      (locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null);
 
   OnboardingStreamController? get streamController => _streamController;
 
@@ -195,6 +208,24 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
       ),
     );
 
+    final storage = _storage;
+    if (storage != null) {
+      unawaited(
+        storage.savePreference(
+          key: pendingIngestionJobKey,
+          data: jsonEncode({
+            'filename': event.filename,
+            'fileType': event.fileType,
+            'courseId': event.courseId,
+            'courseCode': event.courseCode,
+            'courseTitle': event.courseTitle,
+            'uploadProgress': 0.1,
+            'timestamp': DateTime.now().toIso8601String(),
+          }),
+        ),
+      );
+    }
+
     final uploadResult = await _upload(
       filename: event.filename,
       fileType: event.fileType,
@@ -211,6 +242,9 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
 
     await uploadResult.fold(
       (failure) async {
+        if (storage != null) {
+          unawaited(storage.deletePreference(key: pendingIngestionJobKey));
+        }
         emit(
           state.copyWith(
             status: ProcessingStatus.failed,
@@ -298,6 +332,20 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     Emitter<IngestionState> emit,
   ) {
     emit(state.copyWith(uploadProgress: event.progress));
+    final storage = _storage;
+    if (storage != null) {
+      final existing = storage.getPreference(key: pendingIngestionJobKey);
+      if (existing != null) {
+        try {
+          final map = jsonDecode(existing) as Map<String, dynamic>;
+          map['uploadProgress'] = event.progress;
+          unawaited(storage.savePreference(
+            key: pendingIngestionJobKey,
+            data: jsonEncode(map),
+          ));
+        } on Object catch (_) {}
+      }
+    }
   }
 
   void _onServerProgressUpdated(
@@ -1135,10 +1183,41 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     );
   }
 
+  Future<void> _onCheckPendingIngestionJob(
+    CheckPendingIngestionJobEvent event,
+    Emitter<IngestionState> emit,
+  ) async {
+    final storage = _storage;
+    if (storage != null) {
+      final raw = storage.getPreference(key: pendingIngestionJobKey);
+      if (raw != null) {
+        try {
+          final map = jsonDecode(raw) as Map<String, dynamic>;
+          emit(state.copyWith(pendingInterruptedJob: map));
+        } on Object catch (_) {}
+      }
+    }
+  }
+
+  Future<void> _onDismissPendingIngestionJob(
+    DismissPendingIngestionJobEvent event,
+    Emitter<IngestionState> emit,
+  ) async {
+    final storage = _storage;
+    if (storage != null) {
+      unawaited(storage.deletePreference(key: pendingIngestionJobKey));
+    }
+    emit(state.copyWith(clearPendingInterruptedJob: true));
+  }
+
   void _onResetIngestionState(
     ResetIngestionStateEvent event,
     Emitter<IngestionState> emit,
   ) {
+    final storage = _storage;
+    if (storage != null) {
+      unawaited(storage.deletePreference(key: pendingIngestionJobKey));
+    }
     emit(const IngestionState());
   }
 

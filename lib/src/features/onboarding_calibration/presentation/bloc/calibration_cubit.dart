@@ -195,7 +195,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
     final result = await _saveCalibrationProfileUseCase(defaultProfile);
     result.fold(
       (_) {
-        _markOnboardingCompleteLocallyAndRemotely();
+        _markOnboardingCompleteLocallyAndRemotely(defaultProfile);
         emit(
           state.copyWith(
             status: CalibrationStatus.completed,
@@ -204,16 +204,17 @@ class CalibrationCubit extends Cubit<CalibrationState> {
         );
       },
       (_) {
-        _markOnboardingCompleteLocallyAndRemotely();
-        final exam = defaultProfile.highSchoolExam;
-        if (defaultProfile.focus == AcademicFocus.highSchool &&
-            exam != null &&
-            _autoCurateExamCoursesUseCase != null) {
+        _markOnboardingCompleteLocallyAndRemotely(defaultProfile);
+        final trackName = _resolveTrack(defaultProfile);
+        if (_autoCurateExamCoursesUseCase != null) {
+          final subjects = defaultProfile.highSchoolSubjects.isNotEmpty
+              ? defaultProfile.highSchoolSubjects
+              : const ['General Studies', 'Core Foundations'];
           unawaited(
             _autoCurateExamCoursesUseCase(
               AutoCurateExamCoursesParams(
-                examName: exam,
-                subjects: defaultProfile.highSchoolSubjects,
+                examName: trackName,
+                subjects: subjects,
               ),
             ).then((_) {
               try {
@@ -232,7 +233,21 @@ class CalibrationCubit extends Cubit<CalibrationState> {
     );
   }
 
-  void _markOnboardingCompleteLocallyAndRemotely() {
+  String _resolveTrack(CalibrationProfile profile) {
+    final exam = profile.highSchoolExam;
+    if (exam != null && exam.trim().isNotEmpty) {
+      return exam.trim();
+    }
+    final field = profile.higherEdField;
+    if (field != null && field.trim().isNotEmpty) {
+      return field.trim();
+    }
+    return 'General';
+  }
+
+  void _markOnboardingCompleteLocallyAndRemotely([CalibrationProfile? activeProfile]) {
+    final profile = activeProfile ?? state.profile;
+    final track = _resolveTrack(profile);
     try {
       unawaited(
         locator<LocalStorageService>().savePreference(
@@ -242,7 +257,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
       );
       unawaited(
         locator<AuthRepository>().completeOnboarding(
-          track: state.profile.highSchoolExam ?? 'WAEC',
+          track: track,
           dailyTarget: 20,
         ),
       );

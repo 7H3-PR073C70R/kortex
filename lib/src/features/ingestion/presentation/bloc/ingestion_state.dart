@@ -21,6 +21,7 @@ class IngestionState extends Equatable {
     this.lmsCourses = const [],
     this.selectedCourse,
     this.attachedDocumentIds = const {},
+    this.pendingInterruptedJob,
   });
 
   final ProcessingStatus status;
@@ -36,6 +37,7 @@ class IngestionState extends Equatable {
   final List<LmsCourse> lmsCourses;
   final LmsCourse? selectedCourse;
   final Set<String> attachedDocumentIds;
+  final Map<String, dynamic>? pendingInterruptedJob;
 
   bool get isUploading => status == ProcessingStatus.uploading;
   bool get isParsingOcr => status == ProcessingStatus.parsingOcr;
@@ -60,6 +62,8 @@ class IngestionState extends Equatable {
     List<LmsCourse>? lmsCourses,
     LmsCourse? selectedCourse,
     Set<String>? attachedDocumentIds,
+    Map<String, dynamic>? pendingInterruptedJob,
+    bool clearPendingInterruptedJob = false,
   }) {
     return IngestionState(
       status: status ?? this.status,
@@ -75,6 +79,9 @@ class IngestionState extends Equatable {
       lmsCourses: lmsCourses ?? this.lmsCourses,
       selectedCourse: selectedCourse ?? this.selectedCourse,
       attachedDocumentIds: attachedDocumentIds ?? this.attachedDocumentIds,
+      pendingInterruptedJob: clearPendingInterruptedJob
+          ? null
+          : (pendingInterruptedJob ?? this.pendingInterruptedJob),
     );
   }
 
@@ -93,5 +100,6 @@ class IngestionState extends Equatable {
     lmsCourses,
     selectedCourse,
     attachedDocumentIds,
+    pendingInterruptedJob,
   ];
 }

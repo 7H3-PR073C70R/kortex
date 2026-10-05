@@ -43,12 +43,20 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
     required int remainingSeconds,
     required String pomodoroState,
     required String senderId,
+    bool? isSprintActive,
+    int? sprintRemainingSeconds,
+    String? sprintDeckTitle,
+    bool isRoomEnded = false,
   }) async {
     await _presenceClient.broadcastPomodoroTick(
       roomId: roomId,
       remainingSeconds: remainingSeconds,
       pomodoroState: pomodoroState,
       senderId: senderId,
+      isSprintActive: isSprintActive,
+      sprintRemainingSeconds: sprintRemainingSeconds,
+      sprintDeckTitle: sprintDeckTitle,
+      isRoomEnded: isRoomEnded,
     );
   }
 

@@ -719,11 +719,36 @@ class OcrLatexLiveEditor extends HookWidget {
           const SizedBox(height: 14),
 
           // LaTeX Formula Input
-          Text(
-            l10n.cardEquationLabel,
-            style: typography.caption.medium.copyWith(
-              color: colors.textSecondary,
-            ),
+          Row(
+            children: [
+              Text(
+                l10n.cardEquationLabel,
+                style: typography.caption.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              const Spacer(),
+              if (latexController.text.isEmpty &&
+                  snippet.rawText.contains(RegExp(r'[\=\+\-\*\/\^\\]')))
+                InkWell(
+                  onTap: () {
+                    final match = RegExp(
+                      r'([A-Za-z0-9_\^\+\-\*\/\=\(\)\\\s]{3,}\s*=\s*[A-Za-z0-9_\^\+\-\*\/\(\)\\\s]+)',
+                    ).firstMatch(snippet.rawText);
+                    if (match != null) {
+                      latexController.text = match.group(0)!.trim();
+                      notifyUpdate();
+                    }
+                  },
+                  child: Text(
+                    'Extract formula from text',
+                    style: typography.caption.bold.copyWith(
+                      color: colors.primary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 6),
           TextField(
@@ -788,11 +813,60 @@ class OcrLatexLiveEditor extends HookWidget {
                     color: isDark ? colors.syllabotAccent : colors.primary,
                     fontSize: 16,
                   ),
-                  onErrorFallback: (err) => Text(
-                    latexController.text,
-                    style: typography.caption.medium.copyWith(
-                      color: colors.error,
-                    ),
+                  onErrorFallback: (err) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: colors.warning,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Formula parser error: ${err.message}',
+                        style: typography.caption.medium.copyWith(
+                          color: colors.warning,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () {
+                          // Clean delimiters and invalid escapes, then re-trigger
+                          final cleaned = latexController.text
+                              .replaceAll(r'$$', '')
+                              .replaceAll(r'$', '')
+                              .replaceAll(r'\(', '')
+                              .replaceAll(r'\)', '')
+                              .replaceAll(r'\[', '')
+                              .replaceAll(r'\]', '')
+                              .trim();
+                          latexController.text = cleaned;
+                          notifyUpdate();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.warning.withAlpha(30),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: colors.warning.withAlpha(80),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            'Retry Cleaned',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.warning,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
