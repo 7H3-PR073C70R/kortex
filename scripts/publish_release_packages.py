@@ -348,7 +348,19 @@ def create_windows_packages(version):
     print(f"\n--- Creating Windows Release Packages for Version {version} ---")
     os.makedirs(DIST_DIR, exist_ok=True)
 
-    win_build_dir = os.path.join(PROJECT_ROOT, "build", "windows", "runner", "Release")
+    possible_win_dirs = [
+        os.path.join(PROJECT_ROOT, "build", "windows", "x64", "runner", "Release"),
+        os.path.join(PROJECT_ROOT, "build", "windows", "x64", "runner", "Release-production"),
+        os.path.join(PROJECT_ROOT, "build", "windows", "x64", "production", "runner", "Release"),
+        os.path.join(PROJECT_ROOT, "build", "windows", "runner", "Release"),
+        os.path.join(PROJECT_ROOT, "build", "windows", "runner", "Release-production"),
+    ]
+    win_build_dir = None
+    for p in possible_win_dirs:
+        if os.path.exists(p) and os.listdir(p):
+            win_build_dir = p
+            break
+
     win_temp = os.path.join(DIST_DIR, "Kortex-Windows-Temp")
 
     if os.path.exists(win_temp):
@@ -387,7 +399,8 @@ def create_windows_packages(version):
     if os.path.exists(web_landing_dir):
         shutil.copytree(web_landing_dir, os.path.join(win_temp, "web_app"), dirs_exist_ok=True)
 
-    if os.path.exists(win_build_dir):
+    if win_build_dir and os.path.exists(win_build_dir):
+        print(f"Copying Windows native build bundle from {win_build_dir}...")
         for item in os.listdir(win_build_dir):
             s = os.path.join(win_build_dir, item)
             d = os.path.join(win_temp, item)
@@ -440,7 +453,18 @@ def create_linux_packages(version):
     print(f"\n--- Creating Linux Release Packages for Version {version} ---")
     os.makedirs(DIST_DIR, exist_ok=True)
 
-    linux_build_dir = os.path.join(PROJECT_ROOT, "build", "linux", "x64", "release", "bundle")
+    possible_linux_dirs = [
+        os.path.join(PROJECT_ROOT, "build", "linux", "x64", "release", "bundle"),
+        os.path.join(PROJECT_ROOT, "build", "linux", "x64", "production", "release", "bundle"),
+        os.path.join(PROJECT_ROOT, "build", "linux", "x64", "release-production", "bundle"),
+        os.path.join(PROJECT_ROOT, "build", "linux", "arm64", "release", "bundle"),
+    ]
+    linux_build_dir = None
+    for p in possible_linux_dirs:
+        if os.path.exists(p) and os.listdir(p):
+            linux_build_dir = p
+            break
+
     linux_temp = os.path.join(DIST_DIR, "Kortex-Linux-Temp")
 
     if os.path.exists(linux_temp):
@@ -486,7 +510,8 @@ def create_linux_packages(version):
     if os.path.exists(web_landing_dir):
         shutil.copytree(web_landing_dir, os.path.join(linux_temp, "web_app"), dirs_exist_ok=True)
 
-    if os.path.exists(linux_build_dir):
+    if linux_build_dir and os.path.exists(linux_build_dir):
+        print(f"Copying Linux native build bundle from {linux_build_dir}...")
         for item in os.listdir(linux_build_dir):
             s = os.path.join(linux_build_dir, item)
             d = os.path.join(linux_temp, item)
@@ -508,61 +533,9 @@ def create_linux_packages(version):
     shutil.copyfile(tar_path, latest_tar_path)
     shutil.rmtree(linux_temp)
 
-def build_macos_bundle():
-    """Builds the native macOS production release application bundle."""
-    if sys.platform != "darwin":
-        print("Notice: Skipping macOS compilation because current host OS is not macOS.")
-        return None
-
-    print("\n--- Building macOS Production Release Bundle ---")
-    clean_locks()
-
-    cmd = [
-        "flutter",
-        "build",
-        "macos",
-        "--release",
-        "--flavor",
-        "production",
-        "-t",
-        "lib/main_production.dart",
-    ]
-    res = subprocess.run(cmd, cwd=PROJECT_ROOT, capture_output=True, text=True)
-    if res.returncode != 0:
-        print(f"Build failed:\n{res.stderr}\n{res.stdout}")
-        sys.exit(res.returncode)
-
-    prod_dir = os.path.join(
-        PROJECT_ROOT,
-        "build",
-        "macos",
-        "Build",
-        "Products",
-        "Release-production",
-    )
-    if not os.path.exists(prod_dir):
-        prod_dir = os.path.join(
-            PROJECT_ROOT,
-            "build",
-            "macos",
-            "Build",
-            "Products",
-            "Release",
-        )
-
-    app_path = None
-    if os.path.exists(prod_dir):
-        for item in os.listdir(prod_dir):
-            if item.endswith(".app"):
-                app_path = os.path.join(prod_dir, item)
-                break
-
-    if not app_path or not os.path.exists(app_path):
-        print(f"Error: Could not locate built .app bundle in {prod_dir}")
-        sys.exit(1)
-
-    print(f"✅ Built macOS App bundle at: {app_path}")
-    return app_path
+    return {
+        "tar": (tar_path, tar_filename, latest_tar_path, "Kortex-Linux-latest.tar.gz"),
+    }
 
 
 def main():
@@ -588,23 +561,25 @@ def main():
             urls["macOS (.zip Versioned)"] = upload_to_r2(zip_path, f"downloads/{zip_fn}", "application/zip")
             urls["macOS (.zip Latest)"] = upload_to_r2(latest_zip_path, f"downloads/{latest_zip_fn}", "application/zip")
 
-    # 2. Windows Build & Package (on Windows host or master build)
-    if sys.platform.startswith("win") or sys.platform == "darwin":
+    # 2. Windows Build & Package (on Windows host)
+    if sys.platform.startswith("win"):
         win_pkgs = create_windows_packages(version_name)
-        w_exe_path, w_exe_fn, w_latest_exe_path, w_latest_exe_fn = win_pkgs["exe"]
-        urls["Windows (.exe Versioned)"] = upload_to_r2(w_exe_path, f"downloads/{w_exe_fn}", "application/x-msdownload")
-        urls["Windows (.exe Latest)"] = upload_to_r2(w_latest_exe_path, f"downloads/{w_latest_exe_fn}", "application/x-msdownload")
+        if win_pkgs:
+            w_exe_path, w_exe_fn, w_latest_exe_path, w_latest_exe_fn = win_pkgs["exe"]
+            urls["Windows (.exe Versioned)"] = upload_to_r2(w_exe_path, f"downloads/{w_exe_fn}", "application/x-msdownload")
+            urls["Windows (.exe Latest)"] = upload_to_r2(w_latest_exe_path, f"downloads/{w_latest_exe_fn}", "application/x-msdownload")
 
-        w_zip_path, w_zip_fn, w_latest_path, w_latest_fn = win_pkgs["zip"]
-        urls["Windows (.zip Versioned)"] = upload_to_r2(w_zip_path, f"downloads/{w_zip_fn}", "application/zip")
-        urls["Windows (.zip Latest)"] = upload_to_r2(w_latest_path, f"downloads/{w_latest_fn}", "application/zip")
+            w_zip_path, w_zip_fn, w_latest_path, w_latest_fn = win_pkgs["zip"]
+            urls["Windows (.zip Versioned)"] = upload_to_r2(w_zip_path, f"downloads/{w_zip_fn}", "application/zip")
+            urls["Windows (.zip Latest)"] = upload_to_r2(w_latest_path, f"downloads/{w_latest_fn}", "application/zip")
 
-    # 3. Linux Build & Package (on Linux host or master build)
-    if sys.platform.startswith("linux") or sys.platform == "darwin":
+    # 3. Linux Build & Package (on Linux host)
+    if sys.platform.startswith("linux"):
         linux_pkgs = create_linux_packages(version_name)
-        l_tar_path, l_tar_fn, l_latest_path, l_latest_fn = linux_pkgs["tar"]
-        urls["Linux (.tar.gz Versioned)"] = upload_to_r2(l_tar_path, f"downloads/{l_tar_fn}", "application/gzip")
-        urls["Linux (.tar.gz Latest)"] = upload_to_r2(l_latest_path, f"downloads/{l_latest_fn}", "application/gzip")
+        if linux_pkgs:
+            l_tar_path, l_tar_fn, l_latest_path, l_latest_fn = linux_pkgs["tar"]
+            urls["Linux (.tar.gz Versioned)"] = upload_to_r2(l_tar_path, f"downloads/{l_tar_fn}", "application/gzip")
+            urls["Linux (.tar.gz Latest)"] = upload_to_r2(l_latest_path, f"downloads/{l_latest_fn}", "application/gzip")
 
     print("\n==========================================================")
     print(f"🎉 Kortex v{version_name} Release Packages Processed Successfully!")
