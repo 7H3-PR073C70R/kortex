@@ -124,3 +124,4 @@ lib/l10n/gen/
 !.env.example
 .note.txt
 todos/
+dist/

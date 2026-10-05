@@ -578,5 +578,118 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // ── Smart OS Auto-Detection & Download Configuration ──
+  const OS_CONFIG = {
+    mac: {
+      name: 'macOS',
+      title: 'Download for Mac',
+      sub: 'v1.0.5 • Universal .DMG',
+      navText: 'Download for Mac',
+      url: 'https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-macOS-latest.dmg',
+      iconSvg: '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.32c.67-.82 1.13-1.97.99-3.12-.98.04-2.19.66-2.88 1.47-.62.73-1.17 1.9-.1 3.02 1.1.09 2.32-.55 2.99-1.37z"/></svg>'
+    },
+    windows: {
+      name: 'Windows',
+      title: 'Download for Windows',
+      sub: 'v1.0.5 • 64-bit .ZIP',
+      navText: 'Download for Windows',
+      url: 'https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-Windows-latest.zip',
+      iconSvg: '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-13.051-1.851"/></svg>'
+    },
+    linux: {
+      name: 'Linux',
+      title: 'Download for Linux',
+      sub: 'v1.0.5 • x86_64 .TAR.GZ',
+      navText: 'Download for Linux',
+      url: 'https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-Linux-latest.tar.gz',
+      iconSvg: '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12.002 0c-2.88 0-4.757 2.222-4.757 5.167 0 2.28 1.106 4.316 2.052 6.136.634 1.218 1.256 2.457 1.256 3.697 0 1.257-1.127 2.278-2.518 2.278-1.074 0-2.002-.62-2.39-1.532l-2.03.626c.72 1.83 2.509 3.056 4.42 3.056 2.68 0 4.67-2.046 4.67-4.428 0-1.745-.788-3.23-1.5-4.577-.732-1.393-1.423-2.698-1.423-4.257 0-1.85 1.163-3.017 2.218-3.017 1.056 0 2.22 1.166 2.22 3.017 0 1.56-.69 2.864-1.423 4.257-.712 1.347-1.5 2.832-1.5 4.577 0 2.382 1.99 4.428 4.67 4.428 1.91 0 3.7-1.226 4.42-3.056l-2.03-.626c-.388.912-1.316 1.532-2.39 1.532-1.39 0-2.518-1.02-2.518-2.278 0-1.24.622-2.479 1.256-3.697.946-1.82 2.052-3.856 2.052-6.136C16.76 2.222 14.882 0 12.002 0z"/></svg>'
+    }
+  };
+
+  const userAgent = navigator.userAgent.toLowerCase();
+  const platform = navigator.platform ? navigator.platform.toLowerCase() : '';
+  let detectedOS = 'mac';
+  if (userAgent.includes('win') || platform.includes('win')) {
+    detectedOS = 'windows';
+  } else if (userAgent.includes('linux') || userAgent.includes('x11') || platform.includes('linux')) {
+    detectedOS = 'linux';
+  } else if (userAgent.includes('mac') || userAgent.includes('darwin') || platform.includes('mac')) {
+    detectedOS = 'mac';
+  }
+
+  const osConfig = OS_CONFIG[detectedOS] || OS_CONFIG.mac;
+
+  // 1. Update Hero Main Download Button
+  const heroMainDownloadBtn = document.getElementById('heroMainDownloadBtn');
+  const heroDownloadIcon = document.getElementById('heroDownloadIcon');
+  const heroDownloadTitle = document.getElementById('heroDownloadTitle');
+  const heroDownloadSub = document.getElementById('heroDownloadSub');
+
+  if (heroMainDownloadBtn) {
+    heroMainDownloadBtn.setAttribute('href', osConfig.url);
+    if (heroDownloadTitle) heroDownloadTitle.textContent = osConfig.title;
+    if (heroDownloadSub) heroDownloadSub.textContent = osConfig.sub;
+    if (heroDownloadIcon) heroDownloadIcon.innerHTML = osConfig.iconSvg;
+  }
+
+  // 2. Update Header Download Button
+  const headerDownloadBtn = document.getElementById('headerDownloadBtn');
+  const headerDownloadText = document.getElementById('headerDownloadText');
+  if (headerDownloadBtn) {
+    headerDownloadBtn.setAttribute('href', '#download');
+    if (headerDownloadText) headerDownloadText.textContent = 'Download App';
+  }
+
+  // 3. Dropdown Menu Toggle
+  const dropdownBtn = document.getElementById('heroDropdownToggleBtn');
+  const dropdownMenu = document.getElementById('heroDownloadMenu');
+
+  if (dropdownBtn && dropdownMenu) {
+    dropdownBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dropdownMenu.classList.contains('show');
+      dropdownMenu.classList.toggle('show', !isOpen);
+      dropdownBtn.setAttribute('aria-expanded', String(!isOpen));
+    });
+
+    document.addEventListener('click', () => {
+      dropdownMenu.classList.remove('show');
+      dropdownBtn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  // 4. Highlight Detected OS Card
+  const downloadCards = document.querySelectorAll('.download-card');
+  downloadCards.forEach((card) => {
+    if (card.getAttribute('data-os') === detectedOS) {
+      card.classList.add('highlight-os');
+    }
+  });
+
+  // 5. Download OS Filter Tabs
+  const osTabs = document.querySelectorAll('.download-os-tab');
+  osTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const targetOs = tab.getAttribute('data-os-tab');
+      osTabs.forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+
+      downloadCards.forEach((card) => {
+        if (targetOs === 'all' || card.getAttribute('data-os') === targetOs) {
+          card.style.display = 'flex';
+          if (targetOs !== 'all' && card.getAttribute('data-os') === targetOs) {
+            card.classList.add('highlight-os');
+          }
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
 });
 
