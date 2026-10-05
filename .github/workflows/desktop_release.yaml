@@ -46,7 +46,7 @@ jobs:
         if: matrix.runner-os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libsecret-1-dev libjson-glib-dev
 
       - name: Get Flutter Dependencies
         run: flutter pub get
@@ -54,7 +54,7 @@ jobs:
       - name: Build Native Windows Executable
         if: matrix.runner-os == 'windows-latest'
         run: |
-          flutter build windows --release --flavor production -t lib/main_production.dart --extra-gen-args="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+          flutter build windows --release --flavor production -t lib/main_production.dart
 
       - name: Build Native Linux Desktop Bundle
         if: matrix.runner-os == 'ubuntu-latest'
