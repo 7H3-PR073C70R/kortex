@@ -10,6 +10,7 @@ This script:
 5. Prints live public download URLs ready to be embedded into the landing page.
 """
 
+import argparse
 import datetime
 import hashlib
 import hmac
@@ -167,8 +168,72 @@ def clean_locks():
             print(f"Notice: Could not clear locks: {e}")
 
 
+def get_signing_identity():
+    """Finds valid Developer ID Application or Apple Development signing identity in local Keychain."""
+    try:
+        res = subprocess.run(["security", "find-identity", "-p", "codesigning", "-v"], capture_output=True, text=True)
+        if res.returncode != 0:
+            return None
+
+        dev_id_identity = None
+        apple_dev_identity = None
+
+        for line in res.stdout.splitlines():
+            if "Developer ID Application" in line:
+                match = re.search(r'"([^"]+)"', line)
+                if match:
+                    dev_id_identity = match.group(1)
+                    break
+            elif "Apple Development" in line and not apple_dev_identity:
+                match = re.search(r'"([^"]+)"', line)
+                if match:
+                    apple_dev_identity = match.group(1)
+
+        return dev_id_identity or apple_dev_identity
+    except Exception:
+        return None
+
+
+def sign_macos_target(target_path, is_app_bundle=False):
+    """Codesigns macOS .app bundle or .dmg image using local Apple certificate."""
+    identity = get_signing_identity()
+    if not identity:
+        print(f"Notice: No Apple signing identity found in local Keychain for {os.path.basename(target_path)}.")
+        return False
+
+    print(f"🔒 Codesigning {os.path.basename(target_path)} with identity: '{identity}'...")
+    cmd = ["codesign", "--force"]
+    if is_app_bundle:
+        cmd.extend(["--deep", "--options", "runtime"])
+    cmd.extend(["--sign", identity, target_path])
+
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode == 0:
+        print(f"✅ Successfully signed {os.path.basename(target_path)}")
+        return True
+    else:
+        print(f"Warning: Codesign failed for {target_path}:\n{res.stderr}")
+        return False
+
+
 def build_macos_bundle():
-    """Builds the native macOS production release application bundle."""
+    """Builds the native macOS production release application bundle if not already built."""
+    prod_dir = os.path.join(PROJECT_ROOT, "build", "macos", "Build", "Products", "Release-production")
+    if not os.path.exists(prod_dir):
+        prod_dir = os.path.join(PROJECT_ROOT, "build", "macos", "Build", "Products", "Release")
+
+    app_path = None
+    if os.path.exists(prod_dir):
+        for item in os.listdir(prod_dir):
+            if item.endswith(".app"):
+                app_path = os.path.join(prod_dir, item)
+                break
+
+    if app_path and os.path.exists(app_path):
+        print(f"✅ Found existing built macOS App bundle at: {app_path}")
+        sign_macos_target(app_path, is_app_bundle=True)
+        return app_path
+
     print("\n--- Building macOS Production Release Bundle ---")
     clean_locks()
 
@@ -187,25 +252,6 @@ def build_macos_bundle():
         print(f"Build failed:\n{res.stderr}\n{res.stdout}")
         sys.exit(res.returncode)
 
-    prod_dir = os.path.join(
-        PROJECT_ROOT,
-        "build",
-        "macos",
-        "Build",
-        "Products",
-        "Release-production",
-    )
-    if not os.path.exists(prod_dir):
-        prod_dir = os.path.join(
-            PROJECT_ROOT,
-            "build",
-            "macos",
-            "Build",
-            "Products",
-            "Release",
-        )
-
-    app_path = None
     if os.path.exists(prod_dir):
         for item in os.listdir(prod_dir):
             if item.endswith(".app"):
@@ -217,6 +263,7 @@ def build_macos_bundle():
         sys.exit(1)
 
     print(f"✅ Built macOS App bundle at: {app_path}")
+    sign_macos_target(app_path, is_app_bundle=True)
     return app_path
 
 
@@ -257,6 +304,7 @@ def create_macos_packages(app_path, version):
         dmg_path,
     ]
     subprocess.run(cmd_dmg, check=True)
+    sign_macos_target(dmg_path, is_app_bundle=False)
     shutil.copyfile(dmg_path, latest_dmg_path)
 
     return {
@@ -539,32 +587,76 @@ def create_linux_packages(version):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Kortex Native Release Packaging & Cloudflare R2 Publisher")
+    parser.add_argument("--platform", "-p", choices=["macos", "windows", "linux", "all", "auto"], default="auto",
+                        help="Target platform to build/package (default: auto based on host OS)")
+    parser.add_argument("--macos-only", action="store_true", help="Build, code-sign, package, and upload macOS version only")
+    parser.add_argument("--windows-only", action="store_true", help="Build, package, and upload Windows version only")
+    parser.add_argument("--linux-only", action="store_true", help="Build, package, and upload Linux version only")
+    parser.add_argument("--skip-build", action="store_true", help="Skip Flutter compilation and package existing build outputs")
+    parser.add_argument("--skip-upload", action="store_true", help="Skip uploading artifacts to Cloudflare R2")
+    args = parser.parse_args()
+
+    target_platform = "auto"
+    if args.macos_only:
+        target_platform = "macos"
+    elif args.windows_only:
+        target_platform = "windows"
+    elif args.linux_only:
+        target_platform = "linux"
+    elif args.platform != "auto":
+        target_platform = args.platform
+
     version_name, build_num = get_app_version()
     print(f"🚀 Kortex Release Build & Cloudflare R2 Publisher")
     print(f"   Detected Version: {version_name} (Build {build_num})")
+    print(f"   Target Platform Mode: {target_platform}")
     print(f"   Running on Host OS: {sys.platform}")
 
     update_landing_version_strings(version_name)
 
     urls = {}
 
-    # 1. macOS Build & Package (on macOS host)
-    if sys.platform == "darwin":
-        app_path = build_macos_bundle()
+    run_macos = (target_platform == "macos") or (target_platform == "all") or (target_platform == "auto" and sys.platform == "darwin")
+    run_windows = (target_platform == "windows") or (target_platform == "all") or (target_platform == "auto" and sys.platform.startswith("win"))
+    run_linux = (target_platform == "linux") or (target_platform == "all") or (target_platform == "auto" and sys.platform.startswith("linux"))
+
+    # 1. macOS Build, Code-sign & Package
+    if run_macos and sys.platform == "darwin":
+        if args.skip_build:
+            print("\n--- Locating Existing macOS Build Bundle (--skip-build) ---")
+            prod_dir = os.path.join(PROJECT_ROOT, "build", "macos", "Build", "Products", "Release-production")
+            if not os.path.exists(prod_dir):
+                prod_dir = os.path.join(PROJECT_ROOT, "build", "macos", "Build", "Products", "Release")
+            app_path = None
+            if os.path.exists(prod_dir):
+                for item in os.listdir(prod_dir):
+                    if item.endswith(".app"):
+                        app_path = os.path.join(prod_dir, item)
+                        break
+            if app_path:
+                sign_macos_target(app_path, is_app_bundle=True)
+            else:
+                print(f"Error: Could not locate built .app bundle in {prod_dir}")
+                sys.exit(1)
+        else:
+            app_path = build_macos_bundle()
+
         if app_path:
             mac_pkgs = create_macos_packages(app_path, version_name)
             dmg_path, dmg_fn, latest_dmg_path, latest_dmg_fn = mac_pkgs["dmg"]
-            urls["macOS (.dmg Versioned)"] = upload_to_r2(dmg_path, f"downloads/{dmg_fn}", "application/x-apple-diskimage")
-            urls["macOS (.dmg Latest)"] = upload_to_r2(latest_dmg_path, f"downloads/{latest_dmg_fn}", "application/x-apple-diskimage")
-
             zip_path, zip_fn, latest_zip_path, latest_zip_fn = mac_pkgs["zip"]
-            urls["macOS (.zip Versioned)"] = upload_to_r2(zip_path, f"downloads/{zip_fn}", "application/zip")
-            urls["macOS (.zip Latest)"] = upload_to_r2(latest_zip_path, f"downloads/{latest_zip_fn}", "application/zip")
 
-    # 2. Windows Build & Package (on Windows host)
-    if sys.platform.startswith("win"):
+            if not args.skip_upload:
+                urls["macOS (.dmg Versioned)"] = upload_to_r2(dmg_path, f"downloads/{dmg_fn}", "application/x-apple-diskimage")
+                urls["macOS (.dmg Latest)"] = upload_to_r2(latest_dmg_path, f"downloads/{latest_dmg_fn}", "application/x-apple-diskimage")
+                urls["macOS (.zip Versioned)"] = upload_to_r2(zip_path, f"downloads/{zip_fn}", "application/zip")
+                urls["macOS (.zip Latest)"] = upload_to_r2(latest_zip_path, f"downloads/{latest_zip_fn}", "application/zip")
+
+    # 2. Windows Build & Package
+    if run_windows and sys.platform.startswith("win"):
         win_pkgs = create_windows_packages(version_name)
-        if win_pkgs:
+        if win_pkgs and not args.skip_upload:
             w_exe_path, w_exe_fn, w_latest_exe_path, w_latest_exe_fn = win_pkgs["exe"]
             urls["Windows (.exe Versioned)"] = upload_to_r2(w_exe_path, f"downloads/{w_exe_fn}", "application/x-msdownload")
             urls["Windows (.exe Latest)"] = upload_to_r2(w_latest_exe_path, f"downloads/{w_latest_exe_fn}", "application/x-msdownload")
@@ -573,10 +665,10 @@ def main():
             urls["Windows (.zip Versioned)"] = upload_to_r2(w_zip_path, f"downloads/{w_zip_fn}", "application/zip")
             urls["Windows (.zip Latest)"] = upload_to_r2(w_latest_path, f"downloads/{w_latest_fn}", "application/zip")
 
-    # 3. Linux Build & Package (on Linux host)
-    if sys.platform.startswith("linux"):
+    # 3. Linux Build & Package
+    if run_linux and sys.platform.startswith("linux"):
         linux_pkgs = create_linux_packages(version_name)
-        if linux_pkgs:
+        if linux_pkgs and not args.skip_upload:
             l_tar_path, l_tar_fn, l_latest_path, l_latest_fn = linux_pkgs["tar"]
             urls["Linux (.tar.gz Versioned)"] = upload_to_r2(l_tar_path, f"downloads/{l_tar_fn}", "application/gzip")
             urls["Linux (.tar.gz Latest)"] = upload_to_r2(l_latest_path, f"downloads/{l_latest_fn}", "application/gzip")
@@ -584,9 +676,10 @@ def main():
     print("\n==========================================================")
     print(f"🎉 Kortex v{version_name} Release Packages Processed Successfully!")
     print("==========================================================")
-    print("\n### 🔗 Live Cloudflare R2 Download Links:\n")
-    for platform, url in urls.items():
-        print(f"- **{platform}**: [{url}]({url})")
+    if urls:
+        print("\n### 🔗 Live Cloudflare R2 Download Links:\n")
+        for platform, url in urls.items():
+            print(f"- **{platform}**: [{url}]({url})")
     print("\nDone!")
 
 
