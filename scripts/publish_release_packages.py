@@ -169,7 +169,7 @@ def clean_locks():
 
 
 def get_signing_identity():
-    """Finds valid Developer ID Application or Apple Development signing identity in local Keychain."""
+    """Finds unique SHA-1 hash of valid Developer ID Application or Apple Development signing identity in local Keychain."""
     try:
         res = subprocess.run(["security", "find-identity", "-p", "codesigning", "-v"], capture_output=True, text=True)
         if res.returncode != 0:
@@ -179,15 +179,16 @@ def get_signing_identity():
         apple_dev_identity = None
 
         for line in res.stdout.splitlines():
+            hash_match = re.search(r'\b([A-Fa-f0-9]{40})\b', line)
+            if not hash_match:
+                continue
+            cert_hash = hash_match.group(1)
+
             if "Developer ID Application" in line:
-                match = re.search(r'"([^"]+)"', line)
-                if match:
-                    dev_id_identity = match.group(1)
-                    break
+                dev_id_identity = cert_hash
+                break
             elif "Apple Development" in line and not apple_dev_identity:
-                match = re.search(r'"([^"]+)"', line)
-                if match:
-                    apple_dev_identity = match.group(1)
+                apple_dev_identity = cert_hash
 
         return dev_id_identity or apple_dev_identity
     except Exception:
