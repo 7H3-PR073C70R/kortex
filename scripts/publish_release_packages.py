@@ -24,6 +24,13 @@ import tarfile
 import urllib.request
 import zipfile
 
+# Ensure UTF-8 stdout/stderr encoding on Windows console and CI runners
+if sys.platform.startswith("win"):
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 # Cloudflare R2 Credentials & Configuration
 ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID", "70d5976cda85543f749219264f8391f0")
 ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "45baa62136f37a008f6bb338d27ca708")
