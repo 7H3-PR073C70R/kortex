@@ -38,7 +38,8 @@ import 'package:kortex/src/features/profile/presentation/widgets/active_sessions
 import 'package:kortex/src/l10n/l10n.dart';
 
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -147,17 +148,16 @@ class _SecuritySettingsView extends HookWidget {
 
         return Scaffold(
           backgroundColor: colors.backgroundPrimary,
-          appBar: AppBar(
+          appBar: AppAdaptiveAppBar(
             backgroundColor: colors.backgroundPrimary,
-            elevation: 0,
-            leading: const AppBackButton(),
-            title: Text(
-              'Account & Security',
-              style: typography.title3.bold.copyWith(
-                color: colors.textPrimary,
-                fontSize: 18,
+            titleText: 'Account & Security',
+            breadcrumbs: [
+              AppBreadcrumbItem(
+                label: 'Profile & Settings',
+                onTap: () => context.router.maybePop(),
               ),
-            ),
+              const AppBreadcrumbItem(label: 'Account & Security'),
+            ],
           ),
           body: SafeArea(
             child: Center(

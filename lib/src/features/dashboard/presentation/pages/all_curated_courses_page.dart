@@ -22,7 +22,8 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -93,19 +94,22 @@ class AllCuratedCoursesPage extends HookWidget {
 
           return Scaffold(
             backgroundColor: colors.backgroundPrimary,
-            appBar: AppBar(
+            appBar: AppAdaptiveAppBar(
               backgroundColor: colors.backgroundPrimary,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              leading: const AppBackButton(),
-              title: Text(
-                'Enrolled Curated Courses',
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 18,
+              breadcrumbs: [
+                AppBreadcrumbItem(
+                  label: 'Dashboard',
+                  onTap: () {
+                    if (context.router.canPop()) {
+                      context.router.pop();
+                    }
+                  },
                 ),
-              ),
-              centerTitle: true,
+                const AppBreadcrumbItem(
+                  label: 'Enrolled Courses',
+                ),
+              ],
+              titleText: 'Enrolled Curated Courses',
               actions: [
                 IconButton(
                   icon: Icon(

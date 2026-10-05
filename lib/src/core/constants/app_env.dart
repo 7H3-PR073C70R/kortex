@@ -6,9 +6,12 @@ class AppEnv {
   static String get apiKey => dotenv.isInitialized
       ? (dotenv.env['API_KEY'] ?? dotenv.env['SUPABASE_ANON_KEY'] ?? '')
       : '';
-  static String get liveKitUrl => dotenv.isInitialized
-      ? (dotenv.env['LIVEKIT_URL'] ?? 'wss://kortexify-nj9viqjp.livekit.cloud')
-      : 'wss://kortexify-nj9viqjp.livekit.cloud';
+  static String get liveKitUrl {
+    if (!dotenv.isInitialized) return '';
+    final val = dotenv.env['LIVEKIT_URL'];
+    assert(val != null && val.isNotEmpty, 'LIVEKIT_URL must be set in .env');
+    return val ?? '';
+  }
 
   static String get revenueCatWebApiKey =>
       dotenv.isInitialized ? (dotenv.env['REVENUECAT_WEB_API_KEY'] ?? '') : '';
@@ -19,8 +22,13 @@ class AppEnv {
       ? (dotenv.env['REVENUECAT_APPLE_API_KEY'] ?? '')
       : '';
 
-  static String get r2PublicDomain => dotenv.isInitialized
-      ? (dotenv.env['R2_PUBLIC_DOMAIN'] ??
-          'https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev')
-      : 'https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev';
+  static String get r2PublicDomain {
+    if (!dotenv.isInitialized) return '';
+    final val = dotenv.env['R2_PUBLIC_DOMAIN'];
+    assert(
+      val != null && val.isNotEmpty,
+      'R2_PUBLIC_DOMAIN must be set in .env',
+    );
+    return val ?? '';
+  }
 }

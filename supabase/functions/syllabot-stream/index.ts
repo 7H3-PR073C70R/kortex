@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { SemanticCacheProvider } from "../_shared/semantic_cache_provider.ts";
 import { LunaClient } from "../_shared/luna_client.ts";
+import { checkAndEnforceQuota } from "../_shared/quota_guard.ts";
 import { corsHeaders } from "./_shared/cors.ts";
 import {
   Message,
@@ -66,6 +67,19 @@ serve(async (req: Request) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    if (userId !== "anon-guest") {
+      const quotaCheck = await checkAndEnforceQuota(
+        dbClient,
+        userId,
+        "syllabot_query",
+        0,
+        corsHeaders
+      );
+      if (!quotaCheck.allowed && quotaCheck.response) {
+        return quotaCheck.response;
+      }
     }
 
     const routing = selectModelAndParams(messages, {

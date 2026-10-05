@@ -13,7 +13,8 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -61,17 +62,16 @@ class AboutSupportPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: colors.surfacePrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor: colors.surfacePrimary,
-        elevation: 0,
-        leading: const AppBackButton(),
-        title: Text(
-          'About & Support',
-          style: typography.title3.bold.copyWith(
-            color: colors.textPrimary,
+        titleText: 'About & Support',
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Profile & Settings',
+            onTap: () => context.router.maybePop(),
           ),
-        ),
-        centerTitle: false,
+          const AppBreadcrumbItem(label: 'About & Support'),
+        ],
       ),
       body: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),

@@ -22,7 +22,8 @@ import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_local_data_source.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -468,20 +469,36 @@ class _AddAcademicAssessmentPageState
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor: colors.backgroundPrimary,
-        elevation: 0,
-        leading: const AppBackButton(),
-        title: Text(
-          widget.initialExam != null
-              ? 'Edit Assessment'
-              : 'Add Academic Assessment',
-          style: typography.title3.bold.copyWith(
-            color: colors.textPrimary,
-            fontSize: 18,
+        titleText: widget.initialExam != null
+            ? 'Edit Assessment'
+            : 'Add Academic Assessment',
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Planner',
+            onTap: () => context.router.maybePop(),
           ),
-        ),
-        centerTitle: true,
+          AppBreadcrumbItem(
+            label: widget.initialExam != null
+                ? 'Edit Assessment'
+                : 'Add Assessment',
+          ),
+        ],
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton(
+              onPressed: () => context.router.maybePop(),
+              child: Text(
+                'Cancel',
+                style: typography.subhead.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Center(

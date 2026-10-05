@@ -91,7 +91,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final userStorage = locator.isRegistered<UserStorageService>()
         ? locator<UserStorageService>()
         : null;
-    final hasSession = userStorage?.hasActiveSession() ?? false;
+    final hasSession = userStorage?.hasActiveSession() ?? true;
 
     if (!hasSession) {
       emit(
@@ -279,6 +279,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     _flushAllPendingSyncs();
+    // Authoritatively sync Pro subscription status on app resume.
+    unawaited(RevenueCatService.instance.syncCustomerEntitlements());
     if (locator.isRegistered<UserStorageService>()) {
       final storage = locator<UserStorageService>();
       if (storage.hasActiveSession()) {

@@ -79,6 +79,10 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
     required int remainingSeconds,
     required String pomodoroState,
     required String senderId,
+    bool isRoomEnded = false,
+    bool? isSprintActive,
+    int? sprintRemainingSeconds,
+    String? sprintDeckTitle,
   }) async {
     final event = PomodoroSyncEvent(
       roomId: roomId,
@@ -86,6 +90,10 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
       pomodoroState: pomodoroState,
       senderId: senderId,
       timestamp: DateTime.now(),
+      isRoomEnded: isRoomEnded,
+      isSprintActive: isSprintActive,
+      sprintRemainingSeconds: sprintRemainingSeconds,
+      sprintDeckTitle: sprintDeckTitle,
     );
     broadcastedTicks.add(event);
     _pomodoroController.add(event);

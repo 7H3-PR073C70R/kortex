@@ -504,9 +504,16 @@ class _DecksView extends HookWidget {
                       else
                         LayoutBuilder(
                           builder: (context, gridConstraints) {
-                            final isWideScreen = gridConstraints.maxWidth >= 640;
-                            if (isWideScreen) {
-                              final itemWidth = (gridConstraints.maxWidth - 14) / 2;
+                            final columnCount = switch (gridConstraints.maxWidth) {
+                              >= 1400 => 4,
+                              >= 900 => 3,
+                              >= 640 => 2,
+                              _ => 1,
+                            };
+                            if (columnCount > 1) {
+                              final itemWidth =
+                                  (gridConstraints.maxWidth - (14 * (columnCount - 1))) /
+                                      columnCount;
                               return Wrap(
                                 spacing: 14,
                                 runSpacing: 14,
@@ -589,46 +596,48 @@ class _DecksView extends HookWidget {
     AppThemeColorsExtension colors,
     bool isDark,
   ) {
-    return Padding(
+    return ListView(
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Header Shimmer
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ShimmerPlaceholder(width: 140, height: 26, borderRadius: 8),
-                  SizedBox(height: 6),
-                  ShimmerPlaceholder(width: 220, height: 14, borderRadius: 6),
-                ],
-              ),
-              ShimmerPlaceholder(width: 40, height: 40, borderRadius: 20),
-            ],
-          ),
-          const SizedBox(height: 20),
+      children: [
+        // 1. Header Shimmer
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShimmerPlaceholder(width: 140, height: 26, borderRadius: 8),
+                SizedBox(height: 6),
+                ShimmerPlaceholder(width: 220, height: 14, borderRadius: 6),
+              ],
+            ),
+            ShimmerPlaceholder(width: 40, height: 40, borderRadius: 20),
+          ],
+        ),
+        const SizedBox(height: 20),
 
-          // 2. Today Hero Shimmer
-          const ShimmerPlaceholder(
-            width: double.infinity,
-            height: 132,
-            borderRadius: 16,
-          ),
-          const SizedBox(height: 16),
+        // 2. Today Hero Shimmer
+        const ShimmerPlaceholder(
+          width: double.infinity,
+          height: 132,
+          borderRadius: 16,
+        ),
+        const SizedBox(height: 16),
 
-          // 3. Search Bar Shimmer
-          const ShimmerPlaceholder(
-            width: double.infinity,
-            height: 48,
-            borderRadius: 16,
-          ),
-          const SizedBox(height: 16),
+        // 3. Search Bar Shimmer
+        const ShimmerPlaceholder(
+          width: double.infinity,
+          height: 48,
+          borderRadius: 16,
+        ),
+        const SizedBox(height: 16),
 
-          // 4. Filter Category Pills Shimmer
-          const Row(
+        // 4. Filter Category Pills Shimmer
+        const SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: NeverScrollableScrollPhysics(),
+          child: Row(
             children: [
               ShimmerPlaceholder(width: 80, height: 32, borderRadius: 16),
               SizedBox(width: 8),
@@ -637,23 +646,72 @@ class _DecksView extends HookWidget {
               ShimmerPlaceholder(width: 85, height: 32, borderRadius: 16),
             ],
           ),
-          const SizedBox(height: 24),
+        ),
+        const SizedBox(height: 24),
 
-          // 5. Deck Card List Skeletons
-          Expanded(
-            child: ListView.separated(
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 3,
-              separatorBuilder: (_, _) => const SizedBox(height: 14),
-              itemBuilder: (_, _) => const ShimmerPlaceholder(
-                width: double.infinity,
-                height: 120,
-                borderRadius: 20,
-              ),
-            ),
-          ),
-        ],
-      ),
+        // 5. Responsive Deck Card Skeletons (matches loaded grid breakpoints)
+        LayoutBuilder(
+          builder: (context, gridConstraints) {
+            final columnCount = switch (gridConstraints.maxWidth) {
+              >= 1400 => 4,
+              >= 900 => 3,
+              >= 640 => 2,
+              _ => 1,
+            };
+
+            if (columnCount > 1) {
+              final itemWidth =
+                  (gridConstraints.maxWidth - (14 * (columnCount - 1))) /
+                      columnCount;
+              final skeletonCount = columnCount * 2;
+              return Wrap(
+                spacing: 14,
+                runSpacing: 14,
+                children: [
+                  for (var i = 0; i < skeletonCount; i++)
+                    SizedBox(
+                      width: itemWidth,
+                      child: const ShimmerPlaceholder(
+                        width: double.infinity,
+                        height: 120,
+                        borderRadius: 20,
+                      ),
+                    ),
+                ],
+              );
+            }
+
+            return const Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(bottom: 14),
+                  child: ShimmerPlaceholder(
+                    width: double.infinity,
+                    height: 120,
+                    borderRadius: 20,
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(bottom: 14),
+                  child: ShimmerPlaceholder(
+                    width: double.infinity,
+                    height: 120,
+                    borderRadius: 20,
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(bottom: 14),
+                  child: ShimmerPlaceholder(
+                    width: double.infinity,
+                    height: 120,
+                    borderRadius: 20,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }

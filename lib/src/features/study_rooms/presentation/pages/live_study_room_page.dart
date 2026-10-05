@@ -9,6 +9,7 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -87,6 +88,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
       FloatingReactionController();
   String? _lastReaction;
   String? _lastProcessedReactionId;
+  bool _hasShownRoomEndedDialog = false;
 
   @override
   void initState() {
@@ -268,29 +270,43 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final cubit = context.read<LiveRoomCubit>();
+    final state = cubit.state;
+    final isHost = widget.currentUserId == state.room.createdBy;
 
     unawaited(
       showDialog<void>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+          backgroundColor:
+              isDark ? colors.surfaceSecondary : colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           title: Row(
             children: [
-              Icon(Icons.directions_run_rounded, color: colors.error, size: 24),
+              Icon(
+                isHost
+                    ? Icons.power_settings_new_rounded
+                    : Icons.directions_run_rounded,
+                color: colors.error,
+                size: 24,
+              ),
               const SizedBox(width: 8),
-              Text(
-                'Leave Study Room?',
-                style: typography.subhead.bold.copyWith(
-                  color: colors.textPrimary,
+              Expanded(
+                child: Text(
+                  isHost ? 'End Study Room Session?' : 'Leave Study Room?',
+                  style: typography.subhead.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
               ),
             ],
           ),
           content: Text(
-            'Are you sure you want to leave this study session? Your active presence and progress will be saved.',
+            isHost
+                ? 'You are the host of this study room. Ending the room will conclude the session for all participants. Would you like to end the session for everyone or leave?'
+                : 'Are you sure you want to leave this study session? Your active presence and progress will be saved.',
             style: typography.caption.regular.copyWith(
               color: colors.textSecondary,
             ),
@@ -305,9 +321,83 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 ),
               ),
             ),
+            if (isHost)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogCtx).pop();
+                  _performExit(context);
+                },
+                child: Text(
+                  'Leave Only',
+                  style: typography.body.regular.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: colors.error,
+                foregroundColor: colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () async {
+                Navigator.of(dialogCtx).pop();
+                if (isHost) {
+                  await cubit.endRoomAsHost();
+                }
+                if (context.mounted) {
+                  _performExit(context);
+                }
+              },
+              child: Text(isHost ? 'End for Everyone' : 'Leave Room'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showRoomEndedByHostDialog(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor:
+              isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.flag_rounded, color: colors.primary, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Study Session Concluded',
+                  style: typography.subhead.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'The host has concluded this live focus session for everyone. Great work studying today!',
+            style: typography.caption.regular.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.primary,
                 foregroundColor: colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -317,7 +407,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 Navigator.of(dialogCtx).pop();
                 _performExit(context);
               },
-              child: const Text('Leave Room'),
+              child: const Text('View Session Summary'),
             ),
           ],
         ),
@@ -844,6 +934,11 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
             isPermanentlyDenied: state.isPermanentlyDeniedMic,
           );
         }
+
+        if (state.isRoomEndedByHost && !_hasShownRoomEndedDialog) {
+          _hasShownRoomEndedDialog = true;
+          _showRoomEndedByHostDialog(context);
+        }
       },
       builder: (context, state) {
         final audience = state.ephemeralParticipants;
@@ -856,13 +951,20 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
             if (didPop) return;
             _handleExit(context);
           },
-          child: FloatingReactionOverlay(
-            controller: _reactionController,
-            child: Scaffold(
-              key: _scaffoldKey,
-              backgroundColor: isDark
-                  ? colors.backgroundPrimary
-                  : colors.surfacePrimary,
+          child: CallbackShortcuts(
+            bindings: <ShortcutActivator, VoidCallback>{
+              const SingleActivator(LogicalKeyboardKey.escape): () =>
+                  _handleExit(context),
+            },
+            child: Focus(
+              autofocus: true,
+              child: FloatingReactionOverlay(
+                controller: _reactionController,
+                child: Scaffold(
+                  key: _scaffoldKey,
+                  backgroundColor: isDark
+                      ? colors.backgroundPrimary
+                      : colors.surfacePrimary,
               drawer: _RoomControlDrawer(
                 state: state,
                 currentUserId: widget.currentUserId,
@@ -880,15 +982,20 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               appBar: AppBar(
                 backgroundColor: colors.transparent,
                 elevation: 0,
-                leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_rounded,
-                    color: colors.textPrimary,
-                    size: 22,
-                  ),
-                  tooltip: 'Leave Room',
-                  onPressed: () => _handleExit(context),
-                ),
+                automaticallyImplyLeading: false,
+                leading: MediaQuery.sizeOf(context).width >= 1024
+                    ? null
+                    : IconButton(
+                        icon: Icon(
+                          Icons.arrow_back_rounded,
+                          color: colors.textPrimary,
+                          size: 22,
+                        ),
+                        tooltip: 'Leave Room',
+                        onPressed: () => _handleExit(context),
+                      ),
+                leadingWidth:
+                    MediaQuery.sizeOf(context).width >= 1024 ? 0 : null,
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -906,15 +1013,19 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                       child: Row(
                         children: [
                           AppPulsingBeacon(
-                            color: colors.error,
+                            color: state.isReconnecting
+                                ? colors.warning
+                                : colors.error,
                             size: 5,
                             pulseSpread: 3,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'LIVE',
+                            state.isReconnecting ? 'RECONNECTING' : 'LIVE',
                             style: typography.caption.bold.copyWith(
-                              color: colors.error,
+                              color: state.isReconnecting
+                                  ? colors.warning
+                                  : colors.error,
                               fontSize: 10,
                               letterSpacing: 0.8,
                               fontWeight: FontWeight.w800,
@@ -973,6 +1084,35 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                   ],
                 ),
                 actions: [
+                  if (MediaQuery.sizeOf(context).width >= 1024)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: TextButton.icon(
+                        onPressed: () => _handleExit(context),
+                        icon: Icon(
+                          Icons.logout_rounded,
+                          size: 16,
+                          color: colors.error,
+                        ),
+                        label: Text(
+                          'Leave Room',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.error,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          backgroundColor: colors.error.withAlpha(25),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.badge),
+                          ),
+                        ),
+                      ),
+                    ),
                   // Chat trigger with unread badge
                   Stack(
                     clipBehavior: Clip.none,
@@ -1033,6 +1173,16 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               body: SafeArea(
                 child: Column(
                   children: [
+                    if (state.isReconnecting) ...[
+                      const SizedBox(height: 4),
+                      _ReconnectingBanner(
+                        attempt: state.reconnectAttempt,
+                        onRetry: () => context
+                            .read<LiveRoomCubit>()
+                            .retryAudioConnection(),
+                        isDark: isDark,
+                      ),
+                    ],
                     if (state.isCoOpSprintActive) ...[
                       const SizedBox(height: 4),
                       _CoOpSprintBanner(
@@ -1162,8 +1312,85 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               ),
             ),
           ),
-        );
+        ),
+      ),
+    );
       },
+    );
+  }
+}
+
+// ── Reconnection Banner ────────────────────────────────────────────────────────
+class _ReconnectingBanner extends StatelessWidget {
+  const _ReconnectingBanner({
+    required this.attempt,
+    required this.onRetry,
+    required this.isDark,
+  });
+
+  final int attempt;
+  final VoidCallback onRetry;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: colors.warning.withAlpha(isDark ? 35 : 20),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colors.warning.withAlpha(isDark ? 80 : 50),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(colors.warning),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              attempt > 1
+                  ? 'Reconnecting to room audio (attempt $attempt)...'
+                  : 'Audio stream interrupted. Reconnecting...',
+              style: typography.caption.medium.copyWith(
+                color: colors.warning,
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: onRetry,
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              child: Text(
+                'Retry',
+                style: typography.caption.bold.copyWith(
+                  color: colors.warning,
+                  fontSize: 12,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -8,7 +8,8 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/models/fsrs_user_settings.dart';
 import 'package:kortex/src/features/decks/domain/services/fsrs_settings_sync_service.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -98,17 +99,16 @@ class _DeckPaceSettingsPageState extends State<DeckPaceSettingsPage> {
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor: colors.backgroundPrimary,
-        elevation: 0,
-        leading: const AppBackButton(),
-        title: Text(
-          'Deck Study Pace',
-          style: typography.title3.bold.copyWith(
-            color: colors.textPrimary,
-            fontSize: 18,
+        titleText: 'Deck Study Pace',
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Profile & Settings',
+            onTap: () => context.router.maybePop(),
           ),
-        ),
+          const AppBreadcrumbItem(label: 'Deck Study Pace'),
+        ],
       ),
       body: SafeArea(
         child: Center(

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { chunkMarkdown } from "../_shared/markdown_chunker.ts";
 import { ServerDocumentParser } from "../_shared/server_document_parser.ts";
+import { checkAndEnforceQuota } from "../_shared/quota_guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,6 +98,17 @@ serve(async (req: Request) => {
           JSON.stringify({ error: "Forbidden: You do not have permission to ingest this document" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+
+      const quotaCheck = await checkAndEnforceQuota(
+        supabase,
+        userId,
+        "document_ingestion",
+        0,
+        corsHeaders
+      );
+      if (!quotaCheck.allowed && quotaCheck.response) {
+        return quotaCheck.response;
       }
     }
 

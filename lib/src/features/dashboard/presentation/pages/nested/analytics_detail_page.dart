@@ -28,7 +28,8 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/adaptive_rete
 import 'package:kortex/src/features/dashboard/presentation/widgets/streak_shield_indicator.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -89,15 +90,24 @@ class _AnalyticsDetailView extends HookWidget {
       backgroundColor: isDark
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
-      appBar: AppBar(
-        backgroundColor: colors.transparent,
-        elevation: 0,
-        leading: const AppBackButton(),
+      appBar: AppAdaptiveAppBar(
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Dashboard',
+            onTap: () {
+              if (context.router.canPop()) {
+                context.router.pop();
+              }
+            },
+          ),
+          AppBreadcrumbItem(
+            label: l10n.analyticsDetailTitle,
+          ),
+        ],
         title: Text(
           l10n.analyticsDetailTitle,
           style: typography.title3.bold.copyWith(color: colors.textPrimary),
         ),
-        centerTitle: true,
       ),
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {

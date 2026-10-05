@@ -143,6 +143,12 @@ class _QuizWorkspaceView extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
+    final focusNode = useFocusNode();
+    useEffect(() {
+      focusNode.requestFocus();
+      return null;
+    }, [focusNode]);
+
     var effectiveCourseId = courseId;
     var effectiveCourseCode = courseCode ??
         (deckTitle != null && deckTitle!.contains('(')
@@ -295,10 +301,23 @@ class _QuizWorkspaceView extends HookWidget {
             : (state.currentIndex + 1) / state.totalQuestions;
         final showVerdict = reviewMode || (current.isAnswered && !isExam);
 
-        return Scaffold(
-          backgroundColor: isDark
-              ? colors.backgroundPrimary
-              : colors.surfacePrimary,
+        return KeyboardListener(
+          focusNode: focusNode,
+          autofocus: true,
+          onKeyEvent: (event) {
+            if (event is KeyDownEvent &&
+                event.logicalKey == LogicalKeyboardKey.escape) {
+              if (reviewMode) {
+                Navigator.of(context).pop();
+              } else {
+                _confirmExit(context, state);
+              }
+            }
+          },
+          child: Scaffold(
+            backgroundColor: isDark
+                ? colors.backgroundPrimary
+                : colors.surfacePrimary,
           appBar: AppBar(
             backgroundColor: colors.transparent,
             elevation: 0,
@@ -738,7 +757,8 @@ class _QuizWorkspaceView extends HookWidget {
             ),
             onExit: () => Navigator.of(context).pop(),
           ),
-        );
+        ),
+      );
       },
     );
   }

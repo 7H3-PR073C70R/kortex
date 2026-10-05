@@ -30,7 +30,8 @@ import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -47,6 +48,7 @@ class QuizResultsPage extends StatefulWidget {
     this.speedBonusXp = 0,
     this.isWalkedAway = false,
     this.showCelebrationDialog = true,
+    this.subscriptionGuard,
     super.key,
   });
 
@@ -60,6 +62,7 @@ class QuizResultsPage extends StatefulWidget {
   final int speedBonusXp;
   final bool isWalkedAway;
   final bool showCelebrationDialog;
+  final SubscriptionGuard? subscriptionGuard;
 
   @override
   State<QuizResultsPage> createState() => _QuizResultsPageState();
@@ -291,16 +294,32 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
       backgroundColor: isDark
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor: colors.transparent,
-        elevation: 0,
-        leading: const AppBackButton(),
-        title: Text(
-          result.quizTitle,
-          style: typography.title3.bold.copyWith(
-            color: colors.textPrimary,
+        titleText: result.quizTitle,
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Study Hub',
+            onTap: () => context.router.popUntilRoot(),
           ),
-        ),
+          AppBreadcrumbItem(
+            label: result.quizTitle.isNotEmpty ? result.quizTitle : 'Results',
+          ),
+        ],
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: TextButton(
+              onPressed: () => context.router.popUntilRoot(),
+              child: Text(
+                'Dashboard',
+                style: typography.subhead.bold.copyWith(
+                  color: colors.primary,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -651,10 +670,11 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                 )
               else ...[
                 () {
-                  final guard = locator.isRegistered<SubscriptionGuard>()
-                      ? locator<SubscriptionGuard>()
-                      : SubscriptionGuard();
-                  final isPro = guard.canAccessAiDiagnostics();
+                  final guard = widget.subscriptionGuard ??
+                      (locator.isRegistered<SubscriptionGuard>()
+                          ? locator<SubscriptionGuard>()
+                          : null);
+                  final isPro = guard?.canAccessAiDiagnostics() ?? false;
                   final displayedWeaknesses = isPro
                       ? result.weaknesses
                       : result.weaknesses.take(1).toList();
@@ -821,7 +841,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                                 ),
                                 const SizedBox(width: 8),
                                 ShrinkableButton(
-                                  onTap: () => guard.requirePro(
+                                  onTap: () => guard?.requirePro(
                                     context,
                                     featureName: 'Cognitive AI Diagnostics',
                                   ),
@@ -966,30 +986,33 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                   ? Duration.zero
                   : const Duration(milliseconds: 700),
               curve: AppMotion.easeOutCubic,
-              builder: (context, t, _) => CustomPaint(
-                painter: _ScoreArcPainter(
-                  progress: t,
-                  color: gradeColor,
-                  trackColor: colors.surfaceBorder,
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${(score * t).round()}%',
-                        style: typography.largeTitle.bold.copyWith(
-                          color: colors.textPrimary,
+              builder: (context, t, _) => Semantics(
+                label: 'Score: $score%',
+                child: CustomPaint(
+                  painter: _ScoreArcPainter(
+                    progress: t,
+                    color: gradeColor,
+                    trackColor: colors.surfaceBorder,
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${(score * t).round()}%',
+                          style: typography.largeTitle.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'score',
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textMuted,
+                        const SizedBox(height: 2),
+                        Text(
+                          'score',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textMuted,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1569,8 +1592,12 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
   Future<void> _handlePracticeWeakFlashcards(BuildContext context) async {
     unawaited(HapticFeedback.lightImpact());
 
-    if (locator.isRegistered<SubscriptionGuard>()) {
-      final isPro = await locator<SubscriptionGuard>().requirePro(
+    final guard = widget.subscriptionGuard ??
+        (locator.isRegistered<SubscriptionGuard>()
+            ? locator<SubscriptionGuard>()
+            : null);
+    if (guard != null) {
+      final isPro = await guard.requirePro(
         context,
         featureName: 'Quiz Weakness Flashcards',
       );

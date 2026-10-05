@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
@@ -267,13 +266,21 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+    final size = MediaQuery.sizeOf(context);
+
+    // Responsive breakpoints:
+    // When in landscape on phones/tablets or on wide viewports (desktop/web/tablet >= 720),
+    // switch to a balanced 2-column layout to prevent sticky bottom docks from covering the screen.
+    final isLandscape = size.width > size.height;
+    final isWide = size.width >= 720;
+    final useTwoColumnLayout = (isLandscape && size.width >= 560) || isWide;
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         backgroundColor: colors.backgroundPrimary,
-
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: PlatformHoverBuilder(
           builder: (context, isHovered, child) {
             return IconButton(
@@ -309,7 +316,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         actions: [
           if (!kIsWeb)
             Padding(
-              padding: EdgeInsets.only(right: 8.w),
+              padding: const EdgeInsets.only(right: 12),
               child: PlatformHoverBuilder(
                 builder: (context, isHovered, child) {
                   return TextButton(
@@ -318,7 +325,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       l10n.paywallRestore,
                       style: typography.callout.bold.copyWith(
                         color: isHovered ? colors.textPrimary : colors.primary,
-                        fontSize: 13.sp,
+                        fontSize: 13,
                         decoration: isHovered
                             ? TextDecoration.underline
                             : TextDecoration.none,
@@ -330,13 +337,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ),
         ],
       ),
-      // Persistent Sticky Bottom Dock ensures primary CTA and promo code are always 1-tap accessible
-      bottomNavigationBar: _isLoading
+      // In 1-column mobile portrait, use the sticky bottom dock.
+      // In 2-column landscape/desktop, the checkout controls are integrated inline in the right column.
+      bottomNavigationBar: (_isLoading || useTwoColumnLayout)
           ? null
           : Center(
               heightFactor: 1,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 680),
+                constraints: const BoxConstraints(maxWidth: 600),
                 child: _buildStickyBottomDock(
                   colors,
                   typography,
@@ -350,72 +358,218 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ? const Center(
                 child: AppLogoLoader(size: 56),
               )
-            : Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 680),
-                  child: SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20.w,
-                      vertical: 4.h,
+            : Stack(
+                children: [
+                  // Subtle ambient background breathing orb for depth
+                  _buildAmbientBackgroundOrbs(colors, isDark, isLandscape),
+
+                  // Main Content Layout
+                  if (useTwoColumnLayout)
+                    _buildTwoColumnLayout(
+                      colors,
+                      typography,
+                      l10n,
+                      isDark,
+                      size,
+                    )
+                  else
+                    _buildOneColumnLayout(
+                      colors,
+                      typography,
+                      l10n,
+                      isDark,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children:
-                          [
-                                _buildHeroHeader(
-                                  colors,
-                                  typography,
-                                  l10n,
-                                  isDark,
-                                ),
-                                SizedBox(height: 14.h),
-                                _buildSocialProofStrip(
-                                  colors,
-                                  typography,
-                                  l10n,
-                                  isDark,
-                                ),
-                                SizedBox(height: 18.h),
-                                _buildTierPlansSelector(
-                                  colors,
-                                  typography,
-                                  l10n,
-                                  isDark,
-                                ),
-                                SizedBox(height: 16.h),
-                                _buildTransparentTimeline(
-                                  colors,
-                                  typography,
-                                  l10n,
-                                  isDark,
-                                ),
-                                SizedBox(height: 18.h),
-                                _buildFeatureMatrix(
-                                  colors,
-                                  typography,
-                                  l10n,
-                                  isDark,
-                                ),
-                                SizedBox(height: 16.h),
-                                _buildFooter(colors, typography, l10n),
-                                SizedBox(height: 16.h),
-                              ]
-                              .animate(interval: 80.ms)
-                              .fadeIn(
-                                duration: 300.ms,
-                                curve: Curves.easeOutCubic,
-                              )
-                              .slideY(
-                                begin: 0.05,
-                                end: 0,
-                                duration: 300.ms,
-                                curve: Curves.easeOutCubic,
-                              ),
-                    ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  /// Ambient background glowing orbs that gently breathe to provide subtle depth
+  Widget _buildAmbientBackgroundOrbs(
+    AppThemeColorsExtension colors,
+    bool isDark,
+    bool isLandscape,
+  ) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Stack(
+          children: [
+            Positioned(
+              top: -60,
+              left: isLandscape ? 40 : -40,
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      colors.primary.withAlpha(isDark ? 40 : 25),
+                      colors.syllabotAccent.withAlpha(isDark ? 25 : 12),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              )
+                  .animate(onPlay: (controller) => controller.repeat(reverse: true))
+                  .scale(
+                    begin: const Offset(0.9, 0.9),
+                    end: const Offset(1.15, 1.15),
+                    duration: 3800.ms,
+                    curve: Curves.easeInOut,
+                  ),
+            ),
+            Positioned(
+              bottom: 40,
+              right: isLandscape ? 40 : -50,
+              child: Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      colors.syllabotAccent.withAlpha(isDark ? 30 : 18),
+                      colors.primary.withAlpha(isDark ? 20 : 10),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              )
+                  .animate(onPlay: (controller) => controller.repeat(reverse: true))
+                  .scale(
+                    begin: const Offset(1.1, 1.1),
+                    end: const Offset(0.85, 0.85),
+                    duration: 4200.ms,
+                    curve: Curves.easeInOut,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Two-column layout for landscape smartphones, tablets, and desktop/web
+  Widget _buildTwoColumnLayout(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+    Size size,
+  ) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1040),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Column: Value Proposition & Feature Matrix
+              Expanded(
+                flex: 5,
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildHeroHeader(colors, typography, l10n, isDark),
+                      const SizedBox(height: 12),
+                      _buildSocialProofStrip(colors, typography, l10n, isDark),
+                      const SizedBox(height: 14),
+                      _buildFeatureMatrix(colors, typography, l10n, isDark),
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
               ),
+
+              // Subtle vertical divider
+              Container(
+                width: 1,
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                color: colors.surfaceBorder.withAlpha(isDark ? 50 : 70),
+              ),
+
+              // Right Column: Plan Selection, Timeline & Checkout Engine
+              Expanded(
+                flex: 5,
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildTierPlansSelector(colors, typography, l10n, isDark),
+                      const SizedBox(height: 12),
+                      _buildTransparentTimeline(colors, typography, l10n, isDark),
+                      const SizedBox(height: 14),
+                      _buildCheckoutControls(
+                        colors: colors,
+                        typography: typography,
+                        l10n: l10n,
+                        isDark: isDark,
+                        isInline: true,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildFooter(colors, typography, l10n),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Single-column scroll layout for compact mobile portrait devices
+  Widget _buildOneColumnLayout(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeroHeader(colors, typography, l10n, isDark),
+              const SizedBox(height: 14),
+              _buildSocialProofStrip(colors, typography, l10n, isDark),
+              const SizedBox(height: 16),
+              _buildTierPlansSelector(colors, typography, l10n, isDark),
+              const SizedBox(height: 14),
+              _buildTransparentTimeline(colors, typography, l10n, isDark),
+              const SizedBox(height: 16),
+              _buildFeatureMatrix(colors, typography, l10n, isDark),
+              const SizedBox(height: 16),
+              _buildFooter(colors, typography, l10n),
+              const SizedBox(height: 24),
+            ]
+                .animate(interval: 60.ms)
+                .fadeIn(
+                  duration: 280.ms,
+                  curve: Curves.easeOutCubic,
+                )
+                .slideY(
+                  begin: 0.04,
+                  end: 0,
+                  duration: 280.ms,
+                  curve: Curves.easeOutCubic,
+                ),
+          ),
+        ),
       ),
     );
   }
@@ -428,21 +582,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
   ) {
     return Column(
       children: [
+        // Scholar Badge with continuous light-sweep shimmer
         Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: 14.w,
-            vertical: 6.h,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                colors.primary.withAlpha(80),
-                colors.syllabotAccent.withAlpha(60),
+                colors.primary.withAlpha(90),
+                colors.syllabotAccent.withAlpha(70),
               ],
             ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: colors.primary.withAlpha(140),
+              color: colors.primary.withAlpha(150),
               width: 1.2,
             ),
             boxShadow: [
@@ -459,38 +611,45 @@ class _PaywallScreenState extends State<PaywallScreen> {
               Icon(
                 Icons.auto_awesome_rounded,
                 color: colors.warning,
-                size: 15,
+                size: 14,
               ),
-              SizedBox(width: 6.w),
+              const SizedBox(width: 6),
               Text(
                 l10n.paywallScholarBadge,
                 style: typography.caption.bold.copyWith(
                   color: colors.white,
-                  fontSize: 11.sp,
-                  letterSpacing: 1.2,
+                  fontSize: 11,
+                  letterSpacing: 1.1,
                 ),
               ),
             ],
           ),
-        ),
-        SizedBox(height: 10.h),
+        )
+            .animate(onPlay: (controller) => controller.repeat())
+            .shimmer(
+              delay: 1200.ms,
+              duration: 2200.ms,
+              color: colors.white.withAlpha(70),
+              angle: 45,
+            ),
+        const SizedBox(height: 10),
         Text(
           l10n.paywallHeroTitle,
           textAlign: TextAlign.center,
           style: typography.title2.bold.copyWith(
             color: colors.textPrimary,
-            fontSize: 22.sp,
+            fontSize: 22,
             height: 1.2,
           ),
         ),
-        SizedBox(height: 6.h),
+        const SizedBox(height: 6),
         Text(
           l10n.paywallHeroSubtitle,
           textAlign: TextAlign.center,
           style: typography.caption.regular.copyWith(
             color: colors.textSecondary,
-            fontSize: 12.sp,
-            height: 1.4,
+            fontSize: 12.5,
+            height: 1.35,
           ),
         ),
       ],
@@ -504,7 +663,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     bool isDark,
   ) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isDark
             ? colors.surfaceSecondary.withAlpha(140)
@@ -528,7 +687,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
           ),
           Container(
             width: 1,
-            height: 16.h,
+            height: 16,
             color: colors.surfaceBorder.withAlpha(90),
           ),
           Expanded(
@@ -558,14 +717,23 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: iconColor, size: 15),
-        SizedBox(width: 4.w),
+        Icon(icon, color: iconColor, size: 15)
+            .animate()
+            .scale(
+              begin: const Offset(0.7, 0.7),
+              end: const Offset(1, 1),
+              duration: 350.ms,
+              curve: Curves.easeOutBack,
+            ),
+        const SizedBox(width: 5),
         Flexible(
           child: Text(
             label,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
             style: typography.footnote.bold.copyWith(
               color: colors.textPrimary,
-              fontSize: 10.5.sp,
+              fontSize: 10.5,
             ),
           ),
         ),
@@ -590,7 +758,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               child: AnimatedContainer(
                 duration: AppMotion.snappy,
                 curve: AppMotion.easeOutCubic,
-                padding: EdgeInsets.all(14.r),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? colors.primary.withAlpha(
@@ -617,13 +785,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   boxShadow: [
                     if (isSelected)
                       BoxShadow(
-                        color: colors.black.withAlpha(
+                        color: colors.primary.withAlpha(
                           isDark
-                              ? (isHovered ? 60 : 45)
-                              : (isHovered ? 30 : 15),
+                              ? (isHovered ? 65 : 45)
+                              : (isHovered ? 35 : 20),
                         ),
                         blurRadius: isHovered ? 18 : 14,
-                        offset: Offset(0, isHovered ? 5 : 4),
+                        offset: Offset(0, isHovered ? 5 : 3),
                       )
                     else if (isHovered)
                       BoxShadow(
@@ -635,14 +803,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      isSelected
-                          ? Icons.radio_button_checked_rounded
-                          : Icons.radio_button_off_rounded,
-                      color: isSelected ? colors.primary : colors.textSecondary,
-                      size: 20,
+                    AnimatedScale(
+                      scale: isSelected ? 1.08 : 1.0,
+                      duration: AppMotion.snappy,
+                      curve: Curves.easeOutBack,
+                      child: Icon(
+                        isSelected
+                            ? Icons.check_circle_rounded
+                            : Icons.radio_button_off_rounded,
+                        color: isSelected ? colors.primary : colors.textSecondary,
+                        size: 20,
+                      ),
                     ),
-                    SizedBox(width: 10.w),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -654,11 +827,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                   l10n.paywallAnnualPlanTitle,
                                   style: typography.body.bold.copyWith(
                                     color: colors.textPrimary,
-                                    fontSize: 14.5.sp,
+                                    fontSize: 14.5,
                                   ),
                                 ),
                               ),
-                              SizedBox(width: 6.w),
+                              const SizedBox(width: 6),
+                              // Pulsing "SAVE 45%" Badge
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 6,
@@ -672,38 +846,55 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                     ],
                                   ),
                                   borderRadius: AppRadius.radiusBadge,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.success.withAlpha(60),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
                                 ),
                                 child: Text(
                                   l10n.paywallAnnualSaveBadge,
                                   style: typography.caption.bold.copyWith(
                                     color: colors.white,
-                                    fontSize: 8.5.sp,
+                                    fontSize: 9,
                                     letterSpacing: 0.3,
                                   ),
                                 ),
-                              ),
+                              )
+                                  .animate(
+                                    onPlay: (controller) =>
+                                        controller.repeat(reverse: true),
+                                  )
+                                  .scale(
+                                    begin: const Offset(1, 1),
+                                    end: const Offset(1.06, 1.06),
+                                    duration: 1400.ms,
+                                    curve: Curves.easeInOut,
+                                  ),
                             ],
                           ),
-                          SizedBox(height: 2.h),
+                          const SizedBox(height: 2),
                           Text(
                             l10n.paywallAnnualPlanSubtitle,
                             style: typography.caption.regular.copyWith(
                               color: colors.textSecondary,
-                              fontSize: 10.5.sp,
+                              fontSize: 10.5,
                             ),
                           ),
-                          SizedBox(height: 2.h),
+                          const SizedBox(height: 2),
                           Text(
                             l10n.paywallAnnualWeeklyNote,
                             style: typography.footnote.medium.copyWith(
                               color: colors.primary,
-                              fontSize: 10.sp,
+                              fontSize: 10,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(width: 8.w),
+                    const SizedBox(width: 8),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
@@ -716,14 +907,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
                               r'$4.99',
                               style: typography.title3.bold.copyWith(
                                 color: colors.primary,
-                                fontSize: 18.sp,
+                                fontSize: 18,
                               ),
                             ),
                             Text(
                               l10n.paywallPerMonth,
                               style: typography.caption.regular.copyWith(
                                 color: colors.textSecondary,
-                                fontSize: 10.5.sp,
+                                fontSize: 10.5,
                               ),
                             ),
                           ],
@@ -733,7 +924,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           style: typography.footnote.regular.copyWith(
                             color: colors.textSecondary.withAlpha(120),
                             decoration: TextDecoration.lineThrough,
-                            fontSize: 10.5.sp,
+                            fontSize: 10.5,
                           ),
                         ),
                       ],
@@ -744,7 +935,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             );
           },
         ),
-        SizedBox(height: 8.h),
+        const SizedBox(height: 8),
 
         // Monthly Plan Card
         PlatformHoverBuilder(
@@ -755,7 +946,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               child: AnimatedContainer(
                 duration: AppMotion.snappy,
                 curve: AppMotion.easeOutCubic,
-                padding: EdgeInsets.all(14.r),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? colors.primary.withAlpha(
@@ -782,13 +973,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   boxShadow: [
                     if (isSelected)
                       BoxShadow(
-                        color: colors.black.withAlpha(
+                        color: colors.primary.withAlpha(
                           isDark
-                              ? (isHovered ? 60 : 45)
+                              ? (isHovered ? 60 : 40)
                               : (isHovered ? 30 : 15),
                         ),
                         blurRadius: isHovered ? 18 : 14,
-                        offset: Offset(0, isHovered ? 5 : 4),
+                        offset: Offset(0, isHovered ? 5 : 3),
                       )
                     else if (isHovered)
                       BoxShadow(
@@ -800,14 +991,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      isSelected
-                          ? Icons.radio_button_checked_rounded
-                          : Icons.radio_button_off_rounded,
-                      color: isSelected ? colors.primary : colors.textSecondary,
-                      size: 20,
+                    AnimatedScale(
+                      scale: isSelected ? 1.08 : 1.0,
+                      duration: AppMotion.snappy,
+                      curve: Curves.easeOutBack,
+                      child: Icon(
+                        isSelected
+                            ? Icons.check_circle_rounded
+                            : Icons.radio_button_off_rounded,
+                        color: isSelected ? colors.primary : colors.textSecondary,
+                        size: 20,
+                      ),
                     ),
-                    SizedBox(width: 10.w),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -816,21 +1012,21 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             l10n.paywallMonthlyPlanTitle,
                             style: typography.body.bold.copyWith(
                               color: colors.textPrimary,
-                              fontSize: 14.5.sp,
+                              fontSize: 14.5,
                             ),
                           ),
-                          SizedBox(height: 2.h),
+                          const SizedBox(height: 2),
                           Text(
                             l10n.paywallMonthlyPlanSubtitle,
                             style: typography.caption.regular.copyWith(
                               color: colors.textSecondary,
-                              fontSize: 10.5.sp,
+                              fontSize: 10.5,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(width: 8.w),
+                    const SizedBox(width: 8),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -842,14 +1038,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             color: isSelected
                                 ? colors.primary
                                 : colors.textPrimary,
-                            fontSize: 17.sp,
+                            fontSize: 17,
                           ),
                         ),
                         Text(
                           l10n.paywallPerMonth,
                           style: typography.caption.regular.copyWith(
                             color: colors.textSecondary,
-                            fontSize: 10.5.sp,
+                            fontSize: 10.5,
                           ),
                         ),
                       ],
@@ -871,7 +1067,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     bool isDark,
   ) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isDark
             ? colors.surfaceSecondary.withAlpha(120)
@@ -927,8 +1123,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 15,
-            height: 15,
+            width: 16,
+            height: 16,
             decoration: BoxDecoration(
               color: colors.primary.withAlpha(35),
               shape: BoxShape.circle,
@@ -938,12 +1134,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 step,
                 style: typography.footnote.bold.copyWith(
                   color: colors.primary,
-                  fontSize: 8.5.sp,
+                  fontSize: 9,
                 ),
               ),
             ),
-          ),
-          SizedBox(width: 4.w),
+          )
+              .animate()
+              .scale(
+                begin: const Offset(0.7, 0.7),
+                end: const Offset(1, 1),
+                duration: 300.ms,
+                curve: Curves.easeOutBack,
+              ),
+          const SizedBox(width: 4),
           Expanded(
             child: Text(
               label,
@@ -951,7 +1154,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               overflow: TextOverflow.ellipsis,
               style: typography.footnote.regular.copyWith(
                 color: colors.textSecondary,
-                fontSize: 9.sp,
+                fontSize: 9.5,
                 height: 1.15,
               ),
             ),
@@ -1000,7 +1203,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: isDark
                 ? colors.surfaceSecondary.withAlpha(200)
@@ -1014,7 +1217,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             children: features
                 .map(
                   (f) => Padding(
-                    padding: EdgeInsets.symmetric(vertical: 5.h),
+                    padding: const EdgeInsets.symmetric(vertical: 5),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1030,7 +1233,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             size: 16,
                           ),
                         ),
-                        SizedBox(width: 10.w),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1039,22 +1242,22 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                 f.title,
                                 style: typography.body.bold.copyWith(
                                   color: colors.textPrimary,
-                                  fontSize: 12.5.sp,
+                                  fontSize: 12.5,
                                 ),
                               ),
-                              SizedBox(height: 1.h),
+                              const SizedBox(height: 1),
                               Text(
                                 f.subtitle,
                                 style: typography.caption.regular.copyWith(
                                   color: colors.textSecondary,
-                                  fontSize: 10.5.sp,
+                                  fontSize: 10.5,
                                   height: 1.3,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        SizedBox(width: 6.w),
+                        const SizedBox(width: 6),
                         Icon(
                           Icons.check_circle_rounded,
                           color: colors.success,
@@ -1064,15 +1267,22 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     ),
                   ),
                 )
-                .toList(),
+                .toList()
+                .animate(interval: 50.ms)
+                .fadeIn(duration: 350.ms, curve: Curves.easeOutCubic)
+                .slideX(
+                  begin: 0.04,
+                  end: 0,
+                  duration: 350.ms,
+                  curve: Curves.easeOutCubic,
+                ),
           ),
         ),
       ),
     );
   }
 
-  /// Pinned bottom action bar containing the primary CTA, guarantee, and promo code entry.
-  /// Guarantees instant 1-tap access with zero scrolling.
+  /// Pinned bottom action bar containing the primary CTA, guarantee, and promo code entry for 1-column mobile portrait.
   Widget _buildStickyBottomDock(
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
@@ -1100,151 +1310,209 @@ class _PaywallScreenState extends State<PaywallScreen> {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_errorMessage != null) ...[
-                Text(
-                  _errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: typography.caption.medium.copyWith(
-                    color: colors.error,
-                    fontSize: 11.5.sp,
-                  ),
-                ),
-                SizedBox(height: 6.h),
-              ],
-              PlatformHoverBuilder(
-                builder: (context, isHovered, child) {
-                  return ShrinkableButton(
-                    onTap: _isProcessing ? null : _handlePurchase,
-                    child: AnimatedContainer(
-                      duration: AppMotion.snappy,
-                      curve: AppMotion.easeOutCubic,
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: 14.h),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            colors.primary,
-                            if (isHovered)
-                              colors.syllabotAccent.withAlpha(240)
-                            else
-                              colors.syllabotAccent,
-                          ],
-                        ),
-                        borderRadius: AppRadius.radiusPanel,
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.black.withAlpha(
-                              isDark
-                                  ? (isHovered ? 80 : 55)
-                                  : (isHovered ? 45 : 25),
-                            ),
-                            blurRadius: isHovered ? 20 : 16,
-                            offset: Offset(0, isHovered ? 6 : 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: _isProcessing
-                            ? const AppLogoLoader(
-                                size: 20,
-                                showMessage: false,
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.lock_open_rounded,
-                                    color: colors.white,
-                                    size: 17,
-                                  ),
-                                  SizedBox(width: 8.w),
-                                  Text(
-                                    l10n.paywallCtaButton,
-                                    style: typography.body.bold.copyWith(
-                                      color: colors.white,
-                                      fontSize: 15.sp,
-                                      letterSpacing: 0.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              SizedBox(height: 6.h),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.lock_outline_rounded,
-                    size: 11.sp,
-                    color: colors.textSecondary.withAlpha(150),
-                  ),
-                  SizedBox(width: 4.w),
-                  Text(
-                    l10n.paywallSecurityGuarantee,
-                    textAlign: TextAlign.center,
-                    style: typography.footnote.medium.copyWith(
-                      color: colors.textSecondary.withAlpha(160),
-                      fontSize: 10.5.sp,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 2.h),
-              Center(
-                child: PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return ShrinkableButton(
-                      onTap: _isProcessing ? null : _handlePromoCodeRedemption,
-                      child: AnimatedContainer(
-                        duration: AppMotion.snappy,
-                        curve: AppMotion.easeOutCubic,
-                        padding: EdgeInsets.symmetric(
-                          vertical: 4.h,
-                          horizontal: 8.w,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isHovered
-                              ? colors.primary.withAlpha(25)
-                              : context.colors.transparent,
-                          borderRadius: AppRadius.radiusBadge,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.card_giftcard_rounded,
-                              size: 14.sp,
-                              color: colors.primary,
-                            ),
-                            SizedBox(width: 5.w),
-                            Text(
-                              l10n.paywallHavePromoCode,
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 12.sp,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: _buildCheckoutControls(
+            colors: colors,
+            typography: typography,
+            l10n: l10n,
+            isDark: isDark,
+            isInline: false,
           ),
         ),
       ),
     );
+  }
+
+  /// Unified Checkout Controls (CTA button, guarantee, promo code button)
+  /// Used both pinned at the bottom in portrait and inline in 2-column landscape/desktop.
+  Widget _buildCheckoutControls({
+    required AppThemeColorsExtension colors,
+    required TypographyThemeExtension typography,
+    required AppLocalizations l10n,
+    required bool isDark,
+    required bool isInline,
+  }) {
+    final cardContent = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_errorMessage != null) ...[
+          Text(
+            _errorMessage!,
+            textAlign: TextAlign.center,
+            style: typography.caption.medium.copyWith(
+              color: colors.error,
+              fontSize: 11.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+        ],
+
+        // Primary Purchase CTA with continuous shimmering light-sweep effect
+        PlatformHoverBuilder(
+          builder: (context, isHovered, child) {
+            return ShrinkableButton(
+              onTap: _isProcessing ? null : _handlePurchase,
+              child: AnimatedContainer(
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colors.primary,
+                      if (isHovered)
+                        colors.syllabotAccent.withAlpha(240)
+                      else
+                        colors.syllabotAccent,
+                    ],
+                  ),
+                  borderRadius: AppRadius.radiusPanel,
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.black.withAlpha(
+                        isDark
+                            ? (isHovered ? 80 : 55)
+                            : (isHovered ? 45 : 25),
+                      ),
+                      blurRadius: isHovered ? 20 : 16,
+                      offset: Offset(0, isHovered ? 6 : 4),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: _isProcessing
+                      ? const AppLogoLoader(
+                          size: 20,
+                          showMessage: false,
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.lock_open_rounded,
+                              color: colors.white,
+                              size: 17,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                l10n.paywallCtaButton,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.body.bold.copyWith(
+                                  color: colors.white,
+                                  fontSize: 15,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              )
+                  .animate(onPlay: (controller) => controller.repeat())
+                  .shimmer(
+                    delay: 1800.ms,
+                    duration: 2000.ms,
+                    color: colors.white.withAlpha(80),
+                    angle: 35,
+                  ),
+            );
+          },
+        ),
+        const SizedBox(height: 6),
+
+        // Security Guarantee (Guaranteed overflow-free with Flexible and Ellipsis)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.lock_outline_rounded,
+              size: 12,
+              color: colors.textSecondary.withAlpha(160),
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                l10n.paywallSecurityGuarantee,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: typography.footnote.medium.copyWith(
+                  color: colors.textSecondary.withAlpha(170),
+                  fontSize: 10.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+
+        // Promo Code Redemption Action
+        Center(
+          child: PlatformHoverBuilder(
+            builder: (context, isHovered, child) {
+              return ShrinkableButton(
+                onTap: _isProcessing ? null : _handlePromoCodeRedemption,
+                child: AnimatedContainer(
+                  duration: AppMotion.snappy,
+                  curve: AppMotion.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4,
+                    horizontal: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isHovered
+                        ? colors.primary.withAlpha(25)
+                        : Colors.transparent,
+                    borderRadius: AppRadius.radiusBadge,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.card_giftcard_rounded,
+                        size: 14,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        l10n.paywallHavePromoCode,
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+
+    if (isInline) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark
+              ? colors.surfaceSecondary.withAlpha(160)
+              : colors.surfacePrimary.withAlpha(190),
+          borderRadius: AppRadius.radiusPanel,
+          border: Border.all(
+            color: colors.surfaceBorder.withAlpha(60),
+          ),
+        ),
+        child: cardContent,
+      );
+    }
+
+    return cardContent;
   }
 
   Widget _buildFooter(
@@ -1259,11 +1527,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
           textAlign: TextAlign.center,
           style: typography.caption.regular.copyWith(
             color: colors.textSecondary.withAlpha(120),
-            fontSize: 10.sp,
+            fontSize: 10,
             height: 1.35,
           ),
         ),
-        SizedBox(height: 8.h),
+        const SizedBox(height: 8),
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
@@ -1276,7 +1544,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 l10n.privacyPolicy,
                 style: typography.caption.medium.copyWith(
                   color: colors.primary,
-                  fontSize: 10.5.sp,
+                  fontSize: 10.5,
                   decoration: TextDecoration.underline,
                   decorationColor: colors.primary.withAlpha(180),
                 ),
@@ -1286,7 +1554,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               '•',
               style: typography.caption.regular.copyWith(
                 color: colors.textSecondary.withAlpha(120),
-                fontSize: 10.5.sp,
+                fontSize: 10.5,
               ),
             ),
             GestureDetector(
@@ -1295,7 +1563,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 l10n.termsOfService,
                 style: typography.caption.medium.copyWith(
                   color: colors.primary,
-                  fontSize: 10.5.sp,
+                  fontSize: 10.5,
                   decoration: TextDecoration.underline,
                   decorationColor: colors.primary.withAlpha(180),
                 ),

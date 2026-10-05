@@ -77,10 +77,18 @@ class DynamicLinkService {
     unawaited(_linkStreamController.close());
   }
 
+  /// Cached payload stored if link was opened before authentication/onboarding.
+  DynamicLinkPayload? pendingPayload;
+
+  void clearPendingPayload() {
+    pendingPayload = null;
+  }
+
   /// Manually triggers processing of an incoming raw URI string or Uri object.
   void handleRawUri(Uri uri) {
     final payload = parseUri(uri);
     if (payload != null && payload.type != DynamicLinkType.unknown) {
+      pendingPayload = payload;
       _linkStreamController.add(payload);
     }
   }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
-import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
@@ -106,29 +105,6 @@ void main() {
       ],
     );
 
-    setUp(() {
-      // Register a Pro-unlocked SubscriptionGuard with a stub UserStorageService
-      // so the paywall gate unlocks all weaknesses during tests.
-      final stub = _ProUserStorageStub();
-      if (!locator.isRegistered<UserStorageService>()) {
-        locator.registerSingleton<UserStorageService>(stub);
-      }
-      if (!locator.isRegistered<SubscriptionGuard>()) {
-        locator.registerSingleton<SubscriptionGuard>(
-          SubscriptionGuard(userStorageService: stub),
-        );
-      }
-    });
-
-    tearDown(() async {
-      if (locator.isRegistered<SubscriptionGuard>()) {
-        await locator.unregister<SubscriptionGuard>();
-      }
-      if (locator.isRegistered<UserStorageService>()) {
-        await locator.unregister<UserStorageService>();
-      }
-    });
-
     testWidgets(
       'renders score arc, sub-topic weaknesses, and the primary action',
       (tester) async {
@@ -138,11 +114,13 @@ void main() {
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.reset);
 
+        final stub = _ProUserStorageStub();
         await tester.pumpWidget(
           createTestApp(
-            const QuizResultsPage(
+            QuizResultsPage(
               result: tResult,
               showCelebrationDialog: false,
+              subscriptionGuard: SubscriptionGuard(userStorageService: stub),
             ),
           ),
         );

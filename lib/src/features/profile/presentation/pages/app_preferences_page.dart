@@ -21,7 +21,8 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/profile/domain/entities/notification_preferences_entity.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/notification_preferences_use_cases.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -102,17 +103,16 @@ class AppPreferencesPage extends HookWidget {
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor: colors.backgroundPrimary,
-        elevation: 0,
-        leading: const AppBackButton(),
-        title: Text(
-          l10n.preferencesTitle,
-          style: typography.title3.bold.copyWith(
-            color: colors.textPrimary,
-            fontSize: 18,
+        titleText: l10n.preferencesTitle,
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Profile & Settings',
+            onTap: () => context.router.maybePop(),
           ),
-        ),
+          AppBreadcrumbItem(label: l10n.preferencesTitle),
+        ],
       ),
       body: SafeArea(
         child: ConstrainedBox(

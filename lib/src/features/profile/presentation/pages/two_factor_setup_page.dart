@@ -18,7 +18,8 @@ import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_enroll_result_entity.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -125,20 +126,16 @@ class TwoFactorSetupPage extends HookWidget {
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor: colors.backgroundPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: AppBackButton(
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        title: Text(
-          'Set Up Two-Factor Authentication',
-          style: typography.title3.bold.copyWith(
-            color: colors.textPrimary,
-            fontSize: 17.5,
+        titleText: 'Set Up Two-Factor Authentication',
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Security & Access',
+            onTap: () => Navigator.of(context).pop(false),
           ),
-        ),
+          const AppBreadcrumbItem(label: 'Two-Factor Authentication'),
+        ],
       ),
       body: SafeArea(
         child: isEnrolling.value

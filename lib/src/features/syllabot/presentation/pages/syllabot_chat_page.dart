@@ -562,8 +562,13 @@ class _SyllabotChatView extends HookWidget {
                     );
                   },
                 )
-              : const AppBackButton(),
-          titleSpacing: 0,
+              : AppBackButton.adaptiveLeading(context),
+          leadingWidth: onCollapse != null
+              ? null
+              : (AppBackButton.shouldShow(context) ? null : 0),
+          titleSpacing: onCollapse == null && !AppBackButton.shouldShow(context)
+              ? 16
+              : 0,
           title: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,

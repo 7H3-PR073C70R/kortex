@@ -96,6 +96,7 @@ class LiveRoomState extends Equatable {
     this.isReconnecting = false,
     this.reconnectAttempt = 0,
     this.connectionQuality = 'excellent',
+    this.isRoomEndedByHost = false,
   });
 
   final StudyRoomEntity room;
@@ -138,6 +139,7 @@ class LiveRoomState extends Equatable {
   final bool isReconnecting;
   final int reconnectAttempt;
   final String connectionQuality;
+  final bool isRoomEndedByHost;
 
   String get formattedTimer {
     final minutes = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
@@ -205,6 +207,7 @@ class LiveRoomState extends Equatable {
     bool? isReconnecting,
     int? reconnectAttempt,
     String? connectionQuality,
+    bool? isRoomEndedByHost,
   }) {
     return LiveRoomState(
       room: room ?? this.room,
@@ -262,6 +265,7 @@ class LiveRoomState extends Equatable {
       isReconnecting: isReconnecting ?? this.isReconnecting,
       reconnectAttempt: reconnectAttempt ?? this.reconnectAttempt,
       connectionQuality: connectionQuality ?? this.connectionQuality,
+      isRoomEndedByHost: isRoomEndedByHost ?? this.isRoomEndedByHost,
     );
   }
 
@@ -307,6 +311,7 @@ class LiveRoomState extends Equatable {
     isReconnecting,
     reconnectAttempt,
     connectionQuality,
+    isRoomEndedByHost,
   ];
 }
 
@@ -396,6 +401,9 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
               remainingSeconds: newRemaining,
               pomodoroState: state.room.pomodoroState,
               senderId: _currentUserId,
+              isSprintActive: state.isCoOpSprintActive,
+              sprintRemainingSeconds: state.coOpSprintRemainingSeconds,
+              sprintDeckTitle: state.coOpSprintDeckTitle,
             ),
           );
         }
@@ -502,9 +510,21 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
 
     _audioConnSubscription = audio.connectionStateStream.listen((connState) {
       if (!isClosed) {
+        final isConnected = connState == LiveAudioConnectionState.connected;
+        final isReconnecting =
+            connState == LiveAudioConnectionState.reconnecting;
         emit(
           state.copyWith(
-            isAudioConnected: connState == LiveAudioConnectionState.connected,
+            isAudioConnected: isConnected,
+            isReconnecting: isReconnecting,
+            connectionQuality: isConnected
+                ? 'excellent'
+                : (isReconnecting ? 'reconnecting' : 'poor'),
+            reconnectAttempt: isConnected
+                ? 0
+                : (isReconnecting
+                    ? state.reconnectAttempt + 1
+                    : state.reconnectAttempt),
           ),
         );
       }
@@ -598,14 +618,43 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       syncEvent,
     ) {
       if (!isClosed && syncEvent.senderId != _currentUserId) {
+        if (syncEvent.isRoomEnded) {
+          emit(state.copyWith(isRoomEndedByHost: true));
+          return;
+        }
+
+        var updatedState = state;
+
         // Correct clock drift if difference > 3 seconds
         if ((state.remainingSeconds - syncEvent.remainingSeconds).abs() > 3) {
-          emit(
-            state.copyWith(
-              remainingSeconds: syncEvent.remainingSeconds,
-              room: state.room.copyWith(pomodoroState: syncEvent.pomodoroState),
-            ),
+          updatedState = updatedState.copyWith(
+            remainingSeconds: syncEvent.remainingSeconds,
+            room: state.room.copyWith(pomodoroState: syncEvent.pomodoroState),
           );
+        }
+
+        // Sync Co-Op Sprint timer across peers
+        if (syncEvent.isSprintActive != null) {
+          if (syncEvent.isSprintActive! &&
+              (!state.isCoOpSprintActive ||
+                  (state.coOpSprintRemainingSeconds -
+                          (syncEvent.sprintRemainingSeconds ?? 0))
+                      .abs() >
+                      3)) {
+            updatedState = updatedState.copyWith(
+              isCoOpSprintActive: true,
+              coOpSprintDeckTitle:
+                  syncEvent.sprintDeckTitle ?? state.coOpSprintDeckTitle,
+              coOpSprintRemainingSeconds: syncEvent.sprintRemainingSeconds ??
+                  state.coOpSprintRemainingSeconds,
+            );
+          } else if (!syncEvent.isSprintActive! && state.isCoOpSprintActive) {
+            updatedState = updatedState.copyWith(isCoOpSprintActive: false);
+          }
+        }
+
+        if (updatedState != state) {
+          emit(updatedState);
         }
       }
     });
@@ -788,6 +837,20 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       isReaction: true,
     );
 
+    if (_ephemeralRepository != null) {
+      unawaited(
+        _ephemeralRepository.broadcastPomodoroTick(
+          roomId: state.room.id,
+          remainingSeconds: state.remainingSeconds,
+          pomodoroState: state.room.pomodoroState,
+          senderId: _currentUserId,
+          isSprintActive: true,
+          sprintRemainingSeconds: 180,
+          sprintDeckTitle: deckTitle,
+        ),
+      );
+    }
+
     _sprintTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (isClosed) {
         timer.cancel();
@@ -834,6 +897,31 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         coOpSprintRemainingSeconds: 0,
       ),
     );
+    if (_ephemeralRepository != null) {
+      unawaited(
+        _ephemeralRepository.broadcastPomodoroTick(
+          roomId: state.room.id,
+          remainingSeconds: state.remainingSeconds,
+          pomodoroState: state.room.pomodoroState,
+          senderId: _currentUserId,
+          isSprintActive: false,
+          sprintRemainingSeconds: 0,
+        ),
+      );
+    }
+  }
+
+  Future<void> endRoomAsHost() async {
+    if (_ephemeralRepository != null) {
+      await _ephemeralRepository.broadcastPomodoroTick(
+        roomId: state.room.id,
+        remainingSeconds: 0,
+        pomodoroState: 'ended',
+        senderId: _currentUserId,
+        isRoomEnded: true,
+      );
+    }
+    emit(state.copyWith(isRoomEndedByHost: true));
   }
 
   void triggerMicroReaction(String emoji) {

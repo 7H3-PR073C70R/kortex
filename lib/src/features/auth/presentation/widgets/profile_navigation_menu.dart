@@ -10,15 +10,41 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
+enum ProfileSettingsSection {
+  academicTrack,
+  deckPace,
+  syllabotAi,
+  security,
+  appPreferences,
+  aboutSupport,
+}
+
 class ProfileNavigationMenu extends StatelessWidget {
   const ProfileNavigationMenu({
     required this.targetTrack,
     required this.dailyTarget,
+    this.selectedSection,
+    this.onSectionSelected,
     super.key,
   });
 
   final String targetTrack;
   final int dailyTarget;
+  final ProfileSettingsSection? selectedSection;
+  final ValueChanged<ProfileSettingsSection>? onSectionSelected;
+
+  void _handleSection(
+    BuildContext context,
+    ProfileSettingsSection section,
+    PageRouteInfo route,
+  ) {
+    AppFeedback.light();
+    if (onSectionSelected != null) {
+      onSectionSelected!(section);
+    } else {
+      unawaited(context.router.push(route));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,12 +72,12 @@ class ProfileNavigationMenu extends StatelessWidget {
               hoverChipBorder: neural.amber400.withValues(alpha: 0.4),
               title: 'Academic Track & Goals',
               subtitle: '$targetTrack · $dailyTarget cards a day',
-              onTap: () {
-                AppFeedback.light();
-                unawaited(
-                  context.router.push(const AcademicTrackSettingsRoute()),
-                );
-              },
+              isSelected: selectedSection == ProfileSettingsSection.academicTrack,
+              onTap: () => _handleSection(
+                context,
+                ProfileSettingsSection.academicTrack,
+                const AcademicTrackSettingsRoute(),
+              ),
             ),
             _NavTile(
               icon: Icons.speed_rounded,
@@ -68,12 +94,12 @@ class ProfileNavigationMenu extends StatelessWidget {
               hoverChipBorder: neural.cyan400.withValues(alpha: 0.4),
               title: 'Study Pace & Review Schedule',
               subtitle: 'Daily card limits, memory retention goals & reminders',
-              onTap: () {
-                AppFeedback.light();
-                unawaited(
-                  context.router.push(const DeckPaceSettingsRoute()),
-                );
-              },
+              isSelected: selectedSection == ProfileSettingsSection.deckPace,
+              onTap: () => _handleSection(
+                context,
+                ProfileSettingsSection.deckPace,
+                const DeckPaceSettingsRoute(),
+              ),
             ),
             _NavTile(
               icon: Icons.psychology_outlined,
@@ -84,12 +110,12 @@ class ProfileNavigationMenu extends StatelessWidget {
               hoverChipBorder: neural.purple500.withValues(alpha: 0.4),
               title: 'Syllabot AI & Neural Engine',
               subtitle: 'Tutor style, voice and offline AI',
-              onTap: () {
-                AppFeedback.light();
-                unawaited(
-                  context.router.push(const SyllabotAiSettingsRoute()),
-                );
-              },
+              isSelected: selectedSection == ProfileSettingsSection.syllabotAi,
+              onTap: () => _handleSection(
+                context,
+                ProfileSettingsSection.syllabotAi,
+                const SyllabotAiSettingsRoute(),
+              ),
             ),
             _NavTile(
               icon: Icons.emoji_events_outlined,
@@ -133,12 +159,12 @@ class ProfileNavigationMenu extends StatelessWidget {
               hoverChipBorder: neural.cyan400.withValues(alpha: 0.4),
               title: 'Password & Two-Factor Sign-In',
               subtitle: 'Keep your study history safe',
-              onTap: () {
-                AppFeedback.light();
-                unawaited(
-                  context.router.push(SecuritySettingsRoute()),
-                );
-              },
+              isSelected: selectedSection == ProfileSettingsSection.security,
+              onTap: () => _handleSection(
+                context,
+                ProfileSettingsSection.security,
+                SecuritySettingsRoute(),
+              ),
             ),
             _NavTile(
               icon: Icons.workspace_premium_outlined,
@@ -177,12 +203,12 @@ class ProfileNavigationMenu extends StatelessWidget {
               hoverChipBorder: colors.surfaceBorder,
               title: 'Appearance & Sounds',
               subtitle: 'Dark mode, haptics and notifications',
-              onTap: () {
-                AppFeedback.light();
-                unawaited(
-                  context.router.push(const AppPreferencesRoute()),
-                );
-              },
+              isSelected: selectedSection == ProfileSettingsSection.appPreferences,
+              onTap: () => _handleSection(
+                context,
+                ProfileSettingsSection.appPreferences,
+                const AppPreferencesRoute(),
+              ),
             ),
             _NavTile(
               icon: Icons.play_circle_outline_rounded,
@@ -221,12 +247,12 @@ class ProfileNavigationMenu extends StatelessWidget {
               hoverChipBorder: colors.surfaceBorder,
               title: 'About, Support & Discord',
               subtitle: 'Help center, privacy and community',
-              onTap: () {
-                AppFeedback.light();
-                unawaited(
-                  context.router.push(const AboutSupportRoute()),
-                );
-              },
+              isSelected: selectedSection == ProfileSettingsSection.aboutSupport,
+              onTap: () => _handleSection(
+                context,
+                ProfileSettingsSection.aboutSupport,
+                const AboutSupportRoute(),
+              ),
               showDividerBelow: false,
             ),
           ],
@@ -318,6 +344,7 @@ class _NavTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.isSelected = false,
     this.badge,
     this.showDividerBelow = true,
   });
@@ -332,6 +359,7 @@ class _NavTile extends StatelessWidget {
   final String subtitle;
   final String? badge;
   final VoidCallback onTap;
+  final bool isSelected;
   final bool showDividerBelow;
 
   @override
@@ -351,9 +379,11 @@ class _NavTile extends StatelessWidget {
               child: AnimatedContainer(
                 duration: AppMotion.snappy,
                 curve: AppMotion.easeOutCubic,
-                color: isHovered
-                    ? colors.surfaceSecondary
-                    : context.colors.transparent,
+                color: isSelected
+                    ? colors.primary.withValues(alpha: isDark ? 0.16 : 0.08)
+                    : isHovered
+                        ? colors.surfaceSecondary
+                        : context.colors.transparent,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 16,
@@ -438,9 +468,11 @@ class _NavTile extends StatelessWidget {
                       child: Icon(
                         Icons.chevron_right_rounded,
                         size: 18,
-                        color: isHovered
-                            ? colors.textPrimary
-                            : colors.textMuted,
+                        color: isSelected
+                            ? colors.primary
+                            : isHovered
+                                ? colors.textPrimary
+                                : colors.textMuted,
                       ),
                     ),
                   ],

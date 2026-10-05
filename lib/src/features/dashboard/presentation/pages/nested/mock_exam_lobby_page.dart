@@ -18,7 +18,8 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.da
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -76,15 +77,18 @@ class MockExamLobbyPage extends HookWidget {
       backgroundColor: isDark
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor: colors.transparent,
-        elevation: 0,
-        leading: const AppBackButton(),
-        title: Text(
-          l10n.mockExamLobbyTitle,
-          style: typography.title3.bold.copyWith(color: colors.textPrimary),
-        ),
-        centerTitle: true,
+        titleText: l10n.mockExamLobbyTitle,
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Dashboard',
+            onTap: () => context.router.maybePop(),
+          ),
+          AppBreadcrumbItem(
+            label: examName.isNotEmpty ? examName : l10n.mockExamLobbyTitle,
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(

@@ -178,3 +178,13 @@ final class ImportLmsCourseEvent extends IngestionEvent {
   final String authToken;
   final String? canvasDomain;
 }
+
+/// Checks local storage for any interrupted/uncompleted upload job from a prior session.
+final class CheckPendingIngestionJobEvent extends IngestionEvent {
+  const CheckPendingIngestionJobEvent();
+}
+
+/// Dismisses an interrupted upload job and clears it from persistent storage.
+final class DismissPendingIngestionJobEvent extends IngestionEvent {
+  const DismissPendingIngestionJobEvent();
+}

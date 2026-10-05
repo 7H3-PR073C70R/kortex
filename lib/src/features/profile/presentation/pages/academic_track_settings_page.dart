@@ -21,7 +21,8 @@ import 'package:kortex/src/features/auth/presentation/widgets/goal_calibration_s
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -130,18 +131,16 @@ class _AcademicTrackSettingsView extends HookWidget {
 
         return Scaffold(
           backgroundColor: colors.backgroundPrimary,
-          appBar: AppBar(
+          appBar: AppAdaptiveAppBar(
             backgroundColor: colors.backgroundPrimary,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            leading: const AppBackButton(),
-            title: Text(
-              'Academic Track & Goals',
-              style: typography.title3.bold.copyWith(
-                color: colors.textPrimary,
-                fontSize: 18,
+            titleText: 'Academic Track & Goals',
+            breadcrumbs: [
+              AppBreadcrumbItem(
+                label: 'Profile & Settings',
+                onTap: () => context.router.maybePop(),
               ),
-            ),
+              const AppBreadcrumbItem(label: 'Academic Track & Goals'),
+            ],
           ),
           body: SafeArea(
             child: ConstrainedBox(

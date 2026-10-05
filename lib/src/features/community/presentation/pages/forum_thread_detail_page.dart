@@ -40,8 +40,9 @@ import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -1272,24 +1273,29 @@ class ForumThreadDetailPage extends HookWidget {
       backgroundColor: isDark
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor:
             (isDark ? colors.surfaceSecondary : colors.surfacePrimary)
                 .withAlpha(230),
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        shadowColor: colors.black.withAlpha(20),
-        leading: const AppBackButton(),
-        title: Row(
-          children: [
-            Text(
-              'Thread Detail',
-              style: typography.title3.bold.copyWith(
-                color: colors.textPrimary,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ],
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Community',
+            onTap: () {
+              if (context.router.canPop()) {
+                context.router.pop();
+              }
+            },
+          ),
+          AppBreadcrumbItem(
+            label: post.title,
+          ),
+        ],
+        title: Text(
+          'Thread Detail',
+          style: typography.title3.bold.copyWith(
+            color: colors.textPrimary,
+            letterSpacing: -0.2,
+          ),
         ),
         actions: [
           // // Live Focus Room Button (Pulsing live audio quick join)

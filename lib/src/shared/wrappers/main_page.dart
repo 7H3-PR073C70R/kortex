@@ -113,7 +113,10 @@ class MainPage extends HookWidget {
 
   static const String routeName = '/main';
   static const double desktopBreakpoint = 1024;
+  static const double tabletBreakpoint = 720;
+  static const double tabletShortestSideBreakpoint = 600;
   static const double railWidth = 240;
+  static const double tabletRailWidth = 72;
 
   @override
   Widget build(BuildContext context) {
@@ -139,15 +142,30 @@ class MainPage extends HookWidget {
                 color: colors.backgroundPrimary,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
+                    final mediaQuery = MediaQuery.of(context);
                     final isDesktop = constraints.maxWidth >= desktopBreakpoint;
+                    final isLandscape =
+                        mediaQuery.orientation == Orientation.landscape;
+                    final isTablet =
+                        mediaQuery.size.shortestSide >= tabletShortestSideBreakpoint;
+                    final isTabletLandscape = !isDesktop &&
+                        isTablet &&
+                        constraints.maxWidth >= tabletBreakpoint &&
+                        isLandscape;
 
-                    if (isDesktop) {
+                    if (isDesktop || isTabletLandscape) {
                       return Row(
                         children: [
-                          _DesktopNavRail(
-                            tabsRouter: tabsRouter,
-                            width: railWidth,
-                          ),
+                          if (isDesktop)
+                            _DesktopNavRail(
+                              tabsRouter: tabsRouter,
+                              width: railWidth,
+                            )
+                          else
+                            _TabletNavRail(
+                              tabsRouter: tabsRouter,
+                              width: tabletRailWidth,
+                            ),
                           VerticalDivider(
                             width: 1,
                             thickness: 1,
@@ -183,12 +201,27 @@ class MainPage extends HookWidget {
               );
             },
             bottomNavigationBuilder: (context, tabsRouter) {
-              final width = MediaQuery.sizeOf(context).width;
-              if (width >= desktopBreakpoint) {
+              final mediaQuery = MediaQuery.of(context);
+              final width = mediaQuery.size.width;
+              final isLandscape =
+                  mediaQuery.orientation == Orientation.landscape;
+              final isTablet =
+                  mediaQuery.size.shortestSide >= tabletShortestSideBreakpoint;
+              final isTabletLandscape =
+                  isTablet && width >= tabletBreakpoint && isLandscape;
+
+              if (width >= desktopBreakpoint || isTabletLandscape) {
                 return const SizedBox.shrink();
               }
-              return _AdaptiveBottomNavDock(
-                tabsRouter: tabsRouter,
+              return Align(
+                alignment: Alignment.bottomCenter,
+                heightFactor: 1,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 540),
+                  child: _AdaptiveBottomNavDock(
+                    tabsRouter: tabsRouter,
+                  ),
+                ),
               );
             },
           ),
@@ -440,6 +473,165 @@ class _DesktopNavRailItem extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tablet Left Navigation Rail (>= 720dp in landscape, < 1024dp)
+// Compact 72dp Icon-Only Navigation Rail
+// ---------------------------------------------------------------------------
+
+class _TabletNavRail extends StatelessWidget {
+  const _TabletNavRail({
+    required this.tabsRouter,
+    required this.width,
+  });
+
+  final TabsRouter tabsRouter;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final l10n = context.l10n;
+    final isDark = context.isDarkMode;
+
+    return Semantics(
+      container: true,
+      label: l10n.navBarSemanticsLabel,
+      child: Container(
+        width: width,
+        height: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+        decoration: BoxDecoration(
+          color: isDark
+              ? colors.surfacePrimary.withAlpha(200)
+              : colors.surfacePrimary.withAlpha(235),
+        ),
+        child: SafeArea(
+          right: false,
+          child: Column(
+            children: [
+              // 1. App Logo Icon
+              AppAssets.svgs.kortexLogo.svg(
+                width: 32,
+                height: 32,
+              ),
+              const SizedBox(height: 28),
+
+              // 2. Navigation Items (Icon only)
+              Expanded(
+                child: ListView.separated(
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _kNavItems5.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final item = _kNavItems5[index];
+                    final isSelected = tabsRouter.activeIndex == index;
+                    final label = item.labelBuilder(l10n);
+
+                    return _TabletNavRailItem(
+                      icon: isSelected ? item.activeIcon : item.icon,
+                      label: label,
+                      isSelected: isSelected,
+                      itemIndex: index,
+                      totalItems: _kNavItems5.length,
+                      onTap: () => _handleTabTap(
+                        context,
+                        tabsRouter,
+                        index,
+                        label,
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // 3. Status indicator dot
+              Tooltip(
+                message: l10n.neuralEngineActive,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: colors.recallEasy,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TabletNavRailItem extends StatelessWidget {
+  const _TabletNavRailItem({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.itemIndex,
+    required this.totalItems,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final int itemIndex;
+  final int totalItems;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final l10n = context.l10n;
+    final isDark = context.isDarkMode;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: l10n.navTabSemantics(label, itemIndex + 1, totalItems),
+      child: Tooltip(
+        message: label,
+        child: PlatformHoverBuilder(
+          builder: (context, isHovered, _) {
+            return ShrinkableButton(
+              onTap: onTap,
+              shrinkScale: 0.95,
+              child: AnimatedContainer(
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: AppRadius.radiusCard,
+                  color: isSelected
+                      ? colors.primary.withAlpha(isDark ? 45 : 25)
+                      : (isHovered
+                            ? colors.surfaceBorder.withAlpha(isDark ? 35 : 45)
+                            : colors.transparent),
+                  border: Border.all(
+                    color: isSelected
+                        ? colors.primary.withAlpha(isDark ? 100 : 70)
+                        : (isHovered ? colors.surfaceBorder : colors.transparent),
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    icon,
+                    size: 22,
+                    color: isSelected ? colors.primary : colors.textSecondary,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -1191,7 +1383,19 @@ void _handleTabTap(
       ),
     );
   } else {
-    // If already active, trigger light haptic feedback
+    // If already active, trigger light haptic feedback and pop nested tab stack to root
     unawaited(HapticFeedback.lightImpact());
+    try {
+      final currentChild = tabsRouter.currentChild;
+      if (currentChild != null) {
+        final innerStack =
+            tabsRouter.innerRouterOf<StackRouter>(currentChild.name);
+        if (innerStack != null && innerStack.canPop()) {
+          innerStack.popUntilRoot();
+        }
+      }
+    } on Object catch (_) {
+      // Safe fallback if tab has no nested stack
+    }
   }
 }

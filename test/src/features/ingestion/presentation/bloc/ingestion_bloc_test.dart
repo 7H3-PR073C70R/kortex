@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
@@ -36,6 +39,8 @@ class MockDecksRemoteDataSource extends Mock implements DecksRemoteDataSource {}
 
 class MockNotificationService extends Mock implements NotificationService {}
 
+class MockLocalStorageService extends Mock implements LocalStorageService {}
+
 void main() {
   late MockUploadStudyDocumentUseCase mockUpload;
   late MockProcessStemOcrUseCase mockProcessOcr;
@@ -43,6 +48,7 @@ void main() {
   late MockFetchUserDocumentsUseCase mockFetchUserDocs;
   late MockDecksRemoteDataSource mockDecksDataSource;
   late MockNotificationService mockNotificationService;
+  late MockLocalStorageService mockLocalStorageService;
   late IngestionBloc bloc;
 
   final testDoc = DocumentUploadEntity(
@@ -89,6 +95,7 @@ void main() {
     mockFetchUserDocs = MockFetchUserDocumentsUseCase();
     mockDecksDataSource = MockDecksRemoteDataSource();
     mockNotificationService = MockNotificationService();
+    mockLocalStorageService = MockLocalStorageService();
 
     when(
       () => mockNotificationService.notifyDocumentProcessingComplete(
@@ -99,6 +106,21 @@ void main() {
       ),
     ).thenAnswer((_) async {});
 
+    when(
+      () => mockLocalStorageService.getPreference(key: any(named: 'key')),
+    ).thenReturn(null);
+
+    when(
+      () => mockLocalStorageService.deletePreference(key: any(named: 'key')),
+    ).thenAnswer((_) async {});
+
+    when(
+      () => mockLocalStorageService.savePreference(
+        key: any(named: 'key'),
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer((_) async {});
+
     bloc = IngestionBloc(
       uploadUseCase: mockUpload,
       processOcrUseCase: mockProcessOcr,
@@ -106,6 +128,7 @@ void main() {
       fetchUserDocsUseCase: mockFetchUserDocs,
       decksRemoteDataSource: mockDecksDataSource,
       notificationService: mockNotificationService,
+      localStorageService: mockLocalStorageService,
     );
   });
 
@@ -404,5 +427,54 @@ void main() {
         ).called(1);
       },
     );
+
+    group('Interrupted Job Persistence Tests', () {
+      test('CheckPendingIngestionJobEvent loads saved job into pendingInterruptedJob', () async {
+        final jobPayload = {
+          'filename': 'resume.pdf',
+          'uploadProgress': 0.65,
+          'status': 'uploading',
+          'timestamp': 1700000000000,
+        };
+        when(
+          () => mockLocalStorageService.getPreference(
+            key: IngestionBloc.pendingIngestionJobKey,
+          ),
+        ).thenReturn(jsonEncode(jobPayload));
+
+        bloc.add(const CheckPendingIngestionJobEvent());
+        await pumpEventQueue();
+
+        expect(bloc.state.pendingInterruptedJob, isNotNull);
+        expect(bloc.state.pendingInterruptedJob?['filename'], 'resume.pdf');
+        expect(bloc.state.pendingInterruptedJob?['uploadProgress'], 0.65);
+      });
+
+      test('DismissPendingIngestionJobEvent clears pendingInterruptedJob', () async {
+        final jobPayload = {
+          'filename': 'physics.pdf',
+          'uploadProgress': 0.4,
+          'status': 'uploading',
+        };
+        when(
+          () => mockLocalStorageService.getPreference(
+            key: IngestionBloc.pendingIngestionJobKey,
+          ),
+        ).thenReturn(jsonEncode(jobPayload));
+
+        bloc.add(const CheckPendingIngestionJobEvent());
+        await pumpEventQueue();
+        expect(bloc.state.pendingInterruptedJob, isNotNull);
+
+        bloc.add(const DismissPendingIngestionJobEvent());
+        await pumpEventQueue();
+        expect(bloc.state.pendingInterruptedJob, isNull);
+        verify(
+          () => mockLocalStorageService.deletePreference(
+            key: IngestionBloc.pendingIngestionJobKey,
+          ),
+        ).called(1);
+      });
+    });
   });
 }

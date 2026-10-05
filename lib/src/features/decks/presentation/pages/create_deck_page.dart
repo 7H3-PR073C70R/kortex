@@ -20,7 +20,8 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/upload_past_questions_view.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_ingestion_service.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -368,11 +369,8 @@ class CreateDeckPage extends HookWidget {
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor: colors.backgroundPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: const AppBackButton(),
         title: Column(
           children: [
             Text(
@@ -392,7 +390,27 @@ class CreateDeckPage extends HookWidget {
               ),
           ],
         ),
-        centerTitle: true,
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Decks',
+            onTap: () => context.router.maybePop(),
+          ),
+          const AppBreadcrumbItem(label: 'Create Study Deck'),
+        ],
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton(
+              onPressed: () => context.router.maybePop(),
+              child: Text(
+                'Cancel',
+                style: typography.subhead.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(

@@ -17,7 +17,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_cubit.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_state.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -185,14 +186,21 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
           backgroundColor: isDark
               ? colors.backgroundPrimary
               : colors.surfacePrimary,
-          appBar: AppBar(
-            backgroundColor: colors.transparent,
-            elevation: 0,
-            leading: const AppBackButton(),
-            title: Text(
-              'Curate Your Curriculum',
-              style: typography.title3.bold.copyWith(color: colors.textPrimary),
-            ),
+          appBar: AppAdaptiveAppBar(
+            breadcrumbs: [
+              AppBreadcrumbItem(
+                label: 'Dashboard',
+                onTap: () {
+                  if (context.router.canPop()) {
+                    context.router.pop();
+                  }
+                },
+              ),
+              const AppBreadcrumbItem(
+                label: 'Curate Curriculum',
+              ),
+            ],
+            titleText: 'Curate Your Curriculum',
             centerTitle: false,
             actions: [
               if (selectedCount > 0)
