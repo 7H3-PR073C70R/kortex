@@ -446,7 +446,7 @@ def create_windows_packages(version):
     # 2. Include Full Web Application Workstation Distribution
     web_landing_dir = os.path.join(PROJECT_ROOT, "web_landing")
     if os.path.exists(web_landing_dir):
-        shutil.copytree(web_landing_dir, os.path.join(win_temp, "web_app"), dirs_exist_ok=True)
+        shutil.copytree(web_landing_dir, os.path.join(win_temp, "web_app"), symlinks=True, ignore_dangling_symlinks=True, dirs_exist_ok=True)
 
     if win_build_dir and os.path.exists(win_build_dir):
         print(f"Copying Windows native build bundle from {win_build_dir}...")
@@ -454,9 +454,9 @@ def create_windows_packages(version):
             s = os.path.join(win_build_dir, item)
             d = os.path.join(win_temp, item)
             if os.path.isdir(s):
-                shutil.copytree(s, d, dirs_exist_ok=True)
+                shutil.copytree(s, d, symlinks=True, ignore_dangling_symlinks=True, dirs_exist_ok=True)
             else:
-                shutil.copy2(s, d)
+                shutil.copy2(s, d, follow_symlinks=False)
 
     # 3. Create Windows ZIP Archive
     zip_filename = f"Kortex-{version}-Windows.zip"
@@ -557,7 +557,7 @@ def create_linux_packages(version):
     # 4. Include Full Web Application Workstation Distribution
     web_landing_dir = os.path.join(PROJECT_ROOT, "web_landing")
     if os.path.exists(web_landing_dir):
-        shutil.copytree(web_landing_dir, os.path.join(linux_temp, "web_app"), dirs_exist_ok=True)
+        shutil.copytree(web_landing_dir, os.path.join(linux_temp, "web_app"), symlinks=True, ignore_dangling_symlinks=True, dirs_exist_ok=True)
 
     if linux_build_dir and os.path.exists(linux_build_dir):
         print(f"Copying Linux native build bundle from {linux_build_dir}...")
@@ -565,9 +565,9 @@ def create_linux_packages(version):
             s = os.path.join(linux_build_dir, item)
             d = os.path.join(linux_temp, item)
             if os.path.isdir(s):
-                shutil.copytree(s, d, dirs_exist_ok=True)
+                shutil.copytree(s, d, symlinks=True, ignore_dangling_symlinks=True, dirs_exist_ok=True)
             else:
-                shutil.copy2(s, d)
+                shutil.copy2(s, d, follow_symlinks=False)
 
     tar_filename = f"Kortex-{version}-Linux.tar.gz"
     tar_path = os.path.join(DIST_DIR, tar_filename)
