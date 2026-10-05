@@ -112,7 +112,7 @@ jobs:
         -exportPath $PWD/build/Runner.ipa
 
     - name: Upload IPA to Firebase App Distribution
-      uses: wzieba/Firebase-Distribution-Github-Action@a3c833504e7ea073a3ca1c9449b5c9bc36701316 # pin@v1
+      uses: wzieba/Firebase-Distribution-Github-Action@bd494989dd4bec0343f78adee87fe66e48279ad6 # pin@v1
       with:
         appId: ${{ secrets.firebase_ios_app_id }}
         token: ${{ secrets.firebase_token }}
