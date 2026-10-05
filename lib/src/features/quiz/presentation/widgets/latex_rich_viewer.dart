@@ -40,7 +40,7 @@ class LatexRichViewer extends StatelessWidget {
 
 
   static final RegExp _codeBlockRegex = RegExp(
-    r'```(?:([a-zA-Z0-9_\-+]*)\r?\n)?([\s\S]*?)```',
+    r'```(?:([a-zA-Z0-9_\-+]*)(?:\r?\n|\s+))?([\s\S]*?)```',
     multiLine: true,
   );
 
@@ -50,7 +50,7 @@ class LatexRichViewer extends StatelessWidget {
   );
 
   static final RegExp _latexRegex = RegExp(
-    r'(\\\([\s\S]*?\\\)|\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|(?<!\\)\$(?!\s)((?:\\.|[^\$\n])+?)(?<!\s)\$)',
+    r'(\\\([\s\S]*?\\\)|\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|(?<!\\)\$(?!\$)((?:\\.|[^\$\n])+?)(?<!\\)\$)',
     multiLine: true,
   );
 
@@ -121,7 +121,7 @@ class LatexRichViewer extends StatelessWidget {
       s = s.replaceAll('&gt;', '>');
       s = s.replaceAll('&nbsp;', ' ');
 
-      // Protect code blocks before inline list and formula formatting passes
+      // Protect code blocks and inline code before formula formatting passes
       final codeBlocks = <String>[];
       s = s.replaceAllMapped(_codeBlockRegex, (m) {
         final idx = codeBlocks.length;
@@ -129,10 +129,20 @@ class LatexRichViewer extends StatelessWidget {
         return '%%KORTEX_CODE_BLOCK_$idx%%';
       });
 
+      final inlineCodes = <String>[];
+      s = s.replaceAllMapped(RegExp(r'`([^`\n]+)`'), (m) {
+        final idx = inlineCodes.length;
+        inlineCodes.add(m[0]!);
+        return '%%KORTEX_INLINE_CODE_$idx%%';
+      });
+
       s = formatInlineLists(s);
       s = FormulaAwareTextFormatter.formatFormulaAware(s);
 
-      // Restore protected code blocks
+      // Restore protected inline code and code blocks
+      for (var i = 0; i < inlineCodes.length; i++) {
+        s = s.replaceAll('%%KORTEX_INLINE_CODE_$i%%', inlineCodes[i]);
+      }
       for (var i = 0; i < codeBlocks.length; i++) {
         s = s.replaceAll('%%KORTEX_CODE_BLOCK_$i%%', codeBlocks[i]);
       }
@@ -474,13 +484,61 @@ class LatexRichViewer extends StatelessWidget {
         );
       }
 
-      // 2. Bullet list check: '-', '*', '•' -> style cleanly without loose asterisks
+      // 2. Blockquote check: lines starting with '>' or '&gt;'
+      final quoteMatch =
+          RegExp(r'^(?:>|&gt;)\s*(.*)$', caseSensitive: false).firstMatch(trimmedLine);
+      if (quoteMatch != null) {
+        final quoteBody = quoteMatch.group(1) ?? '';
+        final spans = _parseInlineMarkdownAndLatex(
+          context,
+          quoteBody,
+          lineStyle.copyWith(
+            fontStyle: FontStyle.italic,
+            color: context.colors.textSecondary,
+          ),
+        );
+
+        lineWidgets.add(
+          Directionality(
+            textDirection: paragraphDirection,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+                decoration: BoxDecoration(
+                  color: context.colors.primary.withAlpha(context.isDarkMode ? 30 : 18),
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
+                  ),
+                  border: Border(
+                    left: BorderSide(
+                      color: context.colors.primary,
+                      width: 3.5,
+                    ),
+                  ),
+                ),
+                child: Text.rich(
+                  TextSpan(children: spans),
+                  textAlign: effectiveTextAlign,
+                  maxLines: maxLines,
+                  overflow: overflow,
+                ),
+              ),
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // 3. Bullet list check: '-', '*', '•' -> style cleanly without loose asterisks
       final bulletMatch = RegExp(r'^(\*|-|•)\s+(.*)$').firstMatch(trimmedLine);
       if (bulletMatch != null) {
         contentToRender = '•  ${bulletMatch.group(2) ?? ''}';
       }
 
-      // 3. Numbered / bracketed / lettered list check
+      // 4. Numbered / bracketed / lettered list check
       final numMatch = RegExp(
         r'^(\(?\d+[\.\)]|\[\d+\]|\(?[A-Za-z][\.\)]|\(?[ivxIVX]+[\.\)])\s+(.*)$',
       ).firstMatch(trimmedLine);
@@ -730,14 +788,27 @@ class LatexRichViewer extends StatelessWidget {
       else if (match.group(8) != null) {
         final inner = match.group(8) ?? '';
         spans.add(
-          TextSpan(
-            text: ' $inner ',
-            style: baseStyle.copyWith(
-              fontFamily: 'monospace',
-              fontSize: (baseStyle.fontSize ?? 14) * 0.92,
-              backgroundColor:
-                  baseStyle.color?.withAlpha(25) ??
-                  context.colors.textPrimary.withAlpha(25),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: context.colors.primary.withAlpha(context.isDarkMode ? 45 : 22),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: context.colors.primary.withAlpha(context.isDarkMode ? 80 : 40),
+                ),
+              ),
+              child: Text(
+                inner,
+                style: baseStyle.copyWith(
+                  fontFamily: 'monospace',
+                  fontSize: (baseStyle.fontSize ?? 14) * 0.90,
+                  fontWeight: FontWeight.w600,
+                  color: context.colors.primary,
+                ),
+              ),
             ),
           ),
         );
@@ -757,6 +828,9 @@ class LatexRichViewer extends StatelessWidget {
               text: inner,
               style: baseStyle.copyWith(
                 decoration: TextDecoration.lineThrough,
+                decorationColor: baseStyle.color ?? context.colors.textPrimary,
+                decorationStyle: TextDecorationStyle.solid,
+                decorationThickness: 2,
               ),
             ),
           );
@@ -785,8 +859,9 @@ class LatexRichViewer extends StatelessWidget {
   /// Removes stray unclosed asterisks or raw '#' symbols so users never see markdown artifacts
   static String _sanitizeLoneMarkdownSymbols(String s) {
     var out = s;
-    // Strip leading '#' that may have slipped through
+    // Strip leading '#' or '>' that may have slipped through
     out = out.replaceAll(RegExp(r'^#{1,6}\s*'), '');
+    out = out.replaceAll(RegExp(r'^>\s*'), '');
     // Clean redundant double asterisks that have no closing tag
     out = out.replaceAll('***', '');
     out = out.replaceAll('**', '');

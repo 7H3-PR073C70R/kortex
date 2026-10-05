@@ -26,9 +26,11 @@ import 'package:kortex/src/features/community/presentation/widgets/community_hub
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/entities/shared_deck_entity.dart';
+import 'package:kortex/src/features/deck_marketplace/domain/services/deck_cloned_checker.dart';
 import 'package:kortex/src/features/deck_marketplace/presentation/pages/deck_marketplace_detail_page.dart';
 import 'package:kortex/src/features/deck_marketplace/presentation/widgets/marketplace_deck_card.dart';
 import 'package:kortex/src/features/deck_marketplace/presentation/widgets/publish_deck_modal_sheet.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
@@ -51,6 +53,10 @@ class StudyHubPage extends HookWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        if (locator.isRegistered<DecksBloc>())
+          BlocProvider<DecksBloc>.value(
+            value: locator<DecksBloc>(),
+          ),
         BlocProvider<CommunityHubBloc>.value(
           value:
               locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
@@ -1348,6 +1354,12 @@ class _DeckMarketplaceTab extends HookWidget {
     final searchQuery = useState<String>('');
     final searchController = useTextEditingController();
 
+    final decksState = context.watch<DecksBloc?>()?.state;
+    final userDecks = decksState?.allDecks ??
+        (locator.isRegistered<DecksBloc>()
+            ? locator<DecksBloc>().state.allDecks
+            : const <DeckEntity>[]);
+
     const categories = [
       'All',
       'WAEC',
@@ -1632,14 +1644,18 @@ class _DeckMarketplaceTab extends HookWidget {
                       (context, index) {
                         final deck = filteredDecks[index];
                         final isSelected = selectedDeckId == deck.id;
+                        final isCloned = isDeckAlreadyCloned(deck, userDecks: userDecks);
                         return MarketplaceDeckCard(
                           deck: deck,
                           isSelected: isSelected,
-                          onCloneTap: () {
-                            context.read<CommunityHubBloc>().add(
-                              CloneDeckEvent(deck.id),
-                            );
-                          },
+                          isAlreadyCloned: isCloned,
+                          onCloneTap: isCloned
+                              ? null
+                              : () {
+                                  context.read<CommunityHubBloc>().add(
+                                    CloneDeckEvent(deck.id),
+                                  );
+                                },
                           onTap: () {
                             if (onDeckSelected != null) {
                               onDeckSelected!(deck);

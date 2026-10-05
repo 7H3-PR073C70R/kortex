@@ -1310,11 +1310,23 @@ class ForumThreadDetailPage extends HookWidget {
     void applyFormat(String prefix, String suffix, [String placeholder = '']) {
       final text = replyController.text;
       final selection = replyController.selection;
+      var effectivePrefix = prefix;
+
+      final start = selection.isValid && selection.start >= 0
+          ? selection.start
+          : text.length;
+
+      if (effectivePrefix.startsWith('\n')) {
+        if (start == 0 || (start > 0 && text[start - 1] == '\n')) {
+          effectivePrefix = effectivePrefix.substring(1);
+        }
+      }
+
       if (selection.isValid &&
           selection.start >= 0 &&
           selection.end > selection.start) {
         final selectedText = text.substring(selection.start, selection.end);
-        final replacement = '$prefix$selectedText$suffix';
+        final replacement = '$effectivePrefix$selectedText$suffix';
         final newText = text.replaceRange(
           selection.start,
           selection.end,
@@ -1323,19 +1335,18 @@ class ForumThreadDetailPage extends HookWidget {
         replyController.value = TextEditingValue(
           text: newText,
           selection: TextSelection(
-            baseOffset: selection.start + prefix.length,
-            extentOffset: selection.start + prefix.length + selectedText.length,
+            baseOffset: selection.start + effectivePrefix.length,
+            extentOffset:
+                selection.start + effectivePrefix.length + selectedText.length,
           ),
         );
       } else {
-        final insertIndex = selection.isValid && selection.start >= 0
-            ? selection.start
-            : text.length;
-        final snippet = '$prefix$placeholder$suffix';
+        final insertIndex = start;
+        final snippet = '$effectivePrefix$placeholder$suffix';
         final newText = text.replaceRange(insertIndex, insertIndex, snippet);
         final cursorOffset =
             insertIndex +
-            prefix.length +
+            effectivePrefix.length +
             (placeholder.isNotEmpty ? placeholder.length : 0);
         replyController.value = TextEditingValue(
           text: newText,
@@ -3698,15 +3709,15 @@ class ForumThreadDetailPage extends HookWidget {
     final isDark = context.isDarkMode;
 
     final snippets = [
-      {'label': 'Fraction', 'snippet': r'\frac{a}{b}'},
-      {'label': 'Square Root', 'snippet': r'\sqrt{x}'},
-      {'label': 'Exponent', 'snippet': 'x^{2}'},
-      {'label': 'Integral', 'snippet': r'\int_{a}^{b} f(x) dx'},
-      {'label': 'Summation', 'snippet': r'\sum_{i=1}^{n} x_i'},
-      {'label': 'Limit', 'snippet': r'\lim_{x \to \infty}'},
+      {'label': 'Fraction', 'snippet': r'$\frac{a}{b}$'},
+      {'label': 'Square Root', 'snippet': r'$\sqrt{x}$'},
+      {'label': 'Exponent', 'snippet': r'$x^{2}$'},
+      {'label': 'Integral', 'snippet': r'$\int_{a}^{b} f(x) dx$'},
+      {'label': 'Summation', 'snippet': r'$\sum_{i=1}^{n} x_i$'},
+      {'label': 'Limit', 'snippet': r'$\lim_{x \to \infty}$'},
       {
         'label': 'Matrix 2x2',
-        'snippet': r'\begin{pmatrix} a & b \\ c & d \end{pmatrix}',
+        'snippet': r'$$\begin{pmatrix} a & b \\ c & d \end{pmatrix}$$',
       },
     ];
 

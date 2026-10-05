@@ -16,7 +16,9 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/entities/shared_deck_entity.dart';
+import 'package:kortex/src/features/deck_marketplace/domain/services/deck_cloned_checker.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/use_cases/clone_shared_deck_use_case.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
@@ -54,7 +56,20 @@ class DeckMarketplaceDetailPage extends HookWidget {
 
     final isCloning = useState<bool>(false);
 
+    final decksState = context.watch<DecksBloc?>()?.state;
+    final userDecks = decksState?.allDecks ??
+        (locator.isRegistered<DecksBloc>()
+            ? locator<DecksBloc>().state.allDecks
+            : const <DeckEntity>[]);
+    final isAlreadyCloned = isDeckAlreadyCloned(deck, userDecks: userDecks);
+
     Future<void> handleClone() async {
+      if (isAlreadyCloned) {
+        context.showSnackBar(
+          message: 'This deck is already in your deck list.',
+        );
+        return;
+      }
       isCloning.value = true;
       try {
         final useCase = locator<CloneSharedDeckUseCase>();
@@ -140,73 +155,103 @@ class DeckMarketplaceDetailPage extends HookWidget {
         constraints: const BoxConstraints(maxWidth: 760),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          child: PlatformHoverBuilder(
-            builder: (context, isHovered, child) => AnimatedScale(
-              scale: isHovered ? 1.01 : 1,
-              duration: AppMotion.snappy,
-              curve: AppMotion.easeOutCubic,
-              child: ShrinkableButton(
-                onTap: isCloning.value ? null : handleClone,
-                child: AnimatedContainer(
-                  duration: AppMotion.snappy,
+          child: isAlreadyCloned
+              ? Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isCloning.value
-                          ? [
-                              colors.primary.withAlpha(160),
-                              colors.primary.withAlpha(130),
-                            ]
-                          : [
-                              colors.primary,
-                              colors.primary.withAlpha(220),
-                            ],
-                    ),
+                    color: colors.recallEasy.withAlpha(isDark ? 40 : 25),
                     borderRadius: AppRadius.radiusPanel,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withAlpha(
-                          isHovered ? 80 : 40,
+                    border: Border.all(
+                      color: colors.recallEasy.withAlpha(isDark ? 100 : 70),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: colors.recallEasy,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Deck in Library',
+                        style: typography.body.bold.copyWith(
+                          color: colors.recallEasy,
                         ),
-                        blurRadius: isHovered ? 20 : 12,
-                        offset: Offset(0, isHovered ? 6 : 3),
                       ),
                     ],
                   ),
-                  child: AnimatedSwitcher(
+                )
+              : PlatformHoverBuilder(
+                  builder: (context, isHovered, child) => AnimatedScale(
+                    scale: isHovered ? 1.01 : 1,
                     duration: AppMotion.snappy,
-                    child: isCloning.value
-                        ? AppLogoLoader(
-                            key: const ValueKey('cloning_loader'),
-                            size: 20,
-                            color: colors.white,
-                            showMessage: false,
-                          )
-                        : Row(
-                            key: const ValueKey('cloning_action'),
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.copy_rounded,
-                                color: colors.white,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                l10n.cloneDeckButton,
-                                style: typography.body.bold.copyWith(
-                                  color: colors.white,
-                                ),
-                              ),
-                            ],
+                    curve: AppMotion.easeOutCubic,
+                    child: ShrinkableButton(
+                      onTap: isCloning.value ? null : handleClone,
+                      child: AnimatedContainer(
+                        duration: AppMotion.snappy,
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isCloning.value
+                                ? [
+                                    colors.primary.withAlpha(160),
+                                    colors.primary.withAlpha(130),
+                                  ]
+                                : [
+                                    colors.primary,
+                                    colors.primary.withAlpha(220),
+                                  ],
                           ),
+                          borderRadius: AppRadius.radiusPanel,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary.withAlpha(
+                                isHovered ? 80 : 40,
+                              ),
+                              blurRadius: isHovered ? 20 : 12,
+                              offset: Offset(0, isHovered ? 6 : 3),
+                            ),
+                          ],
+                        ),
+                        child: AnimatedSwitcher(
+                          duration: AppMotion.snappy,
+                          child: isCloning.value
+                              ? AppLogoLoader(
+                                  key: const ValueKey('cloning_loader'),
+                                  size: 20,
+                                  color: colors.white,
+                                  showMessage: false,
+                                )
+                              : Row(
+                                  key: const ValueKey('cloning_action'),
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.copy_rounded,
+                                      color: colors.white,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      l10n.cloneDeckButton,
+                                      style: typography.body.bold.copyWith(
+                                        color: colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -276,6 +321,7 @@ class DeckMarketplaceDetailPage extends HookWidget {
                     deck: deck,
                     isDark: isDark,
                     isCloning: isCloning.value,
+                    isAlreadyCloned: isAlreadyCloned,
                     onClone: handleClone,
                   )
                 : _CompactDetailLayout(
@@ -326,12 +372,14 @@ class _WideDetailLayout extends StatelessWidget {
     required this.deck,
     required this.isDark,
     required this.isCloning,
+    required this.isAlreadyCloned,
     required this.onClone,
   });
 
   final SharedDeckEntity deck;
   final bool isDark;
   final bool isCloning;
+  final bool isAlreadyCloned;
   final VoidCallback onClone;
 
   @override
@@ -351,6 +399,7 @@ class _WideDetailLayout extends StatelessWidget {
               const SizedBox(height: 16),
               _InlineCloneButton(
                 isCloning: isCloning,
+                isAlreadyCloned: isAlreadyCloned,
                 onClone: onClone,
               ),
             ],
@@ -614,10 +663,12 @@ class _StatDivider extends StatelessWidget {
 class _InlineCloneButton extends StatelessWidget {
   const _InlineCloneButton({
     required this.isCloning,
+    required this.isAlreadyCloned,
     required this.onClone,
   });
 
   final bool isCloning;
+  final bool isAlreadyCloned;
   final VoidCallback onClone;
 
   @override
@@ -625,6 +676,39 @@ class _InlineCloneButton extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
+
+    if (isAlreadyCloned) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: colors.recallEasy.withAlpha(isDark ? 40 : 25),
+          borderRadius: AppRadius.radiusCard,
+          border: Border.all(
+            color: colors.recallEasy.withAlpha(isDark ? 100 : 70),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              color: colors.recallEasy,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Deck in Library',
+              style: typography.body.bold.copyWith(
+                color: colors.recallEasy,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return PlatformHoverBuilder(
       builder: (context, isHovered, child) => AnimatedScale(

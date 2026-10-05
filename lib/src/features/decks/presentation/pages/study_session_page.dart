@@ -163,7 +163,7 @@ class _StudySessionView extends HookWidget {
                   .read<StudySessionCubit>()
                   .nextReviewInDays;
               unawaited(
-                context.router.replace(
+                context.router.push(
                   SessionSummaryRoute(
                     deckId: deckId,
                     cardsReviewed: reviewedCount > 0

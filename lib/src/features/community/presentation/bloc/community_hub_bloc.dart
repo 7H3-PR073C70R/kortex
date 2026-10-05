@@ -7,6 +7,7 @@ import 'package:kortex/src/features/community/presentation/bloc/community_event.
 import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/deck_marketplace/domain/services/deck_cloned_checker.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 
@@ -796,6 +797,18 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     CloneDeckEvent event,
     Emitter<CommunityState> emit,
   ) async {
+    final targetDeck = state.sharedDecks
+        .where((d) => d.id == event.sharedDeckId)
+        .firstOrNull;
+    if (targetDeck != null && isDeckAlreadyCloned(targetDeck)) {
+      emit(
+        state.copyWith(
+          errorMessage: 'This deck is already in your deck list.',
+        ),
+      );
+      return;
+    }
+
     final res = await _repository.cloneSharedDeck(event.sharedDeckId);
     res.fold(
       (failure) => emit(

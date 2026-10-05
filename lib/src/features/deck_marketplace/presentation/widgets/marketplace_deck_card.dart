@@ -11,15 +11,17 @@ class MarketplaceDeckCard extends StatelessWidget {
   const MarketplaceDeckCard({
     required this.deck,
     required this.onTap,
-    required this.onCloneTap,
+    this.onCloneTap,
     this.isSelected = false,
+    this.isAlreadyCloned = false,
     super.key,
   });
 
   final SharedDeckEntity deck;
   final VoidCallback onTap;
-  final VoidCallback onCloneTap;
+  final VoidCallback? onCloneTap;
   final bool isSelected;
+  final bool isAlreadyCloned;
 
   @override
   Widget build(BuildContext context) {
@@ -248,48 +250,80 @@ class MarketplaceDeckCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    PlatformHoverBuilder(
-                      builder: (context, isBtnHovered, child) {
-                        return ShrinkableButton(
-                          onTap: onCloneTap,
-                          child: AnimatedContainer(
-                            duration: AppMotion.snappy,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
+                    if (isAlreadyCloned)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.recallEasy.withAlpha(isDark ? 35 : 20),
+                          borderRadius: AppRadius.radiusCard,
+                          border: Border.all(
+                            color: colors.recallEasy.withAlpha(isDark ? 90 : 60),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_circle_rounded,
+                              size: 14,
+                              color: colors.recallEasy,
                             ),
-                            decoration: BoxDecoration(
-                              color: isBtnHovered
-                                  ? colors.primary.withAlpha(isDark ? 80 : 50)
-                                  : colors.primary.withAlpha(isDark ? 50 : 30),
-                              borderRadius: AppRadius.radiusCard,
-                              border: Border.all(
-                                color: isBtnHovered
-                                    ? colors.primary
-                                    : colors.primary.withAlpha(100),
+                            const SizedBox(width: 5),
+                            Text(
+                              'In Library',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.recallEasy,
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.copy_rounded,
-                                  size: 14,
-                                  color: colors.primary,
+                          ],
+                        ),
+                      )
+                    else
+                      PlatformHoverBuilder(
+                        builder: (context, isBtnHovered, child) {
+                          return ShrinkableButton(
+                            onTap: onCloneTap,
+                            child: AnimatedContainer(
+                              duration: AppMotion.snappy,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isBtnHovered
+                                    ? colors.primary.withAlpha(isDark ? 80 : 50)
+                                    : colors.primary.withAlpha(isDark ? 50 : 30),
+                                borderRadius: AppRadius.radiusCard,
+                                border: Border.all(
+                                  color: isBtnHovered
+                                      ? colors.primary
+                                      : colors.primary.withAlpha(100),
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  l10n.cloneDeckButton,
-                                  style: typography.caption.bold.copyWith(
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.copy_rounded,
+                                    size: 14,
                                     color: colors.primary,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    l10n.cloneDeckButton,
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ],

@@ -77,10 +77,12 @@ class FsrsRatingActionBar extends StatelessWidget {
       ),
     ];
 
+    final isDesktop = MediaQuery.of(context).size.width >= 768;
+
     return Center(
       heightFactor: 1,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
+        constraints: BoxConstraints(maxWidth: isDesktop ? 780 : 640),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -92,7 +94,9 @@ class FsrsRatingActionBar extends StatelessWidget {
                     : formatPreview(previewDays);
                 return Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isDesktop ? 8 : 4,
+                    ),
                     child: Semantics(
                       button: true,
                       label: preview == null
@@ -118,9 +122,9 @@ class FsrsRatingActionBar extends StatelessWidget {
                             child: AnimatedContainer(
                               duration: AppMotion.snappy,
                               curve: AppMotion.snappyCurve,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 12,
-                                horizontal: 6,
+                              padding: EdgeInsets.symmetric(
+                                vertical: isDesktop ? 16 : 12,
+                                horizontal: isDesktop ? 12 : 6,
                               ),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(
@@ -129,20 +133,35 @@ class FsrsRatingActionBar extends StatelessWidget {
                                 color: isHovered
                                     ? b.color.withAlpha(isDark ? 65 : 45)
                                     : (isDark
-                                          ? b.color.withAlpha(35)
-                                          : b.color.withAlpha(22)),
+                                          ? b.color.withAlpha(38)
+                                          : b.color.withAlpha(24)),
                                 border: Border.all(
                                   color: b.color.withAlpha(
-                                    isHovered ? 180 : (isDark ? 110 : 85),
+                                    isHovered ? 200 : (isDark ? 120 : 85),
                                   ),
-                                  width: isHovered ? 1.5 : 1.2,
+                                  width: isHovered ? 1.6 : 1.2,
                                 ),
+                                boxShadow: isHovered
+                                    ? [
+                                        BoxShadow(
+                                          color: b.color.withAlpha(
+                                            isDark ? 70 : 35,
+                                          ),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ]
+                                    : null,
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   // Icon indicator
-                                  Icon(b.icon, color: b.color, size: 20),
+                                  Icon(
+                                    b.icon,
+                                    color: b.color,
+                                    size: isDesktop ? 22 : 20,
+                                  ),
                                   const SizedBox(height: 6),
 
                                   // Button Label
@@ -152,19 +171,21 @@ class FsrsRatingActionBar extends StatelessWidget {
                                       color: isDark
                                           ? colors.white
                                           : colors.textPrimary,
-                                      fontSize: 14,
+                                      fontSize: isDesktop ? 15 : 14,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
 
                                   // High-contrast Predicted Next Interval Pill
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isDesktop ? 8 : 6,
+                                      vertical: isDesktop ? 3 : 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: b.color.withAlpha(isDark ? 60 : 40),
+                                      color: b.color.withAlpha(
+                                        isDark ? 60 : 40,
+                                      ),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
@@ -172,7 +193,7 @@ class FsrsRatingActionBar extends StatelessWidget {
                                           _fallbackPreview(context, b.rating),
                                       style: typography.caption.bold.copyWith(
                                         color: isDark ? colors.white : b.color,
-                                        fontSize: 11.5,
+                                        fontSize: isDesktop ? 12 : 11.5,
                                         fontWeight: FontWeight.w700,
                                         fontFeatures: const [
                                           FontFeature.tabularFigures(),
@@ -180,14 +201,14 @@ class FsrsRatingActionBar extends StatelessWidget {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 3),
+                                  const SizedBox(height: 4),
 
                                   // Keyboard Key Hint
                                   Text(
                                     l10n.studyRatingKeyShortcut(b.shortcut),
                                     style: typography.caption.regular.copyWith(
                                       color: colors.textMuted,
-                                      fontSize: 10,
+                                      fontSize: isDesktop ? 11 : 10,
                                     ),
                                   ),
                                 ],

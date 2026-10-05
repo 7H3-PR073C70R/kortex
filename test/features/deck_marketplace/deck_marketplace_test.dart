@@ -1,10 +1,70 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/entities/shared_deck_entity.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/services/content_safety_moderation_service.dart';
+import 'package:kortex/src/features/deck_marketplace/domain/services/deck_cloned_checker.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/services/deck_version_tracker.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 
 void main() {
+  group('isDeckAlreadyCloned Tests', () {
+    const sharedDeck = SharedDeckEntity(
+      id: 'shared_123',
+      ownerId: 'user_1',
+      ownerName: 'toxicbishop01',
+      title: 'Parts of Speech & Grammar',
+      subject: 'ENG 101',
+      totalCards: 16,
+    );
+
+    test('returns true when a deck with matching cloned ID exists in user library', () {
+      const userDecks = [
+        DeckEntity(
+          id: 'cloned_shared_123',
+          title: 'Different Title',
+          subject: 'ENG 101',
+          totalCards: 16,
+          dueCards: 0,
+          masteryRate: 0.5,
+          category: 'STEM',
+        ),
+      ];
+
+      expect(isDeckAlreadyCloned(sharedDeck, userDecks: userDecks), isTrue);
+    });
+
+    test('returns true when a deck with matching title exists in user library', () {
+      const userDecks = [
+        DeckEntity(
+          id: 'random_id_456',
+          title: 'Parts of Speech & Grammar',
+          subject: 'ENG 101',
+          totalCards: 16,
+          dueCards: 0,
+          masteryRate: 0.5,
+          category: 'STEM',
+        ),
+      ];
+
+      expect(isDeckAlreadyCloned(sharedDeck, userDecks: userDecks), isTrue);
+    });
+
+    test('returns false when deck is not present in user library', () {
+      const userDecks = [
+        DeckEntity(
+          id: 'deck_999',
+          title: 'Quantum Mechanics',
+          subject: 'PHY 201',
+          totalCards: 25,
+          dueCards: 2,
+          masteryRate: 0.1,
+          category: 'STEM',
+        ),
+      ];
+
+      expect(isDeckAlreadyCloned(sharedDeck, userDecks: userDecks), isFalse);
+    });
+  });
+
   group('ContentSafetyModerationService Tests', () {
     const moderationService = ContentSafetyModerationService();
 

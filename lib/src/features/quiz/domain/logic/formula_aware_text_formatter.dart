@@ -8,7 +8,7 @@ class FormulaAwareTextFormatter {
   );
 
   static final RegExp _rawLatexCmdRegex = RegExp(
-    r'\\(frac|sqrt|alpha|beta|gamma|theta|pi|pm|mp|times|div|le|ge|neq|approx|infty|circ|partial|sum|int|oint|to|rightarrow|leftarrow|leftrightarrow|rightleftharpoons|Leftarrow|Rightarrow|Leftrightarrow|mathrm|mathbf|mathit|textbf|text|mathbb|mathcal|lambda|mu|sigma|omega|Delta|Omega|Theta|Lambda|Sigma|Phi|Psi|angle|quad|qquad|implies|iff|lim|cdot|cos|sin|tan|cot|sec|csc|log|ln|deg|vec|hat|bar|tilde|dot|ddot|left|right|binom|prod|cup|cap|subset|supset|in|notin|exists|forall|nabla|perp|parallel)\b',
+    r'\\(begin|end|pmatrix|bmatrix|vmatrix|Vmatrix|matrix|cases|align|aligned|equation|array|frac|sqrt|alpha|beta|gamma|theta|pi|pm|mp|times|div|le|ge|neq|approx|infty|circ|partial|sum|int|oint|to|rightarrow|leftarrow|leftrightarrow|rightleftharpoons|Leftarrow|Rightarrow|Leftrightarrow|mathrm|mathbf|mathit|textbf|text|mathbb|mathcal|mathsf|mathtt|lambda|mu|sigma|omega|Delta|Omega|Theta|Lambda|Sigma|Phi|Psi|angle|quad|qquad|implies|iff|lim|cdot|cos|sin|tan|cot|sec|csc|log|ln|deg|vec|hat|bar|tilde|dot|ddot|left|right|binom|prod|cup|cap|subset|supset|in|notin|exists|forall|nabla|perp|parallel|over|above|choose|overbrace|underbrace|overline|underline|stackrel|overset|underset|cancel|bcancel|xcancel|phantom)(?![a-zA-Z])',
   );
 
   static final RegExp _optionPrefixRegex = RegExp(
@@ -16,7 +16,7 @@ class FormulaAwareTextFormatter {
   );
 
   static final RegExp _commonEnglishWordsRegex = RegExp(
-    r'\b(the|is|are|was|were|which|what|when|where|who|how|why|because|reaction|process|between|compound|element|energy|water|acid|base|salt|solution|state|substance|neutralization|decomposition|diffusion|photosynthesis|respiration|circulation|cellular|mitosis|meiosis|dominant|recessive|ecosystem|increase|decrease|increases|decreases|remains|constant|produces|formed|greater|less|equal|according|principle|concept|definition|corresponds|none|all|above|both|neither|either|true|false|always|never|only|first|second|third|fourth|gas|liquid|solid|precipitate|solution|temperature|pressure|volume|mass|weight|moles|atoms|molecules|electrons|protons|neutrons|catalyst|equilibrium|calculate|find|determine|given|suppose|assume|consider|show|prove|verify|evaluate|simplify|express|value|values|with|from|into|than|that|this|these|those|have|has|had|can|could|will|would|should|must|an|and|or|not|for|of|to|in|on|at|by|question|problem|option|answer|choice|explanation|note|hint|formula|equation)\b',
+    r'(?<!\\)\b(the|is|are|was|were|which|what|when|where|who|how|why|because|reaction|process|between|compound|element|energy|water|acid|base|salt|solution|state|substance|neutralization|decomposition|diffusion|photosynthesis|respiration|circulation|cellular|mitosis|meiosis|dominant|recessive|ecosystem|increase|decrease|increases|decreases|remains|constant|produces|formed|greater|less|equal|according|principle|concept|definition|corresponds|none|all|above|both|neither|either|true|false|always|never|only|first|second|third|fourth|gas|liquid|solid|precipitate|solution|temperature|pressure|volume|mass|weight|moles|atoms|molecules|electrons|protons|neutrons|catalyst|equilibrium|calculate|find|determine|given|suppose|assume|consider|show|prove|verify|evaluate|simplify|express|value|values|with|from|into|than|that|this|these|those|have|has|had|can|could|will|would|should|must|an|and|or|not|for|of|to|in|on|at|by|question|problem|option|answer|choice|explanation|note|hint|formula|equation)\b',
     caseSensitive: false,
   );
 
@@ -408,25 +408,32 @@ class FormulaAwareTextFormatter {
     return s;
   }
 
-  /// Matches a raw LaTeX command and its arguments/parameters when appearing inside normal sentences
+  /// Matches a raw LaTeX command and its arguments/parameters or environment blocks when appearing inside normal sentences
   static final RegExp _inlineLatexExprRegex = RegExp(
-    r'(?<!\$|\\)(\\[a-zA-Z]+(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}|\[[^\]]*\])*(?:(?:\^|_)(?:\{[^{}]*\}|[a-zA-Z0-9]))*(?:\s*[\+\-\*\/\=\<\>\±]\s*(?:-?\d+(?:\.\d+)?|[a-zA-Z]|\\[a-zA-Z]+(?:\{[^{}]*\})*))*)(?!\$)',
+    r'(?<!\$|\\)(\\begin\{[a-zA-Z]+\}[\s\S]*?\\end\{[a-zA-Z]+\}|\\[a-zA-Z]+(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}|\[[^\]]*\]|[\^_](?:\{[^{}]*\}|[a-zA-Z0-9_]+))+(?:\s+(?:[a-zA-Z](?:_[a-zA-Z0-9]+)?|\\[a-zA-Z]+|\([a-zA-Z0-9\s,\+\-\*\/]+\)))?|\\[a-zA-Z]+(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}|\[[^\]]*\])+)(?!\$)',
   );
 
-  /// Wraps individual raw LaTeX expressions found within an English sentence into `$...$`
+  /// Wraps individual raw LaTeX expressions found within an English sentence into `$...$` or `$$...$$`
   static String _wrapInlineLatexExpressions(String text) {
     return text.replaceAllMapped(_inlineLatexExprRegex, (m) {
       final expr = m.group(1)?.trim() ?? '';
       if (expr.isEmpty) return '';
-      return '\$$expr\$';
+      final isBlock = expr.startsWith(r'\begin') || expr.contains(r'\\');
+      return isBlock ? '\$\$$expr\$\$' : '\$$expr\$';
     });
   }
 
-  /// Wraps raw LaTeX command text in `$...$`
+  /// Wraps raw LaTeX command text in `$...$` or `$$...$$`
   static String _wrapRawLatex(String body) {
     final trimmed = body.trim();
-    if (!trimmed.startsWith(r'$') && !trimmed.endsWith(r'$')) {
-      return '\$$trimmed\$';
+    if (!trimmed.startsWith(r'$') &&
+        !trimmed.endsWith(r'$') &&
+        !trimmed.startsWith(r'\(') &&
+        !trimmed.startsWith(r'\[')) {
+      final isBlock = trimmed.startsWith(r'\begin') ||
+          trimmed.contains(r'\\') ||
+          trimmed.contains('\n');
+      return isBlock ? '\$\$$trimmed\$\$' : '\$$trimmed\$';
     }
     return body;
   }

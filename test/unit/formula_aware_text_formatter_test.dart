@@ -80,5 +80,20 @@ Options:
       expect(result, contains(r'• D. $\mathrm{Cu(NO_3)_2 + 2NO_2 + 2H_2O}$'));
       expect(result, startsWith('Copper metal will react with concentrated trioxonitrate (V) acid to give?'));
     });
+
+    test('wraps raw LaTeX summation, integral, and matrix environments', () {
+      expect(FormulaAwareTextFormatter.formatFormulaAware(r'\sum_{i=1}^{n} x_i'), r'$\sum_{i=1}^{n} x_i$');
+      expect(FormulaAwareTextFormatter.formatFormulaAware(r'\int_{a}^{b} f(x) dx'), r'$\int_{a}^{b} f(x) dx$');
+      expect(
+        FormulaAwareTextFormatter.formatFormulaAware(r'\begin{pmatrix} a & b \\ c & d \end{pmatrix}'),
+        r'$$\begin{pmatrix} a & b \\ c & d \end{pmatrix}$$',
+      );
+    });
+
+    test('wraps raw inline LaTeX expressions within English sentences', () {
+      const sentence = r'Here is \sum_{i=1}^{n} x_i in text';
+      final formatted = FormulaAwareTextFormatter.formatFormulaAware(sentence);
+      expect(formatted, contains(r'$\sum_{i=1}^{n} x_i$'));
+    });
   });
 }

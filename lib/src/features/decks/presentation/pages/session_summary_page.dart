@@ -453,11 +453,14 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () => _handleSafeExit(context),
-                    child: ColoredBox(
-                      color: Colors.black.withAlpha(isDark ? 150 : 90),
+                    child: ClipRect(
                       child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                        child: const SizedBox.expand(),
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          color: Colors.black.withValues(
+                            alpha: isDark ? 0.50 : 0.30,
+                          ),
+                        ),
                       ),
                     ),
                   ),

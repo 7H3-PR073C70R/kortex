@@ -24,7 +24,11 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: CreateDeckRoute.page),
     AutoRoute(page: OfflineFlashcardGenerationRoute.page),
     AutoRoute(page: StudySessionRoute.page),
-    AutoRoute(page: SessionSummaryRoute.page),
+    CustomRoute<void>(
+      page: SessionSummaryRoute.page,
+      opaque: false,
+      transitionsBuilder: TransitionsBuilders.fadeIn,
+    ),
     AutoRoute(page: MockExamLobbyRoute.page),
     AutoRoute(page: AnalyticsDetailRoute.page),
     AutoRoute(page: CourseModuleRoute.page),
