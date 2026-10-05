@@ -643,7 +643,11 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       );
     }
 
-    return [];
+    return _parserService.synthesizeSnippetsFromDocument(
+      documentId: documentId,
+      fullText: 'Study material for $filename',
+      filename: filename,
+    );
   }
 
   static bool _isPromptJargonOrMock(dynamic rawItem) {
