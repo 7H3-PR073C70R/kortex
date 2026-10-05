@@ -744,7 +744,7 @@ class QuizDuelWebSocketClient {
         subject.contains('bio') ||
         subject.contains('med')) {
       aiPersonalities = [
-        ('Dr. Folake', '🧬'),
+        ('Dr. Friday', '🧬'),
         ('Emeka', '🧪'),
         ('Curie', '💡'),
         ('Hauwa', '🩺'),
@@ -755,7 +755,7 @@ class QuizDuelWebSocketClient {
         ('Akintola', '🧠'),
         ('Abiodun', '💡'),
         ('Barry', '🚀'),
-        ('Taiwo', '🏆'),
+        ('Esther', '🏆'),
         ('Mark', '⚡'),
         ('Olatunde', '🌟'),
         ('Boluwatife', '🏛️'),

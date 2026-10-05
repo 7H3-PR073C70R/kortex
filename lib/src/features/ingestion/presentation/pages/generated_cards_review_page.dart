@@ -197,6 +197,8 @@ class _GeneratedCardsReviewView extends HookWidget {
         ],
       ),
       body: BlocConsumer<IngestionBloc, IngestionState>(
+        listenWhen: (previous, current) =>
+            previous.status != current.status,
         listener: (context, state) {
           if (state.status == ProcessingStatus.failed) {
             isSubmitting.value = false;
@@ -218,6 +220,10 @@ class _GeneratedCardsReviewView extends HookWidget {
             }
 
             final generatedDeckId = state.generatedDeck!.id;
+
+            context.read<IngestionBloc>().add(
+              const ResetIngestionStateEvent(),
+            );
 
             unawaited(
               context.router.replaceAll([

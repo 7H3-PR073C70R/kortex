@@ -1218,7 +1218,14 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     if (storage != null) {
       unawaited(storage.deletePreference(key: pendingIngestionJobKey));
     }
-    emit(const IngestionState());
+    emit(
+      IngestionState(
+        userDocuments: state.userDocuments,
+        lmsCourses: state.lmsCourses,
+        selectedCourse: state.selectedCourse,
+        attachedDocumentIds: state.attachedDocumentIds,
+      ),
+    );
   }
 
   @override

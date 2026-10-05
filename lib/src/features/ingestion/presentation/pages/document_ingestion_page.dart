@@ -15,6 +15,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
@@ -95,6 +96,9 @@ class _DocumentIngestionView extends HookWidget {
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
       body: BlocConsumer<IngestionBloc, IngestionState>(
+        listenWhen: (previous, current) =>
+            previous.status != current.status &&
+            current.status == ProcessingStatus.completed,
         listener: (context, state) {
           if (state.status == ProcessingStatus.completed) {
             if (state.wasDeduplicated &&
@@ -108,6 +112,9 @@ class _DocumentIngestionView extends HookWidget {
                     : l10n.dedupExistingDeckAssigned,
                 type: SnackBarType.success,
               );
+              context.read<IngestionBloc>().add(
+                const ResetIngestionStateEvent(),
+              );
             } else if (state.snippets.isNotEmpty &&
                 state.currentDocument != null) {
               if (state.wasDeduplicated) {
@@ -118,25 +125,31 @@ class _DocumentIngestionView extends HookWidget {
               }
 
               final doc = state.currentDocument!;
+              final snippets = List<OcrExtractionEntity>.from(state.snippets);
               final rawSubject = doc.filename.split('.').first;
               final cleanCode = rawSubject
                   .replaceAll(RegExp(r'[^a-zA-Z0-9\s_-]'), '')
                   .trim();
 
+              // Reset BLoC state so tab switching or reloads won't re-trigger navigation
+              context.read<IngestionBloc>().add(
+                const ResetIngestionStateEvent(),
+              );
+
               // Background pgvector RAG auto-chunking & embeddings generation
-              if (state.snippets.isNotEmpty &&
+              if (snippets.isNotEmpty &&
                   locator.isRegistered<GenerateDocumentEmbeddingsUseCase>()) {
                 unawaited(
                   locator<GenerateDocumentEmbeddingsUseCase>()(
                     documentId: doc.id,
-                    snippets: state.snippets,
+                    snippets: snippets,
                     metadata: {
                       'filename': doc.filename,
                       'documentTitle': doc.filename.split('.').first,
                       'courseCode': cleanCode.isNotEmpty
                           ? cleanCode
                           : (courseCode ?? 'GENERAL'),
-                      'extractedSnippetsCount': state.snippets.length,
+                      'extractedSnippetsCount': snippets.length,
                     },
                   ),
                 );
@@ -146,9 +159,9 @@ class _DocumentIngestionView extends HookWidget {
               unawaited(
                 context.router.push(
                   OcrPreviewRoute(
-                    documentId: state.currentDocument!.id,
-                    filename: state.currentDocument!.filename,
-                    snippets: state.snippets,
+                    documentId: doc.id,
+                    filename: doc.filename,
+                    snippets: snippets,
                     courseId: courseId,
                     courseCode: courseCode,
                     courseTitle: courseTitle,
