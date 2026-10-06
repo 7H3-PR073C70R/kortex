@@ -244,7 +244,7 @@ class ModelManager {
       if (entity is File) {
         final fileName = path.basename(entity.path);
         if (fileName.endsWith('.gguf') || fileName.endsWith('.safetensors')) {
-          if (await entity.length() >= 50 * 1024 * 1024) {
+          if (await entity.length() >= 80 * 1024 * 1024) {
             return entity.path;
           } else {
             try {

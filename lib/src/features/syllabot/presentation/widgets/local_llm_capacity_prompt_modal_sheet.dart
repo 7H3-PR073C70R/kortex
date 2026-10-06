@@ -83,9 +83,9 @@ class _LocalLlmCapacityPromptModalSheetState
   int _selectedModelIndex = 0;
   DeviceCapabilityReport? _report;
   bool _isLoadingReport = true;
-  bool _isDownloading = false;
-  double _downloadProgress = 0;
-  StreamSubscription<double>? _downloadSub;
+  bool _isDownloading = LocalLlmEngineClient.isGlobalDownloadActive;
+  double _downloadProgress = LocalLlmEngineClient.activeDownloadProgress;
+  StreamSubscription<ModelDownloadProgressState>? _downloadProgressSub;
 
   _LocalLlmModelSpec get _selectedModelSpec =>
       _kAvailableModels[_selectedModelIndex.clamp(0, _kAvailableModels.length - 1)];
@@ -93,6 +93,29 @@ class _LocalLlmCapacityPromptModalSheetState
   @override
   void initState() {
     super.initState();
+    if (LocalLlmEngineClient.isGlobalDownloadActive) {
+      _isDownloading = true;
+      _downloadProgress = LocalLlmEngineClient.activeDownloadProgress;
+    }
+    _downloadProgressSub = LocalLlmEngineClient.downloadProgressStream.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isDownloading = state.isDownloading;
+          _downloadProgress = state.progress;
+        });
+        if (!state.isDownloading && state.progress >= 1.0) {
+          context.showSnackBar(
+            message:
+                '${_selectedModelSpec.name} On-Device Neural Engine ready (${_selectedModelSpec.sizeLabel})! Activated.',
+            type: SnackBarType.success,
+          );
+          widget.onDownloadComplete?.call();
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(true);
+          }
+        }
+      }
+    });
     unawaited(_auditDevice());
   }
 
@@ -109,7 +132,7 @@ class _LocalLlmCapacityPromptModalSheetState
 
   @override
   void dispose() {
-    unawaited(_downloadSub?.cancel());
+    unawaited(_downloadProgressSub?.cancel());
     super.dispose();
   }
 
@@ -121,29 +144,11 @@ class _LocalLlmCapacityPromptModalSheetState
       _downloadProgress = 0.05;
     });
 
-    _downloadSub = client.downloadModel(preset: selectedModel.preset).listen(
-      (progress) {
-        if (mounted) {
-          setState(() {
-            _downloadProgress = progress;
-          });
-        }
-      },
-      onDone: () {
-        if (mounted) {
-          setState(() {
-            _isDownloading = false;
-            _downloadProgress = 1.0;
-          });
-          context.showSnackBar(
-            message: '${selectedModel.name} On-Device Neural Engine ready (${selectedModel.sizeLabel})! Activated.',
-            type: SnackBarType.success,
-          );
-          widget.onDownloadComplete?.call();
-          Navigator.of(context).pop(true);
-        }
-      },
-      onError: (Object error) {
+    unawaited(
+      client
+          .downloadModel(preset: selectedModel.preset)
+          .drain<void>()
+          .catchError((Object error) {
         if (mounted) {
           setState(() {
             _isDownloading = false;
@@ -153,7 +158,7 @@ class _LocalLlmCapacityPromptModalSheetState
             type: SnackBarType.error,
           );
         }
-      },
+      }),
     );
   }
 

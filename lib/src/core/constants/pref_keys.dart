@@ -19,6 +19,10 @@ class PrefKeys {
       '__kortex_has_completed_interactive_tour__';
   static const String syllabotSocraticMode =
       '__kortex_syllabot_socratic_mode__';
+  static const String syllabotActiveLocalModelId =
+      '__kortex_syllabot_active_local_model_id__';
+  static const String syllabotActiveLocalModelPath =
+      '__kortex_syllabot_active_local_model_path__';
   static const String syllabotVoiceGender = '__kortex_syllabot_voice_gender__';
   static const String syllabotVoiceName = '__kortex_syllabot_voice_name__';
   static const String kokoroVoiceName = '__kortex_kokoro_voice_name__';

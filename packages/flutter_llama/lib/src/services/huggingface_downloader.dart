@@ -125,52 +125,64 @@ class HuggingFaceDownloader {
       }
       
       final filePath = path.join(modelDir.path, fileName);
+      final tempFilePath = '$filePath.tmp';
       final file = File(filePath);
-      
+      final tempFile = File(tempFilePath);
+
+      // Clean up stale temporary download file if present
+      if (await tempFile.exists()) {
+        try {
+          await tempFile.delete();
+        } catch (_) {}
+      }
+
       if (await file.exists() && !force) {
         final size = await file.length();
-        if (size >= 50 * 1024 * 1024) {
+        // Verify file is complete (at least 80MB) rather than accepting partial downloads
+        if (size >= 80 * 1024 * 1024) {
           onProgress?.call(DownloadProgress(
             progress: 1.0,
-            status: 'Файл уже существует',
+            status: 'Model file verified',
             downloadedBytes: size,
             totalBytes: size,
           ));
-          
+
           if (kDebugMode) {
-            print('[HuggingFaceDownloader] File already exists: $filePath');
+            print('[HuggingFaceDownloader] File already exists and verified: $filePath ($size bytes)');
           }
-          
+
           return filePath;
         } else {
           if (kDebugMode) {
             print('[HuggingFaceDownloader] Deleting incomplete/corrupted file ($size bytes): $filePath');
           }
-          await file.delete();
+          try {
+            await file.delete();
+          } catch (_) {}
         }
       }
-      
+
       final url = '$baseUrl/$modelId/resolve/$branch/$fileName';
-      
+
       if (kDebugMode) {
         print('[HuggingFaceDownloader] Downloading from: $url');
       }
-      
+
       onProgress?.call(const DownloadProgress(
         progress: 0.0,
         status: 'Connecting to HuggingFace...',
       ));
-      
+
       final client = HttpClient();
       var currentUri = Uri.parse(url);
       HttpClientResponse? response;
-      
+
       for (var redirectCount = 0; redirectCount < 10; redirectCount++) {
         final request = await client.getUrl(currentUri);
         request.headers.set(HttpHeaders.userAgentHeader, 'Kortex/1.0 (Mobile)');
         request.followRedirects = false;
         final res = await request.close();
-        
+
         if (res.statusCode == HttpStatus.movedPermanently ||
             res.statusCode == HttpStatus.found ||
             res.statusCode == HttpStatus.seeOther ||
@@ -186,17 +198,17 @@ class HuggingFaceDownloader {
         response = res;
         break;
       }
-      
+
       if (response == null || response.statusCode != 200) {
         final status = response?.statusCode;
         client.close();
         throw Exception('Download failed: HTTP $status');
       }
-      
+
       final contentLength = response.contentLength;
       var receivedBytes = 0;
-      final sink = file.openWrite();
-      
+      final sink = tempFile.openWrite();
+
       try {
         onProgress?.call(DownloadProgress(
           progress: 0.0,
@@ -204,11 +216,11 @@ class HuggingFaceDownloader {
           downloadedBytes: 0,
           totalBytes: contentLength > 0 ? contentLength : null,
         ));
-        
+
         await for (final chunk in response) {
           sink.add(chunk);
           receivedBytes += chunk.length;
-          
+
           if (contentLength > 0) {
             final progress = receivedBytes / contentLength;
             onProgress?.call(DownloadProgress(
@@ -225,31 +237,51 @@ class HuggingFaceDownloader {
             ));
           }
         }
+      } catch (e) {
+        try {
+          await sink.close();
+          if (await tempFile.exists()) {
+            await tempFile.delete();
+          }
+        } catch (_) {}
+        rethrow;
       } finally {
         await sink.flush();
         await sink.close();
         client.close();
       }
-      
-      final fileSize = await file.length();
-      
-      if (contentLength > 0 && fileSize != contentLength) {
-        await file.delete();
-        throw Exception('Download incomplete: expected $contentLength bytes, got $fileSize');
+
+      final tempSize = await tempFile.length();
+
+      if (contentLength > 0 && tempSize != contentLength) {
+        try {
+          if (await tempFile.exists()) {
+            await tempFile.delete();
+          }
+        } catch (_) {}
+        throw Exception('Download incomplete: expected $contentLength bytes, got $tempSize');
       }
-      
+
+      // Download complete & verified! Atomically promote temp file to final .gguf model file
+      if (await file.exists()) {
+        try {
+          await file.delete();
+        } catch (_) {}
+      }
+      await tempFile.rename(filePath);
+
       onProgress?.call(DownloadProgress(
         progress: 1.0,
-        status: 'Загрузка завершена',
-        downloadedBytes: fileSize,
-        totalBytes: fileSize,
+        status: 'Download completed',
+        downloadedBytes: tempSize,
+        totalBytes: tempSize,
       ));
-      
+
       if (kDebugMode) {
-        print('[HuggingFaceDownloader] Download completed: $filePath');
-        print('[HuggingFaceDownloader] File size: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
+        print('[HuggingFaceDownloader] Download completed and verified: $filePath');
+        print('[HuggingFaceDownloader] File size: ${(tempSize / 1024 / 1024).toStringAsFixed(2)} MB');
       }
-      
+
       return filePath;
     } catch (e) {
       if (kDebugMode) {
@@ -342,10 +374,12 @@ class HuggingFaceDownloader {
       final file = File(filePath);
       
       if (await file.exists()) {
-        if (await file.length() >= 50 * 1024 * 1024) {
+        if (await file.length() >= 80 * 1024 * 1024) {
           return filePath;
         }
-        await file.delete();
+        try {
+          await file.delete();
+        } catch (_) {}
       }
       
       return null;

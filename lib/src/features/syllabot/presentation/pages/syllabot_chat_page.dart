@@ -112,9 +112,8 @@ class _SyllabotChatView extends HookWidget {
     final isAiSpeaking = useValueListenable(ttsHandler.isSpeakingNotifier);
 
     final calibrationProfileState = useState<CalibrationProfile?>(null);
-    final isDownloadingModel = useState<bool>(false);
-    final downloadProgress = useState<double>(0);
-    final downloadSubscription = useRef<StreamSubscription<double>?>(null);
+    final isDownloadingModel = useState<bool>(LocalLlmEngineClient.isGlobalDownloadActive);
+    final downloadProgress = useState<double>(LocalLlmEngineClient.activeDownloadProgress);
     final lastAnnouncedDeckId = useRef<String?>(null);
     final isGeneratingRef = useRef<bool>(false);
 
@@ -132,10 +131,58 @@ class _SyllabotChatView extends HookWidget {
             );
           }),
         );
-        return () {
-          if (downloadSubscription.value != null) {
-            unawaited(downloadSubscription.value!.cancel());
+
+        final client = locator.isRegistered<LocalLlmEngineClient>()
+            ? locator<LocalLlmEngineClient>()
+            : LocalLlmEngineClient();
+
+        // 1. Initial sync of model download state & default fallback to Cloud AI
+        if (LocalLlmEngineClient.isGlobalDownloadActive) {
+          isDownloadingModel.value = true;
+          downloadProgress.value = LocalLlmEngineClient.activeDownloadProgress;
+        }
+
+        unawaited(
+          client.checkModelDownloaded().then((hasDownloaded) {
+            if (context.mounted) {
+              final isDownloading = LocalLlmEngineClient.isGlobalDownloadActive;
+              if (!hasDownloaded || isDownloading) {
+                final bloc = context.read<SyllabotChatBloc>();
+                if (bloc.state.engineType == ExecutionEngineType.localOnDevice) {
+                  bloc.add(const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote));
+                }
+              }
+            }
+          }),
+        );
+
+        // 2. Listen to global download progress stream across all screens
+        final downloadSub = LocalLlmEngineClient.downloadProgressStream.listen((state) {
+          if (context.mounted) {
+            isDownloadingModel.value = state.isDownloading;
+            downloadProgress.value = state.progress;
+
+            final bloc = context.read<SyllabotChatBloc>();
+            if (state.isDownloading) {
+              if (bloc.state.engineType == ExecutionEngineType.localOnDevice) {
+                bloc.add(const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote));
+              }
+            } else {
+              unawaited(
+                client.checkModelDownloaded().then((hasDownloaded) {
+                  if (context.mounted &&
+                      !hasDownloaded &&
+                      bloc.state.engineType == ExecutionEngineType.localOnDevice) {
+                    bloc.add(const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote));
+                  }
+                }),
+              );
+            }
           }
+        });
+
+        return () {
+          unawaited(downloadSub.cancel());
           ttsHandler.dispose();
         };
       },
@@ -195,6 +242,19 @@ class _SyllabotChatView extends HookWidget {
         return;
       }
 
+      // If download is currently active, prevent switching to local engine
+      if (LocalLlmEngineClient.isGlobalDownloadActive) {
+        if (pageContext.mounted) {
+          pageContext.showSnackBar(
+            message: 'Model download is in progress. Using Cloud AI until download completes.',
+          );
+          pageContext.read<SyllabotChatBloc>().add(
+            const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
+          );
+        }
+        return;
+      }
+
       // Check device capacity (CPU cores, available memory, storage)
       final capabilityService = DeviceCapabilityService();
       final report = await capabilityService.auditDeviceCapacity();
@@ -219,6 +279,11 @@ class _SyllabotChatView extends HookWidget {
 
       if (!isDownloaded) {
         if (pageContext.mounted) {
+          // Default to Cloud AI while prompt modal is open or downloading
+          pageContext.read<SyllabotChatBloc>().add(
+            const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
+          );
+
           final downloaded = await LocalLlmCapacityPromptModalSheet.show(
             pageContext,
             onDownloadComplete: () {
@@ -253,9 +318,6 @@ class _SyllabotChatView extends HookWidget {
     }
 
     void cancelModelDownload(BuildContext pageContext) {
-      if (downloadSubscription.value != null) {
-        unawaited(downloadSubscription.value!.cancel());
-      }
       isDownloadingModel.value = false;
       pageContext.showSnackBar(
         message: 'On-Device Engine download cancelled.',

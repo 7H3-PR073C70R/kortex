@@ -15,6 +15,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
@@ -99,6 +100,46 @@ class SyllabotAiSettingsPage extends HookWidget {
     final availableVoices = useState<List<Map<String, dynamic>>>([]);
     final isLoadingVoices = useState<bool>(true);
 
+    final localModels = useState<List<LocalLlmModelInfo>>([]);
+    final isLoadingLocalModels = useState<bool>(true);
+    final isGlobalDownloadActive = useState<bool>(LocalLlmEngineClient.isGlobalDownloadActive);
+    final activeDownloadingModelId = useState<String?>(LocalLlmEngineClient.activeDownloadingModelId);
+
+    final localClient = useMemoized(() {
+      return locator.isRegistered<LocalLlmEngineClient>()
+          ? locator<LocalLlmEngineClient>()
+          : LocalLlmEngineClient();
+    }, const []);
+
+    final refreshLocalModels = useCallback(() async {
+      final models = await localClient.getAvailableModels();
+      localModels.value = models;
+      isLoadingLocalModels.value = false;
+    }, [localClient]);
+
+    useEffect(() {
+      var isMounted = true;
+      unawaited(refreshLocalModels());
+
+      final sub = LocalLlmEngineClient.downloadProgressStream.listen((state) {
+        if (isMounted) {
+          if (isGlobalDownloadActive.value != state.isDownloading ||
+              activeDownloadingModelId.value != state.modelId) {
+            isGlobalDownloadActive.value = state.isDownloading;
+            activeDownloadingModelId.value = state.isDownloading ? state.modelId : null;
+          }
+          if (!state.isDownloading) {
+            unawaited(refreshLocalModels());
+          }
+        }
+      });
+
+      return () {
+        isMounted = false;
+        unawaited(sub.cancel());
+      };
+    }, const []);
+
     final ttsHandler = useMemoized(
       () => TextToSpeechHandler(
         localStorageService: storage,
@@ -136,7 +177,7 @@ class SyllabotAiSettingsPage extends HookWidget {
         breadcrumbs: [
           AppBreadcrumbItem(
             label: 'Profile & Settings',
-            onTap: () => context.router.maybePop(),
+            onTap: () => unawaited(context.router.maybePop()),
           ),
           const AppBreadcrumbItem(label: 'Syllabot AI & Neural Engine'),
         ],
@@ -333,7 +374,373 @@ class SyllabotAiSettingsPage extends HookWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Section 2: Voice Dialogue Persona & AI Character
+                  // Section 2: On-Device Local LLM Models & Engine Management
+                  _buildSectionContainer(
+                    title: 'ON-DEVICE NEURAL MODELS',
+                    subtitle:
+                        'Switch active local model, download neural weights, or delete models to free disk space (Only 1 active download allowed per device)',
+                    colors: colors,
+                    typography: typography,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Active Download Progress Lock Banner
+                        const _ActiveDownloadProgressBanner(),
+
+                        if (isLoadingLocalModels.value)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Center(child: CircularProgressIndicator.adaptive()),
+                          )
+                        else
+                          Column(
+                            children: localModels.value.map((model) {
+                              final isDownloadingThisModel =
+                                  activeDownloadingModelId.value == model.id;
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: model.isActive
+                                        ? colors.primary.withAlpha(isDark ? 35 : 18)
+                                        : colors.surfaceSecondary,
+                                    borderRadius: AppRadius.radiusCard,
+                                    border: Border.all(
+                                      color: model.isActive
+                                          ? colors.primary.withAlpha(isDark ? 110 : 80)
+                                          : colors.surfaceBorder.withAlpha(70),
+                                      width: model.isActive ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: colors.primary.withAlpha(25),
+                                              borderRadius: AppRadius.radiusBadge,
+                                            ),
+                                            child: Icon(
+                                              Icons.memory_rounded,
+                                              size: 20,
+                                              color: colors.primary,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Flexible(
+                                                      child: Text(
+                                                        model.name,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: typography.body.bold.copyWith(
+                                                          color: colors.textPrimary,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    if (model.isActive)
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 2,
+                                                        ),
+                                                        decoration: BoxDecoration(
+                                                          color: colors.primary,
+                                                          borderRadius: AppRadius.radiusMicro,
+                                                        ),
+                                                        child: Text(
+                                                          'ACTIVE ENGINE',
+                                                          style: typography.caption.bold.copyWith(
+                                                            color: colors.white,
+                                                            fontSize: 9,
+                                                            letterSpacing: 0.5,
+                                                          ),
+                                                        ),
+                                                      )
+                                                    else if (model.isDownloaded)
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 2,
+                                                        ),
+                                                        decoration: BoxDecoration(
+                                                          color: colors.success.withAlpha(30),
+                                                          borderRadius: AppRadius.radiusMicro,
+                                                          border: Border.all(
+                                                            color: colors.success.withAlpha(80),
+                                                            width: 0.8,
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          'DOWNLOADED',
+                                                          style: typography.caption.bold.copyWith(
+                                                            color: colors.success,
+                                                            fontSize: 9,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  model.description,
+                                                  style: typography.caption.regular.copyWith(
+                                                    color: colors.textSecondary,
+                                                    fontSize: 11.5,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Text(
+                                            model.sizeLabel,
+                                            style: typography.caption.bold.copyWith(
+                                              color: colors.textSecondary,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          if (model.isDownloaded) ...[
+                                            if (!model.isActive)
+                                              ShrinkableButton(
+                                                onTap: () async {
+                                                  AppFeedback.selection();
+                                                  try {
+                                                    await localClient.setActiveModel(model.id);
+                                                    await refreshLocalModels();
+                                                    if (context.mounted) {
+                                                      context.showSnackBar(
+                                                        message: '${model.name} is now the active on-device neural engine!',
+                                                        type: SnackBarType.success,
+                                                      );
+                                                    }
+                                                  } on Object catch (e) {
+                                                    if (context.mounted) {
+                                                      context.showSnackBar(
+                                                        message: 'Failed to set active model: $e',
+                                                        type: SnackBarType.error,
+                                                      );
+                                                    }
+                                                  }
+                                                },
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 7,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: colors.primary.withAlpha(25),
+                                                    borderRadius: AppRadius.radiusBadge,
+                                                    border: Border.all(
+                                                      color: colors.primary.withAlpha(80),
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.check_circle_outline_rounded,
+                                                        size: 14,
+                                                        color: colors.primary,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        'Switch to Active',
+                                                        style: typography.caption.bold.copyWith(
+                                                          color: colors.primary,
+                                                          fontSize: 11,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            const SizedBox(width: 8),
+                                            ShrinkableButton(
+                                              onTap: () async {
+                                                AppFeedback.light();
+                                                final confirmed = await showDialog<bool>(
+                                                  context: context,
+                                                  builder: (dialogCtx) => AlertDialog(
+                                                    backgroundColor: colors.surfacePrimary,
+                                                    title: Text(
+                                                      'Delete Model Weights?',
+                                                      style: typography.body.bold.copyWith(
+                                                        color: colors.textPrimary,
+                                                      ),
+                                                    ),
+                                                    content: Text(
+                                                      'Are you sure you want to delete ${model.name} weights (${model.sizeLabel}) from local device storage?',
+                                                      style: typography.caption.regular.copyWith(
+                                                        color: colors.textSecondary,
+                                                      ),
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.of(dialogCtx).pop(false),
+                                                        child: const Text('Cancel'),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () => Navigator.of(dialogCtx).pop(true),
+                                                        child: Text(
+                                                          'Delete',
+                                                          style: TextStyle(color: colors.error),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+
+                                                if (confirmed == true) {
+                                                  await localClient.deleteModel(model.id);
+                                                  await refreshLocalModels();
+                                                  if (context.mounted) {
+                                                    context.showSnackBar(
+                                                      message: '${model.name} weights deleted successfully.',
+                                                    );
+                                                  }
+                                                }
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 10,
+                                                  vertical: 7,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: colors.error.withAlpha(20),
+                                                  borderRadius: AppRadius.radiusBadge,
+                                                  border: Border.all(
+                                                    color: colors.error.withAlpha(60),
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.delete_outline_rounded,
+                                                      size: 14,
+                                                      color: colors.error,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      'Delete',
+                                                      style: typography.caption.bold.copyWith(
+                                                        color: colors.error,
+                                                        fontSize: 11,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ] else ...[
+                                            ShrinkableButton(
+                                              onTap: isDownloadingThisModel ||
+                                                      LocalLlmEngineClient.isGlobalDownloadActive
+                                                  ? () {
+                                                      AppFeedback.light();
+                                                      context.showSnackBar(
+                                                        message:
+                                                            'Another model download is already in progress on this device.',
+                                                      );
+                                                    }
+                                                  : () {
+                                                      AppFeedback.light();
+                                                      try {
+                                                        unawaited(
+                                                          localClient
+                                                              .downloadModel(preset: model.preset)
+                                                              .drain<void>()
+                                                              .catchError((Object err) {
+                                                            if (context.mounted) {
+                                                              context.showSnackBar(
+                                                                message: 'Download failed: $err',
+                                                                type: SnackBarType.error,
+                                                              );
+                                                            }
+                                                          }),
+                                                        );
+                                                      } on LocalLlmAlreadyDownloadingException catch (e) {
+                                                        if (context.mounted) {
+                                                          context.showSnackBar(
+                                                            message: e.message,
+                                                          );
+                                                        }
+                                                      }
+                                                    },
+                                              child: AnimatedContainer(
+                                                duration: AppMotion.snappy,
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 14,
+                                                  vertical: 7.5,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: LocalLlmEngineClient.isGlobalDownloadActive
+                                                      ? colors.surfaceSecondary
+                                                      : colors.primary,
+                                                  borderRadius: AppRadius.radiusBadge,
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.download_rounded,
+                                                      size: 14,
+                                                      color: LocalLlmEngineClient.isGlobalDownloadActive
+                                                          ? colors.textSecondary
+                                                          : colors.white,
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      isDownloadingThisModel
+                                                          ? 'Downloading...'
+                                                          : LocalLlmEngineClient.isGlobalDownloadActive
+                                                              ? 'Download Locked'
+                                                              : 'Download Model',
+                                                      style: typography.caption.bold.copyWith(
+                                                        color: LocalLlmEngineClient.isGlobalDownloadActive
+                                                            ? colors.textSecondary
+                                                            : colors.white,
+                                                        fontSize: 11.5,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Section 3: Voice Dialogue Persona & AI Character
                   _buildSectionContainer(
                     title: 'VOICE DIALOGUE & TUTOR PERSONA',
                     subtitle: 'Select personality archetype and audio characteristics',
@@ -669,15 +1076,19 @@ class SyllabotAiSettingsPage extends HookWidget {
                           children: [
                             Row(
                               children: [
-                                Text(
-                                  'KOKORO ON-DEVICE & EDGE NEURAL VOICE',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.textSecondary.withAlpha(140),
-                                    fontSize: 10,
-                                    letterSpacing: 0.8,
+                                Expanded(
+                                  child: Text(
+                                    'HIGH-QUALITY NEURAL VOICE',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.textSecondary.withAlpha(140),
+                                      fontSize: 10,
+                                      letterSpacing: 0.8,
+                                    ),
                                   ),
                                 ),
-                                const Spacer(),
+                                const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 6,
@@ -699,14 +1110,14 @@ class SyllabotAiSettingsPage extends HookWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Offline-capable ONNX Kokoro voice with automatic cloud Microsoft Edge neural acceleration when online.',
+                              'Offline-capable high-quality neural voice with automatic cloud acceleration when online.',
                               style: typography.caption.regular.copyWith(
                                 color: colors.textSecondary,
                                 fontSize: 11,
                               ),
                             ),
                             const SizedBox(height: 12),
-                            // Kokoro Voice Cards Grid
+                            // Voice Cards Grid
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -844,7 +1255,7 @@ class SyllabotAiSettingsPage extends HookWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      'Tiered: Edge Neural (Online) → Kokoro 24 kHz (Offline) → System Fallback',
+                                      'Tiered: Cloud Neural (Online) → On-Device Neural (Offline) → System Fallback',
                                       style: typography.caption.medium.copyWith(
                                         color: colors.textSecondary,
                                         fontSize: 10.5,
@@ -1118,5 +1529,181 @@ class SyllabotAiSettingsPage extends HookWidget {
       case SocraticMode.feynmanTeachBack:
         return '🧠';
     }
+  }
+}
+
+/// Standalone isolated progress banner widget that subscribes to
+/// [LocalLlmEngineClient.downloadProgressStream] without triggering
+/// full parent page rebuilds during scrolling.
+class _ActiveDownloadProgressBanner extends HookWidget {
+  const _ActiveDownloadProgressBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    final activeDownloadState = useState<ModelDownloadProgressState?>(
+      LocalLlmEngineClient.isGlobalDownloadActive
+          ? ModelDownloadProgressState(
+              modelId: LocalLlmEngineClient.activeDownloadingModelId ?? '',
+              modelName: LocalLlmEngineClient.activeDownloadingModelName ?? 'Model',
+              progress: LocalLlmEngineClient.activeDownloadProgress,
+              isDownloading: true,
+            )
+          : null,
+    );
+
+    useEffect(() {
+      var isMounted = true;
+      final sub = LocalLlmEngineClient.downloadProgressStream.listen((state) {
+        if (isMounted) {
+          activeDownloadState.value = state;
+        }
+      });
+      return () {
+        isMounted = false;
+        unawaited(sub.cancel());
+      };
+    }, const []);
+
+    final download = activeDownloadState.value;
+    if (download == null) {
+      return const SizedBox.shrink();
+    }
+
+    if (!download.isDownloading && download.errorMessage != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: colors.error.withAlpha(isDark ? 35 : 20),
+              borderRadius: AppRadius.radiusCard,
+              border: Border.all(
+                color: colors.error.withAlpha(isDark ? 100 : 70),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: colors.error,
+                  size: 22,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Download Interrupted',
+                        style: typography.body.bold.copyWith(
+                          color: colors.error,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        download.errorMessage!,
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      );
+    }
+
+    if (!download.isDownloading) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: colors.primary.withAlpha(isDark ? 35 : 20),
+            borderRadius: AppRadius.radiusCard,
+            border: Border.all(
+              color: colors.primary.withAlpha(isDark ? 100 : 70),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(40),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.downloading_rounded,
+                      size: 16,
+                      color: colors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Downloading ${download.modelName}...',
+                          style: typography.body.bold.copyWith(
+                            color: colors.primary,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          'Single active download lock enforced across device',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    '${(download.progress * 100).toInt()}%',
+                    style: typography.caption.bold.copyWith(
+                      color: colors.primary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: AppRadius.radiusMicro,
+                child: LinearProgressIndicator(
+                  value: download.progress,
+                  backgroundColor: colors.surfaceSecondary,
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
+                  minHeight: 6,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
   }
 }

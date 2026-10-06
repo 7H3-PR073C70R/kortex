@@ -27,6 +27,7 @@ class ChatBubbleWidget extends StatefulWidget {
     this.onRetry,
     this.onConvertToCard,
     this.isStreaming = false,
+    this.showSpeakButton = true,
     super.key,
   });
 
@@ -35,6 +36,7 @@ class ChatBubbleWidget extends StatefulWidget {
   final VoidCallback? onRetry;
   final VoidCallback? onConvertToCard;
   final bool isStreaming;
+  final bool showSpeakButton;
 
   @override
   State<ChatBubbleWidget> createState() => _ChatBubbleWidgetState();
@@ -222,7 +224,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               // 1. Read Aloud TTS button
-                              if (!widget.message.isError)
+                              if (!widget.message.isError && widget.showSpeakButton)
                                 PlatformHoverBuilder(
                                   builder: (context, isHovered, child) {
                                     return ShrinkableButton(
