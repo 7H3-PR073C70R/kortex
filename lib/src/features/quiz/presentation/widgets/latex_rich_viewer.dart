@@ -325,6 +325,29 @@ class LatexRichViewer extends StatelessWidget {
           fontFamilyFallback: _fontFamilyFallbacks,
         );
 
+    // Fast-path for plain text without markdown, latex, or linebreaks
+    if (!cleanText.contains(r'$') &&
+        !cleanText.contains(r'\') &&
+        !cleanText.contains('*') &&
+        !cleanText.contains('_') &&
+        !cleanText.contains('`') &&
+        !cleanText.contains('~') &&
+        !cleanText.contains('#') &&
+        !cleanText.contains('>') &&
+        !cleanText.contains('\n')) {
+      final isRtl = forceRtl ?? isRtlString(cleanText);
+      return Text(
+        cleanText,
+        style: defaultStyle,
+        textAlign: textAlign == TextAlign.center
+            ? TextAlign.center
+            : (isRtl ? TextAlign.right : textAlign),
+        maxLines: maxLines,
+        overflow: overflow,
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      );
+    }
+
     // Split text into structural blocks (code blocks / block math)
     final hasStructuralBlocks = _structuralBlockRegex.hasMatch(cleanText);
     if (hasStructuralBlocks) {

@@ -233,7 +233,7 @@ class ForumThreadDetailPage extends HookWidget {
       }
     }
 
-    // Initial check for thread subscription and bookmark state
+    // Initial check for thread subscription and bookmark state (deferred post-frame for zero-latency route transition)
     useEffect(() {
       Future<void> checkSubscriptionAndBookmark() async {
         final subRes = await repo.isForumPostSubscribed(post.id);
@@ -280,30 +280,35 @@ class ForumThreadDetailPage extends HookWidget {
         );
       }
 
-      // WebSocket Realtime Stream for live thread replies
-      final wsSubscription = repo.watchForumReplies(post.id).listen((
-        incomingReplies,
-      ) {
-        if (incomingReplies.isNotEmpty) {
-          final existingMap = {for (final r in localReplies.value) r.id: r};
-          var updated = false;
-          for (final reply in incomingReplies) {
-            if (!existingMap.containsKey(reply.id) ||
-                existingMap[reply.id] != reply) {
-              existingMap[reply.id] = reply;
-              updated = true;
+      StreamSubscription<List<ForumReplyEntity>>? wsSubscription;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // WebSocket Realtime Stream for live thread replies
+        wsSubscription = repo.watchForumReplies(post.id).listen((
+          incomingReplies,
+        ) {
+          if (incomingReplies.isNotEmpty) {
+            final existingMap = {for (final r in localReplies.value) r.id: r};
+            var updated = false;
+            for (final reply in incomingReplies) {
+              if (!existingMap.containsKey(reply.id) ||
+                  existingMap[reply.id] != reply) {
+                existingMap[reply.id] = reply;
+                updated = true;
+              }
+            }
+            if (updated) {
+              localReplies.value = existingMap.values.toList();
             }
           }
-          if (updated) {
-            localReplies.value = existingMap.values.toList();
-          }
-        }
+        });
+
+        unawaited(checkSubscriptionAndBookmark());
+        unawaited(initialLoadThreadTree());
       });
 
-      unawaited(checkSubscriptionAndBookmark());
-      unawaited(initialLoadThreadTree());
       return () {
-        unawaited(wsSubscription.cancel());
+        unawaited(wsSubscription?.cancel());
       };
     }, [post.id]);
 
@@ -386,10 +391,15 @@ class ForumThreadDetailPage extends HookWidget {
       }
     }
 
+    final isFirstSortEffect = useRef<bool>(true);
     useEffect(() {
+      if (isFirstSortEffect.value) {
+        isFirstSortEffect.value = false;
+        return null;
+      }
       unawaited(fetchTopLevelReplies());
       return null;
-    }, [post.id, sortFilter.value]);
+    }, [sortFilter.value]);
 
     useEffect(() {
       if (highlightReplyId != null && highlightReplyId!.isNotEmpty) {
@@ -2029,61 +2039,93 @@ class ForumThreadDetailPage extends HookWidget {
                                       // OP Interactive Action Bar (Vote Group Pill, Replies Count, Bookmark, Share)
                                       Row(
                                         children: [
-                                          // Vote Group Pill
-                                          _ForumPostVotePill(
-                                            netVotes:
-                                                currentPost.value.netVotes,
-                                            userVote:
-                                                currentPost.value.userVote,
-                                            onUpvote: () => votePost(1),
-                                            onDownvote: () => votePost(-1),
+                                          // Left cluster scales down on narrow
+                                          // panes so the trailing buttons never overflow.
+                                          Expanded(
+                                            child: Align(
+                                              alignment: AlignmentDirectional
+                                                  .centerStart,
+                                              child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment: AlignmentDirectional
+                                                    .centerStart,
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    // Vote Group Pill
+                                                    _ForumPostVotePill(
+                                                      netVotes: currentPost
+                                                          .value
+                                                          .netVotes,
+                                                      userVote: currentPost
+                                                          .value
+                                                          .userVote,
+                                                      onUpvote: () =>
+                                                          votePost(1),
+                                                      onDownvote: () =>
+                                                          votePost(-1),
+                                                    ),
+                                                    const SizedBox(width: 8),
+
+                                                    // Replies Count Indicator
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 10,
+                                                            vertical: 6,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: isDark
+                                                            ? colors
+                                                                  .surfacePrimary
+                                                                  .withAlpha(
+                                                                    160,
+                                                                  )
+                                                            : colors
+                                                                  .surfaceSecondary
+                                                                  .withAlpha(
+                                                                    120,
+                                                                  ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              16,
+                                                            ),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons
+                                                                .chat_bubble_outline_rounded,
+                                                            size: 15,
+                                                            color: colors
+                                                                .textSecondary,
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 5,
+                                                          ),
+                                                          Text(
+                                                            '${localReplies.value.length}',
+                                                            style: typography
+                                                                .caption
+                                                                .bold
+                                                                .copyWith(
+                                                                  color: colors
+                                                                      .textSecondary,
+                                                                  fontSize: 12,
+                                                                ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
                                           ),
                                           const SizedBox(width: 8),
-
-                                          // Replies Count Indicator
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 6,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: isDark
-                                                  ? colors.surfacePrimary
-                                                        .withAlpha(
-                                                          160,
-                                                        )
-                                                  : colors.surfaceSecondary
-                                                        .withAlpha(
-                                                          120,
-                                                        ),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    16,
-                                                  ),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons
-                                                      .chat_bubble_outline_rounded,
-                                                  size: 15,
-                                                  color: colors.textSecondary,
-                                                ),
-                                                const SizedBox(width: 5),
-                                                Text(
-                                                  '${localReplies.value.length}',
-                                                  style: typography.caption.bold
-                                                      .copyWith(
-                                                        color: colors
-                                                            .textSecondary,
-                                                        fontSize: 12,
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const Spacer(),
 
                                           // Bookmark Button
                                           ShrinkableButton(

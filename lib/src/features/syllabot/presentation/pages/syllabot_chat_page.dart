@@ -355,6 +355,49 @@ class _SyllabotChatView extends HookWidget {
                 ? latestState.sessionId
                 : persistentSessionId;
 
+            final controller = StreamController<String>();
+            late final StreamSubscription<String> tokenSub;
+            late final StreamSubscription<SyllabotChatState> stateSub;
+
+            void cleanup() {
+              unawaited(tokenSub.cancel());
+              unawaited(stateSub.cancel());
+              if (!controller.isClosed) {
+                unawaited(controller.close());
+              }
+            }
+
+            tokenSub = bloc.streamTokens.listen(
+              (token) {
+                if (!controller.isClosed) {
+                  controller.add(token);
+                }
+              },
+              onError: (Object err) {
+                if (!controller.isClosed) {
+                  controller.addError(err);
+                  cleanup();
+                }
+              },
+            );
+
+            stateSub = bloc.stream.listen((state) {
+              if (state.status == SyllabotStatus.idle ||
+                  state.status == SyllabotStatus.error) {
+                if (state.status == SyllabotStatus.error &&
+                    !controller.isClosed) {
+                  final errorMsg = state.messages
+                      .where((m) => m.isError)
+                      .lastOrNull
+                      ?.text;
+                  controller.addError(
+                    errorMsg ?? 'Failed to stream Syllabot response',
+                  );
+                }
+                cleanup();
+              }
+            });
+
             bloc.add(
               SubmitPromptEvent(
                 prompt: voicePrompt,
@@ -364,8 +407,7 @@ class _SyllabotChatView extends HookWidget {
               ),
             );
 
-            // Forward real-time token stream directly from single BLoC engine pipeline
-            return bloc.streamTokens;
+            return controller.stream;
           },
         ),
       );

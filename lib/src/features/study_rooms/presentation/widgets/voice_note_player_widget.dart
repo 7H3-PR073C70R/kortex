@@ -49,7 +49,7 @@ class VoiceNotePlayerWidget extends StatefulWidget {
 }
 
 class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
-  late final AudioPlayer _player;
+  AudioPlayer? _player;
   bool _isPlaying = false;
   bool _isTranscriptExpanded = false;
   String? _currentTranscript;
@@ -64,6 +64,52 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
   StreamSubscription<Duration>? _posSub;
   StreamSubscription<Duration>? _durSub;
   StreamSubscription<void>? _completeSub;
+
+  AudioPlayer _ensurePlayerInitialized() {
+    if (_player != null) return _player!;
+    final p = AudioPlayer();
+    _stateSub = p.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state == PlayerState.playing;
+        });
+        if (state == PlayerState.playing) {
+          _startFallbackTimer();
+        } else {
+          _stopFallbackTimer();
+        }
+      }
+    });
+
+    _posSub = p.onPositionChanged.listen((pos) {
+      if (mounted && pos.inMilliseconds > 0) {
+        setState(() {
+          _position = pos;
+        });
+      }
+    });
+
+    _durSub = p.onDurationChanged.listen((dur) {
+      if (mounted && dur.inSeconds > 0) {
+        setState(() {
+          _totalDuration = dur;
+        });
+      }
+    });
+
+    _completeSub = p.onPlayerComplete.listen((_) {
+      if (mounted) {
+        _stopFallbackTimer();
+        setState(() {
+          _isPlaying = false;
+          _position = Duration.zero;
+        });
+      }
+    });
+
+    _player = p;
+    return p;
+  }
 
   @override
   void initState() {
@@ -89,51 +135,11 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
       );
     }
 
-    _player = AudioPlayer();
     if (widget.durationSeconds != null && widget.durationSeconds! > 0) {
       _totalDuration = Duration(seconds: widget.durationSeconds!);
     } else {
       _totalDuration = const Duration(seconds: 5);
     }
-
-    _stateSub = _player.onPlayerStateChanged.listen((state) {
-      if (mounted) {
-        setState(() {
-          _isPlaying = state == PlayerState.playing;
-        });
-        if (state == PlayerState.playing) {
-          _startFallbackTimer();
-        } else {
-          _stopFallbackTimer();
-        }
-      }
-    });
-
-    _posSub = _player.onPositionChanged.listen((pos) {
-      if (mounted && pos.inMilliseconds > 0) {
-        setState(() {
-          _position = pos;
-        });
-      }
-    });
-
-    _durSub = _player.onDurationChanged.listen((dur) {
-      if (mounted && dur.inSeconds > 0) {
-        setState(() {
-          _totalDuration = dur;
-        });
-      }
-    });
-
-    _completeSub = _player.onPlayerComplete.listen((_) {
-      if (mounted) {
-        _stopFallbackTimer();
-        setState(() {
-          _isPlaying = false;
-          _position = Duration.zero;
-        });
-      }
-    });
   }
 
   @override
@@ -163,7 +169,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
     unawaited(_posSub?.cancel());
     unawaited(_durSub?.cancel());
     unawaited(_completeSub?.cancel());
-    unawaited(_player.dispose());
+    unawaited(_player?.dispose());
     super.dispose();
   }
 
@@ -173,7 +179,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
     if (_isPlaying) {
       _stopFallbackTimer();
       try {
-        await _player.pause();
+        await _player?.pause();
       } on Object catch (_) {}
       if (mounted) {
         setState(() {
@@ -213,8 +219,9 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
         return;
       }
 
-      await _player.setPlaybackRate(_playbackRate);
-      await _player.play(source);
+      final player = _ensurePlayerInitialized();
+      await player.setPlaybackRate(_playbackRate);
+      await player.play(source);
 
       if (mounted) {
         setState(() {
@@ -286,7 +293,10 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
         _playbackRate = 1.0;
       }
     });
-    unawaited(_player.setPlaybackRate(_playbackRate));
+    final player = _player;
+    if (player != null) {
+      unawaited(player.setPlaybackRate(_playbackRate));
+    }
   }
 
   void _toggleTranscript() {

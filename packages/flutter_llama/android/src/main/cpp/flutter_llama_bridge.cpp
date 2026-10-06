@@ -50,6 +50,8 @@ Java_net_nativemind_flutter_1llama_FlutterLlamaPlugin_nativeInitModel(
     
     const char* path = env->GetStringUTFChars(model_path, nullptr);
     
+    llama_backend_init();
+    
     LOGI("Initializing model: %s", path);
     LOGI("Threads: %d, GPU layers: %d, Context: %d", n_threads, n_gpu_layers, context_size);
     
@@ -161,14 +163,18 @@ Java_net_nativemind_flutter_1llama_FlutterLlamaPlugin_nativeGenerate(
     std::string prompt_text(prompt_str);
     env->ReleaseStringUTFChars(prompt, prompt_str);
     
-    // Tokenize prompt
-    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, true, true);
+    // Tokenize prompt without adding extra leading BOS (add_special = false, parse_special = true)
+    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, false, true);
     std::vector<llama_token> prompt_tokens(n_prompt);
     
-    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
+    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), false, true) < 0) {
         LOGE("Failed to tokenize prompt");
         return nullptr;
     }
+    
+    // Clear KV cache before evaluating new sequence
+    llama_memory_t mem = llama_get_memory(g_context);
+    llama_memory_clear(mem, true);
     
     // Decode prompt in chunks of n_batch
     uint32_t n_batch = llama_n_batch(g_context);
@@ -188,10 +194,16 @@ Java_net_nativemind_flutter_1llama_FlutterLlamaPlugin_nativeGenerate(
     
     auto sparams = llama_sampler_chain_default_params();
     g_sampler = llama_sampler_chain_init(sparams);
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
+    const int32_t n_vocab = g_vocab ? llama_vocab_n_tokens(g_vocab) : 32000;
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.2f, 0.2f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_k(top_k));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_dist(1234));
+    
+    for (size_t i = 0; i < prompt_tokens.size(); ++i) {
+        llama_sampler_accept(g_sampler, prompt_tokens[i]);
+    }
     
     // Generate tokens
     std::string result;
@@ -284,14 +296,18 @@ Java_net_nativemind_flutter_1llama_FlutterLlamaPlugin_nativeGenerateStreamInit(
     std::string prompt_text(prompt_str);
     env->ReleaseStringUTFChars(prompt, prompt_str);
     
-    // Tokenize prompt
-    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, true, true);
+    // Tokenize prompt without adding extra leading BOS (add_special = false, parse_special = true)
+    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, false, true);
     std::vector<llama_token> prompt_tokens(n_prompt);
     
-    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
+    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), false, true) < 0) {
         LOGE("Failed to tokenize prompt");
         return;
     }
+    
+    // Clear KV cache before evaluating new sequence
+    llama_memory_t mem = llama_get_memory(g_context);
+    llama_memory_clear(mem, true);
     
     // Decode prompt in chunks of n_batch
     uint32_t n_batch = llama_n_batch(g_context);
@@ -311,10 +327,16 @@ Java_net_nativemind_flutter_1llama_FlutterLlamaPlugin_nativeGenerateStreamInit(
     
     auto sparams = llama_sampler_chain_default_params();
     g_sampler = llama_sampler_chain_init(sparams);
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
+    const int32_t n_vocab = g_vocab ? llama_vocab_n_tokens(g_vocab) : 32000;
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.2f, 0.2f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_k(top_k));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_dist(1234));
+    
+    for (size_t i = 0; i < prompt_tokens.size(); ++i) {
+        llama_sampler_accept(g_sampler, prompt_tokens[i]);
+    }
     
     g_stream_n_pos = (int)prompt_tokens.size();
     g_stream_n_generated = 0;
@@ -345,6 +367,7 @@ Java_net_nativemind_flutter_1llama_FlutterLlamaPlugin_nativeGenerateStreamNext(
     }
     
     llama_token new_token = llama_sampler_sample(g_sampler, g_context, -1);
+    llama_sampler_accept(g_sampler, new_token);
     
     if (llama_vocab_is_eog(g_vocab, new_token)) {
         LOGI("Stream EOS token reached");
@@ -353,10 +376,18 @@ Java_net_nativemind_flutter_1llama_FlutterLlamaPlugin_nativeGenerateStreamNext(
     
     char token_str[256] = {0};
     int n = llama_token_to_piece(g_vocab, new_token, token_str, sizeof(token_str) - 1, 0, true);
-    std::string piece;
-    if (n > 0) {
-        token_str[n] = '\0';
-        piece = token_str;
+    if (n <= 0) {
+        return nullptr;
+    }
+    
+    token_str[n] = '\0';
+    std::string piece(token_str);
+    
+    if (piece.find("<|im_end|>") != std::string::npos ||
+        piece.find("<|endoftext|>") != std::string::npos ||
+        piece.find("<|im_start|>") != std::string::npos) {
+        LOGI("Stream ChatML stop token reached");
+        return nullptr;
     }
     
     llama_batch batch = llama_batch_get_one(&new_token, 1);
@@ -445,6 +476,7 @@ Java_net_nativemind_flutter_1llama_FlutterLlamaPlugin_nativeFreeModel(
     }
     
     g_vocab = nullptr;
+    llama_backend_free();
     
     LOGI("Model freed successfully");
 }

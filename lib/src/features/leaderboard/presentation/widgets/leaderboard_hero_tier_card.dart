@@ -21,7 +21,8 @@ class LeaderboardHeroTierCard extends StatefulWidget {
   final int streakFreezeCount;
 
   @override
-  State<LeaderboardHeroTierCard> createState() => _LeaderboardHeroTierCardState();
+  State<LeaderboardHeroTierCard> createState() =>
+      _LeaderboardHeroTierCardState();
 }
 
 class _LeaderboardHeroTierCardState extends State<LeaderboardHeroTierCard> {
@@ -100,8 +101,10 @@ class _LeaderboardHeroTierCardState extends State<LeaderboardHeroTierCard> {
           ),
           boxShadow: [
             BoxShadow(
-              color: _getTierBorderColor(widget.currentTier, colors)
-                  .withAlpha(isDark ? 30 : 15),
+              color: _getTierBorderColor(
+                widget.currentTier,
+                colors,
+              ).withAlpha(isDark ? 30 : 15),
               blurRadius: 20,
               offset: const Offset(0, 6),
             ),
@@ -113,83 +116,94 @@ class _LeaderboardHeroTierCardState extends State<LeaderboardHeroTierCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? colors.surfaceElevated.withAlpha(160)
-                            : colors.white.withAlpha(180),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.black.withAlpha(isDark ? 40 : 10),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        _getTierEmoji(widget.currentTier),
-                        style: const TextStyle(fontSize: 22),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              '${widget.currentTier} League',
-                              style: typography.subhead.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.primary.withAlpha(isDark ? 50 : 25),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.timer_outlined,
-                                    size: 10,
-                                    color: colors.primary,
-                                  ),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    _formatCountdown(_timeRemaining),
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.primary,
-                                      fontSize: 9.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceElevated.withAlpha(160)
+                              : colors.white.withAlpha(180),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.black.withAlpha(isDark ? 40 : 10),
+                              blurRadius: 8,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _formatWeeklyResetLocalTime(),
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
-                          ),
+                        child: Text(
+                          _getTierEmoji(widget.currentTier),
+                          style: const TextStyle(fontSize: 22),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 6,
+                              runSpacing: 2,
+                              children: [
+                                Text(
+                                  '${widget.currentTier} League',
+                                  style: typography.subhead.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 1.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 50 : 25,
+                                    ),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.timer_outlined,
+                                        size: 10,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        _formatCountdown(_timeRemaining),
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                          fontSize: 9.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _formatWeeklyResetLocalTime(),
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
 
                 // Rules & Prizes Trigger
                 Container(

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -13,6 +12,7 @@ import 'package:kortex/src/features/community/presentation/pages/create_forum_di
 import 'package:kortex/src/features/community/presentation/widgets/community_forum_empty_state.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_pulse_banner.dart';
 import 'package:kortex/src/features/community/presentation/widgets/track_forum_post_card.dart';
+import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 
 /// Scrollable feed list displaying community forum posts with local filtering,
 /// refresh indicators, ambient pulse banner, and infinite scroll pagination.
@@ -182,21 +182,9 @@ class CommunityForumFeedList extends HookWidget {
                           onPostSelected!(post);
                         } else {
                           unawaited(
-                            context.router
-                                .push(
-                                  ForumThreadDetailRoute(post: post),
-                                )
-                                .then((_) {
-                                  if (context.mounted) {
-                                    final bloc = context
-                                        .read<CommunityHubBloc>();
-                                    bloc.add(
-                                      ChangeForumSortFilterEvent(
-                                        bloc.state.selectedForumFilter,
-                                      ),
-                                    );
-                                  }
-                                }),
+                            context.router.push(
+                              ForumThreadDetailRoute(post: post),
+                            ),
                           );
                         }
                       },
@@ -220,23 +208,24 @@ class CommunityForumFeedList extends HookWidget {
                       },
                     );
 
-                    if (index < 5) {
-                      return postCard
-                          .animate(delay: (index * 60).ms)
-                          .fadeIn(
-                            duration: 220.ms,
-                            curve: Curves.easeOut,
-                          )
-                          .slideY(
-                            begin: 0.04,
-                            end: 0,
-                            duration: 220.ms,
-                            curve: Curves.easeOutCubic,
-                          );
-                    }
-                    return postCard;
+                    return KeyedSubtree(
+                      key: ValueKey('post_${post.id}'),
+                      child: index < 5
+                          ? AppAnimatedEntrance(
+                              staggerIndex: index,
+                              child: postCard,
+                            )
+                          : postCard,
+                    );
                   },
                   childCount: filteredPosts.length,
+                  findChildIndexCallback: (key) {
+                    if (key is! ValueKey<String>) return null;
+                    final idx = filteredPosts.indexWhere(
+                      (p) => 'post_${p.id}' == key.value,
+                    );
+                    return idx < 0 ? null : idx;
+                  },
                 ),
               ),
             ),

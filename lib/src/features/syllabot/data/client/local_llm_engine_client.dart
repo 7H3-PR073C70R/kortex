@@ -328,6 +328,20 @@ class LocalLlmEngineClient {
     return resolved;
   }
 
+  /// Builds high-performance LlamaConfig leveraging GPU/Metal acceleration and optimal 4-thread Performance core allocation.
+  static LlamaConfig _buildOptimalConfig(String modelPath) {
+    // Mobile ARM big.LITTLE architectures (Snapdragon, Dimensity, Tensor, Apple A/M)
+    // require locking threads to physical Performance cores (4 threads).
+    // Using >4 threads forces work onto slow Efficiency cores, causing severe barrier latency.
+    final cpuCores = Platform.numberOfProcessors;
+    final nThreads = (cpuCores >= 4 ? 4 : cpuCores).clamp(2, 4);
+    return LlamaConfig(
+      modelPath: modelPath,
+      nThreads: nThreads,
+      nGpuLayers: 99, // Offload all transformer layers to Metal (iOS/macOS) / GPU (Android)
+    );
+  }
+
   /// Sets a downloaded local model as the active cognitive reasoning engine.
   Future<void> setActiveModel(String modelId) async {
     final models = await getAvailableModels();
@@ -357,7 +371,7 @@ class LocalLlmEngineClient {
         await FlutterLlama.instance.unloadModel();
       }
       await FlutterLlama.instance.loadModel(
-        LlamaConfig(modelPath: target.filePath!),
+        _buildOptimalConfig(target.filePath!),
       );
       _isInitialized = true;
     } on Object catch (e) {
@@ -674,7 +688,7 @@ class LocalLlmEngineClient {
           !FlutterLlama.instance.isModelLoaded) {
         try {
           await FlutterLlama.instance.loadModel(
-            LlamaConfig(modelPath: savedPath),
+            _buildOptimalConfig(savedPath),
           );
           _isInitialized = true;
         } on Object catch (e) {
@@ -725,7 +739,7 @@ class LocalLlmEngineClient {
     );
 
     if (FlutterLlama.instance.isModelLoaded) {
-      var yieldedCharCount = 0;
+      var yieldedTokenCount = 0;
       final specialTokenRegex = RegExp(
         r'<\|[a-zA-Z0-9_\-]+\|>|<think>[\s\S]*?<\/think>|<\/?think>',
       );
@@ -745,15 +759,20 @@ class LocalLlmEngineClient {
           ),
         );
 
-        await for (final token in stream) {
-          final cleanToken = token.replaceAll(specialTokenRegex, '');
+        await for (final rawToken in stream) {
+          if (rawToken.contains('<|im_end|>') ||
+              rawToken.contains('<|endoftext|>') ||
+              rawToken.contains('<|im_start|>')) {
+            break;
+          }
+          final cleanToken = rawToken.replaceAll(specialTokenRegex, '');
           if (cleanToken.isNotEmpty) {
-            yieldedCharCount += cleanToken.trim().length;
+            yieldedTokenCount++;
             yield cleanToken;
           }
         }
 
-        if (yieldedCharCount > 0) {
+        if (yieldedTokenCount > 0) {
           return;
         }
       } on Object catch (e) {

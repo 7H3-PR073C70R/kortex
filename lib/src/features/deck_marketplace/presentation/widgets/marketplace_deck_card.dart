@@ -84,62 +84,65 @@ class MarketplaceDeckCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(30),
-                            borderRadius: AppRadius.radiusBadge,
-                          ),
-                          child: Text(
-                            deck.category.toUpperCase(),
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
+                    Expanded(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(30),
+                              borderRadius: AppRadius.radiusBadge,
+                            ),
+                            child: Text(
+                              deck.category.toUpperCase(),
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.recallEasy.withAlpha(
-                              isDark ? 40 : 20,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
                             ),
-                            borderRadius: AppRadius.radiusBadge,
-                            border: Border.all(
+                            decoration: BoxDecoration(
                               color: colors.recallEasy.withAlpha(
-                                isDark ? 90 : 60,
+                                isDark ? 40 : 20,
                               ),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.verified_rounded,
-                                size: 11,
-                                color: colors.recallEasy,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Verified Vault',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.recallEasy,
-                                  fontSize: 10,
+                              borderRadius: AppRadius.radiusBadge,
+                              border: Border.all(
+                                color: colors.recallEasy.withAlpha(
+                                  isDark ? 90 : 60,
                                 ),
                               ),
-                            ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.verified_rounded,
+                                  size: 11,
+                                  color: colors.recallEasy,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Verified Vault',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.recallEasy,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     Row(
                       children: [
@@ -171,7 +174,10 @@ class MarketplaceDeckCard extends StatelessWidget {
                 const SizedBox(height: 4),
 
                 // Subject & Creator
-                Row(
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       '${deck.subject} • by ${deck.ownerName}',
@@ -179,8 +185,7 @@ class MarketplaceDeckCard extends StatelessWidget {
                         color: colors.textSecondary,
                       ),
                     ),
-                    if (deck.rating >= 4.5 || deck.downloadsCount >= 10) ...[
-                      const SizedBox(width: 6),
+                    if (deck.rating >= 4.5 || deck.downloadsCount >= 10)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
@@ -212,7 +217,6 @@ class MarketplaceDeckCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 16),

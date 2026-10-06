@@ -258,13 +258,15 @@ class FlutterLlama {
         print('[FlutterLlama] Model path: $modelPath');
       }
       
+      final cpuCores = Platform.numberOfProcessors;
+      final defaultThreads = (cpuCores >= 4 ? 4 : cpuCores).clamp(2, 4);
       final llamaConfig = config ?? LlamaConfig(
         modelPath: modelPath,
-        nThreads: 4,
-        nGpuLayers: 0,
+        nThreads: defaultThreads,
+        nGpuLayers: 99,
         contextSize: 2048,
         batchSize: 512,
-        useGpu: false,
+        useGpu: true,
         verbose: false,
       );
       

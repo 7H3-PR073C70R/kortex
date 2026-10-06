@@ -172,20 +172,24 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       );
     }
 
-    final stream = _streamResponse(
-      prompt: event.prompt,
-      sessionId: effectiveSessionId,
-      socraticMode: event.socraticMode,
-      preferredEngine: effectiveEngine,
-      contextHistory: contextWithRag,
-    );
+    try {
+      final stream = _streamResponse(
+        prompt: event.prompt,
+        sessionId: effectiveSessionId,
+        socraticMode: event.socraticMode,
+        preferredEngine: effectiveEngine,
+        contextHistory: contextWithRag,
+      );
 
-    _streamSubscription = stream.listen(
-      (token) => add(StreamTokenReceivedEvent(token)),
-      onError: (Object err) => add(StreamErrorEvent(err.toString())),
-      onDone: () => add(const StreamCompletedEvent()),
-      cancelOnError: true,
-    );
+      _streamSubscription = stream.listen(
+        (token) => add(StreamTokenReceivedEvent(token)),
+        onError: (Object err) => add(StreamErrorEvent(err.toString())),
+        onDone: () => add(const StreamCompletedEvent()),
+        cancelOnError: true,
+      );
+    } on Object catch (e) {
+      add(StreamErrorEvent(e.toString()));
+    }
   }
 
   void _onStreamTokenReceived(

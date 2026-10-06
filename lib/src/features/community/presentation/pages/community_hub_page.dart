@@ -40,8 +40,8 @@ class CommunityHubPage extends HookWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<CommunityHubBloc>.value(
-          value:
-              locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
+          value: locator<CommunityHubBloc>()
+            ..add(const LoadCommunityHubEvent()),
         ),
         BlocProvider<AutoCommunityCubit>.value(
           value: locator<AutoCommunityCubit>(),
@@ -67,9 +67,13 @@ class _CommunityHubView extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final authState = context.watch<AuthBloc?>()?.state;
-    final targetTrack = authState?.userProfile?.targetTrack;
-    final effectiveTrack = (targetTrack != null &&
+    // Subscribe only to the exact fields this shell renders so unrelated
+    // bloc emissions (posts, votes, bookmarks, pagination) skip this rebuild.
+    final targetTrack = context.select<AuthBloc?, String?>(
+      (bloc) => bloc?.state.userProfile?.targetTrack,
+    );
+    final effectiveTrack =
+        (targetTrack != null &&
             targetTrack.trim().isNotEmpty &&
             targetTrack != 'General')
         ? targetTrack.trim()
@@ -80,21 +84,27 @@ class _CommunityHubView extends HookWidget {
       [targetTrack],
     );
 
-    final hubState = context.watch<CommunityHubBloc>().state;
-    final hasActiveFilters = hubState.selectedTrack != 'All' ||
-        (hubState.selectedForumFilter != 'trending' &&
-            hubState.selectedForumFilter.isNotEmpty);
-    final activeFilterCount = (hubState.selectedTrack != 'All' ? 1 : 0) +
-        (hubState.selectedForumFilter != 'trending' &&
-                hubState.selectedForumFilter.isNotEmpty
+    final selectedTrack = context.select<CommunityHubBloc, String>(
+      (bloc) => bloc.state.selectedTrack,
+    );
+    final selectedForumFilter = context.select<CommunityHubBloc, String>(
+      (bloc) => bloc.state.selectedForumFilter,
+    );
+    final hasActiveFilters =
+        selectedTrack != 'All' ||
+        (selectedForumFilter != 'trending' && selectedForumFilter.isNotEmpty);
+    final activeFilterCount =
+        (selectedTrack != 'All' ? 1 : 0) +
+        (selectedForumFilter != 'trending' && selectedForumFilter.isNotEmpty
             ? 1
             : 0);
 
     final isSearchExpanded = useState<bool>(false);
-    final searchQuery = useState<String>('');
+    // useValueNotifier does not mark this widget dirty on change; only the
+    // feed body listens to it, so typing never rebuilds the app bar.
+    final searchQuery = useValueNotifier<String>('');
     final searchController = useTextEditingController();
     final debounceTimer = useRef<Timer?>(null);
-    final selectedDesktopPost = useState<ForumPostEntity?>(null);
 
     // Auto provision / join community for user's academic track on launch & lock forum
     useEffect(() {
@@ -175,8 +185,8 @@ class _CommunityHubView extends HookWidget {
                       'tour_community_hero',
                     ),
                     title: l10n.forumTab,
-                    selectedTrack: hubState.selectedTrack,
-                    selectedForumFilter: hubState.selectedForumFilter,
+                    selectedTrack: selectedTrack,
+                    selectedForumFilter: selectedForumFilter,
                     hasActiveFilters: hasActiveFilters,
                     activeFilterCount: activeFilterCount,
                     availableTracks: availableTracks,
@@ -210,7 +220,11 @@ class _CommunityHubView extends HookWidget {
 
                   // 3. Primary Create Post Action Pill Button
                   Padding(
-                    padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+                    padding: const EdgeInsets.only(
+                      right: 16,
+                      top: 8,
+                      bottom: 8,
+                    ),
                     child: PlatformHoverBuilder(
                       builder: (context, isHovered, child) => AnimatedScale(
                         scale: isHovered ? 1.03 : 1.0,
@@ -224,18 +238,19 @@ class _CommunityHubView extends HookWidget {
                           final hubBloc = context.read<CommunityHubBloc>();
                           final initialTrack =
                               targetTrack ?? hubBloc.state.selectedTrack;
-                          final created = await Navigator.of(context).push<bool>(
-                            MaterialPageRoute(
-                              builder: (_) => BlocProvider.value(
-                                value: hubBloc,
-                                child: CreateForumDiscussionPage(
-                                  initialTrack: initialTrack.isNotEmpty
-                                      ? initialTrack
-                                      : 'WAEC',
+                          final created = await Navigator.of(context)
+                              .push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => BlocProvider.value(
+                                    value: hubBloc,
+                                    child: CreateForumDiscussionPage(
+                                      initialTrack: initialTrack.isNotEmpty
+                                          ? initialTrack
+                                          : 'WAEC',
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          );
+                              );
                           if (created == true) {
                             hubBloc.add(
                               ChangeForumSortFilterEvent(
@@ -247,9 +262,9 @@ class _CommunityHubView extends HookWidget {
                         child: Container(
                           key: AppTourKeys.communityPostBtnKey =
                               AppTourKeys.safeKey(
-                            AppTourKeys.communityPostBtnKey,
-                            'tour_community_post_btn',
-                          ),
+                                AppTourKeys.communityPostBtnKey,
+                                'tour_community_post_btn',
+                              ),
                           height: 38,
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
@@ -257,7 +272,9 @@ class _CommunityHubView extends HookWidget {
                             borderRadius: AppRadius.radiusSheet,
                             boxShadow: [
                               BoxShadow(
-                                color: colors.primary.withAlpha(isDark ? 60 : 35),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 60 : 35,
+                                ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -321,99 +338,136 @@ class _CommunityHubView extends HookWidget {
 
             // Forum Posts Feed (Responsive 3-Panel support on Desktop)
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isDesktop = constraints.maxWidth >= 1024;
-                  final hasSelectedPost = isDesktop && selectedDesktopPost.value != null;
-
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // PANEL 2: Main List / Feed Pane (Expands to 540px when post is selected on desktop for rich content layout)
-                      AnimatedContainer(
-                        duration: AppMotion.expressive,
-                        curve: AppMotion.easeOutCubic,
-                        width: hasSelectedPost
-                            ? 540
-                            : constraints.maxWidth,
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: hasSelectedPost ? 540 : 860,
-                            ),
-                            child: BlocBuilder<CommunityHubBloc, CommunityState>(
-                              builder: (context, state) {
-                                if (state.status == CommunityStatus.loading &&
-                                    state.forumPosts.isEmpty) {
-                                  return const CommunityHubShimmer(tabIndex: 1);
-                                }
-
-                                return CommunityForumFeedList(
-                                  state: state,
-                                  searchQuery: searchQuery.value,
-                                  availableTracks: availableTracks,
-                                  effectiveTrack: effectiveTrack,
-                                  selectedPostId: selectedDesktopPost.value?.id,
-                                  onPostSelected: (post) {
-                                    final postEntity = post as ForumPostEntity;
-                                    if (isDesktop) {
-                                      selectedDesktopPost.value = postEntity;
-                                    } else {
-                                      unawaited(
-                                        context.router
-                                            .push(
-                                              ForumThreadDetailRoute(
-                                                post: postEntity,
-                                              ),
-                                            )
-                                            .then((_) {
-                                              if (context.mounted) {
-                                                final bloc = context.read<CommunityHubBloc>();
-                                                bloc.add(
-                                                  ChangeForumSortFilterEvent(
-                                                    bloc.state.selectedForumFilter,
-                                                  ),
-                                                );
-                                              }
-                                            }),
-                                      );
-                                    }
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Pane Divider between Panel 2 & Panel 3
-                      if (hasSelectedPost) ...[
-                        VerticalDivider(
-                          width: 1,
-                          thickness: 1,
-                          color: isDark
-                              ? colors.surfaceBorderHighlight.withAlpha(50)
-                              : colors.surfaceBorder,
-                        ),
-                        // PANEL 3: Forum Post Detail & Comments View
-                        Expanded(
-                          child: ForumThreadDetailPage(
-                            key: ValueKey(selectedDesktopPost.value!.id),
-                            post: selectedDesktopPost.value!,
-                            onClosePanel: () {
-                              selectedDesktopPost.value = null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ],
-                  );
-                },
+              child: _CommunityForumBody(
+                searchQuery: searchQuery,
+                availableTracks: availableTracks,
+                effectiveTrack: effectiveTrack,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Feed + desktop detail pane. Owns the desktop selection state and rebuilds
+/// only for feed-relevant bloc changes, isolating it from the page shell.
+class _CommunityForumBody extends HookWidget {
+  const _CommunityForumBody({
+    required this.searchQuery,
+    required this.availableTracks,
+    required this.effectiveTrack,
+  });
+
+  final ValueNotifier<String> searchQuery;
+  final List<String> availableTracks;
+  final String effectiveTrack;
+
+  static bool _feedChanged(CommunityState prev, CommunityState curr) {
+    return prev.status != curr.status ||
+        !identical(prev.forumPosts, curr.forumPosts) ||
+        prev.forumSearchQuery != curr.forumSearchQuery ||
+        prev.isLoadingMoreForumPosts != curr.isLoadingMoreForumPosts ||
+        prev.hasMoreForumPosts != curr.hasMoreForumPosts ||
+        prev.selectedTrack != curr.selectedTrack;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final isDark = context.isDarkMode;
+    final selectedDesktopPost = useState<ForumPostEntity?>(null);
+    final query = useValueListenable(searchQuery);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 1024;
+        final hasSelectedPost = isDesktop && selectedDesktopPost.value != null;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // PANEL 2: Main List / Feed Pane (Expands to 540px when post is selected on desktop for rich content layout)
+            AnimatedContainer(
+              duration: AppMotion.expressive,
+              curve: AppMotion.easeOutCubic,
+              width: hasSelectedPost ? 540 : constraints.maxWidth,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: hasSelectedPost ? 540 : 860,
+                  ),
+                  child: BlocBuilder<CommunityHubBloc, CommunityState>(
+                    buildWhen: _feedChanged,
+                    builder: (context, state) {
+                      if (state.status == CommunityStatus.loading &&
+                          state.forumPosts.isEmpty) {
+                        return const CommunityHubShimmer(tabIndex: 1);
+                      }
+
+                      return CommunityForumFeedList(
+                        state: state,
+                        searchQuery: query,
+                        availableTracks: availableTracks,
+                        effectiveTrack: effectiveTrack,
+                        selectedPostId: selectedDesktopPost.value?.id,
+                        onPostSelected: (post) {
+                          final postEntity = post as ForumPostEntity;
+                          if (isDesktop) {
+                            selectedDesktopPost.value = postEntity;
+                          } else {
+                            unawaited(
+                              context.router
+                                  .push(
+                                    ForumThreadDetailRoute(
+                                      post: postEntity,
+                                    ),
+                                  )
+                                  .then((_) {
+                                    if (context.mounted) {
+                                      final bloc = context
+                                          .read<CommunityHubBloc>();
+                                      bloc.add(
+                                        ChangeForumSortFilterEvent(
+                                          bloc.state.selectedForumFilter,
+                                        ),
+                                      );
+                                    }
+                                  }),
+                            );
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+
+            // Pane Divider between Panel 2 & Panel 3
+            if (hasSelectedPost) ...[
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: isDark
+                    ? colors.surfaceBorderHighlight.withAlpha(50)
+                    : colors.surfaceBorder,
+              ),
+              // PANEL 3: Forum Post Detail & Comments View
+              Expanded(
+                child: ForumThreadDetailPage(
+                  key: ValueKey(selectedDesktopPost.value!.id),
+                  post: selectedDesktopPost.value!,
+                  onClosePanel: () {
+                    selectedDesktopPost.value = null;
+                  },
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }

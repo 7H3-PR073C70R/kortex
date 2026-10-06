@@ -557,10 +557,12 @@ class TrackForumPostCard extends HookWidget {
                       Expanded(
                         child: Row(
                           children: [
-                            AppPulsingBeacon(
-                              color: colors.primary,
-                              size: 6,
-                              pulseSpread: 3,
+                            RepaintBoundary(
+                              child: AppPulsingBeacon(
+                                color: colors.primary,
+                                size: 6,
+                                pulseSpread: 3,
+                              ),
                             ),
                             const SizedBox(width: 6),
                             Flexible(
@@ -1345,13 +1347,16 @@ class TrackForumPostCard extends HookWidget {
                           const SizedBox(width: 4),
                           Builder(
                             builder: (context) {
-                              final hubBloc = context
-                                  .watch<CommunityHubBloc?>();
-                              final isBookmarked =
-                                  hubBloc?.state.bookmarkedPostIds.contains(
-                                    post.id,
-                                  ) ??
-                                  false;
+                              final isBookmarked = context.select<
+                                CommunityHubBloc?,
+                                bool
+                              >(
+                                (bloc) =>
+                                    bloc?.state.bookmarkedPostIds.contains(
+                                      post.id,
+                                    ) ??
+                                    false,
+                              );
                               return PlatformHoverBuilder(
                                 builder: (context, isBmHovered, child) =>
                                     AnimatedContainer(
@@ -1372,6 +1377,8 @@ class TrackForumPostCard extends HookWidget {
                                           unawaited(
                                             HapticFeedback.lightImpact(),
                                           );
+                                          final hubBloc = context
+                                              .read<CommunityHubBloc?>();
                                           if (hubBloc != null) {
                                             hubBloc.add(
                                               ToggleBookmarkForumPostEvent(

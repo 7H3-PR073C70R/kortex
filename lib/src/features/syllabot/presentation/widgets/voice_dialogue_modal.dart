@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kortex/src/core/constants/app_spacing.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/audio_earcon_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -265,9 +266,11 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       await Future<void>.delayed(const Duration(milliseconds: 1000));
     }
 
-    if (mounted && (_state == DialogueState.speaking || _state == DialogueState.idle)) {
+    if (mounted &&
+        (_state == DialogueState.speaking || _state == DialogueState.idle)) {
       await Future<void>.delayed(const Duration(milliseconds: 350));
-      if (mounted && (_state == DialogueState.speaking || _state == DialogueState.idle)) {
+      if (mounted &&
+          (_state == DialogueState.speaking || _state == DialogueState.idle)) {
         await _startListening();
       }
     }
@@ -327,14 +330,19 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
 
     try {
       if (widget.onStreamPrompt != null) {
-        final stream = widget.onStreamPrompt!(prompt);
+        final stream = widget.onStreamPrompt!(prompt).timeout(
+          const Duration(seconds: 25),
+          onTimeout: (sink) {
+            sink.addError('Response timeout');
+          },
+        );
         final firstClauseDelimiters = RegExp(r'([,;:!?\n]+)\s*');
         final sentenceDelimiters = RegExp(r'([.!?\n]+)\s*');
         final accumulatedBuffer = StringBuffer();
         var firstSentenceSpoken = false;
 
         await for (final chunk in stream) {
-          if (!mounted) break;
+          if (!mounted || _state == DialogueState.idle) break;
           accumulatedBuffer.write(chunk);
           var accumulated = accumulatedBuffer.toString();
 
@@ -364,9 +372,11 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
             }
           } else {
             Match? match;
-            while ((match = sentenceDelimiters.firstMatch(accumulated)) != null ||
+            while ((match = sentenceDelimiters.firstMatch(accumulated)) !=
+                    null ||
                 (accumulated.trim().split(RegExp(r'\s+')).length >= 8 &&
-                    (match = firstClauseDelimiters.firstMatch(accumulated)) != null)) {
+                    (match = firstClauseDelimiters.firstMatch(accumulated)) !=
+                        null)) {
               final sentence = accumulated.substring(0, match!.end).trim();
               accumulated = accumulated.substring(match.end);
               accumulatedBuffer
@@ -406,9 +416,13 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           await Future<void>.delayed(const Duration(milliseconds: 600));
         }
 
-        if (mounted && (_state == DialogueState.speaking || _state == DialogueState.thinking)) {
+        if (mounted &&
+            (_state == DialogueState.speaking ||
+                _state == DialogueState.thinking)) {
           await Future<void>.delayed(const Duration(milliseconds: 350));
-          if (mounted && (_state == DialogueState.speaking || _state == DialogueState.thinking)) {
+          if (mounted &&
+              (_state == DialogueState.speaking ||
+                  _state == DialogueState.thinking)) {
             await _startListening();
           }
         }
@@ -416,7 +430,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       }
 
       if (widget.onSendPrompt != null) {
-        final response = await widget.onSendPrompt!(prompt);
+        final response = await widget.onSendPrompt!(prompt).timeout(
+          const Duration(seconds: 25),
+        );
         if (!mounted) return;
 
         setState(() {
@@ -431,9 +447,13 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           await Future<void>.delayed(const Duration(milliseconds: 1000));
         }
 
-        if (mounted && (_state == DialogueState.speaking || _state == DialogueState.thinking)) {
+        if (mounted &&
+            (_state == DialogueState.speaking ||
+                _state == DialogueState.thinking)) {
           await Future<void>.delayed(const Duration(milliseconds: 350));
-          if (mounted && (_state == DialogueState.speaking || _state == DialogueState.thinking)) {
+          if (mounted &&
+              (_state == DialogueState.speaking ||
+                  _state == DialogueState.thinking)) {
             await _startListening();
           }
         }
@@ -476,10 +496,13 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         });
         unawaited(_sttHandler.stopListening());
       }
-    } else if (_state == DialogueState.speaking || _state == DialogueState.thinking) {
+    } else if (_state == DialogueState.speaking ||
+        _state == DialogueState.thinking) {
+      _isProcessingPrompt = false;
       unawaited(widget.ttsHandler.stop());
       unawaited(_startListening());
     } else if (_state == DialogueState.idle) {
+      _isProcessingPrompt = false;
       unawaited(_startListening());
     }
   }
@@ -533,12 +556,13 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     final orbColor = isListening
         ? colors.error
         : isSpeaking
-            ? colors.syllabotAccent
-            : isThinking
-                ? colors.warning
-                : colors.primary;
+        ? colors.syllabotAccent
+        : isThinking
+        ? colors.warning
+        : colors.primary;
 
-    final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context) || widget.isFullScreenOverlay;
+    final isDesktop =
+        AppAdaptiveSheet.isDesktopOrWeb(context) || widget.isFullScreenOverlay;
 
     final content = Focus(
       autofocus: true,
@@ -558,6 +582,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           ),
           child: Column(
             children: [
+              AppSpacing.verticalSpaceMedium,
               // 1. Header Drag Handle & Controls
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -674,36 +699,25 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                                 color: _isMuted
                                     ? colors.error.withAlpha(isDark ? 45 : 25)
                                     : (isHovered
-                                        ? colors.primary.withAlpha(25)
-                                        : colors.surfaceSecondary),
+                                          ? colors.primary.withAlpha(25)
+                                          : colors.surfaceSecondary),
                                 borderRadius: AppRadius.radiusCard,
                                 border: Border.all(
                                   color: _isMuted
                                       ? colors.error.withAlpha(140)
                                       : (isHovered
-                                          ? colors.primary.withAlpha(120)
-                                          : colors.surfaceBorder.withAlpha(100)),
+                                            ? colors.primary.withAlpha(120)
+                                            : colors.surfaceBorder.withAlpha(
+                                                100,
+                                              )),
                                 ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _isMuted
-                                        ? Icons.volume_off_rounded
-                                        : Icons.volume_up_rounded,
-                                    color: _isMuted ? colors.error : colors.primary,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _isMuted ? 'Muted' : 'Voice On',
-                                    style: typography.caption.bold.copyWith(
-                                      color: _isMuted ? colors.error : colors.textPrimary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                              child: Icon(
+                                _isMuted
+                                    ? Icons.volume_off_rounded
+                                    : Icons.volume_up_rounded,
+                                color: _isMuted ? colors.error : colors.primary,
+                                size: 18,
                               ),
                             ),
                           );
@@ -711,17 +725,6 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                       ),
                     ],
                   ),
-
-                  // Mobile Drag indicator
-                  if (!isDesktop)
-                    Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.textSecondary.withAlpha(60),
-                        borderRadius: AppRadius.radiusMicro,
-                      ),
-                    ),
 
                   // Right Control Group: ESC hint & Close Button
                   Row(
@@ -777,8 +780,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                   animation: _pulseController,
                   builder: (context, child) {
                     final pulse = _pulseController.value;
-                    final soundExpansion =
-                        isListening ? (_soundLevel * 28.0) : 0.0;
+                    final soundExpansion = isListening
+                        ? (_soundLevel * 28.0)
+                        : 0.0;
                     final orbSize = isDesktop ? 104.0 : 88.0;
 
                     return Stack(
@@ -787,7 +791,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                         // Outer Glow Ring
                         Container(
                           width: (orbSize + 52) + (pulse * 28) + soundExpansion,
-                          height: (orbSize + 52) + (pulse * 28) + soundExpansion,
+                          height:
+                              (orbSize + 52) + (pulse * 28) + soundExpansion,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: orbColor.withAlpha(
@@ -800,9 +805,14 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                         ),
                         // Middle Ring
                         Container(
-                          width: (orbSize + 22) + (pulse * 14) + (soundExpansion * 0.6),
+                          width:
+                              (orbSize + 22) +
+                              (pulse * 14) +
+                              (soundExpansion * 0.6),
                           height:
-                              (orbSize + 22) + (pulse * 14) + (soundExpansion * 0.6),
+                              (orbSize + 22) +
+                              (pulse * 14) +
+                              (soundExpansion * 0.6),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: orbColor.withAlpha(
@@ -842,10 +852,10 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                               isListening
                                   ? Icons.mic_rounded
                                   : isSpeaking
-                                      ? Icons.volume_up_rounded
-                                      : isThinking
-                                          ? Icons.auto_awesome_rounded
-                                          : Icons.mic_none_rounded,
+                                  ? Icons.volume_up_rounded
+                                  : isThinking
+                                  ? Icons.auto_awesome_rounded
+                                  : Icons.mic_none_rounded,
                               key: ValueKey(_state),
                               color: colors.white,
                               size: isDesktop ? 44 : 38,
@@ -879,13 +889,13 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
               Text(
                 isListening
                     ? (hasSpeech
-                        ? l10n.voiceDialogueListening
-                        : l10n.voiceDialogueListening)
+                          ? l10n.voiceDialogueListening
+                          : l10n.voiceDialogueListening)
                     : isThinking
-                        ? '${l10n.voiceDialogueThinking} & analyzing...'
-                        : isSpeaking
-                            ? l10n.voiceDialogueSpeaking
-                            : l10n.voiceDialogueTapToSpeak,
+                    ? '${l10n.voiceDialogueThinking} & analyzing...'
+                    : isSpeaking
+                    ? l10n.voiceDialogueSpeaking
+                    : l10n.voiceDialogueTapToSpeak,
                 textAlign: TextAlign.center,
                 style: typography.title3.bold.copyWith(
                   color: colors.textPrimary,
@@ -999,7 +1009,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                           timestamp: DateTime.now(),
                         ),
                         ttsHandler: widget.ttsHandler,
-                        showSpeakButton: false, // Speak button removed in voice mode
+                        showSpeakButton:
+                            false, // Speak button removed in voice mode
                       ),
                     ),
                   ),
@@ -1018,29 +1029,29 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                     builder: (context, isHovered, child) {
                       final buttonBg = isListening
                           ? (hasSpeech
-                              ? colors.primary
-                              : colors.error.withAlpha(220))
+                                ? colors.primary
+                                : colors.error.withAlpha(220))
                           : isSpeaking
-                              ? colors.syllabotAccent
-                              : (isHovered
-                                  ? colors.primary.withAlpha(235)
-                                  : colors.primary);
+                          ? colors.syllabotAccent
+                          : (isHovered
+                                ? colors.primary.withAlpha(235)
+                                : colors.primary);
 
                       final buttonLabel = isListening
                           ? (hasSpeech
-                              ? l10n.voiceDialogueDoneSpeaking
-                              : l10n.voiceDialogueListening)
+                                ? l10n.voiceDialogueDoneSpeaking
+                                : l10n.voiceDialogueListening)
                           : isSpeaking
-                              ? l10n.voiceDialogueTapToSpeak
-                              : l10n.voiceDialogueTapToSpeak;
+                          ? l10n.voiceDialogueTapToSpeak
+                          : l10n.voiceDialogueTapToSpeak;
 
                       final buttonIcon = isListening
                           ? (hasSpeech
-                              ? Icons.arrow_upward_rounded
-                              : Icons.mic_rounded)
+                                ? Icons.arrow_upward_rounded
+                                : Icons.mic_rounded)
                           : isSpeaking
-                              ? Icons.mic_rounded
-                              : Icons.mic_rounded;
+                          ? Icons.mic_rounded
+                          : Icons.mic_rounded;
 
                       return ShrinkableButton(
                         onTap: _onBottomButtonTap,
@@ -1167,13 +1178,15 @@ class _VoiceWaveformBars extends StatelessWidget {
           var barHeight = 5.0;
           if (isListening) {
             final offset = index * 0.7;
-            final wave =
-                math.sin((animationValue * 2 * math.pi) + offset).abs();
+            final wave = math
+                .sin((animationValue * 2 * math.pi) + offset)
+                .abs();
             barHeight = 5 + (soundLevel * 16) + (wave * 4);
           } else if (isSpeaking) {
             final offset = (index - 2).abs() * 0.6;
-            final wave =
-                math.sin((animationValue * 3 * math.pi) + offset).abs();
+            final wave = math
+                .sin((animationValue * 3 * math.pi) + offset)
+                .abs();
             barHeight = 6 + (wave * 15);
           } else if (isThinking) {
             final wave = math

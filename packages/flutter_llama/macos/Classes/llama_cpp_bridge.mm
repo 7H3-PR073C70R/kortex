@@ -13,15 +13,16 @@
 // Include llama.cpp headers
 #include "../../llama.cpp/include/llama.h"
 
-// Global state
+/// Global state
 static llama_model* g_model = nullptr;
 static llama_context* g_context = nullptr;
 static const llama_vocab* g_vocab = nullptr;
 static llama_sampler* g_sampler = nullptr;
 static std::mutex g_mutex;
 static bool g_should_stop = false;
-static std::vector<std::string> g_stream_tokens;
-static size_t g_stream_pos = 0;
+static int g_stream_n_pos = 0;
+static int g_stream_n_generated = 0;
+static int g_stream_max_tokens = 0;
 
 extern "C" {
 
@@ -37,6 +38,8 @@ bool llama_init_model(
 ) {
     std::lock_guard<std::mutex> lock(g_mutex);
     
+    llama_backend_init();
+
     NSLog(@"[llama_cpp_bridge] Initializing model: %s", model_path);
     NSLog(@"[llama_cpp_bridge] Threads: %d, GPU layers: %d, Context: %d", 
           n_threads, n_gpu_layers, context_size);
@@ -127,11 +130,11 @@ bool llama_generate(
     
     std::string prompt_text(prompt);
     
-    // Tokenize prompt
-    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, true, true);
+    // Tokenize prompt without adding extra leading BOS (add_special = false, parse_special = true)
+    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, false, true);
     std::vector<llama_token> prompt_tokens(n_prompt);
     
-    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
+    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), false, true) < 0) {
         NSLog(@"[llama_cpp_bridge] Failed to tokenize prompt");
         return false;
     }
@@ -172,6 +175,10 @@ bool llama_generate(
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_dist(1234));
+    
+    for (size_t i = 0; i < prompt_tokens.size(); ++i) {
+        llama_sampler_accept(g_sampler, prompt_tokens[i]);
+    }
     
     // Generate tokens
     std::string result;
@@ -245,16 +252,17 @@ void llama_generate_stream_init(
     }
     
     g_should_stop = false;
-    g_stream_tokens.clear();
-    g_stream_pos = 0;
+    g_stream_n_pos = 0;
+    g_stream_n_generated = 0;
+    g_stream_max_tokens = max_tokens;
     
     std::string prompt_text(prompt);
     
-    // Tokenize prompt
-    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, true, true);
+    // Tokenize prompt without adding extra leading BOS (add_special = false, parse_special = true)
+    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, false, true);
     std::vector<llama_token> prompt_tokens(n_prompt);
     
-    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
+    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), false, true) < 0) {
         NSLog(@"[llama_cpp_bridge] Failed to tokenize prompt");
         return;
     }
@@ -296,42 +304,13 @@ void llama_generate_stream_init(
     llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_dist(1234));
     
-    // Pre-generate tokens and convert to strings
-    int n_pos = (int)prompt_tokens.size();
-    for (int i = 0; i < max_tokens; i++) {
-        if (g_should_stop) break;
-        if (n_pos >= (int)n_ctx) break;
-        
-        llama_token new_token = llama_sampler_sample(g_sampler, g_context, -1);
-        llama_sampler_accept(g_sampler, new_token);
-        
-        if (llama_vocab_is_eog(g_vocab, new_token)) {
-            break;
-        }
-        
-        // Convert token to text and store
-        char token_str[256] = {0};
-        int n = llama_token_to_piece(g_vocab, new_token, token_str, sizeof(token_str) - 1, 0, true);
-        if (n > 0) {
-            token_str[n] = '\0';
-            std::string piece(token_str);
-            if (piece.find("<|im_end|>") != std::string::npos ||
-                piece.find("<|endoftext|>") != std::string::npos ||
-                piece.find("<|im_start|>") != std::string::npos) {
-                break;
-            }
-            g_stream_tokens.push_back(piece);
-        }
-        
-       llama_batch batch = llama_batch_get_one(&new_token, 1);
-        n_pos++;
-        
-        if (llama_decode(g_context, batch) != 0) {
-            break;
-        }
+    for (size_t i = 0; i < prompt_tokens.size(); ++i) {
+        llama_sampler_accept(g_sampler, prompt_tokens[i]);
     }
     
-    NSLog(@"[llama_cpp_bridge] Pre-generated %zu tokens for streaming", g_stream_tokens.size());
+    g_stream_n_pos = (int)prompt_tokens.size();
+    
+    NSLog(@"[llama_cpp_bridge] Stream initialized with %zu prompt tokens", prompt_tokens.size());
 }
 
 // Get next token in stream
@@ -341,14 +320,55 @@ bool llama_generate_stream_next(
 ) {
     std::lock_guard<std::mutex> lock(g_mutex);
     
-    if (g_should_stop || g_stream_pos >= g_stream_tokens.size()) {
+    if (g_should_stop || !g_model || !g_context || !g_sampler || !g_vocab) {
         return false;
     }
     
-    const std::string& token = g_stream_tokens[g_stream_pos++];
+    if (g_stream_n_generated >= g_stream_max_tokens) {
+        return false;
+    }
     
-    size_t copy_len = std::min(token.length(), (size_t)(output_size - 1));
-    memcpy(output, token.c_str(), copy_len);
+    const uint32_t n_ctx = llama_n_ctx(g_context);
+    if (g_stream_n_pos >= (int)n_ctx - 1) {
+        NSLog(@"[llama_cpp_bridge] Stream context limit reached (%d)", g_stream_n_pos);
+        return false;
+    }
+    
+    llama_token new_token = llama_sampler_sample(g_sampler, g_context, -1);
+    llama_sampler_accept(g_sampler, new_token);
+    
+    if (llama_vocab_is_eog(g_vocab, new_token)) {
+        NSLog(@"[llama_cpp_bridge] Stream EOS token reached");
+        return false;
+    }
+    
+    char token_str[256] = {0};
+    int n = llama_token_to_piece(g_vocab, new_token, token_str, sizeof(token_str) - 1, 0, true);
+    if (n <= 0) {
+        return false;
+    }
+    
+    token_str[n] = '\0';
+    std::string piece(token_str);
+    
+    if (piece.find("<|im_end|>") != std::string::npos ||
+        piece.find("<|endoftext|>") != std::string::npos ||
+        piece.find("<|im_start|>") != std::string::npos) {
+        NSLog(@"[llama_cpp_bridge] Stream ChatML stop token reached");
+        return false;
+    }
+    
+    llama_batch batch = llama_batch_get_one(&new_token, 1);
+    g_stream_n_pos++;
+    g_stream_n_generated++;
+    
+    if (llama_decode(g_context, batch) != 0) {
+        NSLog(@"[llama_cpp_bridge] Failed to decode token in stream");
+        return false;
+    }
+    
+    size_t copy_len = std::min(piece.length(), (size_t)(output_size - 1));
+    memcpy(output, piece.c_str(), copy_len);
     output[copy_len] = '\0';
     
     return true;
@@ -359,8 +379,9 @@ void llama_generate_stream_end() {
     std::lock_guard<std::mutex> lock(g_mutex);
     
     NSLog(@"[llama_cpp_bridge] Ending stream generation");
-    g_stream_tokens.clear();
-    g_stream_pos = 0;
+    g_stream_n_pos = 0;
+    g_stream_n_generated = 0;
+    g_stream_max_tokens = 0;
 }
 
 // Get model information
@@ -405,6 +426,7 @@ void llama_bridge_free_model() {
     }
     
     g_vocab = nullptr;
+    llama_backend_free();
     
     NSLog(@"[llama_cpp_bridge] Model freed successfully");
 }

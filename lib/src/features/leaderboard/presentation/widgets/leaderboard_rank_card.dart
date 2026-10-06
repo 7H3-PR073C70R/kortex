@@ -100,12 +100,12 @@ class _LeaderboardRankCardState extends State<LeaderboardRankCard> {
               color: entry.isCurrentUser
                   ? colors.primary.withAlpha(isDark ? 180 : 120)
                   : rank == 1
-                      ? goldColor.withAlpha(isDark ? 80 : 50)
-                      : isPromotion
-                          ? colors.success.withAlpha(isDark ? 50 : 30)
-                          : isDemotion
-                              ? colors.error.withAlpha(isDark ? 50 : 30)
-                              : colors.surfaceBorder.withAlpha(isDark ? 60 : 40),
+                  ? goldColor.withAlpha(isDark ? 80 : 50)
+                  : isPromotion
+                  ? colors.success.withAlpha(isDark ? 50 : 30)
+                  : isDemotion
+                  ? colors.error.withAlpha(isDark ? 50 : 30)
+                  : colors.surfaceBorder.withAlpha(isDark ? 60 : 40),
               width: entry.isCurrentUser ? 1.8 : 1.0,
             ),
             boxShadow: [
@@ -195,97 +195,106 @@ class _LeaderboardRankCardState extends State<LeaderboardRankCard> {
                     const SizedBox(height: 4),
 
                     // Streak Flame Pill + Track Pill
-                    Row(
-                      children: [
-                        // Dynamic Flame Streak Pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFFFF5722)
-                                    .withAlpha(isDark ? 55 : 30),
-                                const Color(0xFFFF9800)
-                                    .withAlpha(isDark ? 40 : 20),
-                              ],
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        children: [
+                          // Dynamic Flame Streak Pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
                             ),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: const Color(0xFFFF9800)
-                                  .withAlpha(isDark ? 90 : 50),
-                              width: 0.8,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(
+                                    0xFFFF5722,
+                                  ).withAlpha(isDark ? 55 : 30),
+                                  const Color(
+                                    0xFFFF9800,
+                                  ).withAlpha(isDark ? 40 : 20),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(
+                                  0xFFFF9800,
+                                ).withAlpha(isDark ? 90 : 50),
+                                width: 0.8,
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '🔥',
-                                style: typography.caption.regular.copyWith(
-                                  fontSize: 10,
-                                ),
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                '${effectiveStreak}d',
-                                style: typography.caption.bold.copyWith(
-                                  color: const Color(0xFFFF9800),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  fontFeatures: const [
-                                    FontFeature.tabularFigures(),
-                                  ],
-                                ),
-                              ),
-                              if (multiplierText != null) ...[
-                                const SizedBox(width: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 3.5,
-                                    vertical: 1,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '🔥',
+                                  style: typography.caption.regular.copyWith(
+                                    fontSize: 10,
                                   ),
-                                  decoration: BoxDecoration(
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${effectiveStreak}d',
+                                  style: typography.caption.bold.copyWith(
                                     color: const Color(0xFFFF9800),
-                                    borderRadius: BorderRadius.circular(4),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
                                   ),
-                                  child: Text(
-                                    multiplierText,
-                                    style: typography.caption.bold.copyWith(
-                                      color: Colors.black,
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.w900,
+                                ),
+                                if (multiplierText != null) ...[
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 3.5,
+                                      vertical: 1,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF9800),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      multiplierText,
+                                      style: typography.caption.bold.copyWith(
+                                        color: Colors.black,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w900,
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ],
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        // Track Label
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceBorder.withAlpha(isDark ? 40 : 20),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            entry.track,
-                            style: typography.caption.medium.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 10.5,
                             ),
                           ),
-                        ),
-                      ],
+
+                          const SizedBox(width: 8),
+
+                          // Track Label
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceBorder.withAlpha(
+                                isDark ? 40 : 20,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              entry.track,
+                              style: typography.caption.medium.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 10.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
