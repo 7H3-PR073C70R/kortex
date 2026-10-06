@@ -21,14 +21,16 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
   min-height: 100vh;
   width: 100%;
+  max-width: 100%;
   position: relative;
   overflow-x: hidden;
-  overflow-x: clip;
   line-height: var(--line-height-body);
   background-color: var(--bg-canvas);
   color: var(--text-primary);
@@ -281,6 +283,46 @@ button {
 
 .nav-cta:active {
   transform: scale(0.97);
+}
+
+@media (max-width: 540px) {
+  .nav-content {
+    gap: 0.5rem;
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+  .brand-logo {
+    gap: 6px;
+    font-size: 0.95rem;
+  }
+  .brand-logo svg,
+  .brand-logo img {
+    width: 26px;
+    height: 26px;
+  }
+  .nav-actions {
+    gap: 6px;
+  }
+  .theme-toggle-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .nav-cta {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 380px) {
+  #headerDownloadText {
+    display: none;
+  }
+  .nav-cta svg {
+    margin-right: 0 !important;
+  }
+  .nav-cta {
+    padding: 7px 10px;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -800,7 +842,9 @@ button {
 .fsrs-button-group {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+  max-width: 100%;
 }
 
 .rating-pill-btn {
@@ -808,13 +852,32 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 6px 14px;
+  padding: 6px 12px;
   border-radius: var(--radius-sm);
   font-size: 0.8rem;
   font-weight: 600;
-  min-width: 62px;
+  min-width: 0;
+  flex: 1 1 auto;
   border: 1px solid var(--border-subtle);
   background: var(--bg-surface-elevated1);
+}
+
+@media (max-width: 520px) {
+  .fsrs-rating-container {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .fsrs-button-group {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    width: 100%;
+    gap: 6px;
+  }
+  .rating-pill-btn {
+    padding: 6px 4px;
+    font-size: 0.74rem;
+  }
 }
 
 .rating-pill-btn span {
@@ -1513,6 +1576,20 @@ button {
   color: var(--text-primary);
 }
 
+@media (max-width: 600px) {
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    gap: 0.9rem;
+  }
+  .footer-legal-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+}
+
 /* ==========================================================================
    Interactive Pillar Experience & Micro-Products
    ========================================================================== */
@@ -2086,7 +2163,7 @@ button {
 
 .proof-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
   gap: 1.9rem 1rem;
   text-align: center;
 }
@@ -2407,7 +2484,7 @@ button {
 
 .download-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 1.5rem;
   margin-top: 2.5rem;
 }
@@ -2421,6 +2498,12 @@ button {
   flex-direction: column;
   position: relative;
   transition: transform var(--duration-fast), border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+@media (max-width: 480px) {
+  .download-card {
+    padding: 1.4rem 1.1rem;
+  }
 }
 
 .download-card:hover {
@@ -2567,6 +2650,7 @@ button {
   display: flex;
   align-items: stretch;
   width: 100%;
+  max-width: 100%;
   background: var(--bg-card);
   border: 1.5px solid var(--color-primary);
   border-radius: var(--radius-lg);
@@ -2583,6 +2667,7 @@ button {
 
 .hero-download-main-btn {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -2610,6 +2695,9 @@ button {
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .hero-download-title {
@@ -2617,12 +2705,20 @@ button {
   font-size: 1.05rem;
   font-weight: 750;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .hero-download-sub {
   font-size: 0.78rem;
   opacity: 0.88;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .hero-download-main-btn .dl-arrow {
@@ -2633,6 +2729,7 @@ button {
 .hero-download-dropdown-wrapper {
   position: relative;
   display: flex;
+  flex-shrink: 0;
 }
 
 .hero-download-dropdown-btn {
@@ -2640,6 +2737,7 @@ button {
   align-items: center;
   justify-content: center;
   width: 52px;
+  flex-shrink: 0;
   background: var(--color-primary);
   color: #FFFFFF;
   border: none;
@@ -2658,7 +2756,8 @@ button {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 320px;
+  width: min(320px, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
   background-color: #121715 !important;
   border: 1px solid var(--border-highlight, rgba(255, 255, 255, 0.12));
   border-radius: var(--radius-md);
@@ -2712,26 +2811,39 @@ button {
 .hero-download-menu .menu-item-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .hero-download-menu .menu-label {
   font-size: 0.86rem;
   font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hero-download-menu .menu-sub {
   font-size: 0.74rem;
   color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Quick Selector Bar */
 .hero-os-selector-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  row-gap: 4px;
+  column-gap: 8px;
   font-size: 0.82rem;
   color: var(--text-secondary);
+  max-width: 100%;
+  text-align: center;
 }
 
 .hero-os-selector-bar .os-link {
@@ -2748,12 +2860,30 @@ button {
   color: var(--text-muted);
 }
 
+@media (max-width: 480px) {
+  .hero-download-main-btn {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .hero-download-dropdown-btn {
+    width: 44px;
+  }
+  .hero-download-title {
+    font-size: 0.92rem;
+  }
+  .hero-download-sub {
+    font-size: 0.72rem;
+  }
+}
+
 /* Download Section OS Filter Tabs */
 .download-os-tabs {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 1.5rem;
+  max-width: 100%;
 }
 
 .download-os-tab {
