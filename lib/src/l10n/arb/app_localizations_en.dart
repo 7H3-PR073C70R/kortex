@@ -2905,7 +2905,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voiceGenderMale => 'Male Voice';
 
   @override
-  String get voiceDialogueListening => 'Listening to your question...';
+  String get voiceDialogueListening => 'Listening...';
 
   @override
   String get voiceDialogueThinking => 'Syllabot is thinking...';

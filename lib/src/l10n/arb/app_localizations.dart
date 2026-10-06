@@ -5117,7 +5117,7 @@ abstract class AppLocalizations {
   /// Status text while voice dialogue is listening
   ///
   /// In en, this message translates to:
-  /// **'Listening to your question...'**
+  /// **'Listening...'**
   String get voiceDialogueListening;
 
   /// Status text while Syllabot is thinking

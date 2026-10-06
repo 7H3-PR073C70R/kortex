@@ -111,6 +111,7 @@ class AppAdaptiveSheet {
       isScrollControlled: isScrollControlled,
       isDismissible: isDismissible,
       enableDrag: enableDrag,
+      useSafeArea: useSafeArea,
       backgroundColor: backgroundColor ?? Colors.transparent,
       barrierColor: barrierColor,
       routeSettings: routeSettings,

@@ -243,7 +243,6 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         _state = DialogueState.thinking;
       });
       _soundLevelNotifier.value = 0;
-      _isProcessingPrompt = true;
       unawaited(_earconService.playProcessingCommit());
       await _sttHandler.stopListening();
       await _processVoicePrompt(prompt);
@@ -645,6 +644,22 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           }
 
           // Mobile / Adaptive Sheet Presentation with Strict Safe Area Insets
+          final mediaQuery = MediaQuery.of(context);
+          final windowTopPadding =
+              View.of(context).padding.top / View.of(context).devicePixelRatio;
+          final topInset = math.max(
+            mediaQuery.viewPadding.top,
+            math.max(mediaQuery.padding.top, windowTopPadding),
+          );
+
+          final windowBottomPadding =
+              View.of(context).padding.bottom /
+              View.of(context).devicePixelRatio;
+          final bottomInset = math.max(
+            mediaQuery.viewPadding.bottom,
+            math.max(mediaQuery.padding.bottom, windowBottomPadding),
+          );
+
           return Container(
             decoration: BoxDecoration(
               color: colors.backgroundPrimary,
@@ -652,7 +667,11 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                 top: Radius.circular(AppRadius.dialog),
               ),
             ),
-            child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: topInset > 0 ? topInset + 6 : 12,
+                bottom: bottomInset > 0 ? bottomInset + 4 : 12,
+              ),
               child: _buildModalContent(
                 context,
                 stateColor: stateColor,
@@ -707,21 +726,6 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           ),
           child: Column(
             children: [
-              // 1. Mobile Drag Handle
-              if (!isDesktop) ...[
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 6),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceBorder.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ],
-
               // 2. Adaptive Top Navigation Header (safely below dynamic island)
               _buildHeader(context, isDesktop: isDesktop),
 
@@ -766,7 +770,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Left Group: Mode Chip & Branding
+        // Left Group: Mode Chip & Branding (Flexible to prevent horizontal overflow)
         Flexible(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -786,11 +790,14 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                   size: 15,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  'Syllabot Voice',
-                  style: typography.caption.bold.copyWith(
-                    color: colors.primary,
-                    fontSize: 12,
+                Flexible(
+                  child: Text(
+                    'Syllabot Voice',
+                    overflow: TextOverflow.ellipsis,
+                    style: typography.caption.bold.copyWith(
+                      color: colors.primary,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
                 if (isDesktop) ...[
@@ -822,7 +829,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
 
         const SizedBox(width: 8),
 
-        // Right Group: Voice Controls & Dismiss
+        // Right Group: Voice Persona Controls & Close
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -835,8 +842,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                     duration: AppMotion.snappy,
                     curve: AppMotion.snappyCurve,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 6,
+                      horizontal: 8,
+                      vertical: 5,
                     ),
                     decoration: BoxDecoration(
                       color: isHovered
@@ -857,23 +864,23 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                               ? Icons.face_3_rounded
                               : Icons.face_6_rounded,
                           color: colors.primary,
-                          size: 16,
+                          size: 15,
                         ),
-                        const SizedBox(width: 5),
+                        const SizedBox(width: 4),
                         Text(
                           _selectedGender == VoiceGender.female
                               ? l10n.voiceGenderFemale
                               : l10n.voiceGenderMale,
                           style: typography.caption.bold.copyWith(
                             color: colors.textPrimary,
-                            fontSize: 12,
+                            fontSize: 11,
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                         Icon(
                           Icons.swap_horiz_rounded,
                           color: colors.textSecondary,
-                          size: 14,
+                          size: 13,
                         ),
                       ],
                     ),
@@ -882,57 +889,14 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
               },
             ),
 
-            const SizedBox(width: 6),
-
-            // Mute Pill
-            PlatformHoverBuilder(
-              builder: (context, isHovered, child) {
-                return ShrinkableButton(
-                  onTap: _toggleMute,
-                  child: AnimatedContainer(
-                    duration: AppMotion.snappy,
-                    curve: AppMotion.snappyCurve,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _isMuted
-                          ? colors.error.withValues(alpha: isDark ? 0.25 : 0.12)
-                          : (isHovered
-                                ? colors.primary.withValues(alpha: 0.15)
-                                : colors.surfaceSecondary),
-                      borderRadius: AppRadius.radiusCard,
-                      border: Border.all(
-                        color: _isMuted
-                            ? colors.error.withValues(alpha: 0.5)
-                            : (isHovered
-                                  ? colors.primary.withValues(alpha: 0.4)
-                                  : colors.surfaceBorder.withValues(
-                                      alpha: 0.6,
-                                    )),
-                      ),
-                    ),
-                    child: Icon(
-                      _isMuted
-                          ? Icons.volume_off_rounded
-                          : Icons.volume_up_rounded,
-                      color: _isMuted ? colors.error : colors.primary,
-                      size: 16,
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
 
             // Desktop Esc Key Hint
             if (isDesktop) ...[
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 7,
-                  vertical: 4,
+                  horizontal: 6,
+                  vertical: 3,
                 ),
                 decoration: BoxDecoration(
                   color: colors.surfaceSecondary.withValues(alpha: 0.8),
@@ -945,7 +909,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                   'Esc',
                   style: typography.caption.regular.copyWith(
                     color: colors.textMuted,
-                    fontSize: 11,
+                    fontSize: 10,
                   ),
                 ),
               ),
@@ -957,6 +921,11 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
               builder: (context, isHovered, child) {
                 return IconButton(
                   iconSize: 20,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  padding: EdgeInsets.zero,
                   tooltip: 'Close Voice Dialogue',
                   icon: Icon(
                     Icons.close_rounded,
@@ -1414,7 +1383,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                       ),
                     ),
                     child: Icon(
-                      Icons.close_rounded,
+                      Icons.close,
                       color: colors.textSecondary,
                       size: 20,
                     ),
