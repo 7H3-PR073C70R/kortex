@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:kortex/src/core/constants/app_spacing.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/audio_earcon_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -19,6 +19,7 @@ import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
+/// Interactive dialogue lifecycle states.
 enum DialogueState {
   listening,
   thinking,
@@ -26,9 +27,15 @@ enum DialogueState {
   idle,
 }
 
-/// Full-screen interactive voice dialogue mode with live audio waveform,
-/// bidirectional speech-to-text / text-to-speech, conversational spiral loop,
-/// voice gender toggle, audio mute toggle, and full-screen desktop overlay presentation.
+/// Industry-standard interactive AI voice dialogue modal.
+///
+/// Features:
+/// - Siri / Gemini fluid multi-color acoustic sound ribbon visualizer (`CustomPainter`).
+/// - Strict safe-area protection preventing status bar / Dynamic Island overlap.
+/// - Zero-jank GPU-accelerated audio spectrum rendering via [ValueNotifier].
+/// - Real-time bidirectional streaming dialogue with natural turn-taking & barge-in.
+/// - Adaptive layout responsive across mobile, tablet, desktop, and landscape viewports.
+/// - Full keyboard accessibility (Esc to exit, Space to toggle speech).
 class VoiceDialogueModal extends StatefulWidget {
   const VoiceDialogueModal({
     required this.ttsHandler,
@@ -61,12 +68,12 @@ class VoiceDialogueModal extends StatefulWidget {
         context: context,
         barrierDismissible: true,
         barrierLabel: 'Dismiss Voice Dialogue',
-        barrierColor: Colors.black.withValues(alpha: 0.85),
+        barrierColor: Colors.black.withValues(alpha: 0.75),
         transitionDuration: AppMotion.snappy,
         transitionBuilder: (context, anim1, anim2, child) {
           final curved = AppMotion.easeOutCubic.transform(anim1.value);
           return Transform.scale(
-            scale: 0.97 + (0.03 * curved),
+            scale: 0.95 + (0.05 * curved),
             child: Opacity(
               opacity: anim1.value.clamp(0.0, 1.0),
               child: child,
@@ -90,6 +97,7 @@ class VoiceDialogueModal extends StatefulWidget {
 
     return AppAdaptiveSheet.showModal<void>(
       context: context,
+      maxWidth: 620,
       builder: (context) => VoiceDialogueModal(
         onSendPrompt: onSendPrompt,
         onStreamPrompt: onStreamPrompt,
@@ -106,8 +114,11 @@ class VoiceDialogueModal extends StatefulWidget {
 class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     with SingleTickerProviderStateMixin {
   late final SpeechToTextHandler _sttHandler;
-  late final AnimationController _pulseController;
+  late final AnimationController _ribbonAnimationController;
   late final AudioEarconService _earconService;
+
+  /// High-performance decibel notifier avoiding full modal rebuilds during mic streaming.
+  final ValueNotifier<double> _soundLevelNotifier = ValueNotifier<double>(0);
 
   DialogueState _state = DialogueState.idle;
   String _liveTranscript = '';
@@ -115,13 +126,13 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   String _latestResponse = '';
   late VoiceGender _selectedGender;
   bool _isMuted = false;
-  double _soundLevel = 0;
   bool _isTranscriptExpanded = false;
   bool _isProcessingPrompt = false;
+
   Timer? _silenceTimer;
   Timer? _restartListeningTimer;
 
-  static const Duration _silenceThreshold = Duration(milliseconds: 800);
+  static const Duration _silenceThreshold = Duration(milliseconds: 1200);
 
   @override
   void initState() {
@@ -132,11 +143,11 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         ? locator<AudioEarconService>()
         : AudioEarconServiceImpl();
 
-    _pulseController = AnimationController(
+    _ribbonAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 2400),
     );
-    unawaited(_pulseController.repeat(reverse: true));
+    unawaited(_ribbonAnimationController.repeat());
 
     _sttHandler = SpeechToTextHandler(
       onResult: (text) {},
@@ -162,10 +173,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       onSoundLevelChange: (level) {
         if (!mounted || _state != DialogueState.listening) return;
         final normalized = ((level + 40.0) / 50.0).clamp(0.0, 1.0);
-        if ((normalized - _soundLevel).abs() > 0.04) {
-          setState(() {
-            _soundLevel = normalized;
-          });
+        if ((normalized - _soundLevelNotifier.value).abs() > 0.02) {
+          _soundLevelNotifier.value = normalized;
         }
       },
       onListeningChanged: (listening) {
@@ -177,8 +186,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           } else {
             setState(() {
               _state = DialogueState.idle;
-              _soundLevel = 0;
             });
+            _soundLevelNotifier.value = 0;
           }
         }
       },
@@ -190,8 +199,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           setState(() {
             _latestResponse = errorMsg;
             _state = DialogueState.idle;
-            _soundLevel = 0;
           });
+          _soundLevelNotifier.value = 0;
           if (!_isMuted) {
             unawaited(widget.ttsHandler.speak(errorMsg));
           }
@@ -199,7 +208,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       },
     );
 
-    // Speak initial AI greeting automatically, then start conversational loop
+    // Speak initial Syllabot greeting, then start conversational loop
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_speakInitialGreeting());
     });
@@ -232,8 +241,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     if (prompt.isNotEmpty) {
       setState(() {
         _state = DialogueState.thinking;
-        _soundLevel = 0;
       });
+      _soundLevelNotifier.value = 0;
       _isProcessingPrompt = true;
       unawaited(_earconService.playProcessingCommit());
       await _sttHandler.stopListening();
@@ -243,8 +252,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       if (mounted) {
         setState(() {
           _state = DialogueState.idle;
-          _soundLevel = 0;
         });
+        _soundLevelNotifier.value = 0;
       }
     }
   }
@@ -280,7 +289,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   void dispose() {
     _silenceTimer?.cancel();
     _restartListeningTimer?.cancel();
-    _pulseController.dispose();
+    _ribbonAnimationController.dispose();
+    _soundLevelNotifier.dispose();
     _sttHandler.dispose();
     super.dispose();
   }
@@ -297,8 +307,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       _state = DialogueState.listening;
       _liveTranscript = '';
       _accumulatedTranscript = '';
-      _soundLevel = 0;
     });
+    _soundLevelNotifier.value = 0;
 
     unawaited(_earconService.playListeningStart());
     await _sttHandler.startListening(
@@ -320,10 +330,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     setState(() {
       _state = DialogueState.thinking;
       _latestResponse = '';
-      _soundLevel = 0;
     });
+    _soundLevelNotifier.value = 0;
 
-    // Speak progress cue out loud so users know Syllabot is processing
     if (!_isMuted) {
       unawaited(widget.ttsHandler.speak('Thinking...'));
     }
@@ -469,8 +478,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         setState(() {
           _latestResponse = errorText;
           _state = DialogueState.idle;
-          _soundLevel = 0;
         });
+        _soundLevelNotifier.value = 0;
 
         if (!_isMuted) {
           await widget.ttsHandler.speak(errorText);
@@ -481,7 +490,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     }
   }
 
-  void _onOrbTap() {
+  void _onInteractionTap() {
+    unawaited(HapticFeedback.lightImpact());
     if (_state == DialogueState.listening) {
       if (_liveTranscript.trim().isNotEmpty) {
         unawaited(_commitVoicePromptImmediately());
@@ -492,8 +502,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         _restartListeningTimer = null;
         setState(() {
           _state = DialogueState.idle;
-          _soundLevel = 0;
         });
+        _soundLevelNotifier.value = 0;
         unawaited(_sttHandler.stopListening());
       }
     } else if (_state == DialogueState.speaking ||
@@ -505,10 +515,6 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       _isProcessingPrompt = false;
       unawaited(_startListening());
     }
-  }
-
-  void _onBottomButtonTap() {
-    _onOrbTap();
   }
 
   void _toggleGender() {
@@ -544,558 +550,874 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
-    final isDark = context.isDarkMode;
-
-    final isListening = _state == DialogueState.listening;
-    final isSpeaking = _state == DialogueState.speaking;
-    final isThinking = _state == DialogueState.thinking;
-    final hasSpeech = _liveTranscript.trim().isNotEmpty;
-
-    final orbColor = isListening
-        ? colors.error
-        : isSpeaking
-        ? colors.syllabotAccent
-        : isThinking
-        ? colors.warning
-        : colors.primary;
-
     final isDesktop =
         AppAdaptiveSheet.isDesktopOrWeb(context) || widget.isFullScreenOverlay;
 
-    final content = Focus(
+    // Primary State Color Tone
+    final stateColor = switch (_state) {
+      DialogueState.listening => colors.primary,
+      DialogueState.speaking => colors.syllabotAccent,
+      DialogueState.thinking => colors.warning,
+      DialogueState.idle => colors.primary.withValues(alpha: 0.8),
+    };
+
+    return Focus(
       autofocus: true,
       onKeyEvent: (node, event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.escape) {
-          _closeModal();
-          return KeyEventResult.handled;
+        if (event is KeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.escape) {
+            _closeModal();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.space) {
+            _onInteractionTap();
+            return KeyEventResult.handled;
+          }
         }
         return KeyEventResult.ignored;
       },
-      child: SafeArea(
-        child: Padding(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxHeight < 680;
+          final isLandscape =
+              constraints.maxWidth > constraints.maxHeight &&
+              constraints.maxHeight < 520;
+
+          if (isDesktop) {
+            return Stack(
+              children: [
+                // Frosted Ambient Backdrop
+                GestureDetector(
+                  onTap: _closeModal,
+                  behavior: HitTestBehavior.opaque,
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: Colors.black.withValues(alpha: 0.72),
+                    ),
+                  ),
+                ),
+                // Centered Elevated Glass Shell
+                Center(
+                  child: Container(
+                    width: math.min(constraints.maxWidth - 48, 680),
+                    height: math.min(constraints.maxHeight * 0.88, 800),
+                    constraints: const BoxConstraints(minHeight: 520),
+                    decoration: BoxDecoration(
+                      color: colors.backgroundPrimary.withValues(alpha: 0.94),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: colors.surfaceBorder.withValues(alpha: 0.35),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 40,
+                          spreadRadius: 4,
+                          offset: const Offset(0, 16),
+                        ),
+                        BoxShadow(
+                          color: stateColor.withValues(alpha: 0.12),
+                          blurRadius: 60,
+                          spreadRadius: -10,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: SafeArea(
+                        child: _buildModalContent(
+                          context,
+                          stateColor: stateColor,
+                          isDesktop: true,
+                          isCompact: isCompact,
+                          isLandscape: isLandscape,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          // Mobile / Adaptive Sheet Presentation with Strict Safe Area Insets
+          return Container(
+            decoration: BoxDecoration(
+              color: colors.backgroundPrimary,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.dialog),
+              ),
+            ),
+            child: SafeArea(
+              child: _buildModalContent(
+                context,
+                stateColor: stateColor,
+                isDesktop: false,
+                isCompact: isCompact,
+                isLandscape: isLandscape,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildModalContent(
+    BuildContext context, {
+    required Color stateColor,
+    required bool isDesktop,
+    required bool isCompact,
+    required bool isLandscape,
+  }) {
+    final colors = context.colors;
+    final isDark = context.isDarkMode;
+
+    return Stack(
+      children: [
+        // Subtle Ambient Radial Aura behind the Ribbon
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedContainer(
+              duration: AppMotion.snappy,
+              curve: AppMotion.snappyCurve,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.15),
+                  radius: 0.75,
+                  colors: [
+                    stateColor.withValues(alpha: isDark ? 0.18 : 0.09),
+                    colors.backgroundPrimary.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Primary Modal Layout
+        Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: isDesktop ? 32 : 20,
-            vertical: isDesktop ? 24 : 12,
+            horizontal: isDesktop ? 28 : 20,
+            vertical: isDesktop ? 16 : 8,
           ),
           child: Column(
             children: [
-              AppSpacing.verticalSpaceMedium,
-              // 1. Header Drag Handle & Controls
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Left Control Group: Branding & Voice Settings
-                  Row(
-                    children: [
-                      if (isDesktop) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(30),
-                            borderRadius: AppRadius.radiusBadge,
-                            border: Border.all(
-                              color: colors.primary.withAlpha(80),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.graphic_eq_rounded,
-                                color: colors.primary,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Syllabot Voice Dialogue',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                      ],
-
-                      // Voice Gender Selector Pill
-                      PlatformHoverBuilder(
-                        builder: (context, isHovered, child) {
-                          return ShrinkableButton(
-                            onTap: _toggleGender,
-                            child: AnimatedContainer(
-                              duration: AppMotion.snappy,
-                              curve: AppMotion.snappyCurve,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isHovered
-                                    ? colors.primary.withAlpha(25)
-                                    : colors.surfaceSecondary,
-                                borderRadius: AppRadius.radiusCard,
-                                border: Border.all(
-                                  color: isHovered
-                                      ? colors.primary.withAlpha(120)
-                                      : colors.surfaceBorder.withAlpha(100),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _selectedGender == VoiceGender.female
-                                        ? Icons.face_3_rounded
-                                        : Icons.face_6_rounded,
-                                    color: colors.primary,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _selectedGender == VoiceGender.female
-                                        ? l10n.voiceGenderFemale
-                                        : l10n.voiceGenderMale,
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.textPrimary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.swap_horiz_rounded,
-                                    color: colors.textSecondary,
-                                    size: 16,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      // Intuitive Voice Output Mute/Unmute Toggle Pill
-                      PlatformHoverBuilder(
-                        builder: (context, isHovered, child) {
-                          return ShrinkableButton(
-                            onTap: _toggleMute,
-                            child: AnimatedContainer(
-                              duration: AppMotion.snappy,
-                              curve: AppMotion.snappyCurve,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _isMuted
-                                    ? colors.error.withAlpha(isDark ? 45 : 25)
-                                    : (isHovered
-                                          ? colors.primary.withAlpha(25)
-                                          : colors.surfaceSecondary),
-                                borderRadius: AppRadius.radiusCard,
-                                border: Border.all(
-                                  color: _isMuted
-                                      ? colors.error.withAlpha(140)
-                                      : (isHovered
-                                            ? colors.primary.withAlpha(120)
-                                            : colors.surfaceBorder.withAlpha(
-                                                100,
-                                              )),
-                                ),
-                              ),
-                              child: Icon(
-                                _isMuted
-                                    ? Icons.volume_off_rounded
-                                    : Icons.volume_up_rounded,
-                                color: _isMuted ? colors.error : colors.primary,
-                                size: 18,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+              // 1. Mobile Drag Handle
+              if (!isDesktop) ...[
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 6),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceBorder.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-
-                  // Right Control Group: ESC hint & Close Button
-                  Row(
-                    children: [
-                      if (isDesktop) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceSecondary.withAlpha(120),
-                            borderRadius: AppRadius.radiusMicro,
-                            border: Border.all(
-                              color: colors.surfaceBorder.withAlpha(80),
-                            ),
-                          ),
-                          child: Text(
-                            'Esc to exit',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textMuted,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-
-                      PlatformHoverBuilder(
-                        builder: (context, isHovered, child) {
-                          return IconButton(
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: isHovered
-                                  ? colors.primary
-                                  : colors.textPrimary,
-                            ),
-                            onPressed: _closeModal,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              const Spacer(),
-
-              // 2. Central Interactive Voice Pulse Orb
-              GestureDetector(
-                onTap: _onOrbTap,
-                child: AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (context, child) {
-                    final pulse = _pulseController.value;
-                    final soundExpansion = isListening
-                        ? (_soundLevel * 28.0)
-                        : 0.0;
-                    final orbSize = isDesktop ? 104.0 : 88.0;
-
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Outer Glow Ring
-                        Container(
-                          width: (orbSize + 52) + (pulse * 28) + soundExpansion,
-                          height:
-                              (orbSize + 52) + (pulse * 28) + soundExpansion,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: orbColor.withAlpha(
-                              ((30 + (isListening ? _soundLevel * 40 : 0)) *
-                                      (1 - pulse))
-                                  .toInt()
-                                  .clamp(0, 255),
-                            ),
-                          ),
-                        ),
-                        // Middle Ring
-                        Container(
-                          width:
-                              (orbSize + 22) +
-                              (pulse * 14) +
-                              (soundExpansion * 0.6),
-                          height:
-                              (orbSize + 22) +
-                              (pulse * 14) +
-                              (soundExpansion * 0.6),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: orbColor.withAlpha(
-                              ((60 + (isListening ? _soundLevel * 50 : 0)) *
-                                      (1 - pulse))
-                                  .toInt()
-                                  .clamp(0, 255),
-                            ),
-                          ),
-                        ),
-                        // Inner Orb
-                        Container(
-                          width: orbSize,
-                          height: orbSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [
-                                orbColor.withAlpha(240),
-                                orbColor,
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: orbColor.withAlpha(
-                                  isDark ? 110 : 60,
-                                ),
-                                blurRadius: isDesktop ? 32 : 24,
-                                spreadRadius: 2,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: AnimatedSwitcher(
-                            duration: AppMotion.snappy,
-                            child: Icon(
-                              isListening
-                                  ? Icons.mic_rounded
-                                  : isSpeaking
-                                  ? Icons.volume_up_rounded
-                                  : isThinking
-                                  ? Icons.auto_awesome_rounded
-                                  : Icons.mic_none_rounded,
-                              key: ValueKey(_state),
-                              color: colors.white,
-                              size: isDesktop ? 44 : 38,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
                 ),
-              ),
+              ],
 
-              const SizedBox(height: 20),
+              // 2. Adaptive Top Navigation Header (safely below dynamic island)
+              _buildHeader(context, isDesktop: isDesktop),
 
-              // 3. Dynamic Waveform Bars
-              AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, child) {
-                  return _VoiceWaveformBars(
-                    soundLevel: _soundLevel,
-                    state: _state,
-                    color: orbColor,
-                    animationValue: _pulseController.value,
-                  );
-                },
+              const SizedBox(height: 8),
+
+              // 3. Main Center Workspace (Landscape Split vs Portrait Stack)
+              Expanded(
+                child: isLandscape
+                    ? _buildLandscapeWorkspace(
+                        context,
+                        stateColor: stateColor,
+                      )
+                    : _buildPortraitWorkspace(
+                        context,
+                        stateColor: stateColor,
+                        isCompact: isCompact,
+                        isDesktop: isDesktop,
+                      ),
               ),
 
               const SizedBox(height: 10),
 
-              // 4. Status Label
-              Text(
-                isListening
-                    ? (hasSpeech
-                          ? l10n.voiceDialogueListening
-                          : l10n.voiceDialogueListening)
-                    : isThinking
-                    ? '${l10n.voiceDialogueThinking} & analyzing...'
-                    : isSpeaking
-                    ? l10n.voiceDialogueSpeaking
-                    : l10n.voiceDialogueTapToSpeak,
-                textAlign: TextAlign.center,
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: isDesktop ? 20 : 18,
-                ),
+              // 4. Floating Interactive Bottom Action Dock
+              _buildBottomActionDock(
+                context,
+                stateColor: stateColor,
+                isDesktop: isDesktop,
               ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-              const SizedBox(height: 12),
+  Widget _buildHeader(BuildContext context, {required bool isDesktop}) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
-              // 5. Live Captions / STT Transcript Card with Visibility Toggle
-              if (_liveTranscript.isNotEmpty) ...[
-                ShrinkableButton(
-                  onTap: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    setState(() {
-                      _isTranscriptExpanded = !_isTranscriptExpanded;
-                    });
-                  },
-                  child: Container(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // Left Group: Mode Chip & Branding
+        Flexible(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: colors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
+              borderRadius: AppRadius.radiusBadge,
+              border: Border.all(
+                color: colors.primary.withValues(alpha: isDark ? 0.35 : 0.2),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.graphic_eq_rounded,
+                  color: colors.primary,
+                  size: 15,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Syllabot Voice',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.primary,
+                    fontSize: 12,
+                  ),
+                ),
+                if (isDesktop) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 3,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      widget.initialMode.label,
+                      overflow: TextOverflow.ellipsis,
+                      style: typography.caption.medium.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // Right Group: Voice Controls & Dismiss
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Voice Gender Selector Pill
+            PlatformHoverBuilder(
+              builder: (context, isHovered, child) {
+                return ShrinkableButton(
+                  onTap: _toggleGender,
+                  child: AnimatedContainer(
+                    duration: AppMotion.snappy,
+                    curve: AppMotion.snappyCurve,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
+                      horizontal: 9,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(isDark ? 35 : 20),
-                      borderRadius: AppRadius.radiusBadge,
+                      color: isHovered
+                          ? colors.primary.withValues(alpha: 0.15)
+                          : colors.surfaceSecondary,
+                      borderRadius: AppRadius.radiusCard,
                       border: Border.all(
-                        color: colors.primary.withAlpha(isDark ? 70 : 40),
-                        width: 0.9,
+                        color: isHovered
+                            ? colors.primary.withValues(alpha: 0.4)
+                            : colors.surfaceBorder.withValues(alpha: 0.6),
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.subtitles_rounded,
-                          size: 13,
+                          _selectedGender == VoiceGender.female
+                              ? Icons.face_3_rounded
+                              : Icons.face_6_rounded,
                           color: colors.primary,
+                          size: 16,
                         ),
                         const SizedBox(width: 5),
                         Text(
-                          _isTranscriptExpanded
-                              ? 'Hide Speech-to-Text 📝'
-                              : 'Show Speech-to-Text (STT) 📝',
+                          _selectedGender == VoiceGender.female
+                              ? l10n.voiceGenderFemale
+                              : l10n.voiceGenderMale,
                           style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 11,
+                            color: colors.textPrimary,
+                            fontSize: 12,
                           ),
                         ),
                         const SizedBox(width: 4),
                         Icon(
-                          _isTranscriptExpanded
-                              ? Icons.keyboard_arrow_up_rounded
-                              : Icons.keyboard_arrow_down_rounded,
-                          size: 15,
-                          color: colors.primary,
+                          Icons.swap_horiz_rounded,
+                          color: colors.textSecondary,
+                          size: 14,
                         ),
                       ],
                     ),
                   ),
-                ),
-                if (_isTranscriptExpanded) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 680),
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                );
+              },
+            ),
+
+            const SizedBox(width: 6),
+
+            // Mute Pill
+            PlatformHoverBuilder(
+              builder: (context, isHovered, child) {
+                return ShrinkableButton(
+                  onTap: _toggleMute,
+                  child: AnimatedContainer(
+                    duration: AppMotion.snappy,
+                    curve: AppMotion.snappyCurve,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                      horizontal: 8,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: colors.surfaceSecondary,
+                      color: _isMuted
+                          ? colors.error.withValues(alpha: isDark ? 0.25 : 0.12)
+                          : (isHovered
+                                ? colors.primary.withValues(alpha: 0.15)
+                                : colors.surfaceSecondary),
                       borderRadius: AppRadius.radiusCard,
                       border: Border.all(
-                        color: isListening
-                            ? colors.primary.withAlpha(120)
-                            : colors.surfaceBorder.withAlpha(80),
+                        color: _isMuted
+                            ? colors.error.withValues(alpha: 0.5)
+                            : (isHovered
+                                  ? colors.primary.withValues(alpha: 0.4)
+                                  : colors.surfaceBorder.withValues(
+                                      alpha: 0.6,
+                                    )),
                       ),
                     ),
-                    child: Text(
-                      '"$_liveTranscript"',
-                      textAlign: TextAlign.center,
-                      style: typography.body.medium.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic,
-                      ),
+                    child: Icon(
+                      _isMuted
+                          ? Icons.volume_off_rounded
+                          : Icons.volume_up_rounded,
+                      color: _isMuted ? colors.error : colors.primary,
+                      size: 16,
                     ),
                   ),
-                ],
-              ],
+                );
+              },
+            ),
 
+            const SizedBox(width: 6),
+
+            // Desktop Esc Key Hint
+            if (isDesktop) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 7,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.surfaceSecondary.withValues(alpha: 0.8),
+                  borderRadius: AppRadius.radiusMicro,
+                  border: Border.all(
+                    color: colors.surfaceBorder.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: Text(
+                  'Esc',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textMuted,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
+
+            // Close Modal Button
+            PlatformHoverBuilder(
+              builder: (context, isHovered, child) {
+                return IconButton(
+                  iconSize: 20,
+                  tooltip: 'Close Voice Dialogue',
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: isHovered ? colors.primary : colors.textPrimary,
+                  ),
+                  onPressed: _closeModal,
+                );
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPortraitWorkspace(
+    BuildContext context, {
+    required Color stateColor,
+    required bool isCompact,
+    required bool isDesktop,
+  }) {
+    final hasResponse = _latestResponse.isNotEmpty;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (!hasResponse) const Spacer(),
+
+        // Siri / Gemini Glowing Acoustic Sound Ribbon
+        GestureDetector(
+          onTap: _onInteractionTap,
+          behavior: HitTestBehavior.opaque,
+          child: RepaintBoundary(
+            child: _SoundRibbonWidget(
+              stateColor: stateColor,
+              state: _state,
+              soundLevelNotifier: _soundLevelNotifier,
+              animation: _ribbonAnimationController,
+              height: isCompact ? 96 : (isDesktop ? 130 : 110),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Status Headline
+        _buildStatusHeadline(context),
+
+        const SizedBox(height: 8),
+
+        // User Live Transcription Pill / Card
+        if (_liveTranscript.isNotEmpty) ...[
+          _buildLiveTranscriptCard(context),
+          const SizedBox(height: 8),
+        ],
+
+        // Syllabot AI Response Viewer
+        if (hasResponse) ...[
+          Flexible(
+            flex: 3,
+            child: _buildResponseViewer(context, isDesktop: isDesktop),
+          ),
+        ],
+
+        if (!hasResponse) const Spacer(),
+      ],
+    );
+  }
+
+  Widget _buildLandscapeWorkspace(
+    BuildContext context, {
+    required Color stateColor,
+  }) {
+    return Row(
+      children: [
+        // Left Column: Sound Ribbon & Status
+        SizedBox(
+          width: 240,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: _onInteractionTap,
+                behavior: HitTestBehavior.opaque,
+                child: RepaintBoundary(
+                  child: _SoundRibbonWidget(
+                    stateColor: stateColor,
+                    state: _state,
+                    soundLevelNotifier: _soundLevelNotifier,
+                    animation: _ribbonAnimationController,
+                    height: 84,
+                  ),
+                ),
+              ),
               const SizedBox(height: 8),
+              _buildStatusHeadline(context, isCompact: true),
+            ],
+          ),
+        ),
 
-              // 6. Spoken Response Markdown / Formula Viewer
-              if (_latestResponse.isNotEmpty)
-                Expanded(
-                  flex: 4,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: isDesktop ? 740 : 600,
-                    ),
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: ChatBubbleWidget(
-                        message: ChatMessageEntity(
-                          id: 'dialogue_response',
-                          sessionId: 'dialogue_session',
-                          text: _latestResponse,
-                          sender: MessageSender.syllabot,
-                          timestamp: DateTime.now(),
+        const SizedBox(width: 16),
+
+        // Right Column: Transcripts & Response
+        Expanded(
+          child: Column(
+            children: [
+              if (_liveTranscript.isNotEmpty) ...[
+                _buildLiveTranscriptCard(context),
+                const SizedBox(height: 6),
+              ],
+              Expanded(
+                child: _latestResponse.isNotEmpty
+                    ? _buildResponseViewer(context, isDesktop: false)
+                    : Center(
+                        child: Text(
+                          'Syllabot voice assistant is ready.',
+                          style: context.typography.caption.regular.copyWith(
+                            color: context.colors.textMuted,
+                          ),
                         ),
-                        ttsHandler: widget.ttsHandler,
-                        showSpeakButton:
-                            false, // Speak button removed in voice mode
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusHeadline(BuildContext context, {bool isCompact = false}) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+    final isListening = _state == DialogueState.listening;
+    final isThinking = _state == DialogueState.thinking;
+    final isSpeaking = _state == DialogueState.speaking;
+    final hasSpeech = _liveTranscript.trim().isNotEmpty;
+
+    final headline = isListening
+        ? (hasSpeech
+              ? l10n.voiceDialogueListening
+              : l10n.voiceDialogueListening)
+        : isThinking
+        ? '${l10n.voiceDialogueThinking} & analyzing...'
+        : isSpeaking
+        ? l10n.voiceDialogueSpeaking
+        : l10n.voiceDialogueTapToSpeak;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (isListening) ...[
+          Container(
+            width: 7,
+            height: 7,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: colors.primary,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: colors.primary.withValues(alpha: 0.6),
+                  blurRadius: 6,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+        ],
+        Text(
+          headline,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: (isCompact ? typography.title3.bold : typography.title2.bold)
+              .copyWith(
+                color: colors.textPrimary,
+                fontSize: isCompact ? 16 : 18,
+              ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLiveTranscriptCard(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ShrinkableButton(
+          onTap: () {
+            unawaited(HapticFeedback.lightImpact());
+            setState(() {
+              _isTranscriptExpanded = !_isTranscriptExpanded;
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: colors.primary.withValues(alpha: isDark ? 0.15 : 0.08),
+              borderRadius: AppRadius.radiusBadge,
+              border: Border.all(
+                color: colors.primary.withValues(alpha: isDark ? 0.3 : 0.15),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.subtitles_rounded,
+                  size: 13,
+                  color: colors.primary,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  _isTranscriptExpanded
+                      ? 'Hide Speech-to-Text 📝'
+                      : 'Show Speech-to-Text (STT) 📝',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.primary,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _isTranscriptExpanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  size: 14,
+                  color: colors.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_isTranscriptExpanded) ...[
+          const SizedBox(height: 6),
+          Container(
+            constraints: const BoxConstraints(maxWidth: 580),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: colors.surfaceSecondary,
+              borderRadius: AppRadius.radiusCard,
+              border: Border.all(
+                color: _state == DialogueState.listening
+                    ? colors.primary.withValues(alpha: 0.5)
+                    : colors.surfaceBorder.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Text(
+              '"$_liveTranscript"',
+              textAlign: TextAlign.center,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: typography.body.medium.copyWith(
+                color: colors.textPrimary,
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildResponseViewer(BuildContext context, {required bool isDesktop}) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: isDesktop ? 620 : 540,
+      ),
+      child: ShaderMask(
+        shaderCallback: (rect) {
+          return const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.white,
+              Colors.white,
+              Colors.transparent,
+            ],
+            stops: [0.0, 0.05, 0.95, 1.0],
+          ).createShader(rect);
+        },
+        blendMode: BlendMode.dstIn,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: ChatBubbleWidget(
+            message: ChatMessageEntity(
+              id: 'dialogue_response',
+              sessionId: 'dialogue_session',
+              text: _latestResponse,
+              sender: MessageSender.syllabot,
+              timestamp: DateTime.now(),
+            ),
+            ttsHandler: widget.ttsHandler,
+            showSpeakButton: false,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomActionDock(
+    BuildContext context, {
+    required Color stateColor,
+    required bool isDesktop,
+  }) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+    final isDark = context.isDarkMode;
+
+    final isListening = _state == DialogueState.listening;
+    final isSpeaking = _state == DialogueState.speaking;
+    final hasSpeech = _liveTranscript.trim().isNotEmpty;
+
+    final buttonLabel = isListening
+        ? (hasSpeech
+              ? l10n.voiceDialogueDoneSpeaking
+              : l10n.voiceDialogueListening)
+        : isSpeaking
+        ? l10n.voiceDialogueTapToSpeak
+        : l10n.voiceDialogueTapToSpeak;
+
+    final buttonIcon = isListening
+        ? (hasSpeech ? Icons.arrow_upward_rounded : Icons.mic_rounded)
+        : Icons.mic_rounded;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: isDesktop ? 480 : double.infinity,
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: colors.surfaceSecondary.withValues(
+              alpha: isDark ? 0.9 : 0.8,
+            ),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: colors.surfaceBorder.withValues(alpha: 0.6),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // 1. Mute Output Toggle Button
+              Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: _toggleMute,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _isMuted
+                          ? colors.error.withValues(alpha: 0.15)
+                          : colors.surfacePrimary,
+                      border: Border.all(
+                        color: _isMuted
+                            ? colors.error.withValues(alpha: 0.4)
+                            : colors.surfaceBorder.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Icon(
+                      _isMuted
+                          ? Icons.volume_off_rounded
+                          : Icons.volume_up_rounded,
+                      color: _isMuted ? colors.error : colors.primary,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // 2. Primary Hero Interaction Button
+              Expanded(
+                child: ShrinkableButton(
+                  onTap: _onInteractionTap,
+                  child: Material(
+                    color: stateColor,
+                    borderRadius: BorderRadius.circular(24),
+                    elevation: 2,
+                    shadowColor: stateColor.withValues(alpha: 0.35),
+                    child: InkWell(
+                      onTap: _onInteractionTap,
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(
+                        height: 46,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              buttonIcon,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                buttonLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.body.bold.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
+              ),
 
-              const Spacer(),
+              const SizedBox(width: 8),
 
-              // 7. Interactive Bottom Action Button
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: isDesktop ? 480 : double.infinity,
-                  ),
-                  child: PlatformHoverBuilder(
-                    builder: (context, isHovered, child) {
-                      final buttonBg = isListening
-                          ? (hasSpeech
-                                ? colors.primary
-                                : colors.error.withAlpha(220))
-                          : isSpeaking
-                          ? colors.syllabotAccent
-                          : (isHovered
-                                ? colors.primary.withAlpha(235)
-                                : colors.primary);
-
-                      final buttonLabel = isListening
-                          ? (hasSpeech
-                                ? l10n.voiceDialogueDoneSpeaking
-                                : l10n.voiceDialogueListening)
-                          : isSpeaking
-                          ? l10n.voiceDialogueTapToSpeak
-                          : l10n.voiceDialogueTapToSpeak;
-
-                      final buttonIcon = isListening
-                          ? (hasSpeech
-                                ? Icons.arrow_upward_rounded
-                                : Icons.mic_rounded)
-                          : isSpeaking
-                          ? Icons.mic_rounded
-                          : Icons.mic_rounded;
-
-                      return ShrinkableButton(
-                        onTap: _onBottomButtonTap,
-                        child: AnimatedContainer(
-                          duration: AppMotion.snappy,
-                          curve: AppMotion.snappyCurve,
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            color: buttonBg,
-                            borderRadius: AppRadius.radiusPanel,
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.black.withAlpha(
-                                  isHovered
-                                      ? (isDark ? 60 : 30)
-                                      : (isDark ? 40 : 20),
-                                ),
-                                blurRadius: isHovered ? 18 : 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                buttonIcon,
-                                color: colors.white,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                buttonLabel,
-                                style: typography.body.bold.copyWith(
-                                  color: colors.white,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+              // 3. End Session Button
+              Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: _closeModal,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.surfacePrimary,
+                      border: Border.all(
+                        color: colors.surfaceBorder.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: colors.textSecondary,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
@@ -1104,111 +1426,225 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         ),
       ),
     );
+  }
+}
 
-    if (isDesktop) {
-      return Stack(
-        children: [
-          // Dismissible Full-Screen Backdrop Overlay
-          GestureDetector(
-            onTap: _closeModal,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: Colors.black.withValues(alpha: 0.85),
-            ),
-          ),
-          // Interactive Full-Screen Content
-          Positioned.fill(
-            child: Material(
-              type: MaterialType.transparency,
-              child: content,
-            ),
-          ),
-        ],
-      );
-    }
+/// Siri / Gemini fluid multi-color acoustic sound ribbon visualizer.
+class _SoundRibbonWidget extends StatelessWidget {
+  const _SoundRibbonWidget({
+    required this.stateColor,
+    required this.state,
+    required this.soundLevelNotifier,
+    required this.animation,
+    required this.height,
+  });
 
-    // Mobile Presentation Layout
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Container(
-        decoration: BoxDecoration(
-          color: colors.backgroundPrimary,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.dialog),
-          ),
-        ),
-        child: content,
-      ),
+  final Color stateColor;
+  final DialogueState state;
+  final ValueNotifier<double> soundLevelNotifier;
+  final Animation<double> animation;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        return ValueListenableBuilder<double>(
+          valueListenable: soundLevelNotifier,
+          builder: (context, soundLevel, _) {
+            return CustomPaint(
+              size: Size(double.infinity, height),
+              painter: _SoundRibbonPainter(
+                stateColor: stateColor,
+                state: state,
+                soundLevel: soundLevel,
+                animationValue: animation.value,
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
 
-/// Dynamic live audio waveform bars responding fluidly to microphone level and speech synthesis.
-class _VoiceWaveformBars extends StatelessWidget {
-  const _VoiceWaveformBars({
-    required this.soundLevel,
+/// GPU-accelerated sinusoidal acoustic ribbon painter with Siri/Gemini harmonic layers.
+class _SoundRibbonPainter extends CustomPainter {
+  _SoundRibbonPainter({
+    required this.stateColor,
     required this.state,
-    required this.color,
+    required this.soundLevel,
     required this.animationValue,
   });
 
-  final double soundLevel;
+  final Color stateColor;
   final DialogueState state;
-  final Color color;
+  final double soundLevel;
   final double animationValue;
 
   @override
-  Widget build(BuildContext context) {
-    if (state == DialogueState.idle) {
-      return const SizedBox(height: 24);
-    }
+  void paint(Canvas canvas, Size size) {
+    final width = size.width;
+    final height = size.height;
+    final centerY = height / 2;
 
-    return SizedBox(
-      height: 24,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(5, (index) {
-          final isListening = state == DialogueState.listening;
-          final isSpeaking = state == DialogueState.speaking;
-          final isThinking = state == DialogueState.thinking;
+    // Amplitude scale based on dialogue state and decibels
+    final isListening = state == DialogueState.listening;
+    final isSpeaking = state == DialogueState.speaking;
+    final isThinking = state == DialogueState.thinking;
 
-          var barHeight = 5.0;
-          if (isListening) {
-            final offset = index * 0.7;
-            final wave = math
-                .sin((animationValue * 2 * math.pi) + offset)
-                .abs();
-            barHeight = 5 + (soundLevel * 16) + (wave * 4);
-          } else if (isSpeaking) {
-            final offset = (index - 2).abs() * 0.6;
-            final wave = math
-                .sin((animationValue * 3 * math.pi) + offset)
-                .abs();
-            barHeight = 6 + (wave * 15);
-          } else if (isThinking) {
-            final wave = math
-                .sin((animationValue * 2 * math.pi) + (index * 0.6))
-                .abs();
-            barHeight = 4 + (wave * 8);
-          }
+    final baseAmp = isListening
+        ? (8.0 + soundLevel * 36.0)
+        : isSpeaking
+        ? 24.0
+        : isThinking
+        ? 14.0
+        : 6.0;
 
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 90),
-            margin: const EdgeInsets.symmetric(horizontal: 2.5),
-            width: 3.5,
-            height: barHeight.clamp(4, 22),
-            decoration: BoxDecoration(
-              color: color.withAlpha(
-                (180 + (soundLevel * 75)).toInt().clamp(0, 255),
-              ),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          );
-        }),
+    // Siri / Gemini multi-harmonic wave definitions
+    // Each wave has [frequencyMultiplier, phaseOffset, amplitudeMultiplier, strokeWidth, primaryColor, secondaryColor]
+    final waveLayers = [
+      // 1. Ambient Glow Underlayer (Wide soft blur)
+      _RibbonLayer(
+        freq: 1,
+        phase: animationValue * 2 * math.pi,
+        amp: baseAmp * 1.1,
+        strokeWidth: 6,
+        colors: [
+          stateColor.withValues(alpha: 0),
+          const Color(0xFF00E5FF).withValues(alpha: 0.35),
+          const Color(0xFF7C4DFF).withValues(alpha: 0.4),
+          const Color(0xFFFF4081).withValues(alpha: 0.35),
+          stateColor.withValues(alpha: 0),
+        ],
+        blur: 10,
       ),
-    );
+      // 2. Cyan / Turquoise Wave (Crisp lead harmonic)
+      _RibbonLayer(
+        freq: 1.4,
+        phase: (animationValue * 2 * math.pi) + 0.8,
+        amp: baseAmp * 0.95,
+        strokeWidth: 3.2,
+        colors: [
+          stateColor.withValues(alpha: 0),
+          const Color(0xFF00E5FF),
+          const Color(0xFF18FFFF),
+          const Color(0xFF00B0FF),
+          stateColor.withValues(alpha: 0),
+        ],
+      ),
+      // 3. Purple / Indigo Wave (Deep harmonic counterpoint)
+      _RibbonLayer(
+        freq: 1.8,
+        phase: (animationValue * 2 * math.pi) - 1.2,
+        amp: baseAmp * 0.75,
+        strokeWidth: 2.8,
+        colors: [
+          stateColor.withValues(alpha: 0),
+          const Color(0xFF7C4DFF),
+          const Color(0xFF651FFF),
+          const Color(0xFFB388FF),
+          stateColor.withValues(alpha: 0),
+        ],
+      ),
+      // 4. Rose / Amber Wave (Warm harmonic shimmer)
+      _RibbonLayer(
+        freq: 2.2,
+        phase: (animationValue * 2 * math.pi) + 2.4,
+        amp: baseAmp * 0.55,
+        strokeWidth: 2.2,
+        colors: [
+          stateColor.withValues(alpha: 0),
+          const Color(0xFFFF4081),
+          const Color(0xFFFF80AB),
+          const Color(0xFFFFAB40),
+          stateColor.withValues(alpha: 0),
+        ],
+      ),
+      // 5. White Hot Center Filament (Luminous core)
+      _RibbonLayer(
+        freq: 1.2,
+        phase: (animationValue * 2 * math.pi) + 0.4,
+        amp: baseAmp * 0.85,
+        strokeWidth: 1.6,
+        colors: [
+          Colors.white.withValues(alpha: 0),
+          Colors.white.withValues(alpha: 0.85),
+          Colors.white,
+          Colors.white.withValues(alpha: 0.85),
+          Colors.white.withValues(alpha: 0),
+        ],
+      ),
+    ];
+
+    for (final layer in waveLayers) {
+      final path = Path();
+      const sampleStep = 4.0;
+      var isFirst = true;
+
+      for (var x = 0.0; x <= width; x += sampleStep) {
+        final progress = (x / width).clamp(0, 1);
+        // Hanning-style window tapering to zero smoothly at both ends
+        final envelope = math.sin(progress * math.pi);
+        final envelopePowered = math.pow(envelope, 1.3).toDouble();
+
+        final waveOffset = math.sin(
+          (progress * layer.freq * 2 * math.pi) + layer.phase,
+        );
+        final y = centerY + (waveOffset * layer.amp * envelopePowered);
+
+        if (isFirst) {
+          path.moveTo(x, y);
+          isFirst = false;
+        } else {
+          path.lineTo(x, y);
+        }
+      }
+
+      final shader = LinearGradient(
+        colors: layer.colors,
+        stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+      ).createShader(Rect.fromLTWH(0, centerY - baseAmp, width, baseAmp * 2));
+
+      final paint = Paint()
+        ..shader = shader
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = layer.strokeWidth
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+
+      if (layer.blur != null) {
+        paint.maskFilter = MaskFilter.blur(BlurStyle.normal, layer.blur!);
+      }
+
+      canvas.drawPath(path, paint);
+    }
   }
+
+  @override
+  bool shouldRepaint(covariant _SoundRibbonPainter oldDelegate) {
+    return oldDelegate.soundLevel != soundLevel ||
+        oldDelegate.state != state ||
+        oldDelegate.stateColor != stateColor ||
+        oldDelegate.animationValue != animationValue;
+  }
+}
+
+class _RibbonLayer {
+  const _RibbonLayer({
+    required this.freq,
+    required this.phase,
+    required this.amp,
+    required this.strokeWidth,
+    required this.colors,
+    this.blur,
+  });
+
+  final double freq;
+  final double phase;
+  final double amp;
+  final double strokeWidth;
+  final List<Color> colors;
+  final double? blur;
 }
