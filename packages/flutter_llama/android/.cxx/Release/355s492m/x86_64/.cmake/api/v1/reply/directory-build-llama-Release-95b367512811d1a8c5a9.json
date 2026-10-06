@@ -1,0 +1,89 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 290,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 309,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 317,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"bin/libllama.so"
+			],
+			"targetId" : "llama::@b791850eb95f38641ccb",
+			"targetIndex" : 4,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "include",
+			"paths" : 
+			[
+				"/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/include/llama.h",
+				"/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/include/llama-cpp.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "lib/cmake/llama",
+			"paths" : 
+			[
+				"/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/llama-config.cmake",
+				"/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/llama-config-version.cmake"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "lib/pkgconfig",
+			"paths" : 
+			[
+				"/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/llama.pc"
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "build-llama",
+		"source" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp"
+	}
+}

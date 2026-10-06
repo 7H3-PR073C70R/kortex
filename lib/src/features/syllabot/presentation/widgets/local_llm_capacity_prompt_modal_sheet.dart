@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_llama/flutter_llama.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/device_capability_service.dart';
@@ -47,6 +48,7 @@ class _LocalLlmModelSpec {
     required this.requiredMb,
     required this.badgeLabel,
     required this.ramSubtitle,
+    required this.preset,
   });
 
   final String name;
@@ -54,22 +56,25 @@ class _LocalLlmModelSpec {
   final int requiredMb;
   final String badgeLabel;
   final String ramSubtitle;
+  final PresetModel preset;
 }
 
 const _kAvailableModels = [
   _LocalLlmModelSpec(
-    name: 'TinyLlama 1.1B',
-    sizeLabel: '248 MB',
-    requiredMb: 248,
-    badgeLabel: '248 MB • Fast & Lightweight',
-    ramSubtitle: '~350MB Peak RAM • Optimized for energy efficiency',
+    name: 'SmolLM2 135M',
+    sizeLabel: '100 MB',
+    requiredMb: 100,
+    badgeLabel: '100 MB • Fast & Lightweight',
+    ramSubtitle: '~250MB Peak RAM • Optimized for energy efficiency',
+    preset: PresetModels.smolLM2Q4K,
   ),
   _LocalLlmModelSpec(
-    name: 'Gemma 2B',
-    sizeLabel: '1.2 GB',
-    requiredMb: 1200,
-    badgeLabel: '1.2 GB • Deep STEM Reasoning',
-    ramSubtitle: '~850MB Peak RAM • Optimized for energy efficiency',
+    name: 'Qwen 2.5 0.5B',
+    sizeLabel: '350 MB',
+    requiredMb: 350,
+    badgeLabel: '350 MB • Deep STEM Reasoning',
+    ramSubtitle: '~500MB Peak RAM • High performance small LM',
+    preset: PresetModels.qwen25Q4K,
   ),
 ];
 
@@ -116,7 +121,7 @@ class _LocalLlmCapacityPromptModalSheetState
       _downloadProgress = 0.05;
     });
 
-    _downloadSub = client.downloadModel().listen(
+    _downloadSub = client.downloadModel(preset: selectedModel.preset).listen(
       (progress) {
         if (mounted) {
           setState(() {

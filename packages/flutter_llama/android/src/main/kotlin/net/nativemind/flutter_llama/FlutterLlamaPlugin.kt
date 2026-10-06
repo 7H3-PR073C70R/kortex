@@ -28,17 +28,23 @@ class FlutterLlamaPlugin : FlutterPlugin, MethodCallHandler, EventChannel.Stream
         private const val EVENT_CHANNEL_NAME = "flutter_llama/stream"
 
         init {
-            try {
-                // Load llama.cpp libraries in correct order
-                System.loadLibrary("c++_shared")
-                System.loadLibrary("ggml")
-                System.loadLibrary("ggml-base")
-                System.loadLibrary("ggml-cpu")
-                System.loadLibrary("llama")
-                System.loadLibrary("flutter_llama_bridge")
-                Log.d(TAG, "Native libraries loaded successfully")
-            } catch (e: UnsatisfiedLinkError) {
-                Log.e(TAG, "Failed to load native libraries: ${e.message}")
+            val libs = listOf(
+                "c++_shared",
+                "ggml",
+                "ggml-base",
+                "ggml-cpu",
+                "llama",
+                "flutter_llama_bridge"
+            )
+            for (lib in libs) {
+                try {
+                    System.loadLibrary(lib)
+                    Log.d(TAG, "Loaded native library: $lib")
+                } catch (e: UnsatisfiedLinkError) {
+                    Log.w(TAG, "Library $lib not loaded individually: ${e.message}")
+                } catch (e: Throwable) {
+                    Log.w(TAG, "Could not load library $lib: ${e.message}")
+                }
             }
         }
     }
@@ -145,7 +151,7 @@ class FlutterLlamaPlugin : FlutterPlugin, MethodCallHandler, EventChannel.Stream
                         result.error("INIT_FAILED", "Failed to initialize model", null)
                     }
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.e(TAG, "Error loading model", e)
                 mainHandler.post {
                     result.error("EXCEPTION", "Error loading model: ${e.message}", null)

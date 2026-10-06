@@ -13,6 +13,7 @@ import 'package:kortex/src/core/services/audio_recording_service.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
 import 'package:kortex/src/core/services/break_reminder_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
+import 'package:kortex/src/core/services/device_identity_service.dart';
 import 'package:kortex/src/core/services/dynamic_link_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/core/services/link_sharing_service.dart';

@@ -99,13 +99,11 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
 
     // Automatically create and register conversation session if starting new dialogue
     if (initialMessages.isEmpty) {
-      unawaited(
-        _getChatHistory.createSession(
-          title: event.prompt,
-          socraticMode: event.socraticMode,
-          id: effectiveSessionId,
-          isOffline: isOffline,
-        ),
+      await _getChatHistory.createSession(
+        title: event.prompt,
+        socraticMode: event.socraticMode,
+        id: effectiveSessionId,
+        isOffline: isOffline,
       );
     }
 

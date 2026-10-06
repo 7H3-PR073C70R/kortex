@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/features/study_rooms/domain/services/livekit_audio_service.dart';
 import 'package:livekit_client/livekit_client.dart' as lk;
@@ -187,18 +188,22 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
   @override
   Future<bool> setMicrophoneEnabled({required bool enabled}) async {
     if (enabled) {
-      var status = await ph.Permission.microphone.status;
-      if (!status.isGranted) {
-        status = await ph.Permission.microphone.request();
-      }
-      if (status != ph.PermissionStatus.granted) {
-        developer.log(
-          'LiveKitAudioService: Microphone permission denied (status: $status)',
-          name: 'LiveKitAudio',
-        );
-        _isMicEnabled = false;
-        _micStateController.add(false);
-        return false;
+      if (!kIsWeb && Platform.isMacOS) {
+        _isMicEnabled = true;
+      } else {
+        var status = await ph.Permission.microphone.status;
+        if (!status.isGranted) {
+          status = await ph.Permission.microphone.request();
+        }
+        if (status != ph.PermissionStatus.granted) {
+          developer.log(
+            'LiveKitAudioService: Microphone permission denied (status: $status)',
+            name: 'LiveKitAudio',
+          );
+          _isMicEnabled = false;
+          _micStateController.add(false);
+          return false;
+        }
       }
     }
 
@@ -235,12 +240,13 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
   @override
   Future<bool> requestMicrophonePermission() async {
     try {
+      if (!kIsWeb && Platform.isMacOS) return true;
       var status = await ph.Permission.microphone.status;
       if (status.isGranted) return true;
       status = await ph.Permission.microphone.request();
       return status.isGranted;
     } on Object catch (_) {
-      return false;
+      return !kIsWeb && Platform.isMacOS;
     }
   }
 

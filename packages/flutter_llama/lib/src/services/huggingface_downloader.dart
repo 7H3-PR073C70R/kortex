@@ -21,11 +21,21 @@ class HuggingFaceFile {
   });
   
   factory HuggingFaceFile.fromJson(Map<String, dynamic> json) {
+    int fileSize = json['size'] as int? ?? 0;
+    String? lfsOid;
+    if (json['lfs'] is Map) {
+      final lfsMap = json['lfs'] as Map<String, dynamic>;
+      lfsOid = lfsMap['oid']?.toString();
+      fileSize = (lfsMap['size'] as int?) ?? fileSize;
+    } else if (json['lfs'] is String) {
+      lfsOid = json['lfs'] as String;
+    }
+
     return HuggingFaceFile(
-      name: json['path'] as String,
-      oid: json['oid'] as String? ?? '',
-      size: json['size'] as int? ?? 0,
-      lfs: json['lfs'] as String?,
+      name: json['path'] as String? ?? json['rpath'] as String? ?? '',
+      oid: json['oid'] as String? ?? lfsOid ?? '',
+      size: fileSize,
+      lfs: lfsOid,
     );
   }
   
@@ -58,7 +68,10 @@ class HuggingFaceDownloader {
         print('[HuggingFaceDownloader] Fetching file list from: $url');
       }
       
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'User-Agent': 'Kortex/1.0 (Mobile)'},
+      );
       
       if (response.statusCode != 200) {
         throw Exception('Failed to list files: ${response.statusCode}');
@@ -116,19 +129,25 @@ class HuggingFaceDownloader {
       
       if (await file.exists() && !force) {
         final size = await file.length();
-        
-        onProgress?.call(DownloadProgress(
-          progress: 1.0,
-          status: 'Файл уже существует',
-          downloadedBytes: size,
-          totalBytes: size,
-        ));
-        
-        if (kDebugMode) {
-          print('[HuggingFaceDownloader] File already exists: $filePath');
+        if (size >= 50 * 1024 * 1024) {
+          onProgress?.call(DownloadProgress(
+            progress: 1.0,
+            status: 'Файл уже существует',
+            downloadedBytes: size,
+            totalBytes: size,
+          ));
+          
+          if (kDebugMode) {
+            print('[HuggingFaceDownloader] File already exists: $filePath');
+          }
+          
+          return filePath;
+        } else {
+          if (kDebugMode) {
+            print('[HuggingFaceDownloader] Deleting incomplete/corrupted file ($size bytes): $filePath');
+          }
+          await file.delete();
         }
-        
-        return filePath;
       }
       
       final url = '$baseUrl/$modelId/resolve/$branch/$fileName';
@@ -143,13 +162,35 @@ class HuggingFaceDownloader {
       ));
       
       final client = HttpClient();
-      final uri = Uri.parse(url);
-      final request = await client.getUrl(uri);
-      final response = await request.close();
+      var currentUri = Uri.parse(url);
+      HttpClientResponse? response;
       
-      if (response.statusCode != 200) {
+      for (var redirectCount = 0; redirectCount < 10; redirectCount++) {
+        final request = await client.getUrl(currentUri);
+        request.headers.set(HttpHeaders.userAgentHeader, 'Kortex/1.0 (Mobile)');
+        request.followRedirects = false;
+        final res = await request.close();
+        
+        if (res.statusCode == HttpStatus.movedPermanently ||
+            res.statusCode == HttpStatus.found ||
+            res.statusCode == HttpStatus.seeOther ||
+            res.statusCode == HttpStatus.temporaryRedirect ||
+            res.statusCode == 308) {
+          final location = res.headers.value(HttpHeaders.locationHeader);
+          if (location != null) {
+            currentUri = currentUri.resolve(location);
+            await res.drain();
+            continue;
+          }
+        }
+        response = res;
+        break;
+      }
+      
+      if (response == null || response.statusCode != 200) {
+        final status = response?.statusCode;
         client.close();
-        throw Exception('Download failed: HTTP ${response.statusCode}');
+        throw Exception('Download failed: HTTP $status');
       }
       
       final contentLength = response.contentLength;
@@ -301,7 +342,10 @@ class HuggingFaceDownloader {
       final file = File(filePath);
       
       if (await file.exists()) {
-        return filePath;
+        if (await file.length() >= 50 * 1024 * 1024) {
+          return filePath;
+        }
+        await file.delete();
       }
       
       return null;

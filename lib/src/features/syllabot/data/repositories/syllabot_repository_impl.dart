@@ -43,7 +43,14 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
     required ExecutionEngineType preferredEngine,
     List<ChatMessageEntity> contextHistory = const [],
   }) {
-    // All Syllabot responses are routed to Cloud AI on the server
+    if (preferredEngine == ExecutionEngineType.localOnDevice) {
+      return _local.generateOfflineResponse(
+        prompt: prompt,
+        socraticMode: socraticMode,
+        contextHistory: contextHistory,
+      );
+    }
+
     final controller = StreamController<String>();
 
     _remote
@@ -51,7 +58,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
           prompt: prompt,
           sessionId: sessionId,
           socraticMode: socraticMode,
-          engine: ExecutionEngineType.cloudRemote,
+          engine: preferredEngine,
           contextHistory: contextHistory,
         )
         .listen(

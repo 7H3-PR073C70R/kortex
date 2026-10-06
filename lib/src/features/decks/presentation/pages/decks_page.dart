@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
@@ -68,7 +67,9 @@ class _DecksView extends HookWidget {
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                    color: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
                     borderRadius: isDesktop
                         ? BorderRadius.circular(AppRadius.dialog)
                         : const BorderRadius.vertical(
@@ -125,7 +126,8 @@ class _DecksView extends HookWidget {
                                 minWidth: 28,
                                 minHeight: 28,
                               ),
-                              onPressed: () => Navigator.of(bottomSheetContext).pop(),
+                              onPressed: () =>
+                                  Navigator.of(bottomSheetContext).pop(),
                               color: colors.textSecondary,
                             ),
                         ],
@@ -258,8 +260,8 @@ class _DecksView extends HookWidget {
                               onRefresh: () async {
                                 final completer = Completer<void>();
                                 context.read<DecksBloc>().add(
-                                      const DecksRefreshed(),
-                                    );
+                                  const DecksRefreshed(),
+                                );
                                 Timer(
                                   const Duration(milliseconds: 600),
                                   completer.complete,
@@ -271,382 +273,430 @@ class _DecksView extends HookWidget {
                                 physics: const ClampingScrollPhysics(
                                   parent: AlwaysScrollableScrollPhysics(),
                                 ),
-                                padding:
-                                    const EdgeInsets.fromLTRB(20, 16, 20, 140),
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  16,
+                                  20,
+                                  140,
+                                ),
                                 children: [
-                      // 1. Header Title & Create Action
-                      Row(
-                        key: AppTourKeys.decksHeaderKey = AppTourKeys.safeKey(
-                          AppTourKeys.decksHeaderKey,
-                          'tour_decks_header',
-                        ),
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.decksTitle,
-                                  style: typography.largeTitle.bold.copyWith(
-                                    color: colors.textPrimary,
-                                    fontSize: 26,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  l10n.decksSubtitle,
-                                  style: typography.footnote.regular.copyWith(
-                                    color: colors.textSecondary,
-                                    fontSize: 13,
-                                    height: 1.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          ShrinkableButton(
-                            onTap: () {
-                              unawaited(HapticFeedback.lightImpact());
-                              _showDeckCreationSheet(context);
-                            },
-                            child: Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: colors.primary,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.black.withAlpha(
-                                      isDark ? 60 : 30,
-                                    ),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.add_rounded,
-                                color: colors.white,
-                                size: 22,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 2. Today focus — the single obvious next action.
-                      //    One decision at the front door beats four equal tiles.
-                      if (state.allDecks.isNotEmpty) ...[
-                        _TodayHeroCard(
-                          key: AppTourKeys.decksTodayHeroKey =
-                              AppTourKeys.safeKey(
-                            AppTourKeys.decksTodayHeroKey,
-                            'tour_decks_today_hero',
-                          ),
-                          state: state,
-                        ),
-                        const SizedBox(height: 16),
-                      ] else ...[
-                        const SizedBox(height: 2),
-                      ],
-
-                      // 4. Search Field - Unified full-width text field
-                      TextField(
-                        controller: searchController,
-                        style: typography.body.medium.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 14,
-                        ),
-                        cursorColor: colors.primary,
-                        decoration: InputDecoration(
-                          hintText: l10n.decksSearchHint,
-                          hintStyle: typography.body.regular.copyWith(
-                            color: colors.textMuted,
-                            fontSize: 13.5,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search_rounded,
-                            color: colors.textSecondary,
-                            size: 20,
-                          ),
-                          suffixIcon: searchQueryEmpty.value
-                              ? null
-                              : Semantics(
-                                  button: true,
-                                  label: l10n.decksClearSearch,
-                                  child:
-                                      IconButton(
-                                            icon: Icon(
-                                              Icons.close_rounded,
-                                              color: colors.textSecondary,
-                                              size: 18,
+                                  // 1. Header Title & Create Action
+                                  Row(
+                                    key: AppTourKeys.decksHeaderKey =
+                                        AppTourKeys.safeKey(
+                                          AppTourKeys.decksHeaderKey,
+                                          'tour_decks_header',
+                                        ),
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              l10n.decksTitle,
+                                              style: typography.largeTitle.bold
+                                                  .copyWith(
+                                                    color: colors.textPrimary,
+                                                    fontSize: 26,
+                                                  ),
                                             ),
-                                            onPressed: () {
-                                              searchController.clear();
-                                              searchQueryEmpty.value = true;
-                                              context.read<DecksBloc>().add(
-                                                const DecksSearchQueryChanged(
-                                                  '',
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              l10n.decksSubtitle,
+                                              style: typography.footnote.regular
+                                                  .copyWith(
+                                                    color: colors.textSecondary,
+                                                    fontSize: 13,
+                                                    height: 1.3,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      ShrinkableButton(
+                                        onTap: () {
+                                          unawaited(
+                                            HapticFeedback.lightImpact(),
+                                          );
+                                          _showDeckCreationSheet(context);
+                                        },
+                                        child: Container(
+                                          width: 42,
+                                          height: 42,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: colors.primary,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: colors.black.withAlpha(
+                                                  isDark ? 60 : 30,
                                                 ),
-                                              );
-                                            },
-                                          )
-                                          .animate(
-                                            delay: 60.ms,
-                                          )
-                                          .fadeIn(
-                                            duration: 140.ms,
-                                          )
-                                          .scale(
-                                            begin: const Offset(0.5, 0.5),
-                                            end: const Offset(1, 1),
-                                            duration: 180.ms,
-                                            curve: AppMotion.snappyCurve,
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
                                           ),
-                                ),
-                          filled: true,
-                          fillColor: isDark
-                              ? colors.surfaceSecondary.withAlpha(200)
-                              : colors.surfacePrimary,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.card),
-                            borderSide: BorderSide(
-                              color: isDark
-                                  ? colors.surfaceBorderHighlight.withAlpha(90)
-                                  : colors.surfaceBorder,
-                              width: 1.2,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.card),
-                            borderSide: BorderSide(
-                              color: isDark
-                                  ? colors.surfaceBorderHighlight.withAlpha(90)
-                                  : colors.surfaceBorder,
-                              width: 1.2,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.card),
-                            borderSide: BorderSide(
-                              color: colors.primary,
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                        onChanged: (query) {
-                          searchQueryEmpty.value = query.isEmpty;
-                          context.read<DecksBloc>().add(
-                            DecksSearchQueryChanged(query),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
+                                          child: Icon(
+                                            Icons.add_rounded,
+                                            color: colors.white,
+                                            size: 22,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (state.filteredDecks.isEmpty) ...[
+                                    const SizedBox(height: 16),
 
-                      // 5. Filter Category Pills
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const ClampingScrollPhysics(),
-                        child: Row(
-                          children: [
-                            _FilterChip(
-                              label: l10n.decksFilterAll,
-                              count: state.allDecks.length,
-                              isSelected: state.activeFilter == 'all',
-                              onTap: () {
-                                context.read<DecksBloc>().add(
-                                  const DecksFilterChanged('all'),
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            _FilterChip(
-                              label: l10n.decksFilterDue,
-                              count: state.allDecks
-                                  .where((d) => d.dueCards > 0)
-                                  .fold<int>(0, (sum, d) => sum + d.dueCards),
-                              isDueBadge: true,
-                              isSelected: state.activeFilter == 'due',
-                              onTap: () {
-                                context.read<DecksBloc>().add(
-                                  const DecksFilterChanged('due'),
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            _FilterChip(
-                              label: l10n.decksFilterMastered,
-                              isSelected: state.activeFilter == 'mastered',
-                              onTap: () {
-                                context.read<DecksBloc>().add(
-                                  const DecksFilterChanged('mastered'),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                                    // 4. Search Field - Unified full-width text field
+                                    TextField(
+                                      controller: searchController,
+                                      style: typography.body.medium.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 14,
+                                      ),
+                                      cursorColor: colors.primary,
+                                      decoration: InputDecoration(
+                                        hintText: l10n.decksSearchHint,
+                                        hintStyle: typography.body.regular
+                                            .copyWith(
+                                              color: colors.textMuted,
+                                              fontSize: 13.5,
+                                            ),
+                                        prefixIcon: Icon(
+                                          Icons.search_rounded,
+                                          color: colors.textSecondary,
+                                          size: 20,
+                                        ),
+                                        suffixIcon: searchQueryEmpty.value
+                                            ? null
+                                            : Semantics(
+                                                button: true,
+                                                label: l10n.decksClearSearch,
+                                                child:
+                                                    IconButton(
+                                                          icon: Icon(
+                                                            Icons.close_rounded,
+                                                            color: colors
+                                                                .textSecondary,
+                                                            size: 18,
+                                                          ),
+                                                          onPressed: () {
+                                                            searchController
+                                                                .clear();
+                                                            searchQueryEmpty
+                                                                    .value =
+                                                                true;
+                                                            context
+                                                                .read<
+                                                                  DecksBloc
+                                                                >()
+                                                                .add(
+                                                                  const DecksSearchQueryChanged(
+                                                                    '',
+                                                                  ),
+                                                                );
+                                                          },
+                                                        )
+                                                        .animate(
+                                                          delay: 60.ms,
+                                                        )
+                                                        .fadeIn(
+                                                          duration: 140.ms,
+                                                        )
+                                                        .scale(
+                                                          begin: const Offset(
+                                                            0.5,
+                                                            0.5,
+                                                          ),
+                                                          end: const Offset(
+                                                            1,
+                                                            1,
+                                                          ),
+                                                          duration: 180.ms,
+                                                          curve: AppMotion
+                                                              .snappyCurve,
+                                                        ),
+                                              ),
+                                        filled: true,
+                                        fillColor: isDark
+                                            ? colors.surfaceSecondary.withAlpha(
+                                                200,
+                                              )
+                                            : colors.surfacePrimary,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                              vertical: 12,
+                                            ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.card,
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: isDark
+                                                ? colors.surfaceBorderHighlight
+                                                      .withAlpha(90)
+                                                : colors.surfaceBorder,
+                                            width: 1.2,
+                                          ),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.card,
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: isDark
+                                                ? colors.surfaceBorderHighlight
+                                                      .withAlpha(90)
+                                                : colors.surfaceBorder,
+                                            width: 1.2,
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.card,
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: colors.primary,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                      ),
+                                      onChanged: (query) {
+                                        searchQueryEmpty.value = query.isEmpty;
+                                        context.read<DecksBloc>().add(
+                                          DecksSearchQueryChanged(query),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                  const SizedBox(height: 16),
 
-                      // 6. Decks List / Empty State
-                      if (state.filteredDecks.isEmpty)
-                        if (state.activeFilter == 'due')
-                          AppEmptyState(
-                            isHappy: true,
-                            title: 'All Caught Up! 🎉',
-                            subtitle: state.allDecks.isEmpty
-                                ? 'You have no due study decks for today. Create a new deck or import course materials to start practicing!'
-                                : "Awesome job! You've crushed all your spaced repetition reviews scheduled for today. Keep up the streak!",
-                            primaryActionLabel: state.allDecks.isEmpty
-                                ? l10n.decksCreateDeckButton
-                                : 'Review All Decks',
-                            onPrimaryAction: () {
-                              if (state.allDecks.isEmpty) {
-                                _showDeckCreationSheet(context);
-                              } else {
-                                context.read<DecksBloc>().add(
-                                  const DecksFilterChanged('all'),
-                                );
-                              }
-                            },
-                            secondaryActionLabel: state.allDecks.isEmpty
-                                ? l10n.decksUploadDocTitle
-                                : 'Practice with Syllabot AI',
-                            onSecondaryAction: () {
-                              if (state.allDecks.isEmpty) {
-                                unawaited(
-                                  context.router.push(DocumentIngestionRoute()),
-                                );
-                              } else {
-                                unawaited(
-                                  context.router.push(
-                                    SyllabotChatRoute(
-                                      initialPrompt:
-                                          'Give me a 5-question Socratic review drill across my active subjects.',
-                                      initialMode: SocraticMode.examSim,
+                                  // 5. Filter Category Pills
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    physics: const ClampingScrollPhysics(),
+                                    child: Row(
+                                      children: [
+                                        _FilterChip(
+                                          label: l10n.decksFilterAll,
+                                          count: state.allDecks.length,
+                                          isSelected:
+                                              state.activeFilter == 'all',
+                                          onTap: () {
+                                            context.read<DecksBloc>().add(
+                                              const DecksFilterChanged('all'),
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(width: 8),
+                                        _FilterChip(
+                                          label: l10n.decksFilterDue,
+                                          count: state.allDecks
+                                              .where((d) => d.dueCards > 0)
+                                              .fold<int>(
+                                                0,
+                                                (sum, d) => sum + d.dueCards,
+                                              ),
+                                          isDueBadge: true,
+                                          isSelected:
+                                              state.activeFilter == 'due',
+                                          onTap: () {
+                                            context.read<DecksBloc>().add(
+                                              const DecksFilterChanged('due'),
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(width: 8),
+                                        _FilterChip(
+                                          label: l10n.decksFilterMastered,
+                                          isSelected:
+                                              state.activeFilter == 'mastered',
+                                          onTap: () {
+                                            context.read<DecksBloc>().add(
+                                              const DecksFilterChanged(
+                                                'mastered',
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                );
-                              }
-                            },
-                          )
-                        else if (state.activeFilter == 'mastered')
-                          AppEmptyState(
-                            title: 'No Mastered Decks Yet 🎯',
-                            subtitle:
-                                'Keep reviewing your flashcards with smart spaced repetition. As your memory retention reaches 90%+, mastered decks will appear here.',
-                            primaryActionLabel: 'Review All Decks',
-                            onPrimaryAction: () =>
-                                context.read<DecksBloc>().add(
-                                  const DecksFilterChanged('all'),
-                                ),
-                            secondaryActionLabel: l10n.decksCreateDeckButton,
-                            onSecondaryAction: () =>
-                                _showDeckCreationSheet(context),
-                          )
-                        else
-                          AppEmptyState(
-                            title: l10n.decksEmptyStateTitle,
-                            subtitle: l10n.decksEmptyStateSubtitle,
-                            primaryActionLabel: l10n.decksCreateDeckButton,
-                            onPrimaryAction: () =>
-                                _showDeckCreationSheet(context),
-                            secondaryActionLabel: l10n.decksUploadDocTitle,
-                            onSecondaryAction: () => unawaited(
-                              context.router.push(DocumentIngestionRoute()),
-                            ),
-                          )
-                      else
-                        LayoutBuilder(
-                          builder: (context, gridConstraints) {
-                            final columnCount = switch (gridConstraints.maxWidth) {
-                              >= 1400 => 4,
-                              >= 900 => 3,
-                              >= 640 => 2,
-                              _ => 1,
-                            };
-                            if (columnCount > 1) {
-                              final itemWidth =
-                                  (gridConstraints.maxWidth - (14 * (columnCount - 1))) /
-                                      columnCount;
-                              return Wrap(
-                                spacing: 14,
-                                runSpacing: 14,
-                                children: [
-                                  for (
-                                    var index = 0;
-                                    index < state.filteredDecks.length;
-                                    index++
-                                  )
-                                    SizedBox(
-                                      width: itemWidth,
-                                      child: _buildDeckTile(
-                                        context,
-                                        state.filteredDecks[index],
-                                        index,
-                                        reduceMotion,
-                                        isDesktop: isDesktop,
-                                        selectedDesktopDeck: selectedDesktopDeck,
-                                      ),
+                                  const SizedBox(height: 20),
+
+                                  // 6. Decks List / Empty State
+                                  if (state.filteredDecks.isEmpty)
+                                    if (state.activeFilter == 'due')
+                                      AppEmptyState(
+                                        isHappy: true,
+                                        title: 'All Caught Up! 🎉',
+                                        subtitle: state.allDecks.isEmpty
+                                            ? 'You have no due study decks for today. Create a new deck or import course materials to start practicing!'
+                                            : "Awesome job! You've crushed all your spaced repetition reviews scheduled for today. Keep up the streak!",
+                                        primaryActionLabel:
+                                            state.allDecks.isEmpty
+                                            ? l10n.decksCreateDeckButton
+                                            : 'Review All Decks',
+                                        onPrimaryAction: () {
+                                          if (state.allDecks.isEmpty) {
+                                            _showDeckCreationSheet(context);
+                                          } else {
+                                            context.read<DecksBloc>().add(
+                                              const DecksFilterChanged('all'),
+                                            );
+                                          }
+                                        },
+                                        secondaryActionLabel:
+                                            state.allDecks.isEmpty
+                                            ? l10n.decksUploadDocTitle
+                                            : 'Practice with Syllabot AI',
+                                        onSecondaryAction: () {
+                                          if (state.allDecks.isEmpty) {
+                                            unawaited(
+                                              context.router.push(
+                                                DocumentIngestionRoute(),
+                                              ),
+                                            );
+                                          } else {
+                                            unawaited(
+                                              context.router.push(
+                                                SyllabotChatRoute(
+                                                  initialPrompt:
+                                                      'Give me a 5-question Socratic review drill across my active subjects.',
+                                                  initialMode:
+                                                      SocraticMode.examSim,
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                      )
+                                    else if (state.activeFilter == 'mastered')
+                                      AppEmptyState(
+                                        title: 'No Mastered Decks Yet 🎯',
+                                        subtitle:
+                                            'Keep reviewing your flashcards with smart spaced repetition. As your memory retention reaches 90%+, mastered decks will appear here.',
+                                        primaryActionLabel: 'Review All Decks',
+                                        onPrimaryAction: () =>
+                                            context.read<DecksBloc>().add(
+                                              const DecksFilterChanged('all'),
+                                            ),
+                                        secondaryActionLabel:
+                                            l10n.decksCreateDeckButton,
+                                        onSecondaryAction: () =>
+                                            _showDeckCreationSheet(context),
+                                      )
+                                    else
+                                      AppEmptyState(
+                                        title: l10n.decksEmptyStateTitle,
+                                        subtitle: l10n.decksEmptyStateSubtitle,
+                                        primaryActionLabel:
+                                            l10n.decksCreateDeckButton,
+                                        onPrimaryAction: () =>
+                                            _showDeckCreationSheet(context),
+                                        secondaryActionLabel:
+                                            l10n.decksUploadDocTitle,
+                                        onSecondaryAction: () => unawaited(
+                                          context.router.push(
+                                            DocumentIngestionRoute(),
+                                          ),
+                                        ),
+                                      )
+                                  else
+                                    LayoutBuilder(
+                                      builder: (context, gridConstraints) {
+                                        final columnCount =
+                                            switch (gridConstraints.maxWidth) {
+                                              >= 1400 => 4,
+                                              >= 900 => 3,
+                                              >= 640 => 2,
+                                              _ => 1,
+                                            };
+                                        if (columnCount > 1) {
+                                          final itemWidth =
+                                              (gridConstraints.maxWidth -
+                                                  (14 * (columnCount - 1))) /
+                                              columnCount;
+                                          return Wrap(
+                                            spacing: 14,
+                                            runSpacing: 14,
+                                            children: [
+                                              for (
+                                                var index = 0;
+                                                index <
+                                                    state.filteredDecks.length;
+                                                index++
+                                              )
+                                                SizedBox(
+                                                  width: itemWidth,
+                                                  child: _buildDeckTile(
+                                                    context,
+                                                    state.filteredDecks[index],
+                                                    index,
+                                                    reduceMotion,
+                                                    isDesktop: isDesktop,
+                                                    selectedDesktopDeck:
+                                                        selectedDesktopDeck,
+                                                  ),
+                                                ),
+                                            ],
+                                          );
+                                        }
+                                        return Column(
+                                          children: [
+                                            for (
+                                              var index = 0;
+                                              index <
+                                                  state.filteredDecks.length;
+                                              index++
+                                            )
+                                              _buildDeckTile(
+                                                context,
+                                                state.filteredDecks[index],
+                                                index,
+                                                reduceMotion,
+                                                isDesktop: isDesktop,
+                                                selectedDesktopDeck:
+                                                    selectedDesktopDeck,
+                                              ),
+                                          ],
+                                        );
+                                      },
                                     ),
                                 ],
-                              );
-                            }
-                            return Column(
-                              children: [
-                                for (
-                                  var index = 0;
-                                  index < state.filteredDecks.length;
-                                  index++
-                                )
-                                  _buildDeckTile(
-                                    context,
-                                    state.filteredDecks[index],
-                                    index,
-                                    reduceMotion,
-                                    isDesktop: isDesktop,
-                                    selectedDesktopDeck: selectedDesktopDeck,
-                                  ),
-                              ],
+                              ),
                             );
                           },
                         ),
-                    ],
+                      ),
+                    ),
                   ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-      if (hasSelectedDeck) ...[
-        VerticalDivider(
-          width: 1,
-          thickness: 1,
-          color: isDark
-              ? colors.surfaceBorderHighlight.withAlpha(50)
-              : colors.surfaceBorder,
-        ),
-        Expanded(
-          child: DeckDetailPage(
-            key: ValueKey(selectedDesktopDeck.value!.id),
-            deckId: selectedDesktopDeck.value!.id,
-            onClose: () {
-              selectedDesktopDeck.value = null;
-            },
-          ),
-        ),
-      ],
-    ],
-  );
+                  if (hasSelectedDeck) ...[
+                    VerticalDivider(
+                      width: 1,
+                      thickness: 1,
+                      color: isDark
+                          ? colors.surfaceBorderHighlight.withAlpha(50)
+                          : colors.surfaceBorder,
+                    ),
+                    Expanded(
+                      child: DeckDetailPage(
+                        key: ValueKey(selectedDesktopDeck.value!.id),
+                        deckId: selectedDesktopDeck.value!.id,
+                        onClose: () {
+                          selectedDesktopDeck.value = null;
+                        },
+                      ),
+                    ),
+                  ],
+                ],
+              );
             },
           ),
         ),
@@ -763,7 +813,7 @@ class _DecksView extends HookWidget {
             if (columnCount > 1) {
               final itemWidth =
                   (gridConstraints.maxWidth - (14 * (columnCount - 1))) /
-                      columnCount;
+                  columnCount;
               final skeletonCount = columnCount * 2;
               return Wrap(
                 spacing: 14,
@@ -814,238 +864,6 @@ class _DecksView extends HookWidget {
         ),
       ],
     );
-  }
-}
-
-/// The "what should I do right now?" answer, front and center.
-/// Due > 0: one number, one button. Due == 0: calm confirmation, no dead end.
-class _TodayHeroCard extends StatelessWidget {
-  const _TodayHeroCard({required this.state, super.key});
-
-  final DecksState state;
-
-  static const int _secondsPerCard = 12;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
-    final isDark = context.isDarkMode;
-    final reduceMotion = context.reduceMotion;
-
-    final totalDue = state.totalDueCards;
-    final hasDue = totalDue > 0;
-    final dueMinutes = (totalDue * _secondsPerCard / 60).ceil().clamp(1, 999);
-
-    final dueDecks = state.allDecks.where((d) => d.dueCards > 0).toList();
-    final reviewDeckId = dueDecks.length == 1 ? dueDecks.first.id : 'all';
-
-    final Widget hero = Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [colors.surfaceSecondary, colors.surfaceTertiary]
-              : [colors.surfacePrimary, colors.surfaceSecondary],
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.panel),
-        border: Border.all(
-          color: hasDue
-              ? colors.primary.withValues(alpha: 0.35)
-              : colors.success.withValues(alpha: 0.35),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: colors.black.withValues(alpha: isDark ? 0.2 : 0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: LayoutBuilder(
-        builder: (context, heroConstraints) {
-          final isWide = heroConstraints.maxWidth >= 540;
-
-          final headerInfo = Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: (hasDue ? colors.primary : colors.success).withValues(
-                    alpha: 0.18,
-                  ),
-                ),
-                child: Icon(
-                  hasDue
-                      ? Icons.school_rounded
-                      : Icons.check_circle_outline_rounded,
-                  color: hasDue ? colors.primary : colors.success,
-                  size: 21,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      hasDue
-                          ? l10n.decksHeroWaitingTitle(totalDue)
-                          : l10n.decksHeroAllCaughtUp,
-                      style: typography.body.bold.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 16.5,
-                        height: 1.25,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      hasDue
-                          ? l10n.decksHeroEstimate(dueMinutes)
-                          : l10n.decksHeroAllCaughtUpSubtitle,
-                      style: typography.caption.regular.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-
-          final ctaButton = hasDue
-              ? ShrinkableButton(
-                  onTap: () {
-                    AppFeedback.selection();
-                    unawaited(
-                      context.router.push(
-                        StudySessionRoute(deckId: reviewDeckId),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [colors.primary, colors.syllabotAccent],
-                      ),
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.black.withAlpha(isDark ? 45 : 25),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Semantics(
-                      button: true,
-                      label: l10n.decksHeroReviewCta(totalDue),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.play_arrow_rounded,
-                            color: colors.white,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            l10n.decksHeroReviewCta(totalDue),
-                            style: typography.caption.bold.copyWith(
-                              color: colors.white,
-                              fontSize: 13.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              : ShrinkableButton(
-                  onTap: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    context.read<DecksBloc>().add(
-                          const DecksFilterChanged('all'),
-                        );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 11,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? colors.white.withValues(alpha: 0.08)
-                          : colors.black.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(
-                        color: colors.surfaceBorder.withValues(alpha: 0.6),
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      l10n.decksHeroBrowseDecks,
-                      style: typography.caption.bold.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                );
-
-          if (isWide) {
-            return Row(
-              children: [
-                Expanded(child: headerInfo),
-                const SizedBox(width: 16),
-                ctaButton,
-              ],
-            );
-          }
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              headerInfo,
-              const SizedBox(height: 14),
-              SizedBox(width: double.infinity, child: ctaButton),
-            ],
-          );
-        },
-      ),
-    );
-
-    if (reduceMotion) return hero;
-
-    return hero
-        .animate()
-        .fadeIn(duration: 250.ms, curve: Curves.easeOut)
-        .scale(
-          begin: const Offset(0.97, 0.97),
-          end: const Offset(1, 1),
-          duration: 250.ms,
-          curve: Curves.easeOutQuint,
-        )
-        .slideY(
-          begin: 0.04,
-          end: 0,
-          duration: 250.ms,
-          curve: Curves.easeOutQuint,
-        );
   }
 }
 

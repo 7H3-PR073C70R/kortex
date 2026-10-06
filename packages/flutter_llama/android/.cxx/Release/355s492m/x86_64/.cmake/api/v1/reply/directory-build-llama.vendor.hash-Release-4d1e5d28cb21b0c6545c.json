@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "build-llama/vendor/hash",
+		"source" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash"
+	}
+}

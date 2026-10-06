@@ -49,6 +49,10 @@ class AudioRecordingServiceImpl implements AudioRecordingService {
   @override
   Future<bool> hasPermission() async {
     try {
+      if (!kIsWeb && Platform.isMacOS) {
+        return await _recorder.hasPermission();
+      }
+
       final status = await Permission.microphone.status;
       if (status.isGranted) return true;
 
@@ -56,10 +60,16 @@ class AudioRecordingServiceImpl implements AudioRecordingService {
       if (micGranted) return true;
 
       final requested = await Permission.microphone.request();
-      return requested.isGranted;
+      if (requested.isGranted) return true;
+
+      return await _recorder.hasPermission();
     } on Object catch (e) {
       debugPrint('AudioRecordingService: Error requesting permission: $e');
-      return false;
+      try {
+        return await _recorder.hasPermission();
+      } on Object catch (_) {
+        return false;
+      }
     }
   }
 

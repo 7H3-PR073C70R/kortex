@@ -124,7 +124,8 @@ class LocalLlmEngineClient {
           _isInitialized = true;
           final storage = locator<LocalStorageService>();
           await storage.savePreference(key: _modelStorageKey, data: 'true');
-          final originalPath = FlutterLlama.instance.modelPath;
+          final originalPath = FlutterLlama.instance.modelPath ??
+              await ModelManager.fromPreset(preset).getModelPath();
           if (originalPath != null && File(originalPath).existsSync()) {
             var finalPath = originalPath;
             try {

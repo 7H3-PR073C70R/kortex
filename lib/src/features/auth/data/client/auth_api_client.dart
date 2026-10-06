@@ -42,4 +42,14 @@ abstract class AuthApiClient {
   Future<HttpResponse<dynamic>> fetchCourseTracks(
     @Queries() Map<String, dynamic> query,
   );
+
+  @POST('/rest/v1/rpc/register_device_session_rpc')
+  Future<HttpResponse<dynamic>> registerDeviceSession(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST('/rest/v1/rpc/disconnect_device_session_rpc')
+  Future<HttpResponse<dynamic>> disconnectDeviceSession(
+    @Body() Map<String, dynamic> body,
+  );
 }

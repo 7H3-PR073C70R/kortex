@@ -49,6 +49,12 @@ void _initServices() {
     ..registerLazySingleton<LocalStorageService>(
       LocalStorageServiceImpl.new,
     )
+    ..registerLazySingleton<DeviceIdentityService>(
+      () => DeviceIdentityService(
+        localStorageService: locator<LocalStorageService>(),
+        secureStorage: locator<FlutterSecureStorage>(),
+      ),
+    )
     ..registerLazySingleton<SubscriptionGuard>(
       () => SubscriptionGuard(
         userStorageService: locator<UserStorageService>(),

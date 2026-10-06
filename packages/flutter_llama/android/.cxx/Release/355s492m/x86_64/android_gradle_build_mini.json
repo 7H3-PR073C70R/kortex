@@ -1,0 +1,82 @@
+{
+  "buildFiles": [
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/src/main/cpp/CMakeLists.txt",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/CMakeLists.txt",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/CMakeLists.txt",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/CMakeLists.txt",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/CMakeLists.txt",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/CMakeLists.txt",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/CMakeLists.txt",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/CMakeLists.txt",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/miniaudio/CMakeLists.txt",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/nlohmann/CMakeLists.txt",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/sheredom/CMakeLists.txt",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/stb/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/protector/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/protector/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "flutter_llama_bridge::@6890427a1f51a3e7e1df": {
+      "artifactName": "flutter_llama_bridge",
+      "abi": "x86_64",
+      "output": "/Users/protector/Documents/projects/kortex/build/flutter_llama/intermediates/cxx/Release/355s492m/obj/x86_64/libflutter_llama_bridge.so",
+      "runtimeFiles": [
+        "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libllama.so",
+        "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml.so",
+        "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml-cpu.so",
+        "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml-base.so"
+      ]
+    },
+    "ggml::@23533c6d68a59d54598d": {
+      "artifactName": "ggml",
+      "abi": "x86_64",
+      "output": "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml.so",
+      "runtimeFiles": [
+        "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml-cpu.so",
+        "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml-base.so"
+      ]
+    },
+    "llama::@b791850eb95f38641ccb": {
+      "artifactName": "llama",
+      "abi": "x86_64",
+      "output": "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libllama.so",
+      "runtimeFiles": [
+        "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml.so",
+        "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml-cpu.so",
+        "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml-base.so"
+      ]
+    },
+    "vendor-hash::@704c45f9736004557a3a": {
+      "artifactName": "vendor-hash",
+      "abi": "x86_64",
+      "output": "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/vendor/hash/libvendor-hash.a",
+      "runtimeFiles": []
+    },
+    "ggml-cpu::@23533c6d68a59d54598d": {
+      "artifactName": "ggml-cpu",
+      "abi": "x86_64",
+      "output": "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml-cpu.so",
+      "runtimeFiles": [
+        "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml-base.so"
+      ]
+    },
+    "ggml-base::@23533c6d68a59d54598d": {
+      "artifactName": "ggml-base",
+      "abi": "x86_64",
+      "output": "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/bin/libggml-base.so",
+      "runtimeFiles": []
+    }
+  }
+}

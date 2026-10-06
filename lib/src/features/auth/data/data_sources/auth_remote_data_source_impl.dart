@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/services/device_identity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/data/client/auth_api_client.dart';
 import 'package:kortex/src/features/auth/data/data_sources/auth_remote_data_source.dart';
 import 'package:kortex/src/features/auth/data/models/auth_request_model.dart';
@@ -25,6 +28,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     if (response.refreshToken != null && response.refreshToken!.isNotEmpty) {
       await _userStorage.saveRefreshToken(response.refreshToken!);
     }
+    try {
+      await registerDeviceSession();
+    } on Object catch (e) {
+      debugPrint('[AuthRemoteDataSource] registerDeviceSession during login warning: $e');
+    }
     return response;
   }
 
@@ -37,6 +45,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     if (response.refreshToken != null && response.refreshToken!.isNotEmpty) {
       await _userStorage.saveRefreshToken(response.refreshToken!);
     }
+    try {
+      await registerDeviceSession();
+    } on Object catch (e) {
+      debugPrint('[AuthRemoteDataSource] registerDeviceSession during register warning: $e');
+    }
     return response;
   }
 
@@ -48,6 +61,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
     if (response.refreshToken != null && response.refreshToken!.isNotEmpty) {
       await _userStorage.saveRefreshToken(response.refreshToken!);
+    }
+    try {
+      await registerDeviceSession();
+    } on Object catch (e) {
+      debugPrint('[AuthRemoteDataSource] registerDeviceSession during social login warning: $e');
     }
     return response;
   }
@@ -73,6 +91,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
     if (response.refreshToken != null && response.refreshToken!.isNotEmpty) {
       await _userStorage.saveRefreshToken(response.refreshToken!);
+    }
+    try {
+      await registerDeviceSession();
+    } on Object catch (e) {
+      debugPrint('[AuthRemoteDataSource] registerDeviceSession during verifyOtp warning: $e');
     }
     return response;
   }
@@ -166,6 +189,34 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         await _userStorage.saveToken(response.token!);
       }
     }
+    try {
+      await registerDeviceSession();
+    } on Object catch (e) {
+      debugPrint('[AuthRemoteDataSource] registerDeviceSession during refreshSession warning: $e');
+    }
     return response;
+  }
+
+  @override
+  Future<void> registerDeviceSession() async {
+    if (locator.isRegistered<DeviceIdentityService>()) {
+      final deviceIdentity = locator<DeviceIdentityService>();
+      final deviceId = await deviceIdentity.getDeviceId();
+      final deviceName = deviceIdentity.deviceName;
+      final platform = deviceIdentity.platform;
+
+      await _authClient.registerDeviceSession({
+        'p_device_id': deviceId,
+        'p_device_name': deviceName,
+        'p_platform': platform,
+      });
+    }
+  }
+
+  @override
+  Future<void> disconnectDeviceSession(String targetDeviceId) async {
+    await _authClient.disconnectDeviceSession({
+      'p_target_device_id': targetDeviceId,
+    });
   }
 }

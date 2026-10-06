@@ -15,6 +15,7 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/monetization/presentation/widgets/promo_code_modal_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -63,6 +64,7 @@ class PaywallScreen extends StatefulWidget {
 
 class _PaywallScreenState extends State<PaywallScreen> {
   Offerings? _offerings;
+  CustomerInfo? _customerInfo;
   Package? _selectedPackage;
   bool _isLoading = true;
   bool _isProcessing = false;
@@ -132,9 +134,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
     setState(() => _isLoading = true);
     try {
       final offerings = await RevenueCatService.instance.fetchOfferings();
+      CustomerInfo? customerInfo;
+      if (RevenueCatService.instance.isInitialized) {
+        try {
+          customerInfo = await Purchases.getCustomerInfo();
+        } on Object catch (e) {
+          debugPrint('[PaywallScreen] Error fetching customer info: $e');
+        }
+      }
       if (mounted) {
         setState(() {
           _offerings = offerings;
+          _customerInfo = customerInfo;
           _isLoading = false;
         });
         _selectPlan(_selectedPlanIndex);
@@ -145,6 +156,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _handleManageSubscription() async {
+    AppFeedback.selection();
+    if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
+      await _launchUrl('https://apps.apple.com/account/subscriptions');
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
+      await _launchUrl('https://play.google.com/store/account/subscriptions');
+    } else {
+      await _launchUrl('https://kortexify.com/account');
     }
   }
 
@@ -390,72 +413,86 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final isDark = context.isDarkMode;
     final size = MediaQuery.sizeOf(context);
 
-    final isLandscape = size.width > size.height;
-    final isWide = size.width >= 720;
-    final useTwoColumnLayout = (isLandscape && size.width >= 560) || isWide;
-    final isDesktop = size.width >= 900;
+    final authState = context.watch<AuthBloc>().state;
+    final isPro = authState.isPro;
 
-    // Embedded inside a parent detail panel (e.g. Profile detail panel on desktop)
+    final isWide = size.width >= 720;
+
+    // Embedded inside a parent detail panel (e.g. Profile detail panel)
     if (widget.isEmbedded) {
       return ColoredBox(
         color: colors.backgroundPrimary,
         child: SafeArea(
           child: _isLoading
               ? const Center(child: AppLogoLoader(size: 56))
-              : (useTwoColumnLayout
-                  ? _buildTwoColumnLayout(colors, typography, l10n, isDark, size)
-                  : _buildOneColumnLayout(colors, typography, l10n, isDark)),
+              : (isPro
+                  ? _buildActiveProOneColumnLayout(
+                      colors,
+                      typography,
+                      l10n,
+                      isDark,
+                      authState,
+                    )
+                  : _buildOneColumnLayout(
+                      colors,
+                      typography,
+                      l10n,
+                      isDark,
+                    )),
         ),
       );
     }
 
-    // Slide-in drawer overlay mode (for quick feature gate popups on desktop)
-    if (widget.isSlideOverlay && isDesktop) {
+    // Wide screen OR explicit slide-overlay mode:
+    // Slide in as a right side panel (single column width ~520px), leaving the left underlying screen details completely visible!
+    if (isWide || widget.isSlideOverlay) {
+      final panelWidth = size.width >= 720 ? 520.0 : size.width;
+
       return Scaffold(
         backgroundColor: Colors.transparent,
-        body: Stack(
-          children: [
-            // Ambient Dimmed Backdrop Overlay with opaque hit testing for auto-closing
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _dismissPaywall,
-                child: ColoredBox(
-                  color: Colors.black.withAlpha(isDark ? 140 : 80),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                    child: const SizedBox.expand(),
+        body: Focus(
+          autofocus: true,
+          onKeyEvent: (node, event) {
+            if (event is KeyDownEvent &&
+                event.logicalKey == LogicalKeyboardKey.escape) {
+              _dismissPaywall();
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
+          },
+          child: Stack(
+            children: [
+              // Ambient Dimmed Backdrop Overlay with tap-to-dismiss (left details fully visible)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _dismissPaywall,
+                  child: ColoredBox(
+                    color: Colors.black.withAlpha(isDark ? 120 : 60),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                      child: const SizedBox.expand(),
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // Right Slide-in Compact Panel (Width 520px)
-            Positioned(
-              top: 0,
-              bottom: 0,
-              right: 0,
-              width: 520,
-              child: Material(
-                elevation: 16,
-                color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
-                shape: Border(
-                  left: BorderSide(
-                    color: colors.primary.withAlpha(isDark ? 80 : 50),
-                    width: 1.5,
+              // Right Slide-in Compact Panel (Single Column Width 520px)
+              Positioned(
+                top: 0,
+                bottom: 0,
+                right: 0,
+                width: panelWidth,
+                child: Material(
+                  elevation: 16,
+                  color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+                  shape: Border(
+                    left: BorderSide(
+                      color: colors.primary.withAlpha(isDark ? 80 : 50),
+                      width: 1.5,
+                    ),
                   ),
-                ),
-                child: SafeArea(
-                  child: Focus(
-                    autofocus: true,
-                    onKeyEvent: (node, event) {
-                      if (event is KeyDownEvent &&
-                          event.logicalKey == LogicalKeyboardKey.escape) {
-                        _dismissPaywall();
-                        return KeyEventResult.handled;
-                      }
-                      return KeyEventResult.ignored;
-                    },
+                  child: SafeArea(
                     child: Column(
                       children: [
                         _buildDesktopPanelHeader(colors, typography, l10n, isDark),
@@ -467,27 +504,41 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         Expanded(
                           child: _isLoading
                               ? const Center(child: AppLogoLoader(size: 56))
-                              : _buildDesktopPanelBody(colors, typography, l10n, isDark),
+                              : (isPro
+                                  ? _buildActiveProDesktopPanelBody(
+                                      colors,
+                                      typography,
+                                      l10n,
+                                      isDark,
+                                      authState,
+                                    )
+                                  : _buildDesktopPanelBody(
+                                      colors,
+                                      typography,
+                                      l10n,
+                                      isDark,
+                                    )),
                         ),
                       ],
                     ),
                   ),
-                ),
-              )
-                  .animate()
-                  .slideX(
-                    begin: 1,
-                    end: 0,
-                    duration: 320.ms,
-                    curve: Curves.easeOutCubic,
-                  )
-                  .fadeIn(duration: 200.ms),
-            ),
-          ],
+                )
+                    .animate()
+                    .slideX(
+                      begin: 1,
+                      end: 0,
+                      duration: 300.ms,
+                      curve: Curves.easeOutCubic,
+                    )
+                    .fadeIn(duration: 180.ms),
+              ),
+            ],
+          ),
         ),
       );
     }
 
+    // Standard mobile portrait full-screen layout (< 720px)
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
@@ -527,7 +578,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
           },
         ),
         actions: [
-          if (!kIsWeb)
+          if (!kIsWeb && !isPro)
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: PlatformHoverBuilder(
@@ -550,9 +601,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ),
         ],
       ),
-      // In 1-column mobile portrait, use the sticky bottom dock.
-      // In 2-column landscape/desktop, the checkout controls are integrated inline in the right column.
-      bottomNavigationBar: (_isLoading || useTwoColumnLayout)
+      bottomNavigationBar: (_isLoading || isPro)
           ? null
           : Center(
               heightFactor: 1,
@@ -571,199 +620,520 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ? const Center(
                 child: AppLogoLoader(size: 56),
               )
-            : Stack(
-                children: [
-                  // Subtle ambient background breathing orb for depth
-                  _buildAmbientBackgroundOrbs(colors, isDark, isLandscape),
-
-                  // Main Content Layout
-                  if (useTwoColumnLayout)
-                    _buildTwoColumnLayout(
-                      colors,
-                      typography,
-                      l10n,
-                      isDark,
-                      size,
-                    )
-                  else
-                    _buildOneColumnLayout(
-                      colors,
-                      typography,
-                      l10n,
-                      isDark,
-                    ),
-                ],
-              ),
+            : (isPro
+                ? _buildActiveProOneColumnLayout(
+                    colors,
+                    typography,
+                    l10n,
+                    isDark,
+                    authState,
+                  )
+                : _buildOneColumnLayout(
+                    colors,
+                    typography,
+                    l10n,
+                    isDark,
+                  )),
       ),
     );
   }
 
-  /// Ambient background glowing orbs that gently breathe to provide subtle depth
-  Widget _buildAmbientBackgroundOrbs(
-    AppThemeColorsExtension colors,
-    bool isDark,
-    bool isLandscape,
-  ) {
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: Stack(
-          children: [
-            Positioned(
-              top: -60,
-              left: isLandscape ? 40 : -40,
-              child: Container(
-                width: 280,
-                height: 280,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      colors.primary.withAlpha(isDark ? 40 : 25),
-                      colors.syllabotAccent.withAlpha(isDark ? 25 : 12),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              )
-                  .animate(onPlay: (controller) => controller.repeat(reverse: true))
-                  .scale(
-                    begin: const Offset(0.9, 0.9),
-                    end: const Offset(1.15, 1.15),
-                    duration: 3800.ms,
-                    curve: Curves.easeInOut,
-                  ),
-            ),
-            Positioned(
-              bottom: 40,
-              right: isLandscape ? 40 : -50,
-              child: Container(
-                width: 240,
-                height: 240,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      colors.syllabotAccent.withAlpha(isDark ? 30 : 18),
-                      colors.primary.withAlpha(isDark ? 20 : 10),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              )
-                  .animate(onPlay: (controller) => controller.repeat(reverse: true))
-                  .scale(
-                    begin: const Offset(1.1, 1.1),
-                    end: const Offset(0.85, 0.85),
-                    duration: 4200.ms,
-                    curve: Curves.easeInOut,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Two-column layout for landscape smartphones, tablets, and desktop/web.
-  /// Delivers a unified, elevated dual-stage experience without split-scroll jank.
-  Widget _buildTwoColumnLayout(
+  Widget _buildActiveProHeader(
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
     AppLocalizations l10n,
     bool isDark,
-    Size size,
   ) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1140),
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                colors.success.withAlpha(90),
+                colors.primary.withAlpha(70),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: colors.success.withAlpha(160),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: colors.success.withAlpha(isDark ? 50 : 25),
+                blurRadius: 14,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Left Column: Hero Value Proposition Showcase Card
-              Expanded(
-                flex: 6,
-                child: Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary.withAlpha(160)
-                        : colors.surfacePrimary.withAlpha(220),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 55 : 35),
-                      width: 1.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.black.withAlpha(isDark ? 65 : 15),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildHeroHeader(colors, typography, l10n, isDark),
-                      const SizedBox(height: 16),
-                      _buildSocialProofStrip(colors, typography, l10n, isDark),
-                      const SizedBox(height: 20),
-                      _buildFeatureMatrix(colors, typography, l10n, isDark),
-                    ],
-                  ),
+              Icon(
+                Icons.workspace_premium_rounded,
+                color: colors.warning,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'KORTEXIFY PRO MEMBER',
+                style: typography.caption.bold.copyWith(
+                  color: colors.white,
+                  fontSize: 11.5,
+                  letterSpacing: 1.2,
                 ),
               ),
+            ],
+          ),
+        )
+            .animate(onPlay: (controller) => controller.repeat())
+            .shimmer(
+              delay: 1200.ms,
+              duration: 2200.ms,
+              color: colors.white.withAlpha(80),
+              angle: 45,
+            ),
+        const SizedBox(height: 12),
+        Text(
+          'You are on Kortexify Pro',
+          textAlign: TextAlign.center,
+          style: typography.title2.bold.copyWith(
+            color: colors.textPrimary,
+            fontSize: 22,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Enjoy unlimited Socratic AI tutoring, 200MB file drops, voice dialogue, and cognitive study diagnostics.',
+          textAlign: TextAlign.center,
+          style: typography.caption.regular.copyWith(
+            color: colors.textSecondary,
+            fontSize: 13,
+            height: 1.35,
+          ),
+        ),
+      ],
+    );
+  }
 
-              const SizedBox(width: 20),
+  Widget _buildActiveSubscriptionCard(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+    AuthState authState,
+  ) {
+    final email = authState.userProfile?.email ?? authState.user?.email ?? 'Subscribed Account';
+    final entitlement = _customerInfo?.entitlements.all[RevenueCatService.proEntitlementId];
+    var statusDetail = 'Active Access';
+    if (entitlement != null && entitlement.expirationDate != null) {
+      try {
+        final date = DateTime.parse(entitlement.expirationDate!);
+        statusDetail = 'Renews ${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      } on Object catch (_) {}
+    } else if (entitlement?.willRenew == false) {
+      statusDetail = 'Cancels at end of period';
+    }
 
-              // Right Column: Premium Checkout Engine & Plan Selector Card
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark
+            ? colors.surfaceSecondary.withAlpha(210)
+            : colors.surfacePrimary.withAlpha(240),
+        borderRadius: AppRadius.radiusPanel,
+        border: Border.all(
+          color: colors.success.withAlpha(isDark ? 100 : 70),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colors.success.withAlpha(isDark ? 30 : 15),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.success.withAlpha(35),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_rounded,
+                  color: colors.success,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
-                flex: 5,
-                child: Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary.withAlpha(190)
-                        : colors.surfacePrimary.withAlpha(240),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 90 : 60),
-                      width: 1.5,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pro Unlimited Pass',
+                      style: typography.body.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 15,
+                      ),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withAlpha(isDark ? 35 : 15),
-                        blurRadius: 28,
-                        offset: const Offset(0, 10),
+                    const SizedBox(height: 2),
+                    Text(
+                      email,
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 12,
                       ),
-                    ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colors.success.withAlpha(35),
+                  borderRadius: AppRadius.radiusBadge,
+                  border: Border.all(
+                    color: colors.success.withAlpha(100),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildTierPlansSelector(colors, typography, l10n, isDark),
-                      const SizedBox(height: 16),
-                      _buildTransparentTimeline(colors, typography, l10n, isDark),
-                      const SizedBox(height: 18),
-                      _buildCheckoutControls(
-                        colors: colors,
-                        typography: typography,
-                        l10n: l10n,
-                        isDark: isDark,
-                        isInline: true,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFooter(colors, typography, l10n),
-                    ],
+                ),
+                child: Text(
+                  'ACTIVE',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.success,
+                    fontSize: 10,
+                    letterSpacing: 0.8,
                   ),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 14),
+          Divider(
+            height: 1,
+            color: colors.surfaceBorder.withAlpha(70),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.event_repeat_rounded,
+                    size: 15,
+                    color: colors.textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Billing Status',
+                    style: typography.footnote.medium.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                statusDetail,
+                style: typography.footnote.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveUnlockedFeaturesGrid(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    final unlockedFeatures = [
+      const _ProFeatureItem(
+        icon: Icons.psychology_rounded,
+        title: 'Unlimited Syllabot AI',
+        subtitle: 'Unrestricted 24/7 Socratic problem-solving & derivations',
+      ),
+      const _ProFeatureItem(
+        icon: Icons.document_scanner_rounded,
+        title: '200MB Multimodal OCR Drop',
+        subtitle: 'High-capacity PDF, PPTX, image & lecture transcript drops',
+      ),
+      const _ProFeatureItem(
+        icon: Icons.mic_rounded,
+        title: 'Real-Time Voice Dialogue',
+        subtitle: 'Hands-free interactive voice study sessions with AI',
+      ),
+      const _ProFeatureItem(
+        icon: Icons.auto_graph_rounded,
+        title: 'AI Cognitive Diagnostics',
+        subtitle: 'Exam readiness, weakness breakdown & retention radar',
+      ),
+      const _ProFeatureItem(
+        icon: Icons.download_rounded,
+        title: 'Full Deck Exports',
+        subtitle: 'Export to Anki, CSV, and high-density printable PDFs',
+      ),
+      const _ProFeatureItem(
+        icon: Icons.cloud_sync_rounded,
+        title: 'Cloud Backup & Multi-Device',
+        subtitle: 'Instant multi-device sync with zero-latency offline cache',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            'UNLOCKED PRO CAPABILITIES',
+            style: typography.caption.bold.copyWith(
+              color: colors.textSecondary,
+              fontSize: 11,
+              letterSpacing: 1.1,
+            ),
+          ),
         ),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDark
+                ? colors.surfaceSecondary.withAlpha(180)
+                : colors.surfacePrimary.withAlpha(220),
+            borderRadius: AppRadius.radiusPanel,
+            border: Border.all(
+              color: colors.surfaceBorder.withAlpha(isDark ? 80 : 50),
+            ),
+          ),
+          child: Column(
+            children: unlockedFeatures
+                .map(
+                  (f) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(30),
+                            borderRadius: AppRadius.radiusCard,
+                          ),
+                          child: Icon(
+                            f.icon,
+                            color: colors.primary,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                f.title,
+                                style: typography.body.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                              Text(
+                                f.subtitle,
+                                style: typography.caption.regular.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 10.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.check_circle_rounded,
+                          color: colors.success,
+                          size: 17,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActiveProActions(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PlatformHoverBuilder(
+          builder: (context, isHovered, child) {
+            return ShrinkableButton(
+              onTap: () => _dismissPaywall(true),
+              child: AnimatedContainer(
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colors.primary,
+                      if (isHovered)
+                        colors.syllabotAccent.withAlpha(240)
+                      else
+                        colors.syllabotAccent,
+                    ],
+                  ),
+                  borderRadius: AppRadius.radiusPanel,
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.black.withAlpha(
+                        isDark ? (isHovered ? 80 : 55) : (isHovered ? 45 : 25),
+                      ),
+                      blurRadius: isHovered ? 20 : 16,
+                      offset: Offset(0, isHovered ? 6 : 4),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.rocket_launch_rounded,
+                        color: colors.white,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Return to Kortex',
+                        style: typography.body.bold.copyWith(
+                          color: colors.white,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _handleManageSubscription,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            side: BorderSide(
+              color: colors.primary.withAlpha(120),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: AppRadius.radiusPanel,
+            ),
+          ),
+          icon: Icon(
+            Icons.settings_outlined,
+            size: 16,
+            color: colors.primary,
+          ),
+          label: Text(
+            'Manage Store Subscription',
+            style: typography.caption.bold.copyWith(
+              color: colors.primary,
+              fontSize: 12.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActiveProOneColumnLayout(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+    AuthState authState,
+  ) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildActiveProHeader(colors, typography, l10n, isDark),
+              const SizedBox(height: 16),
+              _buildActiveSubscriptionCard(colors, typography, l10n, isDark, authState),
+              const SizedBox(height: 18),
+              _buildActiveUnlockedFeaturesGrid(colors, typography, l10n, isDark),
+              const SizedBox(height: 20),
+              _buildActiveProActions(colors, typography, l10n, isDark),
+              const SizedBox(height: 24),
+              _buildFooter(colors, typography, l10n),
+              const SizedBox(height: 24),
+            ]
+                .animate(interval: 60.ms)
+                .fadeIn(duration: 280.ms, curve: Curves.easeOutCubic)
+                .slideY(begin: 0.04, end: 0, duration: 280.ms, curve: Curves.easeOutCubic),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveProDesktopPanelBody(
+    AppThemeColorsExtension colors,
+    TypographyThemeExtension typography,
+    AppLocalizations l10n,
+    bool isDark,
+    AuthState authState,
+  ) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildActiveProHeader(colors, typography, l10n, isDark),
+          const SizedBox(height: 14),
+          _buildActiveSubscriptionCard(colors, typography, l10n, isDark, authState),
+          const SizedBox(height: 16),
+          _buildActiveUnlockedFeaturesGrid(colors, typography, l10n, isDark),
+          const SizedBox(height: 18),
+          _buildActiveProActions(colors, typography, l10n, isDark),
+          const SizedBox(height: 16),
+          _buildFooter(colors, typography, l10n),
+          const SizedBox(height: 28),
+        ],
       ),
     );
   }

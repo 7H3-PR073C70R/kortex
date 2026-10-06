@@ -23,4 +23,6 @@ abstract class AuthRemoteDataSource {
   });
   Future<List<CourseTrackModel>> fetchCourseTracks();
   Future<UserModel> refreshSession(String refreshToken);
+  Future<void> registerDeviceSession();
+  Future<void> disconnectDeviceSession(String targetDeviceId);
 }

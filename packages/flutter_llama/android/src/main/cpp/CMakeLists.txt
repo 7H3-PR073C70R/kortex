@@ -33,26 +33,9 @@ set(GGML_AMX OFF CACHE BOOL "" FORCE)
 # OpenCL as fallback for older devices
 # CPU backend with NEON as last resort
 
-# Try to enable Vulkan (best performance on modern devices)
-find_library(vulkan-lib vulkan)
-if(vulkan-lib)
-    set(GGML_VULKAN ON CACHE BOOL "" FORCE)
-    message(STATUS "🚀 Vulkan GPU acceleration ENABLED")
-    message(STATUS "   Supported: Adreno 5xx+, Mali-G71+, Samsung Exynos 9+")
-    message(STATUS "   Expected: 4-8x faster than CPU")
-else()
-    # Try OpenCL as fallback
-    find_library(opencl-lib OpenCL)
-    if(opencl-lib)
-        set(GGML_OPENCL ON CACHE BOOL "" FORCE)
-        message(STATUS "⚡ OpenCL GPU acceleration ENABLED (fallback)")
-        message(STATUS "   Supported: Most Android devices with GPU")
-        message(STATUS "   Expected: 2-5x faster than CPU")
-    else()
-        message(STATUS "⚡ Using optimized CPU backend with ARM NEON")
-        message(STATUS "   GPU libraries not found, falling back to CPU")
-    endif()
-endif()
+# Mobile NDK configuration: disable Vulkan SPIRV build dependency
+set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
+message(STATUS "⚡ Using optimized CPU backend with ARM NEON / x86 vector extensions")
 
 message(STATUS "   Works on: All ARM64 Android devices")
 

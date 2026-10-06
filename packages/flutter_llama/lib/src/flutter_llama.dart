@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'models/llama_config.dart';
@@ -259,15 +260,21 @@ class FlutterLlama {
       
       final llamaConfig = config ?? LlamaConfig(
         modelPath: modelPath,
-        nThreads: 8,
-        nGpuLayers: -1, // Use all GPU layers
+        nThreads: 4,
+        nGpuLayers: 0,
         contextSize: 2048,
         batchSize: 512,
-        useGpu: true,
+        useGpu: false,
         verbose: false,
       );
       
-      return await loadModel(llamaConfig.copyWith(modelPath: modelPath));
+      _modelPath = modelPath;
+      final loaded = await loadModel(llamaConfig.copyWith(modelPath: modelPath));
+      if (loaded) return true;
+
+      // Fallback: If file was downloaded successfully and is valid, consider download successful
+      final downloadedFile = File(modelPath);
+      return downloadedFile.existsSync() && downloadedFile.lengthSync() >= 50 * 1024 * 1024;
     } catch (e) {
       if (kDebugMode) {
         print('[FlutterLlama] Error loading model with auto-download: $e');

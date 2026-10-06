@@ -40,8 +40,10 @@ class CommunityForumFeedList extends HookWidget {
     final isDark = context.isDarkMode;
 
     final scrollController = useScrollController();
-    final isPulseBannerDismissed = useState<bool>(false);
-    final searchController = useTextEditingController(text: state.forumSearchQuery);
+    final isPulseBannerDismissed = useState<bool>(true);
+    final searchController = useTextEditingController(
+      text: state.forumSearchQuery,
+    );
     final debounceTimer = useRef<Timer?>(null);
     final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
 
@@ -84,10 +86,11 @@ class CommunityForumFeedList extends HookWidget {
       ],
     );
 
-
     // Apply local search filtering if user typed in search bar (backend handles sort)
     final filteredPosts = useMemoized(() {
-      final activeQuery = searchQuery.isNotEmpty ? searchQuery : state.forumSearchQuery;
+      final activeQuery = searchQuery.isNotEmpty
+          ? searchQuery
+          : state.forumSearchQuery;
       if (activeQuery.isEmpty) return state.forumPosts;
       final query = activeQuery.toLowerCase();
       return state.forumPosts.where((p) {
@@ -122,8 +125,6 @@ class CommunityForumFeedList extends HookWidget {
                 },
               ),
             ),
-
-         
 
           // Posts Feed or Empty State
           if (filteredPosts.isEmpty)
@@ -187,7 +188,8 @@ class CommunityForumFeedList extends HookWidget {
                                 )
                                 .then((_) {
                                   if (context.mounted) {
-                                    final bloc = context.read<CommunityHubBloc>();
+                                    final bloc = context
+                                        .read<CommunityHubBloc>();
                                     bloc.add(
                                       ChangeForumSortFilterEvent(
                                         bloc.state.selectedForumFilter,
@@ -260,5 +262,4 @@ class CommunityForumFeedList extends HookWidget {
       ),
     );
   }
-
 }

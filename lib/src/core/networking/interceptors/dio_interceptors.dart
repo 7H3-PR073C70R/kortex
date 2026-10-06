@@ -4,8 +4,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
+import 'package:kortex/src/core/services/device_identity_service.dart';
 import 'package:kortex/src/core/services/session_expired_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:logger/logger.dart';
 
 enum RefreshTokenResult {
@@ -323,6 +325,16 @@ class TokenInterceptor extends QueuedInterceptor {
       options.headers['Authorization'] = 'Bearer $userToken';
     } else if (anonKey.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $anonKey';
+    }
+
+    if (locator.isRegistered<DeviceIdentityService>()) {
+      try {
+        final deviceIdentity = locator<DeviceIdentityService>();
+        final deviceId = await deviceIdentity.getDeviceId();
+        options.headers['X-Device-Id'] = deviceId;
+        options.headers['X-Device-Name'] = deviceIdentity.deviceName;
+        options.headers['X-Platform'] = deviceIdentity.platform;
+      } on Object catch (_) {}
     }
 
     super.onRequest(options, handler);

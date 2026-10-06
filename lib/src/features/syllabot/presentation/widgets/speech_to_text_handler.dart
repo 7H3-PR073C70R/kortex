@@ -119,6 +119,10 @@ class SpeechToTextHandler {
               'Speech recognition is unavailable on this device.',
             );
           }
+        } else if (!kIsWeb && Platform.isMacOS) {
+          onError?.call(
+            'Speech recognition is currently unavailable on macOS desktop. You can still record voice notes or type.',
+          );
         } else {
           onError?.call(
             'Speech recognition is unavailable on this device.',
