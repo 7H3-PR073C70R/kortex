@@ -58,9 +58,13 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
   final QueryDocumentContextUseCase? _queryDocumentContext;
   final LocalStorageService? _localStorageService;
 
+  final StreamController<String> _tokenStreamController =
+      StreamController<String>.broadcast();
   StreamSubscription<String>? _streamSubscription;
   List<DocumentChunkEntity> _currentRagReferences = [];
   DateTime? _streamStartTime;
+
+  Stream<String> get streamTokens => _tokenStreamController.stream;
 
   Future<void> _onSubmitPrompt(
     SubmitPromptEvent event,
@@ -188,6 +192,9 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     StreamTokenReceivedEvent event,
     Emitter<SyllabotChatState> emit,
   ) {
+    if (!_tokenStreamController.isClosed) {
+      _tokenStreamController.add(event.token);
+    }
     emit(
       state.copyWith(
         streamingText: state.streamingText + event.token,
@@ -544,6 +551,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
   @override
   Future<void> close() async {
     await _streamSubscription?.cancel();
+    await _tokenStreamController.close();
     return super.close();
   }
 }

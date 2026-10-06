@@ -166,7 +166,8 @@ bool llama_generate(
     
     auto sparams = llama_sampler_chain_default_params();
     g_sampler = llama_sampler_chain_init(sparams);
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.2f, 0.2f));
+    const int32_t n_vocab = g_vocab ? llama_vocab_n_tokens(g_vocab) : 32000;
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.2f, 0.2f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_k(top_k));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
@@ -288,7 +289,8 @@ void llama_generate_stream_init(
     
     auto sparams = llama_sampler_chain_default_params();
     g_sampler = llama_sampler_chain_init(sparams);
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.2f, 0.2f));
+    const int32_t n_vocab = g_vocab ? llama_vocab_n_tokens(g_vocab) : 32000;
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.2f, 0.2f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_k(top_k));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));

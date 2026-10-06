@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/audio_earcon_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/chat_bubble_widget.dart';
@@ -68,6 +71,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     with SingleTickerProviderStateMixin {
   late final SpeechToTextHandler _sttHandler;
   late final AnimationController _pulseController;
+  late final AudioEarconService _earconService;
 
   DialogueState _state = DialogueState.idle;
   String _liveTranscript = '';
@@ -80,12 +84,16 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   Timer? _silenceTimer;
   Timer? _restartListeningTimer;
 
-  static const Duration _silenceThreshold = Duration(milliseconds: 1400);
+  static const Duration _silenceThreshold = Duration(milliseconds: 800);
 
   @override
   void initState() {
     super.initState();
     _selectedGender = widget.ttsHandler.voiceGender;
+
+    _earconService = locator.isRegistered<AudioEarconService>()
+        ? locator<AudioEarconService>()
+        : AudioEarconServiceImpl();
 
     _pulseController = AnimationController(
       vsync: this,
@@ -187,7 +195,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         _soundLevel = 0;
       });
       _isProcessingPrompt = true;
-      unawaited(HapticFeedback.mediumImpact());
+      unawaited(_earconService.playProcessingCommit());
       await _sttHandler.stopListening();
       await _processVoicePrompt(prompt);
     } else {
@@ -247,7 +255,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       _soundLevel = 0;
     });
 
-    unawaited(HapticFeedback.selectionClick());
+    unawaited(_earconService.playListeningStart());
     await _sttHandler.startListening(
       pauseFor: const Duration(milliseconds: 1800),
     );
@@ -287,8 +295,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           if (!firstSentenceSpoken) {
             final match = firstClauseDelimiters.firstMatch(accumulated);
             final wordCount = accumulated.trim().split(RegExp(r'\s+')).length;
-            // Early break on comma/clause OR if 5 words reached
-            if (match != null || wordCount >= 5) {
+            // Early break on comma/clause OR if 4 words reached for instant TTFA (<400ms)
+            if (match != null || wordCount >= 4) {
               final splitIndex = match != null ? match.end : accumulated.length;
               final firstClause = accumulated.substring(0, splitIndex).trim();
               accumulated = accumulated.substring(splitIndex);
@@ -302,14 +310,17 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                   setState(() {
                     _state = DialogueState.speaking;
                   });
+                  unawaited(_earconService.playSpeakingStart());
                 }
                 await widget.ttsHandler.enqueueSentence(firstClause);
               }
             }
           } else {
             Match? match;
-            while ((match = sentenceDelimiters.firstMatch(accumulated)) !=
-                null) {
+            // Check full sentence boundaries (.!?) OR clause boundaries (,;:) if buffer >= 8 words
+            while ((match = sentenceDelimiters.firstMatch(accumulated)) != null ||
+                (accumulated.trim().split(RegExp(r'\s+')).length >= 8 &&
+                    (match = firstClauseDelimiters.firstMatch(accumulated)) != null)) {
               final sentence = accumulated.substring(0, match!.end).trim();
               accumulated = accumulated.substring(match.end);
               accumulatedBuffer
@@ -375,6 +386,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         }
       }
     } on Object catch (_) {
+      unawaited(_earconService.playError());
       if (mounted) {
         setState(() {
           _state = DialogueState.idle;

@@ -28,7 +28,6 @@ import 'package:kortex/src/features/syllabot/data/models/prompt_suggestion_model
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
-import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_bloc.dart';
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_event.dart';
 import 'package:kortex/src/features/syllabot/presentation/bloc/syllabot_chat_state.dart';
@@ -289,12 +288,13 @@ class _SyllabotChatView extends HookWidget {
           ttsHandler: ttsHandler,
           initialMode: state.socraticMode,
           onStreamPrompt: (voicePrompt) {
-            final latestState = dialogContext.read<SyllabotChatBloc>().state;
+            final bloc = dialogContext.read<SyllabotChatBloc>();
+            final latestState = bloc.state;
             final sid = UuidUtils.isValidUuid(latestState.sessionId)
                 ? latestState.sessionId
                 : persistentSessionId;
 
-            dialogContext.read<SyllabotChatBloc>().add(
+            bloc.add(
               SubmitPromptEvent(
                 prompt: voicePrompt,
                 sessionId: sid,
@@ -303,14 +303,8 @@ class _SyllabotChatView extends HookWidget {
               ),
             );
 
-            // Stream response tokens through the active engine pipeline
-            final streamUseCase = locator<StreamSyllabotResponseUseCase>();
-            return streamUseCase(
-              prompt: voicePrompt,
-              sessionId: sid,
-              socraticMode: latestState.socraticMode,
-              preferredEngine: latestState.engineType,
-            );
+            // Forward real-time token stream directly from single BLoC engine pipeline
+            return bloc.streamTokens;
           },
         ),
       );

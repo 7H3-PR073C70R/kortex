@@ -105,6 +105,9 @@ void _initServices() {
     ..registerLazySingleton<AudioRecordingService>(
       AudioRecordingServiceImpl.new,
     )
+    ..registerLazySingleton<AudioEarconService>(
+      AudioEarconServiceImpl.new,
+    )
     ..registerLazySingleton<TextToSpeechService>(
       () => TextToSpeechServiceImpl(
         localStorageService: locator.isRegistered<LocalStorageService>()

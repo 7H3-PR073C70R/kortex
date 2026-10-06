@@ -9,6 +9,7 @@ import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/networking/interceptors/dio_interceptors.dart';
 import 'package:kortex/src/core/services/analytics_service.dart';
+import 'package:kortex/src/core/services/audio_earcon_service.dart';
 import 'package:kortex/src/core/services/audio_recording_service.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
 import 'package:kortex/src/core/services/break_reminder_service.dart';

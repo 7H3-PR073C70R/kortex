@@ -9,6 +9,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/rag_reference_badge.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/rag_source_inspection_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_response_formatter.dart';
@@ -75,6 +76,15 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+
+    final isLocalEngine =
+        widget.message.engineType == ExecutionEngineType.localOnDevice;
+    final engineLabel = isLocalEngine
+        ? l10n.engineLocalOnDevice
+        : l10n.engineCloudSupabase;
+    final badgeColor = isLocalEngine
+        ? colors.success
+        : colors.syllabotAccent;
 
     if (isUser) {
       return Align(
@@ -177,13 +187,13 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: colors.syllabotAccent.withAlpha(30),
+                            color: badgeColor.withAlpha(30),
                             borderRadius: AppRadius.radiusBadge,
                           ),
                           child: Text(
-                            l10n.engineCloudSupabase,
+                            engineLabel,
                             style: typography.caption.medium.copyWith(
-                              color: colors.syllabotAccent,
+                              color: badgeColor,
                               fontSize: 10,
                             ),
                           ),
@@ -194,7 +204,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                             children: [
                               AppLogoLoader(
                                 size: 14,
-                                color: colors.syllabotAccent,
+                                color: badgeColor,
                                 showMessage: false,
                               ),
                               const SizedBox(width: 5),
