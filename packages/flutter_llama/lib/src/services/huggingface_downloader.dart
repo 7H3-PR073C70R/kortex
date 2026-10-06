@@ -129,13 +129,6 @@ class HuggingFaceDownloader {
       final file = File(filePath);
       final tempFile = File(tempFilePath);
 
-      // Clean up stale temporary download file if present
-      if (await tempFile.exists()) {
-        try {
-          await tempFile.delete();
-        } catch (_) {}
-      }
-
       if (await file.exists() && !force) {
         final size = await file.length();
         // Verify file is complete (at least 80MB) rather than accepting partial downloads
@@ -162,15 +155,30 @@ class HuggingFaceDownloader {
         }
       }
 
+      var startBytes = 0;
+      if (await tempFile.exists() && !force) {
+        startBytes = await tempFile.length();
+        if (kDebugMode) {
+          print('[HuggingFaceDownloader] Found existing partial download: $tempFilePath ($startBytes bytes)');
+        }
+      } else if (await tempFile.exists() && force) {
+        try {
+          await tempFile.delete();
+        } catch (_) {}
+      }
+
       final url = '$baseUrl/$modelId/resolve/$branch/$fileName';
 
       if (kDebugMode) {
-        print('[HuggingFaceDownloader] Downloading from: $url');
+        print('[HuggingFaceDownloader] Downloading from: $url (Resuming from byte: $startBytes)');
       }
 
-      onProgress?.call(const DownloadProgress(
+      onProgress?.call(DownloadProgress(
         progress: 0.0,
-        status: 'Connecting to HuggingFace...',
+        status: startBytes > 0
+            ? 'Resuming download from ${(startBytes / 1024 / 1024).toStringAsFixed(1)} MB...'
+            : 'Connecting to HuggingFace...',
+        downloadedBytes: startBytes,
       ));
 
       final client = HttpClient();
@@ -180,6 +188,9 @@ class HuggingFaceDownloader {
       for (var redirectCount = 0; redirectCount < 10; redirectCount++) {
         final request = await client.getUrl(currentUri);
         request.headers.set(HttpHeaders.userAgentHeader, 'Kortex/1.0 (Mobile)');
+        if (startBytes > 0) {
+          request.headers.set(HttpHeaders.rangeHeader, 'bytes=$startBytes-');
+        }
         request.followRedirects = false;
         final res = await request.close();
 
@@ -199,35 +210,68 @@ class HuggingFaceDownloader {
         break;
       }
 
-      if (response == null || response.statusCode != 200) {
-        final status = response?.statusCode;
+      if (response == null) {
+        client.close();
+        throw Exception('Download failed: No response received from server');
+      }
+
+      final isResuming = response.statusCode == HttpStatus.partialContent && startBytes > 0;
+
+      if (response.statusCode != HttpStatus.ok && response.statusCode != HttpStatus.partialContent) {
+        if (response.statusCode == 416 && startBytes > 0) {
+          // Range invalid / expired, clean temp file and retry fresh
+          try {
+            await tempFile.delete();
+          } catch (_) {}
+          client.close();
+          return downloadFile(
+            modelId: modelId,
+            fileName: fileName,
+            branch: branch,
+            onProgress: onProgress,
+            force: true,
+          );
+        }
+        final status = response.statusCode;
         client.close();
         throw Exception('Download failed: HTTP $status');
       }
 
-      final contentLength = response.contentLength;
-      var receivedBytes = 0;
-      final sink = tempFile.openWrite();
+      int totalBytes;
+      if (isResuming) {
+        final remainingBytes = response.contentLength;
+        totalBytes = remainingBytes > 0 ? startBytes + remainingBytes : 0;
+      } else {
+        totalBytes = response.contentLength;
+        startBytes = 0;
+      }
+
+      var receivedBytes = startBytes;
+      final sink = tempFile.openWrite(
+        mode: isResuming ? FileMode.append : FileMode.write,
+      );
 
       try {
         onProgress?.call(DownloadProgress(
-          progress: 0.0,
-          status: 'Downloading...',
-          downloadedBytes: 0,
-          totalBytes: contentLength > 0 ? contentLength : null,
+          progress: totalBytes > 0 ? (startBytes / totalBytes).clamp(0.0, 1.0) : 0.0,
+          status: isResuming
+              ? 'Resuming: ${(startBytes / 1024 / 1024).toStringAsFixed(1)} MB / ${(totalBytes / 1024 / 1024).toStringAsFixed(1)} MB'
+              : 'Downloading...',
+          downloadedBytes: startBytes,
+          totalBytes: totalBytes > 0 ? totalBytes : null,
         ));
 
         await for (final chunk in response) {
           sink.add(chunk);
           receivedBytes += chunk.length;
 
-          if (contentLength > 0) {
-            final progress = receivedBytes / contentLength;
+          if (totalBytes > 0) {
+            final progress = (receivedBytes / totalBytes).clamp(0.0, 1.0);
             onProgress?.call(DownloadProgress(
               progress: progress,
-              status: 'Downloading: ${(receivedBytes / 1024 / 1024).toStringAsFixed(1)} MB / ${(contentLength / 1024 / 1024).toStringAsFixed(1)} MB',
+              status: 'Downloading: ${(receivedBytes / 1024 / 1024).toStringAsFixed(1)} MB / ${(totalBytes / 1024 / 1024).toStringAsFixed(1)} MB',
               downloadedBytes: receivedBytes,
-              totalBytes: contentLength,
+              totalBytes: totalBytes,
             ));
           } else {
             onProgress?.call(DownloadProgress(
@@ -240,9 +284,7 @@ class HuggingFaceDownloader {
       } catch (e) {
         try {
           await sink.close();
-          if (await tempFile.exists()) {
-            await tempFile.delete();
-          }
+          // DO NOT delete tempFile on interrupt! Preserve partial bytes for session resumption.
         } catch (_) {}
         rethrow;
       } finally {
@@ -253,13 +295,10 @@ class HuggingFaceDownloader {
 
       final tempSize = await tempFile.length();
 
-      if (contentLength > 0 && tempSize != contentLength) {
-        try {
-          if (await tempFile.exists()) {
-            await tempFile.delete();
-          }
-        } catch (_) {}
-        throw Exception('Download incomplete: expected $contentLength bytes, got $tempSize');
+      if (totalBytes > 0 && tempSize != totalBytes) {
+        throw Exception(
+          'Download paused or incomplete: ${(tempSize / 1024 / 1024).toStringAsFixed(1)} MB / ${(totalBytes / 1024 / 1024).toStringAsFixed(1)} MB. Tap Resume to continue.',
+        );
       }
 
       // Download complete & verified! Atomically promote temp file to final .gguf model file

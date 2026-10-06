@@ -65,7 +65,6 @@ class SyllabotChatPage extends HookWidget {
     final bloc = useMemoized(locator.call<SyllabotChatBloc>);
 
     useEffect(() {
-      bloc.add(const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote));
       if (initialPrompt != null && initialPrompt!.trim().isNotEmpty) {
         final sid = UuidUtils.generate();
         bloc.add(

@@ -714,7 +714,9 @@ class SyllabotAiSettingsPage extends HookWidget {
                                                           ? 'Downloading...'
                                                           : LocalLlmEngineClient.isGlobalDownloadActive
                                                               ? 'Download Locked'
-                                                              : 'Download Model',
+                                                              : model.hasPartialDownload
+                                                                  ? 'Resume (${(model.partialBytes / 1024 / 1024).toInt()} MB)'
+                                                                  : 'Download Model',
                                                       style: typography.caption.bold.copyWith(
                                                         color: LocalLlmEngineClient.isGlobalDownloadActive
                                                             ? colors.textSecondary

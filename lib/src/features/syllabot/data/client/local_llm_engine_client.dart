@@ -22,6 +22,7 @@ class LocalLlmModelInfo {
     this.isDownloaded = false,
     this.isActive = false,
     this.fileSizeBytes = 0,
+    this.partialBytes = 0,
   });
 
   final String id;
@@ -34,6 +35,9 @@ class LocalLlmModelInfo {
   final bool isDownloaded;
   final bool isActive;
   final int fileSizeBytes;
+  final int partialBytes;
+
+  bool get hasPartialDownload => !isDownloaded && partialBytes > 0;
 
   LocalLlmModelInfo copyWith({
     String? id,
@@ -46,6 +50,7 @@ class LocalLlmModelInfo {
     bool? isDownloaded,
     bool? isActive,
     int? fileSizeBytes,
+    int? partialBytes,
   }) {
     return LocalLlmModelInfo(
       id: id ?? this.id,
@@ -58,6 +63,7 @@ class LocalLlmModelInfo {
       isDownloaded: isDownloaded ?? this.isDownloaded,
       isActive: isActive ?? this.isActive,
       fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+      partialBytes: partialBytes ?? this.partialBytes,
     );
   }
 }
@@ -285,6 +291,24 @@ class LocalLlmEngineClient {
         }
       }
 
+      var partialBytes = 0;
+      if (!downloaded) {
+        final sharedTemp = File('${sharedDir.path}/$presetFileName.tmp');
+        if (sharedTemp.existsSync()) {
+          partialBytes = sharedTemp.lengthSync();
+        } else {
+          try {
+            final appDir = await getApplicationDocumentsDirectory();
+            final hfTemp = File(
+              '${appDir.path}/models/huggingface/${catalog.preset.id.replaceAll('/', '_')}/$presetFileName.tmp',
+            );
+            if (hfTemp.existsSync()) {
+              partialBytes = hfTemp.lengthSync();
+            }
+          } on Object catch (_) {}
+        }
+      }
+
       final isActive = downloaded &&
           (activeId == catalog.id ||
               (activePath != null && foundPath != null && activePath == foundPath) ||
@@ -296,6 +320,7 @@ class LocalLlmEngineClient {
           isDownloaded: downloaded,
           isActive: isActive,
           fileSizeBytes: sizeBytes,
+          partialBytes: partialBytes,
         ),
       );
     }

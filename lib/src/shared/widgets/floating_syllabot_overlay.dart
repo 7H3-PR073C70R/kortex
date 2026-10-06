@@ -50,6 +50,9 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
       duration: AppMotion.expressive,
       reverseDuration: AppMotion.standard,
     );
+    _expandController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _expandAnimation = CurvedAnimation(
       parent: _expandController,
       curve: AppMotion.easeOutCubic,
@@ -100,6 +103,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
         // 2. Collapsed Floating Syllabot AI Logo Orb (When not expanded)
         if (!_isExpanded || _expandAnimation.value < 1.0)
           Positioned(
+            key: const ValueKey('syllabot_floating_orb_positioned'),
             right: 20,
             bottom: bottomPosition,
             child: FadeTransition(
@@ -146,6 +150,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
 
         // 3. Full-Screen Expanded Syllabot Chat Sheet Overlay (Persists state)
         Positioned.fill(
+          key: const ValueKey('syllabot_expanded_chat_positioned'),
           child: IgnorePointer(
             ignoring: !_isExpanded,
             child: AnimatedBuilder(
