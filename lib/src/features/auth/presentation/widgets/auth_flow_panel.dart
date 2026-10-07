@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
-import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/social_auth_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -18,8 +17,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart'
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/auth_chat_view.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/auth_form_view.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
-import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -108,7 +107,8 @@ class AuthNavigationListener extends StatelessWidget {
                 ) ==
                 'true';
 
-        if ((state.status == AuthStatus.needsOnboarding || state.isAuthenticated) &&
+        if ((state.status == AuthStatus.needsOnboarding ||
+                state.isAuthenticated) &&
             state.user != null) {
           if (!isChatMode) {
             if (isNewlyRegistered) {
@@ -191,7 +191,9 @@ class AuthNavigationListener extends StatelessWidget {
                   ),
                 );
                 authBloc.add(
-                  const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
+                  const AuthStatusChanged(
+                    AuthSessionStatus.authenticatedComplete,
+                  ),
                 );
               } on Object catch (_) {}
             }
@@ -246,9 +248,6 @@ class AuthWorkspacePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
 
     final isChatMode = context.watch<AuthModeCubit>().state.isChat;
 
@@ -261,15 +260,8 @@ class AuthWorkspacePanel extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    isChatMode
-                        ? l10n.authSyllabotAssistantTitle
-                        : l10n.authAccountSignInTitle,
-                    style: typography.headline.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
+                const Flexible(
+                  child: AuthBrandLockup(),
                 ),
                 const SizedBox(width: 12),
                 ModeSwitchButton(
@@ -310,15 +302,6 @@ class AuthWorkspacePanel extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Social Auth Dock
-            SocialAuthBar(
-              isLoading: context.watch<AuthBloc>().state.isLoading,
-              onGooglePressed: () => authGoogleSignIn(context),
-              onApplePressed: () => authAppleSignIn(context),
             ),
           ],
         ),

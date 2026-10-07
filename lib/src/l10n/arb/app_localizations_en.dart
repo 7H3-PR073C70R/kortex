@@ -394,6 +394,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authAccountSignInTitle => 'Account Sign In';
 
   @override
+  String get authAccountSignUpTitle => 'Account Sign Up';
+
+  @override
   String get authThinking => 'Thinking...';
 
   @override

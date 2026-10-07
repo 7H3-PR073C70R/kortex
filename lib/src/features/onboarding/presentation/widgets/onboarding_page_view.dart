@@ -69,17 +69,12 @@ class _OnboardingPageViewState extends State<OnboardingPageView>
 
   @override
   Widget build(BuildContext context) {
-    // Bouncing physics only pay off on wide layouts where the neighbor
-    // page peeks past the content constraint; on phones they just add
-    // rubber-band overshoot, so clamp there.
-    final canPeekNextPage = MediaQuery.sizeOf(context).width > 720;
     return PageView.builder(
       controller: widget.controller,
       itemCount: widget.slides.length,
       onPageChanged: widget.onPageChanged,
-      physics: canPeekNextPage
-          ? const ClampingScrollPhysics()
-          : const ClampingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
+      allowImplicitScrolling: true,
       itemBuilder: (context, index) {
         return _OnboardingSlideItem(
           data: widget.slides[index],

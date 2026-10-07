@@ -11,11 +11,13 @@ class OnboardingTopBar extends StatelessWidget {
   const OnboardingTopBar({
     required this.isLastPage,
     required this.onSkip,
+    this.showSkip = true,
     super.key,
   });
 
   final bool isLastPage;
   final VoidCallback onSkip;
+  final bool showSkip;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +65,7 @@ class OnboardingTopBar extends StatelessWidget {
               ),
 
               // Skip CTA Button
-              if (!isLastPage)
+              if (!isLastPage && showSkip)
                 Semantics(
                   button: true,
                   label: l10n.onboardingSkipSemantics,

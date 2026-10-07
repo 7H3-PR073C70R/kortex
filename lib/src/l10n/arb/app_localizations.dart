@@ -778,6 +778,12 @@ abstract class AppLocalizations {
   /// **'Account Sign In'**
   String get authAccountSignInTitle;
 
+  /// Desktop split view header for account form
+  ///
+  /// In en, this message translates to:
+  /// **'Account Sign Up'**
+  String get authAccountSignUpTitle;
+
   /// Indicator text while AI is processing in chat
   ///
   /// In en, this message translates to:

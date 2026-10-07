@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
-import 'package:kortex/src/features/auth/presentation/widgets/auth_shell.dart';
-import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -44,22 +40,13 @@ class AuthSignupFormContent extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Flexible(
-              child: AuthBrandLockup(),
-            ),
-            const SizedBox(width: 8),
-            ModeSwitchButton(
-              isChatMode: false,
-              onToggle: () {
-                context.read<AuthModeCubit>().toggleMode();
-              },
-            ),
-          ],
+        Text(
+          l10n.authAccountSignUpTitle,
+          style: typography.headline.bold.copyWith(
+            color: colors.textPrimary,
+          ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 28),
         if (errorMessage != null) ...[
           Text(
             errorMessage!,
