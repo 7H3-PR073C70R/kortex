@@ -327,7 +327,7 @@ class TokenInterceptor extends QueuedInterceptor {
       options.headers['Authorization'] = 'Bearer $anonKey';
     }
 
-    if (locator.isRegistered<DeviceIdentityService>()) {
+    if (!kIsWeb && locator.isRegistered<DeviceIdentityService>()) {
       try {
         final deviceIdentity = locator<DeviceIdentityService>();
         final deviceId = await deviceIdentity.getDeviceId();
@@ -335,6 +335,11 @@ class TokenInterceptor extends QueuedInterceptor {
         options.headers['X-Device-Name'] = deviceIdentity.deviceName;
         options.headers['X-Platform'] = deviceIdentity.platform;
       } on Object catch (_) {}
+    }
+
+    if (kIsWeb && options.data == null && (options.method == 'GET' || options.method == 'HEAD')) {
+      options.headers.remove(Headers.contentTypeHeader);
+      options.contentType = null;
     }
 
     super.onRequest(options, handler);

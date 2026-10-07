@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:kortex/src/features/force_update/domain/repositories/app_version_repository.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -39,6 +40,7 @@ class CheckForceUpdateUseCase {
   final AppVersionRepository _repository;
 
   Future<VersionCheckResult> call() async {
+    if (kIsWeb) return const VersionUpToDate();
     final info = await PackageInfo.fromPlatform();
     final platform = _resolvePlatform();
     final installedVersion = info.version; // e.g. "2.1.0"

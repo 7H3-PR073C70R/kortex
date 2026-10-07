@@ -7,7 +7,6 @@ void _initExternal() {
           Dio(
               BaseOptions(
                 baseUrl: AppEnv.apiBaseURL,
-                contentType: 'application/json',
                 connectTimeout: const Duration(seconds: 20),
               ),
             )
