@@ -254,7 +254,9 @@ class FeynmanActiveRecallSheet extends HookWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          isListening.value
+                          !SpeechToTextHandler.isPlatformSupported
+                              ? SpeechToTextHandler.unsupportedPlatformMessage
+                              : isListening.value
                               ? 'Listening... Speak your explanation now!'
                               : 'Tap the microphone below to start speaking',
                           textAlign: TextAlign.center,
@@ -401,7 +403,8 @@ class FeynmanActiveRecallSheet extends HookWidget {
           // Controls Row: Mic Button & Reveal Answer Button
           Row(
             children: [
-              // Mic Toggle Button
+              // Mic Toggle Button (hidden where speech recognition is unavailable)
+              if (SpeechToTextHandler.isPlatformSupported) ...[
               ShrinkableButton(
                 onTap: () async {
                   AppFeedback.selection();
@@ -433,6 +436,7 @@ class FeynmanActiveRecallSheet extends HookWidget {
                 ),
               ),
               const SizedBox(width: 12),
+              ],
 
               // Primary Action: Reveal & Rate Card
               Expanded(

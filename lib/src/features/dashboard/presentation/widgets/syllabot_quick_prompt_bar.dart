@@ -9,6 +9,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -152,6 +153,7 @@ class SyllabotQuickPromptBar extends HookWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
+                            if (SpeechToTextHandler.isPlatformSupported) ...[
                             Semantics(
                               button: true,
                               label: 'Voice prompt for Syllabot',
@@ -187,6 +189,7 @@ class SyllabotQuickPromptBar extends HookWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
+                            ],
                             Semantics(
                               button: true,
                               label: l10n.dashboardSendPromptSemantics,

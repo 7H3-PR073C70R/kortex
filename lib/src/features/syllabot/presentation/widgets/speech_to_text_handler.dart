@@ -31,6 +31,15 @@ class SpeechToTextHandler {
 
   static const Duration _windowsMinPauseFor = Duration(seconds: 6);
 
+  /// Message shown when voice input is attempted on an unsupported platform.
+  static const String unsupportedPlatformMessage =
+      "Voice input isn't supported on Linux yet.";
+
+  /// Whether the `speech_to_text` plugin has a native implementation for the
+  /// current platform. It has none for Linux, so mic entry points should be
+  /// hidden there.
+  static bool get isPlatformSupported => kIsWeb || !Platform.isLinux;
+
   bool get isListening => _speechToText.isListening;
   bool get isAvailable => _isAvailable;
   SpeechToText get rawInstance => _speechToText;
@@ -38,6 +47,10 @@ class SpeechToTextHandler {
   /// Initializes speech recognition engine and permissions.
   Future<bool> initialize() async {
     if (_isAvailable) return true;
+    if (!isPlatformSupported) {
+      onError?.call(unsupportedPlatformMessage);
+      return false;
+    }
     if (_initCompleter != null) {
       return _initCompleter!.future;
     }

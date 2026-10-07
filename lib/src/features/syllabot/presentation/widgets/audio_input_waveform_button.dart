@@ -21,6 +21,11 @@ class AudioInputWaveformButton extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Platform support never changes at runtime, so returning before any
+    // hooks run keeps hook ordering stable.
+    if (!SpeechToTextHandler.isPlatformSupported) {
+      return const SizedBox.shrink();
+    }
     final colors = context.colors;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;

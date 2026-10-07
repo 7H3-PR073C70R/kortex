@@ -567,7 +567,9 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                           scale: anim,
                           child: child,
                         ),
-                        child: (_hasInput && !_isListening)
+                        child: ((_hasInput && !_isListening) ||
+                                (!SpeechToTextHandler.isPlatformSupported &&
+                                    !widget.isAiSpeaking))
                             ? PlatformHoverBuilder(
                                 key: const ValueKey('send_action'),
                                 builder: (context, isHovered, child) {
