@@ -344,8 +344,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
             sink.addError('Response timeout');
           },
         );
-        final firstClauseDelimiters = RegExp(r'([,;:!?\n]+)\s*');
         final sentenceDelimiters = RegExp(r'([.!?\n]+)\s*');
+        final clauseDelimiters = RegExp(r'([,;:—–]+)\s*');
         final accumulatedBuffer = StringBuffer();
         var firstSentenceSpoken = false;
 
@@ -355,17 +355,39 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           var accumulated = accumulatedBuffer.toString();
 
           if (!firstSentenceSpoken) {
-            final match = firstClauseDelimiters.firstMatch(accumulated);
-            final wordCount = accumulated.trim().split(RegExp(r'\s+')).length;
-            if (match != null || wordCount >= 4) {
-              final splitIndex = match != null ? match.end : accumulated.length;
-              final firstClause = accumulated.substring(0, splitIndex).trim();
+            final sentenceMatch = sentenceDelimiters.firstMatch(accumulated);
+            final clauseMatch = clauseDelimiters.firstMatch(accumulated);
+            final words = accumulated.trim().split(RegExp(r'\s+'));
+            final wordCount = words.length;
+
+            int? splitIndex;
+
+            if (sentenceMatch != null) {
+              splitIndex = sentenceMatch.end;
+            } else if (clauseMatch != null) {
+              final textBeforeClause =
+                  accumulated.substring(0, clauseMatch.start).trim();
+              final clauseWords = textBeforeClause
+                  .split(RegExp(r'\s+'))
+                  .where((w) => w.isNotEmpty)
+                  .length;
+              if (clauseWords >= 5) {
+                splitIndex = clauseMatch.end;
+              }
+            } else if (wordCount >= 14) {
+              final targetSpaces = words.take(10).join(' ').length;
+              splitIndex =
+                  targetSpaces < accumulated.length ? targetSpaces : accumulated.length;
+            }
+
+            if (splitIndex != null && splitIndex > 0) {
+              final firstChunkText = accumulated.substring(0, splitIndex).trim();
               accumulated = accumulated.substring(splitIndex);
               accumulatedBuffer
                 ..clear()
                 ..write(accumulated);
 
-              if (firstClause.isNotEmpty) {
+              if (firstChunkText.isNotEmpty) {
                 firstSentenceSpoken = true;
                 if (mounted) {
                   setState(() {
@@ -374,25 +396,47 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                   unawaited(_earconService.playSpeakingStart());
                 }
                 if (!_isMuted) {
-                  await widget.ttsHandler.enqueueSentence(firstClause);
+                  await widget.ttsHandler.enqueueSentence(firstChunkText);
                 }
               }
             }
           } else {
-            Match? match;
-            while ((match = sentenceDelimiters.firstMatch(accumulated)) !=
-                    null ||
-                (accumulated.trim().split(RegExp(r'\s+')).length >= 8 &&
-                    (match = firstClauseDelimiters.firstMatch(accumulated)) !=
-                        null)) {
-              final sentence = accumulated.substring(0, match!.end).trim();
-              accumulated = accumulated.substring(match.end);
+            while (true) {
+              final sentenceMatch = sentenceDelimiters.firstMatch(accumulated);
+              final clauseMatch = clauseDelimiters.firstMatch(accumulated);
+              final words = accumulated.trim().split(RegExp(r'\s+'));
+              final wordCount = words.length;
+
+              int? splitIndex;
+
+              if (sentenceMatch != null) {
+                splitIndex = sentenceMatch.end;
+              } else if (clauseMatch != null) {
+                final textBeforeClause =
+                    accumulated.substring(0, clauseMatch.start).trim();
+                final clauseWords = textBeforeClause
+                    .split(RegExp(r'\s+'))
+                    .where((w) => w.isNotEmpty)
+                    .length;
+                if (clauseWords >= 7) {
+                  splitIndex = clauseMatch.end;
+                }
+              } else if (wordCount >= 16) {
+                final targetSpaces = words.take(12).join(' ').length;
+                splitIndex =
+                    targetSpaces < accumulated.length ? targetSpaces : accumulated.length;
+              }
+
+              if (splitIndex == null || splitIndex <= 0) break;
+
+              final chunkText = accumulated.substring(0, splitIndex).trim();
+              accumulated = accumulated.substring(splitIndex);
               accumulatedBuffer
                 ..clear()
                 ..write(accumulated);
 
-              if (sentence.isNotEmpty && !_isMuted) {
-                await widget.ttsHandler.enqueueSentence(sentence);
+              if (chunkText.isNotEmpty && !_isMuted) {
+                await widget.ttsHandler.enqueueSentence(chunkText);
               }
             }
           }

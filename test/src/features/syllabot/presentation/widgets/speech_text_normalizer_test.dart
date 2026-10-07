@@ -355,7 +355,7 @@ Question 2: What is gravity?
       final config = TtsConfig.forCurrentPlatform();
       expect(config.pitch, equals(1.0));
       expect(config.volume, equals(1.0));
-      expect(config.sentencePauseMs, equals(140));
+      expect(config.sentencePauseMs, equals(60));
       expect(config.effectiveSpeechRate, greaterThan(0));
       expect(config.effectiveSpeechRate, lessThan(2.0));
     });

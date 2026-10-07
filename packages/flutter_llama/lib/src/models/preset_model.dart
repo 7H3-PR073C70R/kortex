@@ -99,6 +99,51 @@ class PresetModels {
     },
   );
 
+  static const smolLM2_360mQ4K = PresetModel(
+    id: 'HuggingFaceTB/SmolLM2-360M-Instruct-GGUF',
+    name: 'SmolLM2 360M Instruct (Q4_K_M)',
+    description: 'Fast, balanced lightweight model for mobile and tablet devices',
+    source: ModelSource.huggingFace,
+    files: ['smollm2-360m-instruct-q4_k_m.gguf'],
+    languages: ['🇬🇧 English'],
+    size: '230 MB',
+    contextSize: 2048,
+    metadata: {
+      'recommended': true,
+      'speed': 'fast',
+    },
+  );
+
+  static const qwen25_1_5bQ4K = PresetModel(
+    id: 'Qwen/Qwen2.5-1.5B-Instruct-GGUF',
+    name: 'Qwen 2.5 1.5B Instruct (Q4_K_M)',
+    description: 'High-intelligence reasoning model for Desktop & High-RAM mobile devices',
+    source: ModelSource.huggingFace,
+    files: ['qwen2.5-1.5b-instruct-q4_k_m.gguf'],
+    languages: ['🇬🇧 English'],
+    size: '980 MB',
+    contextSize: 4096,
+    metadata: {
+      'recommended': true,
+      'speed': 'medium',
+    },
+  );
+
+  static const llama32_1bQ4K = PresetModel(
+    id: 'unsloth/Llama-3.2-1B-Instruct-GGUF',
+    name: 'Llama 3.2 1B Instruct (Q4_K_M)',
+    description: 'Meta\'s state-of-the-art 1B instruction-tuned model',
+    source: ModelSource.huggingFace,
+    files: ['Llama-3.2-1B-Instruct-Q4_K_M.gguf'],
+    languages: ['🇬🇧 English'],
+    size: '750 MB',
+    contextSize: 4096,
+    metadata: {
+      'recommended': true,
+      'speed': 'fast',
+    },
+  );
+
   static const shridharMultimodal = PresetModel(
     id: 'nativemind/shridhar_8k_multimodal',
     name: 'Shridhar 8K Multimodal',

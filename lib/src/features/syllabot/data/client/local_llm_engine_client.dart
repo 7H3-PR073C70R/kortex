@@ -114,23 +114,47 @@ class LocalLlmEngineClient {
   static Stream<ModelDownloadProgressState> get downloadProgressStream =>
       _downloadProgressController.stream;
 
-  /// Built-in curated local models
+  /// Built-in curated local models adaptively sized for device capacity and platform
   static const List<LocalLlmModelInfo> catalogModels = [
     LocalLlmModelInfo(
       id: 'smollm2-135m',
       name: 'SmolLM2 135M',
-      description: 'Ultra-fast, lightweight 4-bit quantized model for mobile',
+      description: 'Ultra-fast 4-bit quantized model for budget mobile devices',
       sizeLabel: '100 MB',
       requiredMb: 100,
       preset: PresetModels.smolLM2Q4K,
     ),
     LocalLlmModelInfo(
+      id: 'smollm2-360m',
+      name: 'SmolLM2 360M',
+      description: 'Balanced, fast instruction model for mobile & tablet',
+      sizeLabel: '230 MB',
+      requiredMb: 230,
+      preset: PresetModels.smolLM2_360mQ4K,
+    ),
+    LocalLlmModelInfo(
       id: 'qwen2.5-0.5b',
       name: 'Qwen 2.5 0.5B',
-      description: 'High-performance small model for complex Socratic STEM reasoning',
+      description: 'Compact model with good basic Socratic STEM reasoning',
       sizeLabel: '350 MB',
       requiredMb: 350,
       preset: PresetModels.qwen25Q4K,
+    ),
+    LocalLlmModelInfo(
+      id: 'llama3.2-1b',
+      name: 'Llama 3.2 1B',
+      description: "Meta's high-quality 1B instruction model for mobile & desktop",
+      sizeLabel: '750 MB',
+      requiredMb: 750,
+      preset: PresetModels.llama32_1bQ4K,
+    ),
+    LocalLlmModelInfo(
+      id: 'qwen2.5-1.5b',
+      name: 'Qwen 2.5 1.5B Pro',
+      description: 'High-intelligence reasoning engine for Desktop & Pro mobile devices',
+      sizeLabel: '980 MB',
+      requiredMb: 980,
+      preset: PresetModels.qwen25_1_5bQ4K,
     ),
   ];
 
@@ -741,28 +765,32 @@ class LocalLlmEngineClient {
     if (FlutterLlama.instance.isModelLoaded) {
       var yieldedTokenCount = 0;
       final specialTokenRegex = RegExp(
-        r'<\|[a-zA-Z0-9_\-]+\|>|<think>[\s\S]*?<\/think>|<\/?think>',
+        r'<\|[a-zA-Z0-9_\-]+\|>|<think>[\s\S]*?<\/think>|<\/?think>|</s>',
       );
+
+      const stopTokens = [
+        '<|im_end|>',
+        '<|im_start|>',
+        '<|eot_id|>',
+        '<|endoftext|>',
+        '<|end_of_text|>',
+        '</s>',
+        '<|end_of_sentence|>',
+      ];
 
       try {
         final stream = FlutterLlama.instance.generateStream(
           GenerationParams(
             prompt: formattedPrompt,
-            maxTokens: maxTokens > 512 ? 512 : maxTokens,
-            temperature: 0.35,
-            repeatPenalty: 1.25,
-            stopSequences: const [
-              '<|im_end|>',
-              '<|endoftext|>',
-              '<|im_start|>',
-            ],
+            maxTokens: maxTokens > 384 ? 384 : maxTokens,
+            temperature: 0.6,
+            repeatPenalty: 1.15,
+            stopSequences: stopTokens,
           ),
         );
 
         await for (final rawToken in stream) {
-          if (rawToken.contains('<|im_end|>') ||
-              rawToken.contains('<|endoftext|>') ||
-              rawToken.contains('<|im_start|>')) {
+          if (stopTokens.any(rawToken.contains)) {
             break;
           }
           final cleanToken = rawToken.replaceAll(specialTokenRegex, '');
@@ -802,7 +830,7 @@ class LocalLlmEngineClient {
       ..writeln('<|im_start|>system')
       ..writeln('You are Syllabot, an expert educational tutor.')
       ..writeln(
-        'Provide direct, accurate, and concise explanations with clear definitions and examples.',
+        'Provide direct, accurate, and concise explanations with clear definitions.',
       )
       ..writeln('Do not repeat yourself or loop.');
     if (systemInstruction.trim().isNotEmpty) {
@@ -810,16 +838,23 @@ class LocalLlmEngineClient {
     }
     buffer.writeln('<|im_end|>');
 
+    final trimmedPrompt = prompt.trim();
+
+    // Filter out previous instances of the current prompt to prevent ChatML duplication
     final history = contextHistory
-        .where((m) => m.text.trim().isNotEmpty)
+        .where(
+          (m) =>
+              m.text.trim().isNotEmpty &&
+              m.text.trim().toLowerCase() != trimmedPrompt.toLowerCase(),
+        )
         .toList();
-    final recentHistory = history.length > 4
-        ? history.sublist(history.length - 4)
+    final recentHistory = history.length > 2
+        ? history.sublist(history.length - 2)
         : history;
     for (final msg in recentHistory) {
       final role = msg.sender == MessageSender.user ? 'user' : 'assistant';
-      final text = msg.text.length > 800
-          ? '${msg.text.substring(0, 800)}...'
+      final text = msg.text.length > 350
+          ? '${msg.text.substring(0, 350)}...'
           : msg.text;
       buffer
         ..writeln('<|im_start|>$role')
@@ -829,7 +864,7 @@ class LocalLlmEngineClient {
 
     buffer
       ..writeln('<|im_start|>user')
-      ..writeln(prompt)
+      ..writeln(trimmedPrompt)
       ..writeln('<|im_end|>')
       ..writeln('<|im_start|>assistant');
     return buffer.toString();

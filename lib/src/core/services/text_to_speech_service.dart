@@ -588,7 +588,10 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
       _queueDrainedCompleter = Completer<void>();
     }
 
-    _sentenceQueue.add(clean);
+    final chunks = SpeechTextNormalizer.splitIntoChunks(clean);
+    if (chunks.isEmpty) return;
+
+    _sentenceQueue.addAll(chunks);
 
     if (!_isSpeaking && !_isProcessingQueue) {
       final sessionId = ++_activeSessionId;
@@ -695,9 +698,21 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
             next.startsWith('Part ') ||
             next.startsWith('Topic ') ||
             next.startsWith('Week ');
-        final pauseMs = isSectionBreak
-            ? (_config.sentencePauseMs * 2).clamp(250, 400)
-            : _config.sentencePauseMs;
+
+        final trimmedSentence = sentence.trim();
+        final endsWithTerminalPunctuation = trimmedSentence.endsWith('.') ||
+            trimmedSentence.endsWith('!') ||
+            trimmedSentence.endsWith('?');
+
+        var pauseMs = 0;
+        if (isSectionBreak) {
+          pauseMs = (_config.sentencePauseMs * 2).clamp(200, 350);
+        } else if (endsWithTerminalPunctuation) {
+          pauseMs = _config.sentencePauseMs;
+        } else {
+          pauseMs = 0;
+        }
+
         if (pauseMs > 0) {
           await Future<void>.delayed(Duration(milliseconds: pauseMs));
         }
