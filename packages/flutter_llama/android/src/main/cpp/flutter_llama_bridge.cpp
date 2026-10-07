@@ -17,6 +17,17 @@
 
 // Include llama.cpp headers
 #include "llama.h"
+#include <type_traits>
+
+// Helper to call llama_sampler_init_penalties with 4 or 5 args depending on llama.h version
+template <typename F>
+static auto call_penalties(F fn, int32_t n_vocab, int32_t last_n, float repeat, float freq, float present) {
+    if constexpr (std::is_invocable_v<F, int32_t, int32_t, float, float, float>) {
+        return fn(n_vocab, last_n, repeat, freq, present);
+    } else {
+        return fn(last_n, repeat, freq, present);
+    }
+}
 
 // Global state
 static llama_model* g_model = nullptr;
@@ -206,7 +217,7 @@ Java_net_nativemind_flutter_1llama_FlutterLlamaPlugin_nativeGenerate(
     auto sparams = llama_sampler_chain_default_params();
     g_sampler = llama_sampler_chain_init(sparams);
     const int32_t n_vocab = g_vocab ? llama_vocab_n_tokens(g_vocab) : 32000;
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.0f, 0.0f));
+    llama_sampler_chain_add(g_sampler, call_penalties(llama_sampler_init_penalties, n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.0f, 0.0f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_k(top_k));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
@@ -368,7 +379,7 @@ Java_net_nativemind_flutter_1llama_FlutterLlamaPlugin_nativeGenerateStreamInit(
     auto sparams = llama_sampler_chain_default_params();
     g_sampler = llama_sampler_chain_init(sparams);
     const int32_t n_vocab = g_vocab ? llama_vocab_n_tokens(g_vocab) : 32000;
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.0f, 0.0f));
+    llama_sampler_chain_add(g_sampler, call_penalties(llama_sampler_init_penalties, n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.0f, 0.0f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_k(top_k));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));

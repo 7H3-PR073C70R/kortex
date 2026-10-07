@@ -29,6 +29,8 @@ class SpeechToTextHandler {
   bool _isAvailable = false;
   Completer<bool>? _initCompleter;
 
+  static const Duration _windowsMinPauseFor = Duration(seconds: 6);
+
   bool get isListening => _speechToText.isListening;
   bool get isAvailable => _isAvailable;
   SpeechToText get rawInstance => _speechToText;
@@ -123,6 +125,10 @@ class SpeechToTextHandler {
           onError?.call(
             'Speech recognition is unavailable or not permitted. Please check System Settings > Privacy & Security > Speech Recognition & Microphone.',
           );
+        } else if (!kIsWeb && Platform.isWindows) {
+          onError?.call(
+            'Speech recognition is unavailable on Windows. Please ensure microphone access is enabled in Windows Settings > Privacy & security > Microphone ("Let desktop apps access your microphone") and a Windows speech recognition package is installed.',
+          );
         } else {
           onError?.call(
             'Speech recognition is unavailable on this device.',
@@ -148,6 +154,14 @@ class SpeechToTextHandler {
     Duration pauseFor = const Duration(milliseconds: 2000),
     ListenMode listenMode = ListenMode.confirmation,
   }) async {
+    // On Windows (SAPI) the pause timer is only reset by text results, and the
+    // first hypothesis can lag 1–2s behind speech onset. A short pauseFor ends
+    // the session before the user is heard, so enforce a minimum window.
+    // End-of-utterance is still detected by callers' own silence timers.
+    final effectivePauseFor =
+        (!kIsWeb && Platform.isWindows && pauseFor < _windowsMinPauseFor)
+        ? _windowsMinPauseFor
+        : pauseFor;
     // If already listening, stop previous session cleanly before starting a new one
     if (_speechToText.isListening) {
       await _speechToText.stop();
@@ -183,7 +197,7 @@ class SpeechToTextHandler {
         listenOptions: SpeechListenOptions(
           listenMode: listenMode,
           listenFor: listenFor,
-          pauseFor: pauseFor,
+          pauseFor: effectivePauseFor,
         ),
       );
       if (started == false) {
