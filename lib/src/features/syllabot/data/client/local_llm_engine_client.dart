@@ -826,6 +826,57 @@ class LocalLlmEngineClient {
     required SocraticMode mode,
     List<ChatMessageEntity> contextHistory = const [],
   }) {
+    final storage = locator.isRegistered<LocalStorageService>()
+        ? locator<LocalStorageService>()
+        : null;
+    final activeId =
+        storage?.getPreference(key: PrefKeys.syllabotActiveLocalModelId) ?? '';
+    final activePath =
+        storage?.getPreference(key: PrefKeys.syllabotActiveLocalModelPath) ?? '';
+    final isLlamaModel = activeId.toLowerCase().contains('llama') ||
+        activePath.toLowerCase().contains('llama');
+
+    final trimmedPrompt = prompt.trim();
+    final history = contextHistory
+        .where(
+          (m) =>
+              m.text.trim().isNotEmpty &&
+              m.text.trim().toLowerCase() != trimmedPrompt.toLowerCase(),
+        )
+        .toList();
+    final recentHistory = history.length > 2
+        ? history.sublist(history.length - 2)
+        : history;
+
+    if (isLlamaModel) {
+      final buffer = StringBuffer()
+        ..write('<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n')
+        ..writeln('You are Syllabot, an expert educational tutor.')
+        ..writeln('Provide direct, accurate, and concise explanations with clear definitions.')
+        ..writeln('Do not repeat yourself or loop.');
+      if (systemInstruction.trim().isNotEmpty) {
+        buffer.writeln(systemInstruction);
+      }
+      buffer.write('<|eot_id|>');
+
+      for (final msg in recentHistory) {
+        final role = msg.sender == MessageSender.user ? 'user' : 'assistant';
+        final text = msg.text.length > 350
+            ? '${msg.text.substring(0, 350)}...'
+            : msg.text;
+        buffer
+          ..write('<|start_header_id|>$role<|end_header_id|>\n\n')
+          ..writeln(text)
+          ..write('<|eot_id|>');
+      }
+
+      buffer
+        ..write('<|start_header_id|>user<|end_header_id|>\n\n')
+        ..writeln(trimmedPrompt)
+        ..write('<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n');
+      return buffer.toString();
+    }
+
     final buffer = StringBuffer()
       ..writeln('<|im_start|>system')
       ..writeln('You are Syllabot, an expert educational tutor.')
@@ -838,19 +889,6 @@ class LocalLlmEngineClient {
     }
     buffer.writeln('<|im_end|>');
 
-    final trimmedPrompt = prompt.trim();
-
-    // Filter out previous instances of the current prompt to prevent ChatML duplication
-    final history = contextHistory
-        .where(
-          (m) =>
-              m.text.trim().isNotEmpty &&
-              m.text.trim().toLowerCase() != trimmedPrompt.toLowerCase(),
-        )
-        .toList();
-    final recentHistory = history.length > 2
-        ? history.sublist(history.length - 2)
-        : history;
     for (final msg in recentHistory) {
       final role = msg.sender == MessageSender.user ? 'user' : 'assistant';
       final text = msg.text.length > 350

@@ -348,6 +348,7 @@ class _SyllabotChatView extends HookWidget {
           context: dialogContext,
           ttsHandler: ttsHandler,
           initialMode: state.socraticMode,
+          engineType: state.engineType,
           onStreamPrompt: (voicePrompt) {
             final bloc = dialogContext.read<SyllabotChatBloc>();
             final latestState = bloc.state;

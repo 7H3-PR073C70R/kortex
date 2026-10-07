@@ -280,10 +280,10 @@ class SpeechTextNormalizer {
       (m) => 'Option ${m[1]!.toUpperCase()}: ',
     );
 
-    // 13. Numbered lists: keep numbers intact for speech! (e.g. "1. Read..." -> "1. Read...")
+    // 13. Numbered lists: format list numbers with a colon for smooth TTS phrasing without full-stop breaks (e.g. "1. Read..." -> "1: Read...")
     text = text.replaceAllMapped(
       RegExp(r'^\s*(\d+)[\.\)]\s+', multiLine: true),
-      (m) => '${m[1]}. ',
+      (m) => '${m[1]}: ',
     );
 
     // 14. Unescape markdown backslash escapes (\*, \_, \[, \], etc.)
@@ -1106,8 +1106,8 @@ class SpeechTextNormalizer {
     if (clean.isEmpty) return [];
 
     // Split on sentence-ending punctuation (. ! ?) or paragraph linebreaks,
-    // avoiding splitting after single-letter initials (e.g., "A.", "B.").
-    final sentencePattern = RegExp(r'(?<!\b[A-Z])(?<=[.!?])\s+|\n+');
+    // avoiding splitting after single-letter initials (e.g., "A.", "B.") or list digits (e.g., "1.", "2.").
+    final sentencePattern = RegExp(r'(?<!\b\d+)(?<!\b[A-Z])(?<=[.!?])\s+|\n+');
     final rawSentences = clean.split(sentencePattern);
 
     final chunks = <String>[];

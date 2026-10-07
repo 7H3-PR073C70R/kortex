@@ -117,6 +117,7 @@ bool llama_init_model(
 }
 
 // Generate text
+// Generate text
 bool llama_generate(
     const char* prompt,
     float temperature,
@@ -139,11 +140,11 @@ bool llama_generate(
     
     std::string prompt_text(prompt);
     
-    // Tokenize prompt without adding extra leading BOS (add_special = false, parse_special = true)
-    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, false, true);
+    // Tokenize prompt with BOS token if required (add_special = true, parse_special = true)
+    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, true, true);
     std::vector<llama_token> prompt_tokens(n_prompt);
     
-    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), false, true) < 0) {
+    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
         NSLog(@"[llama_cpp_bridge] Failed to tokenize prompt");
         return false;
     }
@@ -159,12 +160,23 @@ bool llama_generate(
         prompt_tokens.erase(prompt_tokens.begin(), prompt_tokens.end() - keep);
     }
     
-    // Decode prompt in chunks of n_batch
+    // Decode prompt in chunks of n_batch with explicit positions
     const uint32_t n_batch = llama_n_batch(g_context);
     for (size_t i = 0; i < prompt_tokens.size(); i += n_batch) {
         const int32_t n_eval = (int32_t)std::min((size_t)n_batch, prompt_tokens.size() - i);
-        llama_batch batch = llama_batch_get_one(prompt_tokens.data() + i, n_eval);
-        if (llama_decode(g_context, batch) != 0) {
+        llama_batch batch = llama_batch_init(n_eval, 0, 1);
+        for (int32_t j = 0; j < n_eval; ++j) {
+            batch.token[j] = prompt_tokens[i + j];
+            batch.pos[j] = (llama_pos)(i + j);
+            batch.n_seq_id[j] = 1;
+            batch.seq_id[j][0] = 0;
+            batch.logits[j] = (i + j == prompt_tokens.size() - 1) ? 1 : 0;
+        }
+        batch.n_tokens = n_eval;
+
+        int res = llama_decode(g_context, batch);
+        llama_batch_free(batch);
+        if (res != 0) {
             NSLog(@"[llama_cpp_bridge] Failed to decode prompt chunk at offset %zu", i);
             return false;
         }
@@ -179,7 +191,7 @@ bool llama_generate(
     auto sparams = llama_sampler_chain_default_params();
     g_sampler = llama_sampler_chain_init(sparams);
     const int32_t n_vocab = g_vocab ? llama_vocab_n_tokens(g_vocab) : 32000;
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.2f, 0.2f));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.0f, 0.0f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_k(top_k));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
@@ -217,14 +229,31 @@ bool llama_generate(
         int n = llama_token_to_piece(g_vocab, new_token, token_str, sizeof(token_str) - 1, 0, true);
         if (n > 0) {
             token_str[n] = '\0';
-            result.append(token_str);
+            std::string piece(token_str);
+            if (piece.find("<|im_end|>") != std::string::npos ||
+                piece.find("<|endoftext|>") != std::string::npos ||
+                piece.find("<|im_start|>") != std::string::npos ||
+                piece.find("<|eot_id|>") != std::string::npos ||
+                piece.find("</s>") != std::string::npos) {
+                break;
+            }
+            result.append(piece);
         }
         
-        // Prepare for next iteration
-        llama_batch batch = llama_batch_get_one(&new_token, 1);
+        // Prepare batch for single generated token at position n_pos
+        llama_batch batch = llama_batch_init(1, 0, 1);
+        batch.token[0] = new_token;
+        batch.pos[0] = (llama_pos)n_pos;
+        batch.n_seq_id[0] = 1;
+        batch.seq_id[0][0] = 0;
+        batch.logits[0] = 1;
+        batch.n_tokens = 1;
+
         n_pos++;
         
-        if (llama_decode(g_context, batch) != 0) {
+        int res = llama_decode(g_context, batch);
+        llama_batch_free(batch);
+        if (res != 0) {
             NSLog(@"[llama_cpp_bridge] Failed to decode token");
             break;
         }
@@ -267,11 +296,11 @@ void llama_generate_stream_init(
     
     std::string prompt_text(prompt);
     
-    // Tokenize prompt without adding extra leading BOS (add_special = false, parse_special = true)
-    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, false, true);
+    // Tokenize prompt with BOS token if required (add_special = true, parse_special = true)
+    const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, true, true);
     std::vector<llama_token> prompt_tokens(n_prompt);
     
-    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), false, true) < 0) {
+    if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
         NSLog(@"[llama_cpp_bridge] Failed to tokenize prompt");
         return;
     }
@@ -287,12 +316,23 @@ void llama_generate_stream_init(
         prompt_tokens.erase(prompt_tokens.begin(), prompt_tokens.end() - keep);
     }
     
-    // Decode prompt in chunks of n_batch
+    // Decode prompt in chunks of n_batch with explicit positions
     const uint32_t n_batch = llama_n_batch(g_context);
     for (size_t i = 0; i < prompt_tokens.size(); i += n_batch) {
         const int32_t n_eval = (int32_t)std::min((size_t)n_batch, prompt_tokens.size() - i);
-        llama_batch batch = llama_batch_get_one(prompt_tokens.data() + i, n_eval);
-        if (llama_decode(g_context, batch) != 0) {
+        llama_batch batch = llama_batch_init(n_eval, 0, 1);
+        for (int32_t j = 0; j < n_eval; ++j) {
+            batch.token[j] = prompt_tokens[i + j];
+            batch.pos[j] = (llama_pos)(i + j);
+            batch.n_seq_id[j] = 1;
+            batch.seq_id[j][0] = 0;
+            batch.logits[j] = (i + j == prompt_tokens.size() - 1) ? 1 : 0;
+        }
+        batch.n_tokens = n_eval;
+
+        int res = llama_decode(g_context, batch);
+        llama_batch_free(batch);
+        if (res != 0) {
             NSLog(@"[llama_cpp_bridge] Failed to decode prompt chunk at offset %zu", i);
             return;
         }
@@ -307,7 +347,7 @@ void llama_generate_stream_init(
     auto sparams = llama_sampler_chain_default_params();
     g_sampler = llama_sampler_chain_init(sparams);
     const int32_t n_vocab = g_vocab ? llama_vocab_n_tokens(g_vocab) : 32000;
-    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.2f, 0.2f));
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(n_vocab, 64, repeat_penalty > 1.0f ? repeat_penalty : 1.15f, 0.0f, 0.0f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_k(top_k));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(temperature));
@@ -362,16 +402,27 @@ bool llama_generate_stream_next(
     
     if (piece.find("<|im_end|>") != std::string::npos ||
         piece.find("<|endoftext|>") != std::string::npos ||
-        piece.find("<|im_start|>") != std::string::npos) {
+        piece.find("<|im_start|>") != std::string::npos ||
+        piece.find("<|eot_id|>") != std::string::npos ||
+        piece.find("</s>") != std::string::npos) {
         NSLog(@"[llama_cpp_bridge] Stream ChatML stop token reached");
         return false;
     }
     
-    llama_batch batch = llama_batch_get_one(&new_token, 1);
+    llama_batch batch = llama_batch_init(1, 0, 1);
+    batch.token[0] = new_token;
+    batch.pos[0] = (llama_pos)g_stream_n_pos;
+    batch.n_seq_id[0] = 1;
+    batch.seq_id[0][0] = 0;
+    batch.logits[0] = 1;
+    batch.n_tokens = 1;
+
     g_stream_n_pos++;
     g_stream_n_generated++;
     
-    if (llama_decode(g_context, batch) != 0) {
+    int res = llama_decode(g_context, batch);
+    llama_batch_free(batch);
+    if (res != 0) {
         NSLog(@"[llama_cpp_bridge] Failed to decode token in stream");
         return false;
     }

@@ -10,6 +10,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
+import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/chat_bubble_widget.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
@@ -28,20 +29,13 @@ enum DialogueState {
 }
 
 /// Industry-standard interactive AI voice dialogue modal.
-///
-/// Features:
-/// - Siri / Gemini fluid multi-color acoustic sound ribbon visualizer (`CustomPainter`).
-/// - Strict safe-area protection preventing status bar / Dynamic Island overlap.
-/// - Zero-jank GPU-accelerated audio spectrum rendering via [ValueNotifier].
-/// - Real-time bidirectional streaming dialogue with natural turn-taking & barge-in.
-/// - Adaptive layout responsive across mobile, tablet, desktop, and landscape viewports.
-/// - Full keyboard accessibility (Esc to exit, Space to toggle speech).
 class VoiceDialogueModal extends StatefulWidget {
   const VoiceDialogueModal({
     required this.ttsHandler,
     this.onSendPrompt,
     this.onStreamPrompt,
     this.initialMode = SocraticMode.stepByStep,
+    this.engineType = ExecutionEngineType.cloudRemote,
     this.isFullScreenOverlay = false,
     super.key,
   }) : assert(
@@ -53,6 +47,7 @@ class VoiceDialogueModal extends StatefulWidget {
   final Stream<String> Function(String prompt)? onStreamPrompt;
   final TextToSpeechHandler ttsHandler;
   final SocraticMode initialMode;
+  final ExecutionEngineType engineType;
   final bool isFullScreenOverlay;
 
   static Future<void> show({
@@ -61,6 +56,7 @@ class VoiceDialogueModal extends StatefulWidget {
     Future<String> Function(String prompt)? onSendPrompt,
     Stream<String> Function(String prompt)? onStreamPrompt,
     SocraticMode initialMode = SocraticMode.stepByStep,
+    ExecutionEngineType engineType = ExecutionEngineType.cloudRemote,
   }) {
     final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
     if (isDesktop) {
@@ -88,6 +84,7 @@ class VoiceDialogueModal extends StatefulWidget {
               onStreamPrompt: onStreamPrompt,
               ttsHandler: ttsHandler,
               initialMode: initialMode,
+              engineType: engineType,
               isFullScreenOverlay: true,
             ),
           );
@@ -103,6 +100,7 @@ class VoiceDialogueModal extends StatefulWidget {
         onStreamPrompt: onStreamPrompt,
         ttsHandler: ttsHandler,
         initialMode: initialMode,
+        engineType: engineType,
       ),
     );
   }
@@ -339,9 +337,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     try {
       if (widget.onStreamPrompt != null) {
         final stream = widget.onStreamPrompt!(prompt).timeout(
-          const Duration(seconds: 25),
+          const Duration(seconds: 180),
           onTimeout: (sink) {
-            sink.addError('Response timeout');
+            sink.addError('Connection or inference timeout. Please try again.');
           },
         );
         final sentenceDelimiters = RegExp(r'([.!?\n]+)\s*');
@@ -483,7 +481,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
 
       if (widget.onSendPrompt != null) {
         final response = await widget.onSendPrompt!(prompt).timeout(
-          const Duration(seconds: 25),
+          const Duration(seconds: 180),
         );
         if (!mounted) return;
 
@@ -810,6 +808,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+    final isLocalEngine =
+        widget.engineType == ExecutionEngineType.localOnDevice;
+    final engineColor = isLocalEngine ? colors.success : colors.primary;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -819,27 +820,29 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
+              color: engineColor.withValues(alpha: isDark ? 0.2 : 0.1),
               borderRadius: AppRadius.radiusBadge,
               border: Border.all(
-                color: colors.primary.withValues(alpha: isDark ? 0.35 : 0.2),
+                color: engineColor.withValues(alpha: isDark ? 0.35 : 0.2),
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.graphic_eq_rounded,
-                  color: colors.primary,
+                  isLocalEngine
+                      ? Icons.memory_rounded
+                      : Icons.graphic_eq_rounded,
+                  color: engineColor,
                   size: 15,
                 ),
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    'Syllabot Voice',
+                    isLocalEngine ? 'On-Device AI' : 'Syllabot Voice',
                     overflow: TextOverflow.ellipsis,
                     style: typography.caption.bold.copyWith(
-                      color: colors.primary,
+                      color: engineColor,
                       fontSize: 12,
                     ),
                   ),
@@ -850,7 +853,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                     width: 3,
                     height: 3,
                     decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: 0.6),
+                      color: engineColor.withValues(alpha: 0.6),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1269,6 +1272,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
               text: _latestResponse,
               sender: MessageSender.syllabot,
               timestamp: DateTime.now(),
+              engineType: widget.engineType,
             ),
             ttsHandler: widget.ttsHandler,
             showSpeakButton: false,

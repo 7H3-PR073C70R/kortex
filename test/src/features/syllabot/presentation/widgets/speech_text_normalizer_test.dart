@@ -289,7 +289,7 @@ Fact stated[^1].
       expect(result.contains('/'), isFalse);
     });
 
-    test('preserves list numbers and question headers without deleting numbers', () {
+    test('preserves list numbers and question headers with smooth list colon formatting', () {
       const input = '''
 ### 1. Kinematics
 1. Calculate the velocity when distance is 50 meters and time is 5 seconds.
@@ -297,8 +297,12 @@ Fact stated[^1].
 ''';
       final result = SpeechTextNormalizer.normalize(input);
       expect(result, contains('Question 1: Kinematics'));
-      expect(result, contains('1. Calculate the velocity when distance is 50 meters and time is 5 seconds.'));
-      expect(result, contains('2. Find the acceleration.'));
+      expect(result, contains('1: Calculate the velocity when distance is 50 meters and time is 5 seconds.'));
+      expect(result, contains('2: Find the acceleration.'));
+
+      final chunks = SpeechTextNormalizer.splitIntoChunks(result);
+      expect(chunks.first, contains('1: Calculate the velocity'));
+      expect(chunks.first.startsWith('1.'), isFalse);
     });
 
     test('normalizes LaTeX text units without uttering est or ext', () {
