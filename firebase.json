@@ -2,14 +2,36 @@
   "hosting": {
     "public": "web_landing",
     "cleanUrls": true,
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "rewrites": [
-      { "source": "/privacy",  "destination": "/privacy.html" },
-      { "source": "/terms",    "destination": "/terms.html" },
-      { "source": "/contact",  "destination": "/contact.html" },
-      { "source": "/share",    "destination": "/share.html" },
-      { "source": "/app/**",   "destination": "/app/index.html" },
-      { "source": "**",        "destination": "/index.html" }
+      {
+        "source": "/privacy",
+        "destination": "/privacy.html"
+      },
+      {
+        "source": "/terms",
+        "destination": "/terms.html"
+      },
+      {
+        "source": "/contact",
+        "destination": "/contact.html"
+      },
+      {
+        "source": "/share",
+        "destination": "/share.html"
+      },
+      {
+        "source": "/app/**",
+        "destination": "/app/index.html"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ],
     "headers": [
       {
