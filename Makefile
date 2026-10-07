@@ -15,3 +15,7 @@ watch:
 
 apk:
 	(flutter build apk --flavor production --target lib/main_production.dart --release)
+
+mac_bundle:
+	(flutter build macos --release --flavor production -t lib/main_production.dart)
+	

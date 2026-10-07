@@ -225,18 +225,19 @@ def sign_macos_target(target_path, is_app_bundle=False):
 
 
 def build_macos_bundle():
+def find_macos_app_path():
+    for sub in ["Release-production", "Release"]:
+        pdir = os.path.join(PROJECT_ROOT, "build", "macos", "Build", "Products", sub)
+        if os.path.exists(pdir):
+            for item in os.listdir(pdir):
+                if item.endswith(".app"):
+                    return os.path.join(pdir, item)
+    return None
+
+
+def build_macos_bundle():
     """Builds the native macOS production release application bundle if not already built."""
-    prod_dir = os.path.join(PROJECT_ROOT, "build", "macos", "Build", "Products", "Release-production")
-    if not os.path.exists(prod_dir):
-        prod_dir = os.path.join(PROJECT_ROOT, "build", "macos", "Build", "Products", "Release")
-
-    app_path = None
-    if os.path.exists(prod_dir):
-        for item in os.listdir(prod_dir):
-            if item.endswith(".app"):
-                app_path = os.path.join(prod_dir, item)
-                break
-
+    app_path = find_macos_app_path()
     if app_path and os.path.exists(app_path):
         print(f"✅ Found existing built macOS App bundle at: {app_path}")
         sign_macos_target(app_path, is_app_bundle=True)
@@ -260,14 +261,9 @@ def build_macos_bundle():
         print(f"Build failed:\n{res.stderr}\n{res.stdout}")
         sys.exit(res.returncode)
 
-    if os.path.exists(prod_dir):
-        for item in os.listdir(prod_dir):
-            if item.endswith(".app"):
-                app_path = os.path.join(prod_dir, item)
-                break
-
+    app_path = find_macos_app_path()
     if not app_path or not os.path.exists(app_path):
-        print(f"Error: Could not locate built .app bundle in {prod_dir}")
+        print("Error: Could not locate built .app bundle in build/macos/Build/Products/Release-production or Release")
         sys.exit(1)
 
     print(f"✅ Built macOS App bundle at: {app_path}")

@@ -84,7 +84,7 @@ class NotificationRouter {
         if (navCtx != null) {
           await NotificationsPage.show(navCtx);
         } else {
-          await router.push(const NotificationsRoute());
+          await router.push(NotificationsRoute());
         }
         return true;
       }
@@ -399,7 +399,7 @@ class NotificationRouter {
       return PaywallRoute();
     }
     if (clean == '/notifications') {
-      return const NotificationsRoute();
+      return NotificationsRoute();
     }
     if (clean == '/leaderboard') {
       return const LeaderboardRoute();

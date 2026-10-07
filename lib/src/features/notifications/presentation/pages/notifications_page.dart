@@ -46,7 +46,7 @@ class NotificationsPage extends StatelessWidget {
       );
     }
 
-    return context.router.push(const NotificationsRoute());
+    return context.router.push(NotificationsRoute());
   }
 
   @override
