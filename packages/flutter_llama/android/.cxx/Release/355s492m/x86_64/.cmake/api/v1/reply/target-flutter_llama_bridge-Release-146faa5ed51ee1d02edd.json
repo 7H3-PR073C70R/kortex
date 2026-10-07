@@ -127,10 +127,6 @@
 	[
 		{
 			"backtrace" : 2,
-			"id" : "llama::@b791850eb95f38641ccb"
-		},
-		{
-			"backtrace" : 2,
 			"id" : "ggml-base::@23533c6d68a59d54598d"
 		},
 		{
@@ -140,6 +136,10 @@
 		{
 			"backtrace" : 2,
 			"id" : "ggml-cpu::@23533c6d68a59d54598d"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "llama::@b791850eb95f38641ccb"
 		}
 	],
 	"id" : "flutter_llama_bridge::@6890427a1f51a3e7e1df",

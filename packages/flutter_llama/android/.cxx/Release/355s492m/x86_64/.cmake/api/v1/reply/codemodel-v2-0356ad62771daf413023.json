@@ -32,7 +32,7 @@
 						6
 					],
 					"hasInstallRule" : true,
-					"jsonFile" : "directory-build-llama-Release-95b367512811d1a8c5a9.json",
+					"jsonFile" : "directory-build-llama-Release-1d8939ed7289c876861a.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.14"
@@ -248,42 +248,42 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "flutter_llama_bridge::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-flutter_llama_bridge-Release-d86cb07bded215762523.json",
+					"jsonFile" : "target-flutter_llama_bridge-Release-146faa5ed51ee1d02edd.json",
 					"name" : "flutter_llama_bridge",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 3,
 					"id" : "ggml::@23533c6d68a59d54598d",
-					"jsonFile" : "target-ggml-Release-e1fb72b9e406a5b6c345.json",
+					"jsonFile" : "target-ggml-Release-3b5307e1563bfdd9e69a.json",
 					"name" : "ggml",
 					"projectIndex" : 2
 				},
 				{
 					"directoryIndex" : 3,
 					"id" : "ggml-base::@23533c6d68a59d54598d",
-					"jsonFile" : "target-ggml-base-Release-8e7b8020342be6743d74.json",
+					"jsonFile" : "target-ggml-base-Release-a5ff986105b2fed194fa.json",
 					"name" : "ggml-base",
 					"projectIndex" : 2
 				},
 				{
 					"directoryIndex" : 3,
 					"id" : "ggml-cpu::@23533c6d68a59d54598d",
-					"jsonFile" : "target-ggml-cpu-Release-a3d9e1ae36a87ebc07d8.json",
+					"jsonFile" : "target-ggml-cpu-Release-a32b1d6570659db45084.json",
 					"name" : "ggml-cpu",
 					"projectIndex" : 2
 				},
 				{
 					"directoryIndex" : 5,
 					"id" : "llama::@b791850eb95f38641ccb",
-					"jsonFile" : "target-llama-Release-413dadcfb3c52c050578.json",
+					"jsonFile" : "target-llama-Release-24d0e883ddf7af88f8d9.json",
 					"name" : "llama",
 					"projectIndex" : 1
 				},
 				{
 					"directoryIndex" : 7,
 					"id" : "vendor-hash::@704c45f9736004557a3a",
-					"jsonFile" : "target-vendor-hash-Release-71a6502ca3a38088a328.json",
+					"jsonFile" : "target-vendor-hash-Release-b129ff03eee9a5fde28f.json",
 					"name" : "vendor-hash",
 					"projectIndex" : 1
 				}

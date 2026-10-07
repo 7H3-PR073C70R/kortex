@@ -1,7 +1,4 @@
-<!DOCTYPE html>
-<html>
-
-<head>
+<!DOCTYPE html><html><head>
   <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
@@ -19,8 +16,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description"
-    content="**Kortexify** is a local-first, AI-augmented academic engine designed to turn raw course materials into long-term subject mastery in a single document drop. Built on a zero-latency offline architecture, it pairs multimodal STEM OCR with local vector RAG to instantly convert complex textbook chapters, hand-written equations, and lecture slides into deeply contextual answers anchored to your source files. By automatically synthesizing unstructured notes into intelligent active-recall prompts and scheduling them through adaptive spaced repetition, Kortexify creates an all-in-one workspace where deep understanding and effortless retention happen in parallel.">
+  <meta name="description" content="**Kortexify** is a local-first, AI-augmented academic engine designed to turn raw course materials into long-term subject mastery in a single document drop. Built on a zero-latency offline architecture, it pairs multimodal STEM OCR with local vector RAG to instantly convert complex textbook chapters, hand-written equations, and lecture slides into deeply contextual answers anchored to your source files. By automatically synthesizing unstructured notes into intelligent active-recall prompts and scheduling them through adaptive spaced repetition, Kortexify creates an all-in-one workspace where deep understanding and effortless retention happen in parallel.">
 
   <!-- iOS & Mobile meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -41,70 +37,122 @@
 
 
 
+  
+  
   <style id="splash-screen-style">
     html {
-      height: 100%
+      height: 100%;
     }
 
     body {
       margin: 0;
       min-height: 100%;
-      background-color: #F6F6F8;
-      background-size: 100% 100%;
+      background-color: #090D16;
     }
 
-    .center {
-      margin: 0;
+    .splash-container {
       position: absolute;
       top: 50%;
       left: 50%;
-      -ms-transform: translate(-50%, -50%);
       transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
-    .contain {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
+    /* Ambient Glow Pulse */
+    .logo-glow {
+      transform-origin: 256px 256px;
+      animation: glowPulse 2.8s ease-in-out infinite alternate;
     }
 
-    .stretch {
-      display: block;
-      width: 100%;
-      height: 100%;
+    @keyframes glowPulse {
+      0% { opacity: 0.10; transform: scale(0.85); }
+      100% { opacity: 0.35; transform: scale(1.15); }
     }
 
-    .cover {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    /* Outer Shield Path Tracing */
+    .logo-shield {
+      stroke-dasharray: 1200;
+      stroke-dashoffset: 1200;
+      animation: traceShield 2.4s cubic-bezier(0.23, 1, 0.32, 1) forwards infinite alternate;
     }
 
-    .bottom {
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      -ms-transform: translate(-50%, 0);
-      transform: translate(-50%, 0);
+    @keyframes traceShield {
+      0% { stroke-dashoffset: 1200; opacity: 0.2; }
+      50%, 80% { stroke-dashoffset: 0; opacity: 1; }
+      100% { stroke-dashoffset: 0; opacity: 0.85; }
     }
 
-    .bottomLeft {
-      position: absolute;
-      bottom: 0;
-      left: 0;
+    /* Neural K Stem & Arms Assembly Motion */
+    .k-stem {
+      transform-origin: 156px 256px;
+      animation: assembleStem 2.4s cubic-bezier(0.23, 1, 0.32, 1) forwards infinite alternate;
     }
 
-    .bottomRight {
-      position: absolute;
-      bottom: 0;
-      right: 0;
+    @keyframes assembleStem {
+      0% { transform: translateX(-40px); opacity: 0; }
+      40%, 100% { transform: translateX(0); opacity: 1; }
     }
 
-    @media (prefers-color-scheme: dark) {
+    .k-arm-top {
+      transform-origin: 256px 256px;
+      animation: assembleArmTop 2.4s cubic-bezier(0.23, 1, 0.32, 1) forwards infinite alternate;
+    }
+
+    @keyframes assembleArmTop {
+      0% { transform: translate(30px, -30px); opacity: 0; }
+      50%, 100% { transform: translate(0, 0); opacity: 1; }
+    }
+
+    .k-arm-bottom {
+      transform-origin: 256px 256px;
+      animation: assembleArmBottom 2.4s cubic-bezier(0.23, 1, 0.32, 1) forwards infinite alternate;
+    }
+
+    @keyframes assembleArmBottom {
+      0% { transform: translate(30px, 30px); opacity: 0; }
+      50%, 100% { transform: translate(0, 0); opacity: 1; }
+    }
+
+    /* Nodes Spring Scale */
+    .logo-outer-nodes, .logo-k-nodes {
+      transform-origin: 256px 256px;
+      animation: popNodes 2.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards infinite alternate;
+    }
+
+    @keyframes popNodes {
+      0%, 45% { transform: scale(0); opacity: 0; }
+      65%, 100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Wireframe Grid Line Fade & Scaling */
+    .logo-grid {
+      transform-origin: 256px 256px;
+      animation: gridFade 2.4s ease-out forwards infinite alternate;
+    }
+
+    @keyframes gridFade {
+      0% { opacity: 0; transform: scale(0.85); }
+      35%, 100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Core Nucleus Breathing */
+    .logo-core {
+      transform-origin: 256px 256px;
+      animation: coreBreath 2.4s ease-in-out forwards infinite alternate;
+    }
+
+    @keyframes coreBreath {
+      0% { transform: scale(0.5); opacity: 0.3; }
+      30%, 80% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.08); opacity: 1; }
+    }
+
+    @media (prefers-color-scheme: light) {
       body {
-        background-color: #0D0D0F;
+        background-color: #F8FAFC;
       }
     }
   </style>
@@ -118,30 +166,92 @@
 </head>
 
 <body>
-  <picture id="splash">
-    <source
-      srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x"
-      media="(prefers-color-scheme: light)">
-    <source
-      srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x"
-      media="(prefers-color-scheme: dark)">
-    <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
-  </picture>
+  <div id="splash" class="splash-container">
+    <svg width="160" height="160" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" class="kortex-logo-svg">
+      <defs>
+        <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#788C7E"/>
+          <stop offset="35%" stop-color="#5B8C93"/>
+          <stop offset="70%" stop-color="#4A6B5D"/>
+          <stop offset="100%" stop-color="#D4A373"/>
+        </linearGradient>
 
+        <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#788C7E"/>
+          <stop offset="60%" stop-color="#5B8C93"/>
+          <stop offset="100%" stop-color="#4A6B5D"/>
+        </radialGradient>
 
+        <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/>
+          <stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/>
+        </linearGradient>
+      </defs>
 
-  <script>
-    (() => {
-      var _ = { blink: !0, gecko: !1, webkit: !1, unknown: !1 }, K = () => navigator.vendor === "Google Inc." || navigator.userAgent.includes("Edg/") ? "blink" : navigator.vendor === "Apple Computer, Inc." ? "webkit" : navigator.vendor === "" && navigator.userAgent.includes("Firefox") ? "gecko" : "unknown", C = K(), R = () => typeof ImageDecoder > "u" ? !1 : C === "blink", B = () => typeof Intl.v8BreakIterator < "u" && typeof Intl.Segmenter < "u", z = () => { let i = [0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 95, 1, 120, 0]; return WebAssembly.validate(new Uint8Array(i)) }, M = () => { let i = document.createElement("canvas"); return i.width = 1, i.height = 1, i.getContext("webgl2") != null ? 2 : i.getContext("webgl") != null ? 1 : -1 }, D = () => window.chrome && chrome.runtime && chrome.runtime.id, w = { browserEngine: C, hasImageCodecs: R(), hasChromiumBreakIterators: B(), supportsWasmGC: z(), crossOriginIsolated: window.crossOriginIsolated, webGLVersion: M(), isChromeExtension: D() }; function c(...i) { return new URL(I(...i), document.baseURI).toString() } function I(...i) { return i.filter(e => !!e).map((e, n) => n === 0 ? S(e) : F(S(e))).filter(e => e.length).join("/") } function F(i) { let e = 0; for (; e < i.length && i.charAt(e) === "/";)e++; return i.substring(e) } function S(i) { let e = i.length; for (; e > 0 && i.charAt(e - 1) === "/";)e--; return i.substring(0, e) } function E(i, e) { return i.canvasKitBaseUrl ? i.canvasKitBaseUrl : e.engineRevision && !e.useLocalCanvasKit ? I("https://www.gstatic.com/flutter-canvaskit", e.engineRevision) : "canvaskit" } var v = class { constructor() { this._scriptLoaded = !1 } setTrustedTypesPolicy(e) { this._ttPolicy = e } async loadEntrypoint(e) { let { entrypointUrl: n = c("main.dart.js"), onEntrypointLoaded: t, nonce: r } = e || {}; return this._loadJSEntrypoint(n, t, r) } async load(e, n, t, r, a) { a ??= l => { l.initializeEngine(t).then(u => u.runApp()) }; let { entrypointBaseUrl: s } = t, { entryPointBaseUrl: o } = t; if (!s && o && (console.warn("[deprecated] `entryPointBaseUrl` is deprecated and will be removed in a future release. Use `entrypointBaseUrl` instead."), s = o), e.compileTarget === "dart2wasm") return this._loadWasmEntrypoint(e, n, s, a); { let l = e.mainJsPath ?? "main.dart.js", u = c(s, l); return this._loadJSEntrypoint(u, a, r) } } didCreateEngineInitializer(e) { typeof this._didCreateEngineInitializerResolve == "function" && (this._didCreateEngineInitializerResolve(e), this._didCreateEngineInitializerResolve = null, delete _flutter.loader.didCreateEngineInitializer), typeof this._onEntrypointLoaded == "function" && this._onEntrypointLoaded(e) } _loadJSEntrypoint(e, n, t) { let r = typeof n == "function"; if (!this._scriptLoaded) { this._scriptLoaded = !0; let a = this._createScriptTag(e, t); if (r) console.debug("Injecting <script> tag. Using callback."), this._onEntrypointLoaded = n, document.head.append(a); else return new Promise((s, o) => { console.debug("Injecting <script> tag. Using Promises. Use the callback approach instead!"), this._didCreateEngineInitializerResolve = s, a.addEventListener("error", o), document.head.append(a) }) } } async _loadWasmEntrypoint(e, n, t, r) { if (!this._scriptLoaded) { this._scriptLoaded = !0, this._onEntrypointLoaded = r; let { mainWasmPath: a, jsSupportRuntimePath: s } = e, o = c(t, a), l = c(t, s); this._ttPolicy != null && (l = this._ttPolicy.createScriptURL(l)); let d = (await import(l)).compileStreaming(fetch(o)), p; e.renderer === "skwasm" ? p = (async () => { let h = await n.skwasm; return window._flutter_skwasmInstance = h, { skwasm: h.wasmExports, skwasmWrapper: h, ffi: { memory: h.wasmMemory } } })() : p = Promise.resolve({}), await (await (await d).instantiate(await p, { loadDynamicModule: async (h, j) => { let A = fetch(c(t, h)), L = c(t, j); this._ttPolicy != null && (L = this._ttPolicy.createScriptURL(L)); let x = import(L); return [await A, await x] } })).invokeMain() } } _createScriptTag(e, n) { let t = document.createElement("script"); t.type = "application/javascript", n && (t.nonce = n); let r = e; return this._ttPolicy != null && (r = this._ttPolicy.createScriptURL(e)), t.src = r, t } }; async function T(i, e, n) { if (e < 0) return i; let t, r = new Promise((a, s) => { t = setTimeout(() => { s(new Error(`${n} took more than ${e}ms to resolve. Moving on.`, { cause: T })) }, e) }); return Promise.race([i, r]).finally(() => { clearTimeout(t) }) } var g = class {
-        setTrustedTypesPolicy(e) { this._ttPolicy = e } loadServiceWorker(e) {
-          if (!e || !("serviceWorker" in navigator)) return Promise.resolve(); let n = () => {
-            console.warn(`Loading the service worker using Flutter bootstrap is deprecated and will stop working in a future release.
-For more details, see: https://github.com/flutter/flutter/issues/156910`)
-          }, t = () => { let { serviceWorkerVersion: r, serviceWorkerUrl: a = c(`flutter_service_worker.js?v=${r}`), timeoutMillis: s = 4e3 } = e, o = a; this._ttPolicy != null && (o = this._ttPolicy.createScriptURL(o)); let l = navigator.serviceWorker.register(o).then(u => this._getNewServiceWorker(u, r)).then(this._waitForServiceWorkerActivation); return T(l, s, "prepareServiceWorker") }; return e.serviceWorkerUrl != null ? (n(), t()) : navigator.serviceWorker.getRegistration().then(r => r ? t() : Promise.resolve())
-        } async _getNewServiceWorker(e, n) { if (!e.active && (e.installing || e.waiting)) return console.debug("Installing/Activating first service worker."), e.installing || e.waiting; if (e.active.scriptURL.endsWith(n)) return console.debug("Loading from existing service worker."), e.active; { let t = await e.update(); return console.debug("Updating service worker."), t.installing || t.waiting || t.active } } async _waitForServiceWorkerActivation(e) { if (!e || e.state === "activated") if (e) { console.debug("Service worker already active."); return } else throw new Error("Cannot activate a null service worker!"); return new Promise((n, t) => { e.addEventListener("statechange", () => { e.state === "activated" && (console.debug("Activated new service worker."), n()) }) }) }
-      }; var y = class { constructor(e, n = "flutter-js") { let t = e || [/\.js$/, /\.mjs$/]; window.trustedTypes && (this.policy = trustedTypes.createPolicy(n, { createScriptURL: function (r) { if (r.startsWith("blob:")) return r; let a = new URL(r, window.location), s = a.pathname.split("/").pop(); if (t.some(l => l.test(s))) return a.toString(); console.error("URL rejected by TrustedTypes policy", n, ":", r, "(download prevented)") } })) } }; var k = i => { let e = WebAssembly.compileStreaming(fetch(i)); return (n, t) => ((async () => { let r = await e, a = await WebAssembly.instantiate(r, n); t(a, r) })(), {}) }; var U = (i, e, n, t) => (window.flutterCanvasKitLoaded = (async () => { if (window.flutterCanvasKit) return window.flutterCanvasKit; let r = n.hasChromiumBreakIterators && n.hasImageCodecs; if (!r && e.canvasKitVariant == "chromium") throw "Chromium CanvasKit variant specifically requested, but unsupported in this browser"; let a = r && e.canvasKitVariant !== "full", s = t; e.canvasKitVariant == "experimentalWebParagraph" ? s = c(s, "experimental_webparagraph") : a && (s = c(s, "chromium")); let o = c(s, "canvaskit.js"); i.flutterTT.policy && (o = i.flutterTT.policy.createScriptURL(o)); let l = k(c(s, "canvaskit.wasm")), u = await import(o); return window.flutterCanvasKit = await u.default({ instantiateWasm: l }), window.flutterCanvasKit })(), window.flutterCanvasKitLoaded); var W = async (i, e, n, t) => {
-        let a = !n.hasImageCodecs || !n.hasChromiumBreakIterators ? "skwasm_heavy" : e.enableWimp ? "wimp" : "skwasm", s = c(t, `${a}.js`), o = s; i.flutterTT.policy && (o = i.flutterTT.policy.createScriptURL(o)); let l = k(c(t, `${a}.wasm`)); return await (await import(o)).default({
-          skwasmSingleThreaded: e.enableWimp || !n.crossOriginIsolated || n.isChromeExtension || e.forceSingleThreadedSkwasm, instantiateWasm: l, locateFile: (d, p) => d.endsWith(".ww.js") ? URL.createObjectURL(new Blob([`
+      <!-- Ambient Glow Backdrop -->
+      <circle class="logo-glow" cx="256" cy="256" r="220" fill="url(#coreRadialGrad)" opacity="0.18"/>
+
+      <!-- 1. Wireframe Guidelines -->
+      <g class="logo-grid" stroke="url(#gridGrad)" stroke-width="1.2" stroke-linecap="round">
+        <line x1="256" y1="256" x2="256" y2="56"/>
+        <line x1="256" y1="256" x2="429.2" y2="156"/>
+        <line x1="256" y1="256" x2="429.2" y2="356"/>
+        <line x1="256" y1="256" x2="256" y2="456"/>
+        <line x1="256" y1="256" x2="82.8" y2="356"/>
+        <line x1="256" y1="256" x2="82.8" y2="156"/>
+        <polygon points="256,156 342.6,206 342.6,306 256,356 169.4,306 169.4,206" fill="none"/>
+        <line x1="82.8" y1="156" x2="429.2" y2="156"/>
+        <line x1="82.8" y1="356" x2="429.2" y2="356"/>
+        <line x1="169.4" y1="206" x2="169.4" y2="306"/>
+        <line x1="342.6" y1="206" x2="342.6" y2="306"/>
+      </g>
+
+      <!-- 2. Outer Hexagon Shield Frame -->
+      <polygon class="logo-shield"
+        points="256,56 429.2,156 429.2,356 256,456 82.8,356 82.8,156" 
+        stroke="url(#kortexGrad)" 
+        stroke-width="14" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        fill="none"
+      />
+
+      <!-- 3. Neural K Network Mark -->
+      <g stroke="url(#kortexGrad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+        <line class="k-stem" x1="156" y1="140" x2="156" y2="372"/>
+        <line class="k-connector" x1="156" y1="256" x2="256" y2="256"/>
+        <line class="k-arm-top" x1="256" y1="256" x2="356" y2="140"/>
+        <line class="k-arm-bottom" x1="256" y1="256" x2="356" y2="372"/>
+      </g>
+
+      <!-- 4. Outer Hexagon Nodes -->
+      <g class="logo-outer-nodes">
+        <circle cx="256" cy="56" r="10" fill="#788C7E"/>
+        <circle cx="429.2" cy="156" r="10" fill="#5B8C93"/>
+        <circle cx="429.2" cy="356" r="10" fill="#4A6B5D"/>
+        <circle cx="256" cy="456" r="10" fill="#D4A373"/>
+        <circle cx="82.8" cy="356" r="10" fill="#4A6B5D"/>
+        <circle cx="82.8" cy="156" r="10" fill="#788C7E"/>
+      </g>
+
+      <!-- 5. K Terminal Nodes -->
+      <g class="logo-k-nodes">
+        <circle cx="156" cy="140" r="13" fill="#788C7E"/>
+        <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
+        <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
+        <circle cx="356" cy="372" r="13" fill="#D4A373"/>
+      </g>
+
+      <!-- 6. Central Core -->
+      <g class="logo-core">
+        <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/>
+        <circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
+      </g>
+    </svg>
+  </div>
+
+  (()=>{var _={blink:!0,gecko:!1,webkit:!1,unknown:!1},K=()=>navigator.vendor==="Google Inc."||navigator.userAgent.includes("Edg/")?"blink":navigator.vendor==="Apple Computer, Inc."?"webkit":navigator.vendor===""&&navigator.userAgent.includes("Firefox")?"gecko":"unknown",C=K(),R=()=>typeof ImageDecoder>"u"?!1:C==="blink",B=()=>typeof Intl.v8BreakIterator<"u"&&typeof Intl.Segmenter<"u",z=()=>{let i=[0,97,115,109,1,0,0,0,1,5,1,95,1,120,0];return WebAssembly.validate(new Uint8Array(i))},M=()=>{let i=document.createElement("canvas");return i.width=1,i.height=1,i.getContext("webgl2")!=null?2:i.getContext("webgl")!=null?1:-1},D=()=>window.chrome&&chrome.runtime&&chrome.runtime.id,w={browserEngine:C,hasImageCodecs:R(),hasChromiumBreakIterators:B(),supportsWasmGC:z(),crossOriginIsolated:window.crossOriginIsolated,webGLVersion:M(),isChromeExtension:D()};function c(...i){return new URL(I(...i),document.baseURI).toString()}function I(...i){return i.filter(e=>!!e).map((e,n)=>n===0?S(e):F(S(e))).filter(e=>e.length).join("/")}function F(i){let e=0;for(;e<i.length&&i.charAt(e)==="/";)e++;return i.substring(e)}function S(i){let e=i.length;for(;e>0&&i.charAt(e-1)==="/";)e--;return i.substring(0,e)}function E(i,e){return i.canvasKitBaseUrl?i.canvasKitBaseUrl:e.engineRevision&&!e.useLocalCanvasKit?I("https://www.gstatic.com/flutter-canvaskit",e.engineRevision):"canvaskit"}var v=class{constructor(){this._scriptLoaded=!1}setTrustedTypesPolicy(e){this._ttPolicy=e}async loadEntrypoint(e){let{entrypointUrl:n=c("main.dart.js"),onEntrypointLoaded:t,nonce:r}=e||{};return this._loadJSEntrypoint(n,t,r)}async load(e,n,t,r,a){a??=l=>{l.initializeEngine(t).then(u=>u.runApp())};let{entrypointBaseUrl:s}=t,{entryPointBaseUrl:o}=t;if(!s&&o&&(console.warn("[deprecated] `entryPointBaseUrl` is deprecated and will be removed in a future release. Use `entrypointBaseUrl` instead."),s=o),e.compileTarget==="dart2wasm")return this._loadWasmEntrypoint(e,n,s,a);{let l=e.mainJsPath??"main.dart.js",u=c(s,l);return this._loadJSEntrypoint(u,a,r)}}didCreateEngineInitializer(e){typeof this._didCreateEngineInitializerResolve=="function"&&(this._didCreateEngineInitializerResolve(e),this._didCreateEngineInitializerResolve=null,delete _flutter.loader.didCreateEngineInitializer),typeof this._onEntrypointLoaded=="function"&&this._onEntrypointLoaded(e)}_loadJSEntrypoint(e,n,t){let r=typeof n=="function";if(!this._scriptLoaded){this._scriptLoaded=!0;let a=this._createScriptTag(e,t);if(r)console.debug("Injecting <script> tag. Using callback."),this._onEntrypointLoaded=n,document.head.append(a);else return new Promise((s,o)=>{console.debug("Injecting <script> tag. Using Promises. Use the callback approach instead!"),this._didCreateEngineInitializerResolve=s,a.addEventListener("error",o),document.head.append(a)})}}async _loadWasmEntrypoint(e,n,t,r){if(!this._scriptLoaded){this._scriptLoaded=!0,this._onEntrypointLoaded=r;let{mainWasmPath:a,jsSupportRuntimePath:s}=e,o=c(t,a),l=c(t,s);this._ttPolicy!=null&&(l=this._ttPolicy.createScriptURL(l));let d=(await import(l)).compileStreaming(fetch(o)),p;e.renderer==="skwasm"?p=(async()=>{let h=await n.skwasm;return window._flutter_skwasmInstance=h,{skwasm:h.wasmExports,skwasmWrapper:h,ffi:{memory:h.wasmMemory}}})():p=Promise.resolve({}),await(await(await d).instantiate(await p,{loadDynamicModule:async(h,j)=>{let A=fetch(c(t,h)),L=c(t,j);this._ttPolicy!=null&&(L=this._ttPolicy.createScriptURL(L));let x=import(L);return[await A,await x]}})).invokeMain()}}_createScriptTag(e,n){let t=document.createElement("script");t.type="application/javascript",n&&(t.nonce=n);let r=e;return this._ttPolicy!=null&&(r=this._ttPolicy.createScriptURL(e)),t.src=r,t}};async function T(i,e,n){if(e<0)return i;let t,r=new Promise((a,s)=>{t=setTimeout(()=>{s(new Error(`${n} took more than ${e}ms to resolve. Moving on.`,{cause:T}))},e)});return Promise.race([i,r]).finally(()=>{clearTimeout(t)})}var g=class{setTrustedTypesPolicy(e){this._ttPolicy=e}loadServiceWorker(e){if(!e||!("serviceWorker"in navigator))return Promise.resolve();let n=()=>{console.warn(`Loading the service worker using Flutter bootstrap is deprecated and will stop working in a future release.
+For more details, see: https://github.com/flutter/flutter/issues/156910`)},t=()=>{let{serviceWorkerVersion:r,serviceWorkerUrl:a=c(`flutter_service_worker.js?v=${r}`),timeoutMillis:s=4e3}=e,o=a;this._ttPolicy!=null&&(o=this._ttPolicy.createScriptURL(o));let l=navigator.serviceWorker.register(o).then(u=>this._getNewServiceWorker(u,r)).then(this._waitForServiceWorkerActivation);return T(l,s,"prepareServiceWorker")};return e.serviceWorkerUrl!=null?(n(),t()):navigator.serviceWorker.getRegistration().then(r=>r?t():Promise.resolve())}async _getNewServiceWorker(e,n){if(!e.active&&(e.installing||e.waiting))return console.debug("Installing/Activating first service worker."),e.installing||e.waiting;if(e.active.scriptURL.endsWith(n))return console.debug("Loading from existing service worker."),e.active;{let t=await e.update();return console.debug("Updating service worker."),t.installing||t.waiting||t.active}}async _waitForServiceWorkerActivation(e){if(!e||e.state==="activated")if(e){console.debug("Service worker already active.");return}else throw new Error("Cannot activate a null service worker!");return new Promise((n,t)=>{e.addEventListener("statechange",()=>{e.state==="activated"&&(console.debug("Activated new service worker."),n())})})}};var y=class{constructor(e,n="flutter-js"){let t=e||[/\.js$/,/\.mjs$/];window.trustedTypes&&(this.policy=trustedTypes.createPolicy(n,{createScriptURL:function(r){if(r.startsWith("blob:"))return r;let a=new URL(r,window.location),s=a.pathname.split("/").pop();if(t.some(l=>l.test(s)))return a.toString();console.error("URL rejected by TrustedTypes policy",n,":",r,"(download prevented)")}}))}};var k=i=>{let e=WebAssembly.compileStreaming(fetch(i));return(n,t)=>((async()=>{let r=await e,a=await WebAssembly.instantiate(r,n);t(a,r)})(),{})};var U=(i,e,n,t)=>(window.flutterCanvasKitLoaded=(async()=>{if(window.flutterCanvasKit)return window.flutterCanvasKit;let r=n.hasChromiumBreakIterators&&n.hasImageCodecs;if(!r&&e.canvasKitVariant=="chromium")throw"Chromium CanvasKit variant specifically requested, but unsupported in this browser";let a=r&&e.canvasKitVariant!=="full",s=t;e.canvasKitVariant=="experimentalWebParagraph"?s=c(s,"experimental_webparagraph"):a&&(s=c(s,"chromium"));let o=c(s,"canvaskit.js");i.flutterTT.policy&&(o=i.flutterTT.policy.createScriptURL(o));let l=k(c(s,"canvaskit.wasm")),u=await import(o);return window.flutterCanvasKit=await u.default({instantiateWasm:l}),window.flutterCanvasKit})(),window.flutterCanvasKitLoaded);var W=async(i,e,n,t)=>{let a=!n.hasImageCodecs||!n.hasChromiumBreakIterators?"skwasm_heavy":e.enableWimp?"wimp":"skwasm",s=c(t,`${a}.js`),o=s;i.flutterTT.policy&&(o=i.flutterTT.policy.createScriptURL(o));let l=k(c(t,`${a}.wasm`));return await(await import(o)).default({skwasmSingleThreaded:e.enableWimp||!n.crossOriginIsolated||n.isChromeExtension||e.forceSingleThreadedSkwasm,instantiateWasm:l,locateFile:(d,p)=>d.endsWith(".ww.js")?URL.createObjectURL(new Blob([`
 "use strict";
 
 let eventListener;
@@ -169,26 +279,19 @@ eventListener = (message) => {
     addEventListener("message", eventListener);
 };
 addEventListener("message", eventListener);
-`], { type: "application/javascript" })) : c(t, d), mainScriptUrlOrBlob: s
-        })
-      }; var P = w.supportsWasmGC, G = P && w.webGLVersion > 0, b = class { async loadEntrypoint(e) { let { serviceWorker: n, ...t } = e || {}, r = new y, a = new g; a.setTrustedTypesPolicy(r.policy), await a.loadServiceWorker(n).catch(o => { console.warn("Exception while loading service worker:", o) }); let s = new v; return s.setTrustedTypesPolicy(r.policy), this.didCreateEngineInitializer = s.didCreateEngineInitializer.bind(s), s.loadEntrypoint(t) } async load({ serviceWorkerSettings: e, onEntrypointLoaded: n, nonce: t, config: r } = {}) { r ??= {}; let a = _flutter.buildConfig; if (!a) throw "FlutterLoader.load requires _flutter.buildConfig to be set"; let s = r.wasmAllowList?.[w.browserEngine] ?? _[w.browserEngine], o = m => { switch (m) { case "skwasm": return G && s; default: return !0 } }, l = m => m.compileTarget === "dart2wasm" && !P || r.renderer && r.renderer != m.renderer ? !1 : o(m.renderer), u = a.builds.find(l); if (!u) throw "FlutterLoader could not find a build compatible with configuration and environment."; let d = {}; d.flutterTT = new y, e && (d.serviceWorkerLoader = new g, d.serviceWorkerLoader.setTrustedTypesPolicy(d.flutterTT.policy), await d.serviceWorkerLoader.loadServiceWorker(e).catch(m => { console.warn("Exception while loading service worker:", m) })); let p = E(r, a); u.renderer === "canvaskit" ? d.canvasKit = U(d, r, w, p) : u.renderer === "skwasm" && (d.skwasm = W(d, r, w, p)); let f = new v; return f.setTrustedTypesPolicy(d.flutterTT.policy), this.didCreateEngineInitializer = f.didCreateEngineInitializer.bind(f), f.load(u, d, r, t, n) } }; window._flutter || (window._flutter = {}); window._flutter.loader || (window._flutter.loader = new b);
-    })();
-    //# sourceMappingURL=flutter.js.map
+`],{type:"application/javascript"})):c(t,d),mainScriptUrlOrBlob:s})};var P=w.supportsWasmGC,G=P&&w.webGLVersion>0,b=class{async loadEntrypoint(e){let{serviceWorker:n,...t}=e||{},r=new y,a=new g;a.setTrustedTypesPolicy(r.policy),await a.loadServiceWorker(n).catch(o=>{console.warn("Exception while loading service worker:",o)});let s=new v;return s.setTrustedTypesPolicy(r.policy),this.didCreateEngineInitializer=s.didCreateEngineInitializer.bind(s),s.loadEntrypoint(t)}async load({serviceWorkerSettings:e,onEntrypointLoaded:n,nonce:t,config:r}={}){r??={};let a=_flutter.buildConfig;if(!a)throw"FlutterLoader.load requires _flutter.buildConfig to be set";let s=r.wasmAllowList?.[w.browserEngine]??_[w.browserEngine],o=m=>{switch(m){case"skwasm":return G&&s;default:return!0}},l=m=>m.compileTarget==="dart2wasm"&&!P||r.renderer&&r.renderer!=m.renderer?!1:o(m.renderer),u=a.builds.find(l);if(!u)throw"FlutterLoader could not find a build compatible with configuration and environment.";let d={};d.flutterTT=new y,e&&(d.serviceWorkerLoader=new g,d.serviceWorkerLoader.setTrustedTypesPolicy(d.flutterTT.policy),await d.serviceWorkerLoader.loadServiceWorker(e).catch(m=>{console.warn("Exception while loading service worker:",m)}));let p=E(r,a);u.renderer==="canvaskit"?d.canvasKit=U(d,r,w,p):u.renderer==="skwasm"&&(d.skwasm=W(d,r,w,p));let f=new v;return f.setTrustedTypesPolicy(d.flutterTT.policy),this.didCreateEngineInitializer=f.didCreateEngineInitializer.bind(f),f.load(u,d,r,t,n)}};window._flutter||(window._flutter={});window._flutter.loader||(window._flutter.loader=new b);})();
+//# sourceMappingURL=flutter.js.map
 
-    if (!window._flutter) {
-      window._flutter = {};
-    }
-    _flutter.buildConfig = { "engineRevision": "425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb", "builds": [{ "compileTarget": "dart2js", "renderer": "canvaskit", "mainJsPath": "main.dart.js" }, {}] };
+if (!window._flutter) {
+  window._flutter = {};
+}
+_flutter.buildConfig = {"engineRevision":"425cfb54d01a9472b3e81d9e76fd63a4a44cfbcb","builds":[{"compileTarget":"dart2js","renderer":"canvaskit","mainJsPath":"main.dart.js"},{}]};
 
-    _flutter.loader.load({
-      serviceWorkerSettings: {
-        serviceWorkerVersion: "439630680" /* Flutter's service worker is deprecated and will be removed in a future Flutter release. */
-      }
-    });
-
-  </script>
-
+_flutter.loader.load({
+  serviceWorkerSettings: {
+    serviceWorkerVersion: "2015665738" /* Flutter's service worker is deprecated and will be removed in a future Flutter release. */
+  }
+});
 
 </body>
-
 </html>

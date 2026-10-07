@@ -42,7 +42,7 @@
 			{
 				"command" : 1,
 				"file" : 1,
-				"line" : 290,
+				"line" : 296,
 				"parent" : 2
 			},
 			{
@@ -54,7 +54,7 @@
 			{
 				"command" : 3,
 				"file" : 1,
-				"line" : 206,
+				"line" : 210,
 				"parent" : 2
 			},
 			{
@@ -199,7 +199,7 @@
 				},
 				{
 					"backtrace" : 10,
-					"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/build-llama/src"
+					"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src"
 				},
 				{
 					"backtrace" : 11,
@@ -566,61 +566,61 @@
 		{
 			"backtrace" : 0,
 			"compileGroupIndex" : 0,
-			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/build-llama/src/CMakeFiles/llama.dir/Unity/unity_9_cxx.cxx",
+			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_9_cxx.cxx",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 0,
 			"compileGroupIndex" : 0,
-			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/build-llama/src/CMakeFiles/llama.dir/Unity/unity_8_cxx.cxx",
+			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_8_cxx.cxx",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 0,
 			"compileGroupIndex" : 0,
-			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/build-llama/src/CMakeFiles/llama.dir/Unity/unity_7_cxx.cxx",
+			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_7_cxx.cxx",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 0,
 			"compileGroupIndex" : 0,
-			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/build-llama/src/CMakeFiles/llama.dir/Unity/unity_6_cxx.cxx",
+			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_6_cxx.cxx",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 0,
 			"compileGroupIndex" : 0,
-			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/build-llama/src/CMakeFiles/llama.dir/Unity/unity_5_cxx.cxx",
+			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_5_cxx.cxx",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 0,
 			"compileGroupIndex" : 0,
-			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/build-llama/src/CMakeFiles/llama.dir/Unity/unity_4_cxx.cxx",
+			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_4_cxx.cxx",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 0,
 			"compileGroupIndex" : 0,
-			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/build-llama/src/CMakeFiles/llama.dir/Unity/unity_3_cxx.cxx",
+			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_3_cxx.cxx",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 0,
 			"compileGroupIndex" : 0,
-			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/build-llama/src/CMakeFiles/llama.dir/Unity/unity_2_cxx.cxx",
+			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_2_cxx.cxx",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 0,
 			"compileGroupIndex" : 0,
-			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/build-llama/src/CMakeFiles/llama.dir/Unity/unity_1_cxx.cxx",
+			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_1_cxx.cxx",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 0,
 			"compileGroupIndex" : 0,
-			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/arm64-v8a/build-llama/src/CMakeFiles/llama.dir/Unity/unity_0_cxx.cxx",
+			"path" : "/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_0_cxx.cxx",
 			"sourceGroupIndex" : 0
 		},
 		{
