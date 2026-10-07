@@ -250,6 +250,25 @@
     </svg>
   </div>
 
-  {{flutter_bootstrap_js}}
+  <script>
+    (function () {
+      function removeSplash() {
+        if (typeof removeSplashFromWeb === 'function') {
+          removeSplashFromWeb();
+        }
+      }
+
+      window.addEventListener('flutter-first-frame', removeSplash);
+
+      const observer = new MutationObserver(function (mutations, obs) {
+        if (document.querySelector('flutter-view') || document.querySelector('flt-glass-pane')) {
+          removeSplash();
+          obs.disconnect();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    })();
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
