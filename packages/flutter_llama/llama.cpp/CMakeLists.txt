@@ -234,7 +234,9 @@ add_subdirectory(src)
 # utils, programs, examples and tests
 #
 
-add_subdirectory(vendor)
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vendor/CMakeLists.txt")
+    add_subdirectory(vendor)
+endif()
 
 if (LLAMA_BUILD_COMMON)
     add_subdirectory(common)
