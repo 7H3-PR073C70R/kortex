@@ -20,6 +20,7 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/chat_auth_message.dart';
+import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
@@ -695,7 +696,20 @@ class AuthChatView extends HookWidget {
           final name = state.user?.displayName ?? 'Scholar';
 
           // Multi-fallback onboarding check for returning users
-          final serverSaysOnboarded = state.userProfile?.isOnboarded ?? false;
+          var serverSaysOnboarded = state.userProfile?.isOnboarded ?? false;
+          if (!serverSaysOnboarded && locator.isRegistered<AuthRepository>()) {
+            try {
+              final profileRes = await locator<AuthRepository>().getUserProfile();
+              profileRes.fold(
+                (_) {},
+                (profile) {
+                  if (profile.isOnboarded) {
+                    serverSaysOnboarded = true;
+                  }
+                },
+              );
+            } on Object catch (_) {}
+          }
           var localSaysOnboarded = false;
           try {
             final storage = locator<LocalStorageService>();

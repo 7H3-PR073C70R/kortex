@@ -11,6 +11,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/social_auth_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
+import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
@@ -122,7 +123,20 @@ class AuthNavigationListener extends StatelessWidget {
             }
 
             // 1. Fast path: check if server-verified profile says user is onboarded
-            final serverSaysOnboarded = state.userProfile?.isOnboarded ?? false;
+            var serverSaysOnboarded = state.userProfile?.isOnboarded ?? false;
+            if (!serverSaysOnboarded && locator.isRegistered<AuthRepository>()) {
+              try {
+                final profileRes = await locator<AuthRepository>().getUserProfile();
+                profileRes.fold(
+                  (_) {},
+                  (profile) {
+                    if (profile.isOnboarded) {
+                      serverSaysOnboarded = true;
+                    }
+                  },
+                );
+              } on Object catch (_) {}
+            }
 
             // 2. Local pref key set by CalibrationLocalDataSourceImpl.saveCalibrationProfile
             var localSaysOnboarded = false;

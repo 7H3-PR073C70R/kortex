@@ -99,7 +99,10 @@ class WebDesktop3dFlipDrawer extends StatelessWidget {
                         bottom: false,
                         child: FadeTransition(
                           opacity: animation,
-                          child: child,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 48),
+                            child: child,
+                          ),
                         ),
                       ),
                     ),

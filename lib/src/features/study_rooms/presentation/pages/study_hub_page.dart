@@ -18,9 +18,7 @@ import 'package:kortex/src/features/community/presentation/bloc/auto_community_c
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
-import 'package:kortex/src/features/community/presentation/pages/create_forum_discussion_page.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_filter_bottom_sheet.dart';
-import 'package:kortex/src/features/community/presentation/widgets/community_forum_feed_list.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_headers.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_shimmer.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -90,33 +88,8 @@ Widget _buildHeaderActionButton(
   String label;
   VoidCallback onTap;
 
-  final effectiveActionIndex = isWide ? tabIndex + 1 : tabIndex;
-
-  switch (effectiveActionIndex) {
+  switch (tabIndex) {
     case 0:
-      icon = Icons.edit_note_rounded;
-      label = 'Post Thread';
-      onTap = () async {
-        unawaited(HapticFeedback.lightImpact());
-        final hubBloc = context.read<CommunityHubBloc>();
-        final initialTrack = targetTrack ?? hubBloc.state.selectedTrack;
-        final created = await Navigator.of(context).push<bool>(
-          MaterialPageRoute(
-            builder: (_) => BlocProvider.value(
-              value: hubBloc,
-              child: CreateForumDiscussionPage(
-                initialTrack: initialTrack.isNotEmpty ? initialTrack : 'WAEC',
-              ),
-            ),
-          ),
-        );
-        if (created == true) {
-          hubBloc.add(
-            ChangeForumSortFilterEvent(hubBloc.state.selectedForumFilter),
-          );
-        }
-      };
-    case 1:
       icon = Icons.add_rounded;
       label = l10n.newRoomAction;
       onTap = () {
@@ -152,7 +125,7 @@ Widget _buildHeaderActionButton(
           ),
         );
       };
-    case 2:
+    case 1:
       icon = Icons.groups_rounded;
       label = 'Start Pod';
       onTap = () {
@@ -274,10 +247,7 @@ class _StudyHubView extends HookWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isWide = AppTabNavigation.isWideLayout(screenWidth);
 
-    final tabController = useTabController(
-      initialLength: isWide ? 3 : 4,
-      keys: [isWide],
-    );
+    final tabController = useTabController(initialLength: 3);
     useListenable(tabController);
 
     useEffect(() {
@@ -418,24 +388,6 @@ class _StudyHubView extends HookWidget {
             actions: isSearchExpanded.value
                 ? null
                 : [
-                    if (!isWide && tabController.index == 0) ...[
-                      CommunitySearchFilterCapsule(
-                        hasActiveFilters: hasActiveFilters,
-                        activeFilterCount: activeFilterCount,
-                        isDark: isDark,
-                        onOpenSearch: () {
-                          isSearchExpanded.value = true;
-                        },
-                        onOpenFilter: () {
-                          showCommunityFilterSheet(
-                            context: context,
-                            availableTracks: availableTracks,
-                            effectiveTrack: effectiveTrack,
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                    ],
                     Padding(
                       padding: const EdgeInsets.only(right: 16),
                       child: _buildHeaderActionButton(
@@ -457,18 +409,11 @@ class _StudyHubView extends HookWidget {
                     ),
                     child: AppLiquidGlassTabBar(
                       key: AppTourKeys.pomodoroCardKey,
-                      tabs: isWide
-                          ? [
-                              l10n.liveRoomsTab,
-                              'Study Pods',
-                              l10n.marketplaceTab,
-                            ]
-                          : [
-                              l10n.forumTab,
-                              l10n.liveRoomsTab,
-                              'Study Pods',
-                              l10n.marketplaceTab,
-                            ],
+                      tabs: [
+                        l10n.liveRoomsTab,
+                        'Study Pods',
+                        l10n.marketplaceTab,
+                      ],
                       selectedIndex: tabController.index,
                       onTabSelected: tabController.animateTo,
                       isCompact: true,
@@ -501,89 +446,47 @@ class _StudyHubView extends HookWidget {
                   state.sharedDecks.isEmpty &&
                   state.forumPosts.isEmpty) {
                 return CommunityHubShimmer(
-                  tabIndex: tabController.index == 1 ? 0 : 2,
+                  tabIndex: tabController.index,
                 );
               }
 
               final hubTabBarView = TabBarView(
                 controller: tabController,
-                children: isWide
-                    ? [
-                        // 0. Live Focus Rooms
-                        _LiveRoomsTab(
-                          key: AppTourKeys.liveRoomsCardKey,
-                          state: state,
-                          targetTrack: targetTrack,
-                          hasSelectedDeck: hasSelectedDeck,
-                        ),
+                children: [
+                  // 0. Live Focus Rooms
+                  _LiveRoomsTab(
+                    key: AppTourKeys.liveRoomsCardKey,
+                    state: state,
+                    targetTrack: targetTrack,
+                    hasSelectedDeck: hasSelectedDeck,
+                  ),
 
-                        // 1. Study Circles
-                        _StudyCirclesTab(
-                          state: state,
-                          targetTrack: targetTrack,
-                          hasSelectedDeck: hasSelectedDeck,
-                        ),
+                  // 1. Study Circles
+                  _StudyCirclesTab(
+                    state: state,
+                    targetTrack: targetTrack,
+                    hasSelectedDeck: hasSelectedDeck,
+                  ),
 
-                        // 2. Deck Marketplace
-                        _DeckMarketplaceTab(
-                          key: AppTourKeys.marketplaceCardKey,
-                          state: state,
-                          selectedDeckId: selectedDesktopDeck.value?.id,
-                          hasSelectedDeck: hasSelectedDeck,
-                          onDeckSelected: (deck) {
-                            if (isWide) {
-                              selectedDesktopDeck.value = deck;
-                            } else {
-                              unawaited(
-                                context.router.push(
-                                  DeckMarketplaceDetailRoute(deck: deck),
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ]
-                    : [
-                        // 0. Academic Forum Feed
-                        _ForumTab(
-                          state: state,
-                          targetTrack: targetTrack,
-                        ),
-
-                        // 1. Live Focus Rooms
-                        _LiveRoomsTab(
-                          key: AppTourKeys.liveRoomsCardKey,
-                          state: state,
-                          targetTrack: targetTrack,
-                          hasSelectedDeck: hasSelectedDeck,
-                        ),
-
-                        // 2. Study Circles
-                        _StudyCirclesTab(
-                          state: state,
-                          targetTrack: targetTrack,
-                          hasSelectedDeck: hasSelectedDeck,
-                        ),
-
-                        // 3. Deck Marketplace
-                        _DeckMarketplaceTab(
-                          key: AppTourKeys.marketplaceCardKey,
-                          state: state,
-                          selectedDeckId: selectedDesktopDeck.value?.id,
-                          hasSelectedDeck: hasSelectedDeck,
-                          onDeckSelected: (deck) {
-                            if (isWide) {
-                              selectedDesktopDeck.value = deck;
-                            } else {
-                              unawaited(
-                                context.router.push(
-                                  DeckMarketplaceDetailRoute(deck: deck),
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ],
+                  // 2. Deck Marketplace
+                  _DeckMarketplaceTab(
+                    key: AppTourKeys.marketplaceCardKey,
+                    state: state,
+                    selectedDeckId: selectedDesktopDeck.value?.id,
+                    hasSelectedDeck: hasSelectedDeck,
+                    onDeckSelected: (deck) {
+                      if (isWide) {
+                        selectedDesktopDeck.value = deck;
+                      } else {
+                        unawaited(
+                          context.router.push(
+                            DeckMarketplaceDetailRoute(deck: deck),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
               );
 
               if (!hasSelectedDeck) {
@@ -1669,34 +1572,6 @@ class _DeckMarketplaceTab extends HookWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ForumTab extends StatelessWidget {
-  const _ForumTab({
-    required this.state,
-    required this.targetTrack,
-  });
-
-  final CommunityState state;
-  final String? targetTrack;
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveTrack = (targetTrack != null &&
-            targetTrack!.trim().isNotEmpty &&
-            targetTrack != 'General')
-        ? targetTrack!.trim()
-        : 'WAEC';
-
-    final availableTracks = getAvailableTracks(targetTrack);
-
-    return CommunityForumFeedList(
-      state: state,
-      searchQuery: state.forumSearchQuery,
-      availableTracks: availableTracks,
-      effectiveTrack: effectiveTrack,
     );
   }
 }
