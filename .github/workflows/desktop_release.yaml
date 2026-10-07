@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-publish:
-    name: Build Native ${{ matrix.os-name }} Desktop Release
+    name: Build ${{ matrix.os-name }} Release
     runs-on: ${{ matrix.runner-os }}
     strategy:
       fail-fast: false
@@ -18,8 +18,10 @@ jobs:
             os-name: Windows
           - runner-os: ubuntu-latest
             os-name: Linux
-          - runner-os: macos-latest
-            os-name: macOS
+          # - runner-os: macos-latest
+          #   os-name: macOS
+          - runner-os: ubuntu-latest
+            os-name: Web
 
     steps:
       - name: Checkout Codebase
@@ -43,7 +45,7 @@ jobs:
           cache: true
 
       - name: Install Linux Build Dependencies
-        if: matrix.runner-os == 'ubuntu-latest'
+        if: matrix.runner-os == 'ubuntu-latest' && matrix.os-name == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libsecret-1-dev libjson-glib-dev libpulse-dev
@@ -81,16 +83,31 @@ jobs:
           echo "C:\Program Files (x86)\Inno Setup 6" >> $GITHUB_PATH
 
       - name: Build Native Linux Desktop Bundle
-        if: matrix.runner-os == 'ubuntu-latest'
+        if: matrix.os-name == 'Linux'
         run: |
           flutter build linux --release --flavor production -t lib/main_production.dart
 
-      - name: Build Native macOS Bundle
-        if: matrix.runner-os == 'macos-latest'
+      # - name: Build Native macOS Bundle
+      #   if: matrix.runner-os == 'macos-latest'
+      #   run: |
+      #     flutter build macos --release --flavor production -t lib/main_production.dart
+
+      - name: Build Flutter Web Bundle
+        if: matrix.os-name == 'Web'
         run: |
-          flutter build macos --release --flavor production -t lib/main_production.dart
+          flutter build web --release --flavor production -t lib/main_production.dart
+          mkdir -p web_landing/app
+          cp -r build/web/* web_landing/app/
+
+      - name: Upload Web Build Artifact
+        if: matrix.os-name == 'Web'
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: web_landing/app/
 
       - name: Package & Upload Native Release Artifacts to Cloudflare R2
+        if: matrix.os-name != 'Web'
         env:
           PYTHONIOENCODING: "utf-8"
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
@@ -101,12 +118,18 @@ jobs:
         run: python scripts/publish_release_packages.py
 
   deploy-web-landing:
-    name: Deploy Updated Web Landing to Firebase Hosting
+    name: Deploy Updated Web Landing & Web App to Firebase Hosting
     needs: build-and-publish
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
+
+      - name: Download Web Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: web_landing/app/
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
