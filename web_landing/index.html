@@ -3,107 +3,216 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Study smarter with Kortexify. Drop in your PDFs, slides, or photos of your notes and get clean flashcards and practice tests, shown to you right before you forget. Works offline, no internet needed.">
-  <meta name="keywords" content="spaced repetition study app, offline study app, math from photos, JAMB CBT, WAEC past questions, active recall flashcards, focus study tool, Kortexify">
+  <meta name="description" content="Kortexify | The ultimate study tool for students. Turn notes into flashcards, practice with past exam questions, ask your AI tutor, and study live with friends.">
+  <meta name="keywords" content="study app, flashcards, past questions, jamb, waec, sat, ai tutor, study rooms">
   <meta name="author" content="Kortexify Technologies">
 
   <!-- Open Graph / Social Sharing -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://kortex-study-app-2026.web.app/">
-  <meta property="og:title" content="Kortexify | Pass Your Hardest Exams in Half the Time">
-  <meta property="og:description" content="Turn messy notes into flashcards and practice tests that show up right before you forget. Works fully offline, no account to try the demo.">
+  <meta property="og:title" content="Kortexify | The best study tool to ace your exams">
+  <meta property="og:description" content="Turn your notes into flashcards, practice exams, and interactive study sessions with AI. Try free.">
   <meta property="og:image" content="assets/images/social_og.jpg">
 
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Kortexify | Pass Your Hardest Exams in Half the Time">
-  <meta name="twitter:description" content="Turn messy notes into flashcards and practice tests that show up right before you forget. Works fully offline.">
-  <meta name="twitter:image" content="assets/images/social_og.jpg">
-
-  <title>Kortexify | Pass Your Hardest Exams in Half the Time</title>
+  <title>Kortexify | The best study tool to ace your exams</title>
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="assets/kortexify_logo.svg?v=2">
   <link rel="alternate icon" href="assets/favicon.ico?v=2">
 
-  <!-- Google Fonts: Plus Jakarta Sans, Inter, JetBrains Mono -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
-  <!-- KaTeX CSS for Math Formula Rendering -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
-
-  <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=6.15">
-  <link rel="stylesheet" href="css/animations.css?v=6.15">
-  <link rel="stylesheet" href="css/styles.css?v=6.15">
-
-  <!-- Structured Data JSON-LD -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Kortexify",
-    "applicationCategory": "EducationalApplication",
-    "operatingSystem": "iOS, Android, Web, macOS, Windows",
-    "offers": {
-      "@type": "Offer",
-      "price": "0.00",
-      "priceCurrency": "USD"
-    },
-    "image": "assets/images/social_og.jpg",
-    "description": "A calm, low fatigue study app that turns your notes into flashcards and practice tests, schedules reviews with spaced repetition, and helps you prepare for JAMB, WAEC, NECO, SAT, and university exams. Works offline."
-  }
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: ['class', '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              sage: '#788C7E',
+              ochre: '#D4A373',
+              moss: '#4A6B5D',
+              terracotta: '#D97757',
+              dark: '#0D0D0F',
+              card: '#141417',
+            }
+          }
+        }
+      }
+    }
   </script>
+
+  <!-- Local Kortex Stylesheets -->
+  <link rel="stylesheet" href="css/variables.css?v=8.0">
+  <link rel="stylesheet" href="css/animations.css?v=8.0">
+  <link rel="stylesheet" href="css/styles.css?v=8.0">
+
+  <style>
+    .dropzone-box {
+      border: 2px dashed var(--border-primary);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      background: var(--bg-card-glass);
+    }
+    .dropzone-box:hover {
+      border-color: var(--color-primary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .hover-pill-btn {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .hover-pill-btn .default-text {
+      display: block;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .hover-pill-btn .hover-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: translateY(100%);
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .hover-pill-btn:hover .default-text {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    .hover-pill-btn:hover .hover-text {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .feature-card-hover {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .feature-card-hover:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-highlight);
+    }
+  </style>
 </head>
-<body>
+<body class="bg-[var(--bg-canvas)] text-[var(--text-primary)] antialiased font-['Inter']">
 
   <!-- Scroll Progress -->
   <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
-  <!-- Site Header -->
-  <header class="site-header">
-    <div class="container nav-content">
-      <a href="/" class="brand-logo" aria-label="Kortexify Home">
-        <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" width="32" height="32">
-        <span class="brand-name">KORTEXIFY</span>
-      </a>
+  <!-- Header Navigation -->
+  <header class="site-header sticky top-0 z-50 w-full backdrop-blur-md bg-[var(--nav-bg)] border-b border-[var(--nav-border)]">
+    <div class="max-w-[1340px] mx-auto px-5 h-[66px] flex items-center justify-between">
+      
+      <!-- Left: Logo & Navigation Links -->
+      <div class="flex items-center gap-10">
+        <a href="index.html" class="flex items-center gap-2.5 font-['Plus_Jakarta_Sans'] font-extrabold text-lg text-[var(--text-primary)]">
+          <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-8 h-8 rounded-lg">
+          <span class="tracking-wide">KORTEXIFY</span>
+        </a>
 
-      <nav aria-label="Primary Navigation">
-        <ul class="nav-links">
-          <li><a href="#pillars" class="nav-link" data-navspy="pillars">How It Works</a></li>
-          <li><a href="#features" class="nav-link" data-navspy="features">What You Get</a></li>
-          <li><a href="#download" class="nav-link" data-navspy="download">Download App</a></li>
-          <li><a href="#differentiators" class="nav-link" data-navspy="differentiators">Privacy</a></li>
-          <li><a href="#faq" class="nav-link" data-navspy="faq">FAQ</a></li>
-          <li><a href="contact.html" class="nav-link">Contact</a></li>
-        </ul>
-      </nav>
+        <!-- Desktop Navigation -->
+        <nav class="hidden lg:flex items-center gap-7">
+          <!-- Features Dropdown -->
+          <div class="relative group py-4">
+            <button class="flex items-center gap-1.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+              <span>Features</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:rotate-180 transition-transform"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="absolute top-full left-0 hidden group-hover:block w-60 p-2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-2xl z-50">
+              <a href="features/flashcards.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
+                <span class="w-7 h-7 rounded-lg bg-[var(--color-primary-subtle)] flex items-center justify-center text-xs">🎴</span>
+                <div>
+                  <p class="text-xs font-semibold text-[var(--text-primary)]">Smart Flashcards</p>
+                  <p class="text-[11px] text-[var(--text-muted)]">Remember more in less time</p>
+                </div>
+              </a>
+              <a href="features/solver.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
+                <span class="w-7 h-7 rounded-lg bg-[var(--color-secondary-subtle)] flex items-center justify-center text-xs">🤖</span>
+                <div>
+                  <p class="text-xs font-semibold text-[var(--text-primary)]">Syllabot AI Tutor</p>
+                  <p class="text-[11px] text-[var(--text-muted)]">Ask questions from your course</p>
+                </div>
+              </a>
+              <a href="features/questions.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
+                <span class="w-7 h-7 rounded-lg bg-[var(--color-latex-subtle)] flex items-center justify-center text-xs">⏱️</span>
+                <div>
+                  <p class="text-xs font-semibold text-[var(--text-primary)]">Practice Exams & Duels</p>
+                  <p class="text-[11px] text-[var(--text-muted)]">JAMB, WAEC, SAT & 1v1 duels</p>
+                </div>
+              </a>
+              <a href="features/study_rooms.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
+                <span class="w-7 h-7 rounded-lg bg-[var(--color-primary-subtle)] flex items-center justify-center text-xs">🎙️</span>
+                <div>
+                  <p class="text-xs font-semibold text-[var(--text-primary)]">Live Study Rooms</p>
+                  <p class="text-[11px] text-[var(--text-muted)]">Voice chat & shared whiteboard</p>
+                </div>
+              </a>
+            </div>
+          </div>
 
-      <div class="nav-actions">
-        <!-- Boutique Accent Switcher -->
-        <div class="accent-picker" title="Switch Color Accent" role="group" aria-label="Color Accents">
+          <a href="about.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">About Us</a>
+          <a href="pricing.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Pricing</a>
+          <a href="downloads.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Downloads</a>
+          <a href="contact.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Contact</a>
+        </nav>
+      </div>
+
+      <!-- Right: Theme Controls + Auth Actions -->
+      <div class="hidden lg:flex items-center gap-4">
+        <!-- Palette Accent Switcher -->
+        <div class="accent-picker" title="Switch Accent Color" role="group" aria-label="Color Accents">
           <button class="accent-dot active" data-set-accent="sage" type="button" aria-label="Muted Sage"></button>
           <button class="accent-dot" data-set-accent="ochre" type="button" aria-label="Warm Ochre"></button>
           <button class="accent-dot" data-set-accent="moss" type="button" aria-label="Alpine Moss"></button>
           <button class="accent-dot" data-set-accent="bronze" type="button" aria-label="Deep Bronze"></button>
-          <button class="accent-dot" data-set-accent="terracotta" type="button" aria-label="Slate Terracotta"></button>
+          <button class="accent-dot" data-set-accent="terracotta" type="button" aria-label="Terracotta"></button>
           <button class="accent-dot" data-set-accent="quartz" type="button" aria-label="Quartz Cyan"></button>
         </div>
 
-        <!-- Light / Dark Mode Toggle -->
-        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle dark or light theme">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="5"></circle>
-            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
-          </svg>
+        <!-- Light / Dark Mode Button -->
+        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
         </button>
 
-        <!-- Header Download CTA Button -->
-        <a href="#download" class="nav-cta" id="headerDownloadBtn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right: 6px; flex-shrink: 0;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          <span id="headerDownloadText">Download App</span>
+        <!-- Log In (Ghost Button) -->
+        <a href="app/#/login" class="px-4 py-2 rounded-full border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated1)] transition-colors">
+          Log In
+        </a>
+
+        <!-- Sign Up / Start Free (Primary Button) -->
+        <a href="app/#/signup" class="hover-pill-btn px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-xs font-bold text-[var(--text-inverse)] shadow-md hover:brightness-110 transition-all">
+          <span class="default-text">Start for free</span>
+          <span class="hover-text">No credit card required</span>
+        </a>
+      </div>
+
+      <!-- Mobile Hamburger Button -->
+      <button id="mobileMenuBtn" class="lg:hidden p-2 text-[var(--text-primary)]" aria-label="Open navigation menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+
+    </div>
+
+    <!-- Mobile Navigation Overlay Drawer -->
+    <div id="mobileMenuDrawer" class="hidden lg:hidden bg-[var(--bg-card)] border-b border-[var(--border-subtle)] px-6 py-6 space-y-4">
+      <a href="features/flashcards.html" class="block text-base font-medium text-[var(--text-primary)]">Smart Flashcards</a>
+      <a href="features/solver.html" class="block text-base font-medium text-[var(--text-primary)]">Syllabot AI Tutor</a>
+      <a href="features/questions.html" class="block text-base font-medium text-[var(--text-primary)]">Practice Exams & Duels</a>
+      <a href="features/study_rooms.html" class="block text-base font-medium text-[var(--text-primary)]">Live Study Rooms</a>
+      <a href="pricing.html" class="block text-base font-medium text-[var(--text-primary)]">Pricing</a>
+      <a href="downloads.html" class="block text-base font-medium text-[var(--text-primary)]">Downloads</a>
+      
+      <div class="pt-4 border-t border-[var(--border-subtle)] flex flex-col gap-3">
+        <a href="app/#/login" class="w-full text-center py-2.5 rounded-full border border-[var(--border-subtle)] text-sm font-semibold text-[var(--text-primary)]">
+          Log In
+        </a>
+        <a href="app/#/signup" class="w-full text-center py-2.5 rounded-full bg-[var(--color-primary)] text-sm font-bold text-[var(--text-inverse)]">
+          Sign Up Free
         </a>
       </div>
     </div>
@@ -112,1047 +221,367 @@
   <!-- Main Content -->
   <main id="main-content">
 
-    <!-- Hero Section -->
-    <section class="hero-section" id="try-free">
-      <div class="container">
-
-        <div class="hero-badge reveal-on-scroll">
-          <span class="pulse-dot"></span>
-          <span>A calmer way to study for the exams that matter</span>
-        </div>
-
-        <h1 class="hero-title reveal-on-scroll delay-1">
-          Pass your hardest exams in half the time, without losing sleep.
-        </h1>
-
-        <p class="hero-subtitle reveal-on-scroll delay-2">
-          Drop in your messy PDFs, lecture slides, or photos of your notes. Kortexify turns them into flashcards and practice tests, then shows them to you right before you forget them.
-        </p>
-
-        <!-- Smart Auto-Detect OS Download Block -->
-        <div class="hero-download-wrapper reveal-on-scroll delay-3">
-          <div class="hero-download-capsule">
-            <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-macOS-latest.dmg" class="hero-download-main-btn" id="heroMainDownloadBtn" data-auto-download="hero" download>
-              <span class="hero-download-icon" id="heroDownloadIcon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.32c.67-.82 1.13-1.97.99-3.12-.98.04-2.19.66-2.88 1.47-.62.73-1.17 1.9-.1 3.02 1.1.09 2.32-.55 2.99-1.37z"/>
-                </svg>
-              </span>
-              <div class="hero-download-text-group">
-                <span class="hero-download-title" id="heroDownloadTitle">Download for Mac</span>
-                <span class="hero-download-sub" id="heroDownloadSub">v1.0.5 • Universal .DMG</span>
-              </div>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="dl-arrow"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            </a>
-
-            <!-- Platform Options Dropdown Menu Trigger -->
-            <div class="hero-download-dropdown-wrapper">
-              <button type="button" class="hero-download-dropdown-btn" id="heroDropdownToggleBtn" aria-label="Select OS Download Options" aria-expanded="false">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              
-              <div class="hero-download-menu" id="heroDownloadMenu" role="menu">
-                <div class="menu-header">Available Operating Systems</div>
-                <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-macOS-latest.dmg" class="menu-item" role="menuitem" download>
-                  <span class="menu-icon"></span>
-                  <div class="menu-item-text">
-                    <span class="menu-label">macOS (.DMG Installer)</span>
-                    <span class="menu-sub">Apple Silicon & Intel • Universal</span>
-                  </div>
-                </a>
-                <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-macOS-latest.zip" class="menu-item" role="menuitem" download>
-                  <span class="menu-icon"></span>
-                  <div class="menu-item-text">
-                    <span class="menu-label">macOS (.ZIP Archive)</span>
-                    <span class="menu-sub">Portable App Bundle</span>
-                  </div>
-                </a>
-                <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-Windows-latest.zip" class="menu-item" role="menuitem" download>
-                  <span class="menu-icon">🪟</span>
-                  <div class="menu-item-text">
-                    <span class="menu-label">Windows (.ZIP Package)</span>
-                    <span class="menu-sub">Windows 10/11 • 64-bit</span>
-                  </div>
-                </a>
-                <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-Linux-latest.tar.gz" class="menu-item" role="menuitem" download>
-                  <span class="menu-icon">🐧</span>
-                  <div class="menu-item-text">
-                    <span class="menu-label">Linux (.TAR.GZ Bundle)</span>
-                    <span class="menu-sub">Ubuntu, Fedora, Debian & Arch</span>
-                  </div>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <!-- Other OS Quick Selector Links -->
-          <div class="hero-os-selector-bar">
-            <span class="selector-label">Other Platforms:</span>
-            <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-macOS-latest.dmg" class="os-link" download>macOS</a>
-            <span class="os-sep">•</span>
-            <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-Windows-latest.zip" class="os-link" download>Windows</a>
-            <span class="os-sep">•</span>
-            <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-Linux-latest.tar.gz" class="os-link" download>Linux</a>
-          </div>
-        </div>
-
-        <form class="hero-signup reveal-on-scroll delay-3" data-newsletter-form="hero_waitlist">
-          <div class="hero-signup-capsule">
-            <span class="hero-signup-icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M22 6l-10 7L2 6"></path></svg>
-            </span>
-            <label class="hero-signup-label" for="heroNewsletterEmail">Email address</label>
-            <input type="email" id="heroNewsletterEmail" class="hero-signup-input" data-nl-email placeholder="Enter your email for early access" autocomplete="email" required>
-            <input type="text" name="hp" class="hero-signup-hp" data-nl-hp tabindex="-1" autocomplete="off" aria-hidden="true">
-            <button type="submit" class="hero-signup-btn" data-nl-btn>
-              <span data-nl-btn-text>Notify Me</span>
-            </button>
-          </div>
-          <div class="hero-signup-status" data-nl-status></div>
-          <p class="hero-signup-note">Free to join. We'll email you the moment early access opens.</p>
-        </form>
-
-        <div class="hero-secondary reveal-on-scroll delay-3">
-          <a href="#workstation" class="hero-text-link">
-            <span>Try the live demo</span>
-            <svg class="hero-link-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
-          </a>
-          <span class="hero-secondary-sep" aria-hidden="true"></span>
-          <a href="#pillars" class="hero-text-link">
-            <span>See how it works</span>
-            <svg class="hero-link-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"></path></svg>
-          </a>
-        </div>
-
-        <div class="trust-badges-bar reveal-on-scroll delay-3">
-          <div class="trust-badge-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
-            <span>Works 100% offline</span>
-          </div>
-          <div class="trust-badge-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
-            <span>Made for tired, easily distracted brains</span>
-          </div>
-          <div class="trust-badge-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
-            <span>No credit card to start</span>
-          </div>
-        </div>
-
+    <!-- HERO SECTION -->
+    <section class="pt-16 pb-20 px-5 max-w-[1240px] mx-auto text-center">
+      
+      <!-- Top Announcement Pill -->
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--color-primary-subtle)] border border-[var(--border-primary)] text-xs font-semibold text-[var(--color-primary)] mb-6">
+        <span class="w-2 h-2 rounded-full bg-[var(--color-primary)] animate-pulse"></span>
+        <span>Kortexify Web is now live. Continue in your browser</span>
       </div>
-    </section>
 
-    <!-- Live Interactive Demo -->
-    <section class="section demo-section" id="workstation">
-      <div class="container">
-        <div class="section-header reveal-on-scroll">
-          <span class="section-badge">Try it right here</span>
-          <h2 class="section-title">Feel the study loop in ten seconds.</h2>
-          <p class="section-subtitle">Flip the card, rate how well you remembered it, and watch your next review reschedule itself. No signup, no download.</p>
-        </div>
+      <!-- Main Title -->
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-[1.15] font-['Plus_Jakarta_Sans'] mb-6">
+        Pass your hardest exams in half the time.
+      </h1>
 
-        <div class="workstation-wrapper reveal-on-scroll delay-1" data-tilt>
+      <p class="text-lg sm:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 leading-relaxed">
+        Turn your notes into smart flashcards, practice with real past questions, chat with your AI tutor, and study live with friends.
+      </p>
 
-          <div class="workstation-tabs-bar">
-            <div class="window-dots">
-              <span class="dot-red"></span>
-              <span class="dot-yellow"></span>
-              <span class="dot-green"></span>
-            </div>
-
-            <div class="workstation-tabs" role="tablist" aria-label="Interactive Preview Modes">
-              <button class="tab-btn active" data-tab="retain" role="tab" aria-selected="true">
-                <span>📇 Flashcard Demo</span>
-              </button>
-            </div>
+      <!-- Instant Upload / Dropzone CTA -->
+      <div class="max-w-2xl mx-auto mb-10">
+        <div class="dropzone-box rounded-3xl p-8 text-center cursor-pointer relative overflow-hidden" onclick="window.location.href='app/#/signup'">
+          <div class="w-16 h-16 rounded-2xl bg-[var(--color-primary-tint)] border border-[var(--border-primary)] flex items-center justify-center mx-auto mb-4 text-2xl">
+            📂
           </div>
-
-          <div class="workstation-body">
-
-            <!-- Retain Panel (3D Flashcard) -->
-            <div class="tab-panel active" id="panel-retain">
-              <div class="card-scene">
-                <div class="flashcard-3d" id="interactiveFlashcard" tabindex="0" role="button" aria-label="Interactive flashcard. Click or press space to flip.">
-
-                  <div class="card-face card-face-front">
-                    <div class="card-meta-bar">
-                      <span class="card-badge-topic" id="cardTopicBadge">Quick Question</span>
-                      <span class="flip-hint-pill">Click card or press space ↺</span>
-                    </div>
-
-                    <div class="card-content-area">
-                      <p class="card-question-title" id="cardQuestionText">
-                        Why do you forget things after reading them?
-                      </p>
-                      <div id="katexFrontFormula" style="display: none; justify-content: center; margin-top: 12px; font-size: 1.1rem; color: var(--text-primary);"></div>
-                    </div>
-
-                    <div class="card-meta-bar" style="margin-bottom: 0;">
-                      <span style="font-size: 0.78rem; color: var(--text-muted);">Active recall</span>
-                      <button id="flipCardTrigger" type="button" class="tab-btn" style="padding: 4px 10px; font-size: 0.78rem; background: var(--color-primary-subtle); color: var(--color-primary);">
-                        Reveal answer →
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="card-face card-face-back">
-                    <div class="card-meta-bar">
-                      <span class="card-badge-topic" style="background: rgba(82, 121, 111, 0.15); color: var(--color-recall-easy);">Answer</span>
-                      <span class="flip-hint-pill">Click to flip back ↺</span>
-                    </div>
-
-                    <div class="card-content-area">
-                      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;" id="cardAnswerText">
-                        Because reading isn't testing. Your brain only keeps information when you practice bringing it back out. Kortexify builds that practice for you.
-                      </p>
-                      <div id="katexBackFormula" style="display: none; justify-content: center; margin-top: 12px; font-size: 1.1rem; color: var(--text-primary);"></div>
-                    </div>
-
-                    <div style="font-size: 0.78rem; color: var(--color-recall-easy); font-weight: 600;">
-                      ✓ Verified
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              <div class="fsrs-rating-container">
-                <div>
-                  <div class="fsrs-rating-label">How well did you remember this?</div>
-                  <div style="font-size: 0.78rem; color: var(--text-muted);">We use this to plan your next review for you.</div>
-                </div>
-
-                <div class="fsrs-button-group">
-                  <button class="rating-pill-btn again" data-rating="again" type="button">Again</button>
-                  <button class="rating-pill-btn hard" data-rating="hard" type="button">Hard</button>
-                  <button class="rating-pill-btn good" data-rating="good" type="button">Good</button>
-                  <button class="rating-pill-btn easy" data-rating="easy" type="button">Easy</button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- Honest Social Proof Strip -->
-    <section class="proof-strip" aria-label="What makes Kortexify different">
-      <div class="container">
-        <div class="proof-grid" data-reveal-group>
-          <div class="proof-item">
-            <div class="proof-num"><span data-countup="2000">0</span>+</div>
-            <div class="proof-label">Past exam questions ready to practice, and more added often.</div>
-          </div>
-          <div class="proof-item">
-            <div class="proof-num"><span data-countup="100">0</span>%</div>
-            <div class="proof-label">Offline capable. Use it with no data or Wi-Fi.</div>
-          </div>
-          <div class="proof-item">
-            <div class="proof-num"><span data-countup="3">0</span> steps</div>
-            <div class="proof-label">From messy notes to a timed practice test.</div>
-          </div>
-          <div class="proof-item">
-            <div class="proof-num"><span data-countup="0">0</span></div>
-            <div class="proof-label">Ads. Your study data is never sold to advertisers.</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Exam Coverage Band -->
-    <section class="exam-coverage" id="exams" aria-label="Exams you can prepare for">
-      <div class="container">
-        <div class="exam-coverage-head reveal-on-scroll">
-          <span class="section-badge">Exam ready</span>
-          <h2 class="section-title">Practice on the exams that count.</h2>
-          <p class="exam-coverage-sub">Here are a few of the boards you can drill with timed past questions. If your exam has past questions, you can practice it here, and we keep adding more.</p>
-        </div>
-
-        <div class="exam-logo-row" data-reveal-group>
-          <figure class="exam-logo-chip">
-            <div class="exam-logo-tile">
-              <img class="exam-logo-img" src="https://en.wikipedia.org/wiki/Special:FilePath/Official%20JAMB%20logo.png?width=200" alt="JAMB logo" width="200" height="188" loading="lazy" decoding="async">
-            </div>
-            <figcaption class="exam-logo-cap">JAMB</figcaption>
-          </figure>
-
-          <figure class="exam-logo-chip">
-            <div class="exam-logo-tile">
-              <img class="exam-logo-img" src="https://commons.wikimedia.org/wiki/Special:FilePath/Waec%20logo.png?width=170" alt="WAEC logo" width="170" height="185" loading="lazy" decoding="async">
-            </div>
-            <figcaption class="exam-logo-cap">WAEC</figcaption>
-          </figure>
-
-          <figure class="exam-logo-chip">
-            <div class="exam-logo-tile">
-              <img class="exam-logo-img" src="https://neco.gov.ng/assets/neco-logo.df6f9256.png" alt="NECO logo" width="1180" height="964" loading="lazy" decoding="async">
-            </div>
-            <figcaption class="exam-logo-cap">NECO</figcaption>
-          </figure>
-
-          <figure class="exam-logo-chip">
-            <div class="exam-logo-tile">
-              <img class="exam-logo-img" src="https://commons.wikimedia.org/wiki/Special:FilePath/SAT%20logo%20(2017).svg?width=220" alt="SAT logo" width="220" height="139" loading="lazy" decoding="async">
-            </div>
-            <figcaption class="exam-logo-cap">SAT</figcaption>
-          </figure>
-
-          <figure class="exam-logo-chip">
-            <div class="exam-logo-tile exam-logo-tile-more">
-              <svg class="exam-more-glyph" viewBox="0 0 64 64" fill="none" role="img" aria-label="Many more exams">
-                <rect class="em-layer em-l3" x="20" y="12" width="32" height="24" rx="5"/>
-                <rect class="em-layer em-l2" x="16" y="18" width="32" height="24" rx="5"/>
-                <rect class="em-layer em-l1" x="12" y="24" width="32" height="24" rx="5"/>
-                <circle class="em-pulse" cx="46" cy="46" r="10"/>
-                <circle class="em-badge" cx="46" cy="46" r="10"/>
-                <path class="em-plus" d="M46 41v10M41 46h10"/>
-              </svg>
-            </div>
-            <figcaption class="exam-logo-cap">and more</figcaption>
-          </figure>
-        </div>
-      </div>
-    </section>
-
-    <!-- Core Value Pillars: Ingest, Retain, Test -->
-    <section class="section" id="pillars">
-      <div class="container">
-
-        <div class="section-header reveal-on-scroll">
-          <span class="section-badge">The 3 Steps</span>
-          <h2 class="section-title">A simple system that does the hard part for you.</h2>
-        </div>
-
-        <div class="pillars-container">
-
-          <!-- Pillar 1: Ingest -->
-          <div class="pillar-row reveal-on-scroll delay-1">
-            <div class="pillar-info">
-              <div class="pillar-number">Step 1</div>
-              <h3 class="pillar-title">Turn messy notes into quick flashcards</h3>
-              <p class="pillar-desc">
-                Stop spending hours retyping your textbooks. Drop in your PDFs, lecture slides, or photos of hand-written formulas. We pull out the key points and turn them into clean cards and clear study guides, with no typing from you.
-              </p>
-            </div>
-            <div class="pillar-visual">
-              <div class="interactive-pillar-card" id="pillarIngestCard">
-                <div class="interactive-card-header">
-                  <div class="interactive-tag">
-                    <span class="pulse-dot"></span> LIVE PREVIEW
-                  </div>
-                  <div class="interactive-tabs" role="tablist">
-                    <button class="int-tab active" data-tab="pdf" type="button">📄 PDF</button>
-                    <button class="int-tab" data-tab="ocr" type="button">📸 Photo</button>
-                    <button class="int-tab" data-tab="slides" type="button">🗂️ Slides</button>
-                  </div>
-                </div>
-
-                <div class="pillar-media">
-                  <svg viewBox="0 0 400 180" class="anim-svg anim-ingest" role="img" aria-label="A document being scanned and turned into flashcards">
-                    <g class="ing-doc">
-                      <rect x="40" y="34" width="120" height="112" rx="10"/>
-                      <line x1="58" y1="62" x2="142" y2="62"/>
-                      <line x1="58" y1="82" x2="142" y2="82"/>
-                      <line x1="58" y1="102" x2="120" y2="102"/>
-                      <line x1="58" y1="122" x2="132" y2="122"/>
-                    </g>
-                    <rect class="ing-scan" x="40" y="34" width="120" height="5" rx="2.5"/>
-                    <path class="ing-arrow" d="M176 90 H210"/>
-                    <path class="ing-arrow" d="M204 84 l8 6 l-8 6"/>
-                    <g class="ing-cards">
-                      <rect class="ing-card c1" x="232" y="36" width="128" height="40" rx="9"/>
-                      <rect class="ing-card c2" x="232" y="84" width="128" height="40" rx="9"/>
-                      <rect class="ing-card c3" x="232" y="132" width="128" height="40" rx="9"/>
-                    </g>
-                  </svg>
-                </div>
-
-                <div class="interactive-demo-body">
-                  <div class="doc-preview-container">
-                    <div class="doc-scan-line"></div>
-                    <div class="doc-content-mock">
-                      <div class="doc-header-row">
-                        <span class="doc-badge">Calculus_III_Notes.pdf</span>
-                        <span class="doc-pages">Page 4 of 28</span>
-                      </div>
-                      <div class="doc-formula-preview">
-                        <span class="formula-label">Detected equation:</span>
-                        <code class="formula-code">∫ x · e<sup>x</sup> dx = (x − 1)e<sup>x</sup> + C</code>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="mini-flashcard-interactive" id="miniFlashcard" title="Click to flip card!">
-                    <div class="mini-card-inner">
-                      <div class="mini-card-front">
-                        <span class="mini-card-badge">AUTO-GENERATED CARD • CLICK TO FLIP 🔄</span>
-                        <p class="mini-card-text" id="miniCardFrontText">What is the integration by parts formula for ∫ u dv?</p>
-                      </div>
-                      <div class="mini-card-back">
-                        <span class="mini-card-badge back-badge">ANSWER ✓</span>
-                        <p class="mini-card-text" id="miniCardBackText">∫ u dv = uv − ∫ v du</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="pillar-chips-row">
-                  <span class="diff-chip">📑 PDFs & Slides</span>
-                  <span class="diff-chip">📸 Photo notes</span>
-                  <span class="diff-chip">🔬 Math from images</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Pillar 2: Retain -->
-          <div class="pillar-row reverse reveal-on-scroll delay-2">
-            <div class="pillar-info">
-              <div class="pillar-number">Step 2</div>
-              <h3 class="pillar-title">Study only what you are about to forget</h3>
-              <p class="pillar-desc">
-                Your brain naturally loses information over time. Our reminder system tracks your memory and tests you right before a topic slips away. You study less and remember far longer.
-              </p>
-            </div>
-            <div class="pillar-visual">
-              <div class="interactive-pillar-card" id="pillarRetainCard">
-                <div class="interactive-card-header">
-                  <div class="interactive-tag">
-                    <span class="pulse-dot recall-dot"></span> SMART SCHEDULER
-                  </div>
-                  <div class="retention-score-badge">
-                    Recall: <strong id="retentionVal">94%</strong>
-                  </div>
-                </div>
-
-                <div class="pillar-media">
-                  <svg viewBox="0 0 400 180" class="anim-svg anim-retain" role="img" aria-label="The forgetting curve changing based on how well you remembered">
-                    <path class="rt-axis" d="M44 24 V150 H360"/>
-                    <path id="rtCurve" class="rt-curve" pathLength="1" d="M44 44 C 120 66, 150 150, 356 150"/>
-                    <g id="rtNodes" class="rt-nodes"></g>
-                  </svg>
-                </div>
-
-                <div class="fsrs-controls-block">
-                  <div class="fsrs-prompt-text">Tap a button to see how the plan changes:</div>
-                  <div class="fsrs-btn-group">
-                    <button class="fsrs-rate-btn again" data-rating="again" type="button">Again</button>
-                    <button class="fsrs-rate-btn hard" data-rating="hard" type="button">Hard</button>
-                    <button class="fsrs-rate-btn good active" data-rating="good" type="button">Good</button>
-                    <button class="fsrs-rate-btn easy" data-rating="easy" type="button">Easy</button>
-                  </div>
-                  <div class="fsrs-status-msg" id="fsrsStatusMsg">
-                    ✓ You remembered well. Your next review is set for <strong>Thursday (3 days)</strong>.
-                  </div>
-                </div>
-
-                <div class="pillar-chips-row">
-                  <span class="diff-chip">🧠 Spaced repetition</span>
-                  <span class="diff-chip">⚡ No wasted reviews</span>
-                  <span class="diff-chip">📈 Built for long memory</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Pillar 3: Test -->
-          <div class="pillar-row reveal-on-scroll delay-3">
-            <div class="pillar-info">
-              <div class="pillar-number">Step 3</div>
-              <h3 class="pillar-title">Practice under real exam conditions</h3>
-              <p class="pillar-desc">
-                Reading your notes makes you feel ready, but the real exam feels different. Practice with timed questions for JAMB, WAEC, NECO, SAT, and university finals. Miss a question and it turns into a review card so you do not miss it twice.
-              </p>
-            </div>
-            <div class="pillar-visual">
-              <div class="interactive-pillar-card" id="pillarTestCard">
-                <div class="interactive-card-header">
-                  <div class="interactive-tag">
-                    <span class="pulse-dot exam-dot"></span> EXAM SIMULATOR
-                  </div>
-                  <div class="exam-timer-box">
-                    ⏱️ <span id="examTimer">00:45</span>
-                  </div>
-                </div>
-
-                <div class="pillar-media">
-                  <svg viewBox="0 0 400 180" class="anim-svg anim-test" role="img" aria-label="A timed question being answered correctly">
-                    <circle class="ts-ring-bg" cx="108" cy="90" r="50"/>
-                    <circle class="ts-ring" pathLength="1" cx="108" cy="90" r="50"/>
-                    <path class="ts-check" pathLength="1" d="M88 90 l14 14 l26 -30"/>
-                    <g class="ts-bars">
-                      <rect class="ts-bar b1" x="210" y="48" width="150" height="18" rx="9"/>
-                      <rect class="ts-bar b2" x="210" y="81" width="150" height="18" rx="9"/>
-                      <rect class="ts-bar b3" x="210" y="114" width="150" height="18" rx="9"/>
-                    </g>
-                  </svg>
-                </div>
-
-                <div class="interactive-exam-body">
-                  <div class="exam-q-header">
-                    <span class="exam-exam-type">JAMB / SAT Physics</span>
-                    <span class="exam-q-num">Q. 14 of 40</span>
-                  </div>
-                  <div class="exam-question-prompt">
-                    A 2.0 kg object moves with velocity v(t) = 3t² + 2 m/s. What is the net force acting on it at t = 2 s?
-                  </div>
-
-                  <div class="exam-options-grid" id="examOptionsGrid">
-                    <button class="exam-opt-btn" data-correct="false" data-opt="A" type="button"><span class="opt-letter">A</span> 12 N</button>
-                    <button class="exam-opt-btn" data-correct="true" data-opt="B" type="button"><span class="opt-letter">B</span> 24 N</button>
-                    <button class="exam-opt-btn" data-correct="false" data-opt="C" type="button"><span class="opt-letter">C</span> 28 N</button>
-                    <button class="exam-opt-btn" data-correct="false" data-opt="D" type="button"><span class="opt-letter">D</span> 36 N</button>
-                  </div>
-
-                  <div class="exam-feedback-box" id="examFeedbackBox" style="display: none;">
-                    <div class="feedback-status" id="feedbackStatus"></div>
-                    <div class="feedback-explanation" id="feedbackExplanation"></div>
-                  </div>
-                </div>
-
-                <div class="pillar-chips-row">
-                  <span class="diff-chip">JAMB</span>
-                  <span class="diff-chip">WAEC / NECO</span>
-                  <span class="diff-chip">SAT</span>
-                  <span class="diff-chip">University exams</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Everything Else You Get (verified features) -->
-    <section class="section features-section" id="features" style="background: var(--bg-surface-elevated1);">
-      <div class="container">
-        <div class="section-header reveal-on-scroll">
-          <span class="section-badge">More than flashcards</span>
-          <h2 class="section-title">Everything you need to actually stick with it.</h2>
-          <p class="section-subtitle">Real tools already built into the app, not a wish list.</p>
-        </div>
-
-        <div class="feature-rows">
-
-          <article class="feature-row reveal-on-scroll">
-            <div class="feature-row-media">
-              <img src="assets/images/feat_community.jpg" width="800" height="600" alt="Students studying together and talking through a topic" loading="lazy" decoding="async">
-            </div>
-            <div class="feature-row-body">
-              <span class="feature-eyebrow">Community</span>
-              <h3 class="feature-title">Study with friends, not just against them</h3>
-              <p class="feature-text">Join live study rooms, talk tricky topics through in the forums, and climb the leaderboard when you want a little friendly pressure to keep you going.</p>
-              <div class="feature-chips">
-                <span class="diff-chip">Live study rooms</span>
-                <span class="diff-chip">Forums</span>
-                <span class="diff-chip">Leaderboards</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="feature-row reverse reveal-on-scroll">
-            <div class="feature-row-media">
-              <img src="assets/images/feat_voice.jpg" width="800" height="600" alt="A student asking a question out loud to their phone" loading="lazy" decoding="async">
-            </div>
-            <div class="feature-row-body">
-              <span class="feature-eyebrow">Voice</span>
-              <h3 class="feature-title">Ask out loud when typing feels like too much</h3>
-              <p class="feature-text">On the days when reading and typing are exhausting, use your voice to ask your tutor a question and get an explanation back. Voice is built for talking with your tutor today.</p>
-              <div class="feature-chips">
-                <span class="diff-chip">Voice questions</span>
-                <span class="diff-chip">Low-friction for tired brains</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="feature-row reveal-on-scroll">
-            <div class="feature-row-media">
-              <img src="assets/images/feat_planner.jpg" width="800" height="600" alt="A student planning study sessions with a calendar" loading="lazy" decoding="async">
-            </div>
-            <div class="feature-row-body">
-              <span class="feature-eyebrow">Planner</span>
-              <h3 class="feature-title">A plan that counts down to exam day</h3>
-              <p class="feature-text">Add your exam dates once. Kortexify spreads your reviews so the heavy topics land fresh in your head right before the test, instead of the night before.</p>
-              <div class="feature-chips">
-                <span class="diff-chip">Exam countdown</span>
-                <span class="diff-chip">Auto-scheduled reviews</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="feature-row reverse reveal-on-scroll">
-            <div class="feature-row-media">
-              <img src="assets/images/feat_duel.jpg" width="800" height="600" alt="Two students in a friendly quiz battle on their phones" loading="lazy" decoding="async">
-            </div>
-            <div class="feature-row-body">
-              <span class="feature-eyebrow">Quiz duels</span>
-              <h3 class="feature-title">Go head to head with a classmate</h3>
-              <p class="feature-text">Challenge a friend to a timed question battle and see who knows the topic cold. A little competition makes revision feel less like a chore.</p>
-              <div class="feature-chips">
-                <span class="diff-chip">Timed battles</span>
-                <span class="diff-chip">Friendly competition</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="feature-row reveal-on-scroll">
-            <div class="feature-row-media">
-              <img src="assets/images/feat_export.jpg" width="800" height="600" alt="A laptop open to a study deck on a desk" loading="lazy" decoding="async">
-            </div>
-            <div class="feature-row-body">
-              <span class="feature-eyebrow">Your data, your rules</span>
-              <h3 class="feature-title">Take your cards with you, anytime</h3>
-              <p class="feature-text">Already keep decks in Anki? Export yours so you never lose the work you have put in. Your study material stays yours, on and offline.</p>
-              <div class="feature-chips">
-                <span class="diff-chip">Anki export</span>
-                <span class="diff-chip">Works offline</span>
-              </div>
-            </div>
-          </article>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- Meet Syllabot (Socratic tutor) -->
-    <section class="section syllabot-section" id="syllabot">
-      <div class="container">
-        <div class="syllabot-grid" data-reveal-group>
-          <div class="syllabot-copy">
-            <span class="section-badge">Socratic Tutor</span>
-            <h2 class="section-title">Meet Syllabot, the tutor that asks you back.</h2>
-            <p class="section-subtitle">Instead of just handing you the answer, Syllabot nudges you to think it through, so it stays with you on exam day. When typing feels like too much, you can ask out loud with your voice.</p>
-            <div class="pillar-chips-row" style="margin-top: 1.1rem;">
-              <span class="diff-chip">🧭 Step-by-step hints</span>
-              <span class="diff-chip">🎙️ Ask by voice</span>
-              <span class="diff-chip">📚 Knows your syllabus</span>
-            </div>
-          </div>
-
-          <div class="interactive-pillar-card syllabot-chat-card" data-tilt>
-            <div class="interactive-card-header">
-              <div class="interactive-tag">
-                <span class="pulse-dot"></span> SYLLABOT AI
-              </div>
-              <span class="retention-score-badge">Online now</span>
-            </div>
-            <div class="chat-dialogue-simulation">
-              <div class="chat-bubble chat-bubble-user">
-                <strong>You:</strong> "I keep mixing up when to use Integration by Parts versus plain Substitution."
-              </div>
-              <div class="chat-bubble chat-bubble-ai">
-                <strong>Syllabot:</strong><br>"Good question. Look at the shape of the problem. If one part is the derivative of the other, substitution is usually faster. But when you have x multiplied by e to the 2x, what happens if you take the derivative of just the x?"
-              </div>
-              <div class="chat-bubble chat-bubble-user">
-                <strong>You:</strong> "It becomes 1, so the messy part goes away?"
-              </div>
-              <div class="chat-bubble chat-bubble-ai">
-                <strong>Syllabot:</strong><br>"Exactly. That is your signal for Integration by Parts. Try setting it up and tell me what you pick for u."
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Key Differentiators -->
-    <section class="section" id="differentiators">
-      <div class="container">
-
-        <div class="section-header reveal-on-scroll">
-          <span class="section-badge">Why students love Kortexify</span>
-          <h2 class="section-title">Designed for the way you actually study.</h2>
-        </div>
-
-        <div class="differentiators-grid">
-
-          <article class="differentiator-card diff-card-media reveal-on-scroll delay-1">
-            <div class="diff-media">
-              <img src="assets/images/diff_offline.jpg" width="900" height="675" alt="A student studying on the bus without internet" loading="lazy" decoding="async">
-            </div>
-            <div class="diff-body">
-              <span class="diff-badge">🛡️ Works 100% offline</span>
-              <h3 class="diff-title">Study in a lecture hall basement, on the bus, or anywhere with no signal.</h3>
-              <p class="diff-desc">
-                Your cards and practice tests live on your device. You do not need internet, and we do not track where you study.
-              </p>
-              <div class="diff-chips-row">
-                <span class="diff-chip">No internet needed</span>
-                <span class="diff-chip">Private by default</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="differentiator-card diff-card-media reveal-on-scroll delay-2">
-            <div class="diff-media">
-              <img src="assets/images/diff_focus.jpg" width="900" height="675" alt="A student studying calmly in low light with a tablet" loading="lazy" decoding="async">
-            </div>
-            <div class="diff-body">
-              <span class="diff-badge diff-badge-secondary">🧠 Made for every kind of brain</span>
-              <h3 class="diff-title">Focus better and read easier, even on your low-energy days.</h3>
-              <p class="diff-desc">
-                If dense pages give you a headache, switch on an easier reading font, a high-contrast dark theme, or a short focus timer with one tap.
-              </p>
-              <div class="diff-chips-row">
-                <span class="diff-chip">Easier reading fonts</span>
-                <span class="diff-chip">Focus timers</span>
-                <span class="diff-chip">Dark themes</span>
-              </div>
-            </div>
-          </article>
-
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Comparison Matrix -->
-    <section class="section" id="comparison" style="background: var(--bg-surface-elevated1);">
-      <div class="container">
-
-        <div class="section-header reveal-on-scroll">
-          <span class="section-badge">The honest comparison</span>
-          <h2 class="section-title">Why not just use what you already have?</h2>
-        </div>
-
-        <div class="comparison-wrapper reveal-on-scroll delay-1" data-reveal-group>
-          <table class="comparison-table">
-            <thead>
-              <tr>
-                <th>What you study with</th>
-                <th>The problem</th>
-                <th class="col-highlight">What Kortexify does instead</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Paper notes</td>
-                <td><span class="cross-red">✗ Easy to lose and hard to organize</span></td>
-                <td class="col-highlight"><span class="check-green">✓ Everything stays organized in one pocket-sized place</span></td>
-              </tr>
-              <tr>
-                <td>Basic AI tools</td>
-                <td><span class="cross-red">✗ Can invent wrong answers and need internet</span></td>
-                <td class="col-highlight"><span class="check-green">✓ Built to cut down wrong answers and works offline</span></td>
-              </tr>
-              <tr>
-                <td>Normal flashcards</td>
-                <td><span class="cross-red">✗ Keeps showing you cards you already know</span></td>
-                <td class="col-highlight"><span class="check-green">✓ Reminds you only when you are about to forget</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Founder's Note -->
-    <section class="section" id="founder">
-      <div class="container">
-        <div class="founder-card reveal-on-scroll">
-          <div class="founder-quote-icon">“</div>
-          <p class="founder-text">
-            We have all been there at 2:30 AM, staring at the same page for the fifth time, exhausted and stressed. Cramming does not make you smarter, it just wears you out. We built Kortexify so you can walk into every exam feeling ready, without giving up your sleep or your health.
+          <h3 class="text-lg font-bold text-[var(--text-primary)] mb-1">
+            Drop your course notes or PDFs here to start
+          </h3>
+          <p class="text-xs text-[var(--text-muted)] mb-5">
+            Supports PDF, slides, images, and text files
           </p>
-          <div class="founder-profile">
-            <div>
-              <div style="font-weight: 750; color: var(--text-primary);">A quick note from our team</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- FAQ -->
-    <section class="section" id="faq">
-      <div class="container">
-
-        <div class="section-header reveal-on-scroll">
-          <span class="section-badge">Common questions</span>
-          <h2 class="section-title">Everything you might be wondering.</h2>
-        </div>
-
-        <div class="faq-grid" data-reveal-group>
-
-          <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA1" id="faqQ1">
-              <span class="faq-question-text">How does Kortexify save me study time?</span>
-              <span class="faq-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </span>
-            </button>
-            <div class="faq-answer" id="faqA1" role="region" aria-labelledby="faqQ1">
-              <div class="faq-answer-clip">
-                <p class="faq-answer-text">Most students waste hours re-reading things they already know. Kortexify works out which topics are fading from your memory and shows you only those cards, so you spend your time where it counts.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA2" id="faqQ2">
-              <span class="faq-question-text">What can I put into the app?</span>
-              <span class="faq-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </span>
-            </button>
-            <div class="faq-answer" id="faqA2" role="region" aria-labelledby="faqQ2">
-              <div class="faq-answer-clip">
-                <p class="faq-answer-text">You can add lecture PDFs, slides, and photos of your hand-written notes or chalkboard formulas. Kortexify reads them and turns the key points into cards for you.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA3" id="faqQ3">
-              <span class="faq-question-text">Can I talk to the AI tutor instead of typing?</span>
-              <span class="faq-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </span>
-            </button>
-            <div class="faq-answer" id="faqA3" role="region" aria-labelledby="faqQ3">
-              <div class="faq-answer-clip">
-                <p class="faq-answer-text">Yes. When typing feels like too much, use your voice to ask Syllabot a question and get an explanation back. Voice is built for chatting with your tutor.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA4" id="faqQ4">
-              <span class="faq-question-text">Does it work without Wi-Fi?</span>
-              <span class="faq-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </span>
-            </button>
-            <div class="faq-answer" id="faqA4" role="region" aria-labelledby="faqQ4">
-              <div class="faq-answer-clip">
-                <p class="faq-answer-text">Yes. Your cards and practice tests live on your phone or laptop, so you can study without using any data.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA5" id="faqQ5">
-              <span class="faq-question-text">What exams can I prepare for?</span>
-              <span class="faq-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </span>
-            </button>
-            <div class="faq-answer" id="faqA5" role="region" aria-labelledby="faqQ5">
-              <div class="faq-answer-clip">
-                <p class="faq-answer-text">You can practice with real questions for JAMB, WAEC, NECO, SAT, and university level courses.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA6" id="faqQ6">
-              <span class="faq-question-text">Is it free to start?</span>
-              <span class="faq-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </span>
-            </button>
-            <div class="faq-answer" id="faqA6" role="region" aria-labelledby="faqQ6">
-              <div class="faq-answer-clip">
-                <p class="faq-answer-text">Yes. Try the live demo on this page right now with no signup. You do not need a credit card to get going.</p>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Newsletter -->
-    <section class="newsletter-section section" id="newsletter">
-      <div class="container">
-        <div class="newsletter-card reveal-on-scroll delay-1">
-          <div class="newsletter-left">
-            <span class="section-badge">Stay updated</span>
-            <h2 class="newsletter-title">Be first in line when we launch.</h2>
-            <p class="newsletter-desc">Join the list and we will email you when new features land and when early access opens up.</p>
-            <ul class="newsletter-perks">
-              <li><span class="newsletter-perk-icon">✓</span> Early access to betas</li>
-              <li><span class="newsletter-perk-icon">✓</span> Practical study tips</li>
-              <li><span class="newsletter-perk-icon">✓</span> No spam, ever</li>
-            </ul>
-          </div>
-          <div class="newsletter-right">
-            <div class="newsletter-form-card">
-              <form id="landingNewsletterForm" data-newsletter-form="landing_page">
-                <div class="newsletter-form-col">
-                  <label for="landingNewsletterEmail" class="newsletter-form-label">Email address</label>
-                  <div class="newsletter-input-wrap">
-                    <span class="newsletter-input-icon">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                    </span>
-                    <input type="email" id="landingNewsletterEmail" class="newsletter-email-input" data-nl-email placeholder="student@university.edu" autocomplete="email" required>
-                  </div>
-                </div>
-                <input type="text" name="hp" class="newsletter-hp" data-nl-hp tabindex="-1" autocomplete="off" aria-hidden="true">
-                <div class="newsletter-form-col" style="margin-top: 0.625rem;">
-                <button type="submit" id="landingNewsletterBtn" class="btn-newsletter-submit" data-nl-btn>
-                  <span id="landingNewsletterBtnText" data-nl-btn-text>Notify Me</span>
-                </button>
-                <div id="landingNewsletterStatus" class="newsletter-status-box" data-nl-status></div>
-                <div class="newsletter-form-privacy">We respect your privacy. Unsubscribe at any time.</div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Desktop App Downloads Section -->
-    <section class="download-section" id="download">
-      <div class="container">
-        <div class="section-header reveal-on-scroll">
-          <div class="section-badge" style="margin: 0 auto 1rem;">
-            <span class="badge-icon">⚡</span>
-            <span>Local-First Desktop Workspace</span>
-          </div>
-          <h2 class="section-title">Download Kortexify for Mac, Windows & Linux</h2>
-          <p class="section-subtitle">
-            Zero-latency offline performance, local vector storage, and instant active recall. Choose your platform below to get started.
-          </p>
-        <!-- OS Filter Tabs -->
-        <div class="download-os-tabs reveal-on-scroll delay-1" role="tablist" aria-label="Filter by Operating System">
-          <button type="button" class="download-os-tab active" data-os-tab="all" role="tab" aria-selected="true">All Platforms</button>
-          <button type="button" class="download-os-tab" data-os-tab="mac" role="tab" aria-selected="false"> macOS</button>
-          <button type="button" class="download-os-tab" data-os-tab="windows" role="tab" aria-selected="false">🪟 Windows</button>
-          <button type="button" class="download-os-tab" data-os-tab="linux" role="tab" aria-selected="false">🐧 Linux</button>
-        </div>
-
-        <!-- Operating System Platform Cards Grid -->
-        <div class="download-cards-grid reveal-on-scroll delay-1">
           
-          <!-- macOS Download Card -->
-          <div class="download-card" data-os="mac">
-            <div class="download-card-badge">macOS (Apple Silicon & Intel)</div>
-            <div class="download-card-icon">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.32c.67-.82 1.13-1.97.99-3.12-.98.04-2.19.66-2.88 1.47-.62.73-1.17 1.9-.1 3.02 1.1.09 2.32-.55 2.99-1.37z"/>
-              </svg>
+          <div class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--color-primary)] text-sm font-bold text-[var(--text-inverse)] shadow-lg hover:scale-[1.02] transition-transform">
+            <span>Create Free Study Deck</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+        <p class="text-[11px] text-[var(--text-muted)] mt-3">Free to start. No credit card required. Private and secure</p>
+      </div>
+
+      <!-- University Trust Banner -->
+      <div class="pt-8 border-t border-[var(--border-subtle)]">
+        <p class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-6">
+          Trusted by students from top institutions worldwide
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-8 sm:gap-12 opacity-60 grayscale hover:grayscale-0 transition-all">
+          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">HARVARD</span>
+          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">OXFORD</span>
+          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">CAMBRIDGE</span>
+          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">STANFORD</span>
+          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">MIT</span>
+          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">IMPERIAL</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- CATCHY FEATURE SHOWCASE GRID -->
+    <section id="features" class="py-20 bg-[var(--bg-canvas-subtle)] border-y border-[var(--border-subtle)]">
+      <div class="max-w-[1240px] mx-auto px-5">
+        
+        <div class="text-center max-w-2xl mx-auto mb-16">
+          <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">Catchy Features</span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] mt-2">
+            Everything you need to study faster and score higher
+          </h2>
+          <p class="text-base text-[var(--text-secondary)] mt-3">
+            Simple, powerful tools built to help you learn without losing sleep.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          <!-- Feature 1: Flashcards -->
+          <div class="feature-card-hover bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-[var(--color-primary-subtle)] flex items-center justify-center text-xl mb-5">
+                🎴
+              </div>
+              <h3 class="text-lg font-bold text-[var(--text-primary)] mb-2">Smart Flashcards</h3>
+              <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
+                Interactive flashcards automatically scheduled to review right before you forget.
+              </p>
             </div>
-            <h3 class="download-card-title">Kortexify for macOS</h3>
-            <p class="download-card-desc">Native Apple Silicon & Intel macOS app with Metal graphics acceleration and dark mode.</p>
-            <div class="download-card-meta">
-              <span class="meta-tag">v1.0.6</span>
-              <span class="meta-tag">macOS 11.0+</span>
-              <span class="meta-tag">Universal</span>
-            </div>
-            <div class="download-btn-group">
-              <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-macOS-latest.dmg" class="download-btn primary-dl" download>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                <span>Download .DMG</span>
-              </a>
-              <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-macOS-latest.zip" class="download-btn secondary-dl" download>
-                <span>Download .ZIP</span>
-              </a>
-            </div>
+            <a href="features/flashcards.html" class="text-xs font-semibold text-[var(--color-primary)] hover:underline inline-flex items-center gap-1">
+              <span>See How It Works</span> &rarr;
+            </a>
           </div>
 
-          <!-- Windows Download Card -->
-          <div class="download-card" data-os="windows">
-            <div class="download-card-badge">Windows 64-bit</div>
-            <div class="download-card-icon">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-13.051-1.851"/>
-              </svg>
+          <!-- Feature 2: Syllabot AI -->
+          <div class="feature-card-hover bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-[var(--color-secondary-subtle)] flex items-center justify-center text-xl mb-5">
+                🤖
+              </div>
+              <h3 class="text-lg font-bold text-[var(--text-primary)] mb-2">Syllabot AI Tutor</h3>
+              <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
+                Your personal 24/7 AI study partner that answers questions directly from your course files.
+              </p>
             </div>
-            <h3 class="download-card-title">Kortexify for Windows</h3>
-            <p class="download-card-desc">High-performance Windows desktop app with offline STEM OCR & RAG vector search.</p>
-            <div class="download-card-meta">
-              <span class="meta-tag">v1.0.6</span>
-              <span class="meta-tag">Windows 10/11</span>
-              <span class="meta-tag">x64</span>
-            </div>
-            <div class="download-btn-group">
-              <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-Windows-latest.exe" class="download-btn primary-dl" download="Kortex-Setup.exe">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                <span>Download .EXE</span>
-              </a>
-              <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-Windows-latest.zip" class="download-btn secondary-dl" download="Kortex-Windows-latest.zip">
-                <span>Download .ZIP</span>
-              </a>
-            </div>
+            <a href="features/solver.html" class="text-xs font-semibold text-[var(--color-primary)] hover:underline inline-flex items-center gap-1">
+              <span>Meet Syllabot</span> &rarr;
+            </a>
           </div>
 
-          <!-- Linux Download Card -->
-          <div class="download-card" data-os="linux">
-            <div class="download-card-badge">Linux x86_64</div>
-            <div class="download-card-icon">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12.002 0c-2.88 0-4.757 2.222-4.757 5.167 0 2.28 1.106 4.316 2.052 6.136.634 1.218 1.256 2.457 1.256 3.697 0 1.257-1.127 2.278-2.518 2.278-1.074 0-2.002-.62-2.39-1.532l-2.03.626c.72 1.83 2.509 3.056 4.42 3.056 2.68 0 4.67-2.046 4.67-4.428 0-1.745-.788-3.23-1.5-4.577-.732-1.393-1.423-2.698-1.423-4.257 0-1.85 1.163-3.017 2.218-3.017 1.056 0 2.22 1.166 2.22 3.017 0 1.56-.69 2.864-1.423 4.257-.712 1.347-1.5 2.832-1.5 4.577 0 2.382 1.99 4.428 4.67 4.428 1.91 0 3.7-1.226 4.42-3.056l-2.03-.626c-.388.912-1.316 1.532-2.39 1.532-1.39 0-2.518-1.02-2.518-2.278 0-1.24.622-2.479 1.256-3.697.946-1.82 2.052-3.856 2.052-6.136C16.76 2.222 14.882 0 12.002 0z"/>
-              </svg>
+          <!-- Feature 3: Practice Exams & Duels -->
+          <div class="feature-card-hover bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-[var(--color-latex-subtle)] flex items-center justify-center text-xl mb-5">
+                ⏱️
+              </div>
+              <h3 class="text-lg font-bold text-[var(--text-primary)] mb-2">Practice Exams & Duels</h3>
+              <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
+                Test yourself with real past exam questions or challenge classmates to live 1v1 quiz battles.
+              </p>
             </div>
-            <h3 class="download-card-title">Kortexify for Linux</h3>
-            <p class="download-card-desc">Standalone package bundle for Ubuntu, Fedora, Arch & Debian distributions.</p>
-            <div class="download-card-meta">
-              <span class="meta-tag">v1.0.6</span>
-              <span class="meta-tag">Linux x64</span>
-              <span class="meta-tag">Tar.gz</span>
+            <a href="features/questions.html" class="text-xs font-semibold text-[var(--color-primary)] hover:underline inline-flex items-center gap-1">
+              <span>Explore Practice Exams</span> &rarr;
+            </a>
+          </div>
+
+          <!-- Feature 4: Live Study Rooms -->
+          <div class="feature-card-hover bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-[var(--color-primary-subtle)] flex items-center justify-center text-xl mb-5">
+                🎙️
+              </div>
+              <h3 class="text-lg font-bold text-[var(--text-primary)] mb-2">Live Study Rooms</h3>
+              <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
+                Join live group study rooms with voice chat and shared whiteboards to stay motivated.
+              </p>
             </div>
-            <div class="download-btn-group">
-              <a href="https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-Linux-latest.tar.gz" class="download-btn primary-dl" download>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                <span>Download .TAR.GZ</span>
-              </a>
+            <a href="features/study_rooms.html" class="text-xs font-semibold text-[var(--color-primary)] hover:underline inline-flex items-center gap-1">
+              <span>Join Study Rooms</span> &rarr;
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CONTINUOUS HOW IT WORKS ANIMATION SECTION -->
+    <section class="py-20 px-5 max-w-[1240px] mx-auto">
+      <div class="text-center max-w-3xl mx-auto mb-16 reveal-on-scroll">
+        <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">CONTINUOUS FEATURE VISUALIZER</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] mt-2">
+          Watch Kortexify work in real-time
+        </h2>
+        <p class="text-base text-[var(--text-secondary)] mt-3">
+          From uploading raw notes to active recall mastery and 1v1 study battles.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Step 1 Animation: Scan & Convert -->
+        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] relative overflow-hidden flex flex-col justify-between reveal-on-scroll">
+          <div>
+            <div class="relative h-44 rounded-2xl bg-[var(--bg-surface-elevated1)] border border-[var(--border-subtle)] p-4 overflow-hidden mb-5">
+              <div class="continuous-scan-beam"></div>
+              <div class="space-y-2 text-[11px] text-[var(--text-muted)] font-mono opacity-75">
+                <p class="font-bold text-[var(--text-primary)]">Lecture 04: Organic Reactions</p>
+                <p>• Electrophilic aromatic substitution mechanism...</p>
+                <p>• Benzene ring resonance energy = 36 kcal/mol...</p>
+                <p>• Nitration occurs via nitronium ion (NO2+)...</p>
+              </div>
+              <div class="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Generating Flashcards</span>
+              </div>
+            </div>
+            <h3 class="text-base font-bold text-[var(--text-primary)] mb-1">1. Auto Flashcard Extraction</h3>
+            <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
+              Upload any PDF or slide deck and watch Kortexify extract key concepts into active recall flashcards in under 5 seconds.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 2 Animation: Syllabot AI Formula Solver -->
+        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] relative overflow-hidden flex flex-col justify-between reveal-on-scroll delay-1">
+          <div>
+            <div class="relative h-44 rounded-2xl bg-[var(--bg-surface-elevated1)] border border-[var(--border-subtle)] p-4 flex flex-col justify-between mb-5">
+              <div class="space-y-2">
+                <div class="inline-block px-3 py-1 rounded-xl bg-[var(--bg-card)] text-[11px] font-medium text-[var(--text-primary)] border border-[var(--border-subtle)]">
+                  Student: How do I solve $\int x e^x dx$?
+                </div>
+                <div class="inline-block p-2.5 rounded-xl bg-[var(--color-primary-subtle)] text-[11px] font-semibold text-[var(--color-primary)] border border-[var(--border-primary)]">
+                  Syllabot: Use Integration by Parts:
+                  <div class="mt-1 font-mono text-[10px] text-[var(--text-primary)] font-bold">$\int u dv = uv - \int v du$</div>
+                  <span class="typing-cursor"></span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-[10px] text-[var(--text-muted)] border-t border-[var(--border-subtle)] pt-2 mt-2">
+                <span>Verified with Course Syllabus</span>
+                <span class="text-emerald-400 font-bold">✓ 100% Accurate</span>
+              </div>
+            </div>
+            <h3 class="text-base font-bold text-[var(--text-primary)] mb-1">2. Course-Aware AI Tutoring</h3>
+            <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
+              Ask Syllabot any STEM question. Get instant Socratic explanations and math formula renderings tailored to your syllabus.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 3 Animation: Live Room Voice & Duels -->
+        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] relative overflow-hidden flex flex-col justify-between reveal-on-scroll delay-2">
+          <div>
+            <div class="relative h-44 rounded-2xl bg-[var(--bg-surface-elevated1)] border border-[var(--border-subtle)] p-4 flex flex-col justify-between mb-5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span class="text-xs font-bold text-[var(--text-primary)]">Live Room #402</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <div class="continuous-audio-bar"></div>
+                  <div class="continuous-audio-bar"></div>
+                  <div class="continuous-audio-bar"></div>
+                  <div class="continuous-audio-bar"></div>
+                </div>
+              </div>
+
+              <div class="bg-[var(--bg-card)] p-2.5 rounded-xl border border-[var(--border-subtle)] flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-full bg-indigo-500 text-[10px] font-bold text-white flex items-center justify-center">1v1</span>
+                  <span class="text-xs font-semibold text-[var(--text-primary)]">Exam Duel vs Alex</span>
+                </div>
+                <span class="text-xs font-extrabold text-amber-400">+150 XP</span>
+              </div>
+
+              <div class="text-[10px] text-[var(--text-muted)] text-center">
+                Shared Whiteboard & Voice Audio Active
+              </div>
+            </div>
+            <h3 class="text-base font-bold text-[var(--text-primary)] mb-1">3. Live Study Rooms & 1v1 Duels</h3>
+            <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
+              Study live with classmates, sketch on shared whiteboards, and battle in 1v1 timed past question duels.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- STUDENT REVIEWS SECTION -->
+    <section id="reviews" class="py-20 px-5 max-w-[1240px] mx-auto">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">Student Reviews</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] mt-2">
+          Loved by students everywhere
+        </h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)]">
+          <div class="flex items-center gap-1 text-amber-400 mb-3 text-sm">★★★★★</div>
+          <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-5">
+            "Kortexify made preparing for my Chemistry finals so much easier. Turning notes into flashcards in seconds is a game changer."
+          </p>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-[var(--color-primary)] text-[var(--text-inverse)] flex items-center justify-center font-bold text-xs">EG</div>
+            <div>
+              <p class="text-xs font-bold text-[var(--text-primary)]">Elena G.</p>
+              <p class="text-[11px] text-[var(--text-muted)]">Pre-Med Student</p>
             </div>
           </div>
+        </div>
+
+        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)]">
+          <div class="flex items-center gap-1 text-amber-400 mb-3 text-sm">★★★★★</div>
+          <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-5">
+            "The 1v1 quiz battles with my classmates are super fun and actually help us retain what we learned during lectures."
+          </p>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-[var(--color-secondary)] text-[var(--text-inverse)] flex items-center justify-center font-bold text-xs">LK</div>
+            <div>
+              <p class="text-xs font-bold text-[var(--text-primary)]">Luqman K.</p>
+              <p class="text-[11px] text-[var(--text-muted)]">Engineering Student</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)]">
+          <div class="flex items-center gap-1 text-amber-400 mb-3 text-sm">★★★★★</div>
+          <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-5">
+            "Studying in the live voice rooms keeps me accountable. It feels like having a study group whenever I need one."
+          </p>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-[var(--color-latex)] text-[var(--text-inverse)] flex items-center justify-center font-bold text-xs">SV</div>
+            <div>
+              <p class="text-xs font-bold text-[var(--text-primary)]">Sien V.</p>
+              <p class="text-[11px] text-[var(--text-muted)]">Law Student</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- FREQUENTLY ASKED QUESTIONS -->
+    <section id="faq" class="py-20 bg-[var(--bg-canvas-subtle)] border-t border-[var(--border-subtle)]">
+      <div class="max-w-[800px] mx-auto px-5">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)]">
+            Frequently Asked Questions
+          </h2>
+        </div>
+
+        <div class="space-y-4">
+          
+          <details class="bg-[var(--bg-card)] p-5 rounded-2xl border border-[var(--border-subtle)] group">
+            <summary class="font-semibold text-sm cursor-pointer list-none flex justify-between items-center text-[var(--text-primary)]">
+              <span>Is Kortexify really free to start?</span>
+              <span class="text-xs transition-transform group-open:rotate-180">&blacktriangledown;</span>
+            </summary>
+            <p class="text-xs text-[var(--text-secondary)] mt-3 leading-relaxed">
+              Yes. You can upload notes, create flashcards, practice with exam questions, and chat with your AI tutor completely free without entering any credit card information.
+            </p>
+          </details>
+
+          <details class="bg-[var(--bg-card)] p-5 rounded-2xl border border-[var(--border-subtle)] group">
+            <summary class="font-semibold text-sm cursor-pointer list-none flex justify-between items-center text-[var(--text-primary)]">
+              <span>Is my data private and secure?</span>
+              <span class="text-xs transition-transform group-open:rotate-180">&blacktriangledown;</span>
+            </summary>
+            <p class="text-xs text-[var(--text-secondary)] mt-3 leading-relaxed">
+              Yes. Your notes and study materials are private to your account and never shared with third parties or your school.
+            </p>
+          </details>
+
+          <details class="bg-[var(--bg-card)] p-5 rounded-2xl border border-[var(--border-subtle)] group">
+            <summary class="font-semibold text-sm cursor-pointer list-none flex justify-between items-center text-[var(--text-primary)]">
+              <span>Can I use Kortexify on Web and Desktop?</span>
+              <span class="text-xs transition-transform group-open:rotate-180">&blacktriangledown;</span>
+            </summary>
+            <p class="text-xs text-[var(--text-secondary)] mt-3 leading-relaxed">
+              Yes. Kortexify works directly in your web browser without installation, or as a desktop app for Mac, Windows, and Linux.
+            </p>
+          </details>
 
         </div>
       </div>
     </section>
 
-    <!-- Final Call to Action -->
-    <section class="final-cta-section">
-      <div class="container">
-        <div class="section-header reveal-on-scroll" style="margin-bottom: 1.8rem;">
-          <h2 class="section-title">Ready to walk into your next exam feeling ready?</h2>
-          <p class="section-subtitle">
-            Try the demo above in a few taps. No credit card, no pressure.
-          </p>
-        </div>
-
-        <div class="hero-cta-group reveal-on-scroll delay-1" style="margin-bottom: 1.4rem;">
-          <a href="#workstation" class="btn-primary-cta" data-magnetic>
-            <span>Try the Live Demo</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M5 12h14M12 5l7 7-7 7"></path>
-            </svg>
+    <!-- FINAL CTA BANNER -->
+    <section class="py-20 px-5 text-center bg-gradient-to-b from-[var(--bg-canvas)] to-[var(--bg-surface-elevated1)]">
+      <div class="max-w-[700px] mx-auto">
+        <h2 class="text-3xl sm:text-4xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] mb-4">
+          Ready to walk into your next exam feeling prepared?
+        </h2>
+        <p class="text-sm text-[var(--text-secondary)] mb-8">
+          Join thousands of students studying calmer and scoring higher.
+        </p>
+        
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="app/#/signup" class="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[var(--color-primary)] text-sm font-bold text-[var(--text-inverse)] shadow-lg hover:scale-[1.03] transition-all">
+            Start Studying Free &rarr;
           </a>
-          <a href="contact.html" class="btn-secondary-cta">
-            <span>Talk to our team</span>
+          <a href="app/#/login" class="w-full sm:w-auto px-8 py-3.5 rounded-full border border-[var(--border-subtle)] text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-card)] transition-all">
+            Log In to Account
           </a>
-        </div>
-
-        <div class="store-badges reveal-on-scroll delay-2" aria-label="Get the app">
-          <span class="store-badge">📱 App Store, coming soon</span>
-          <span class="store-badge">🤖 Google Play, coming soon</span>
         </div>
       </div>
     </section>
@@ -1160,31 +589,54 @@
   </main>
 
   <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="container footer-content">
-      <div class="brand-logo">
-        <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" width="26" height="26">
-        <span class="brand-name" style="font-size: 0.95rem;">KORTEXIFY</span>
+  <footer class="site-footer bg-[var(--bg-canvas)] border-t border-[var(--border-subtle)] py-12">
+    <div class="max-w-[1240px] mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-6">
+      
+      <div class="flex items-center gap-2.5">
+        <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-6 h-6">
+        <span class="font-['Plus_Jakarta_Sans'] font-extrabold text-sm text-[var(--text-primary)] tracking-wide">KORTEXIFY</span>
       </div>
 
-      <div class="footer-copyright">
-        © 2026 Kortexify Inc. All rights reserved.
+      <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[var(--text-secondary)]">
+        <a href="index.html" class="hover:text-[var(--text-primary)] font-semibold text-[var(--color-primary)]">Home</a>
+        <a href="about.html" class="hover:text-[var(--text-primary)]">About Us</a>
+        <a href="pricing.html" class="hover:text-[var(--text-primary)]">Pricing</a>
+        <a href="downloads.html" class="hover:text-[var(--text-primary)]">Downloads</a>
+        <a href="privacy.html" class="hover:text-[var(--text-primary)]">Privacy Policy</a>
+        <a href="terms.html" class="hover:text-[var(--text-primary)]">Terms of Service</a>
+        <a href="contact.html" class="hover:text-[var(--text-primary)]">Contact</a>
       </div>
 
-      <div class="footer-legal-links">
-        <a href="privacy.html">Privacy Policy</a>
-        <a href="terms.html">Terms of Service</a>
-        <a href="contact.html">Contact</a>
-      </div>
+      <p class="text-xs text-[var(--text-muted)]">&copy; 2026 Kortexify Inc. All rights reserved.</p>
     </div>
   </footer>
 
-  <!-- KaTeX Core Library for Math Rendering -->
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
-
   <!-- Scripts -->
-  <script src="js/storage.js?v=6.15"></script>
-  <script src="js/animations.js?v=6.15"></script>
-  <script src="js/main.js?v=6.15"></script>
+  <script src="js/storage.js?v=8.0"></script>
+  <script src="js/animations.js?v=8.0"></script>
+  <script src="js/main.js?v=8.0"></script>
+
+  <script>
+    const mobileBtn = document.getElementById('mobileMenuBtn');
+    const mobileDrawer = document.getElementById('mobileMenuDrawer');
+    if (mobileBtn && mobileDrawer) {
+      mobileBtn.addEventListener('click', () => {
+        mobileDrawer.classList.toggle('hidden');
+      });
+    }
+  </script>
+  <!-- KaTeX CSS & Auto-Render -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '\\[', right: '\\]', display: true},
+        {left: '$', right: '$', display: false},
+        {left: '\\(', right: '\\)', display: false}
+      ],
+      throwOnError: false
+    });"></script>
 </body>
 </html>

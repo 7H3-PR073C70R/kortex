@@ -546,6 +546,10 @@
     "@authAccountSignInTitle": {
         "description": "Desktop split view header for account form"
     },
+    "authAccountSignUpTitle": "Account Sign Up",
+    "@authAccountSignUpTitle": {
+        "description": "Desktop split view header for account form"
+    },
     "authThinking": "Thinking...",
     "@authThinking": {
         "description": "Indicator text while AI is processing in chat"

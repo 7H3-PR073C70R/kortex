@@ -5,10 +5,10 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_edge_tts/flutter_edge_tts.dart';
-import 'package:flutter_kokoro_tts/flutter_kokoro_tts.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/kokoro_model_downloader.dart';
+import 'package:kortex/src/core/services/kokoro_tts_adapter.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_text_normalizer.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/tts_config.dart';
@@ -121,7 +121,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
     LocalStorageService? localStorageService,
     Connectivity? connectivity,
     AudioPlayer? audioPlayer,
-    KokoroTts? kokoroTts,
+    KokoroTtsAdapter? kokoroTts,
     KokoroModelDownloader? kokoroModelDownloader,
     FlutterTts? flutterTts,
     this.onError,
@@ -144,7 +144,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   final LocalStorageService? _localStorageService;
   final Connectivity _connectivity;
   AudioPlayer? _audioPlayer;
-  KokoroTts? _kokoroTts;
+  KokoroTtsAdapter? _kokoroTts;
   final KokoroModelDownloader _downloader;
   final FlutterTts _flutterTts;
 
@@ -900,7 +900,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
       }
     }
 
-    final kokoro = _kokoroTts ??= KokoroTts();
+    final kokoro = _kokoroTts ??= KokoroTtsAdapter();
     await kokoro.initialize();
 
     final audioSamples = await kokoro.generate(

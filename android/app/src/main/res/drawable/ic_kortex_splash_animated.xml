@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_kortex_logo_vector">
+    <target
+        android:name="shield_path"
+        android:animation="@animator/shield_trace_animator" />
+    <target
+        android:name="k_arm_top"
+        android:animation="@animator/k_arm_top_animator" />
+    <target
+        android:name="k_arm_bottom"
+        android:animation="@animator/k_arm_top_animator" />
+    <target
+        android:name="nodes_group"
+        android:animation="@animator/nodes_scale_animator" />
+</animated-vector>

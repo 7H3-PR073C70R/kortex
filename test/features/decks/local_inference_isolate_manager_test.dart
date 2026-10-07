@@ -3,7 +3,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
-import 'package:kortex/src/features/offline_ai/data/services/local_inference_isolate_manager.dart';
+import 'package:kortex/src/features/offline_ai/offline_ai.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockConnectivity extends Mock implements Connectivity {}
@@ -21,16 +21,19 @@ void main() {
       mockConnectivity = MockConnectivity();
     });
 
-    test('StudyEngineRouter defaults to offlineOnDevice without network', () async {
-      when(() => mockConnectivity.checkConnectivity()).thenAnswer(
-        (_) async => [ConnectivityResult.none],
-      );
+    test(
+      'StudyEngineRouter defaults to offlineOnDevice without network',
+      () async {
+        when(() => mockConnectivity.checkConnectivity()).thenAnswer(
+          (_) async => [ConnectivityResult.none],
+        );
 
-      final router = StudyEngineRouter(connectivity: mockConnectivity);
-      final mode = await router.getExecutionMode();
+        final router = StudyEngineRouter(connectivity: mockConnectivity);
+        final mode = await router.getExecutionMode();
 
-      expect(mode, equals(StudyEngineExecutionMode.offlineOnDevice));
-    });
+        expect(mode, equals(StudyEngineExecutionMode.offlineOnDevice));
+      },
+    );
   });
 
   group('2. LocalInferenceIsolateManager Memory & 60fps UI Thread Safety', () {
@@ -87,27 +90,30 @@ void main() {
       },
     );
 
-    test('Throws InsufficientContentException when text lacks extractable concepts', () async {
-      final manager = LocalInferenceIsolateManager();
+    test(
+      'Throws InsufficientContentException when text lacks extractable concepts',
+      () async {
+        final manager = LocalInferenceIsolateManager();
 
-      const emptyTask = InferenceTask(
-        modelPath: '/dummy/path/qwen.gguf',
-        prompt: 'Hi',
-        config: MemoryLimitConfig(
-          contextTokens: 1024,
-          maxOutputTokens: 256,
-          maxChunkWords: 800,
-          isLowRamProfile: true,
-        ),
-      );
+        const emptyTask = InferenceTask(
+          modelPath: '/dummy/path/qwen.gguf',
+          prompt: 'Hi',
+          config: MemoryLimitConfig(
+            contextTokens: 1024,
+            maxOutputTokens: 256,
+            maxChunkWords: 800,
+            isLowRamProfile: true,
+          ),
+        );
 
-      expect(
-        () => manager.runIsolatedInference(emptyTask),
-        throwsA(isA<InsufficientContentException>()),
-      );
+        expect(
+          () => manager.runIsolatedInference(emptyTask),
+          throwsA(isA<InsufficientContentException>()),
+        );
 
-      await manager.releaseContext();
-    });
+        await manager.releaseContext();
+      },
+    );
 
     test('Enforces 35-second wall clock timeout constant', () {
       expect(
@@ -134,38 +140,23 @@ void main() {
       );
 
       when(
-        () => mockDio.post<Map<String, dynamic>>(
+        () => mockDio.post<String>(
           any(),
           data: any(named: 'data'),
           options: any(named: 'options'),
         ),
       ).thenAnswer(
-        (_) async => Response(
-          data: {
-            'cards': [
-              {
-                'id': 'card_1',
-                'front': 'What is a derivative?',
-                'back': 'The instantaneous rate of change of a function.',
-                'explanation': 'Fundamental definition of differential calculus.',
-                'isLocalInference': false,
-              },
-              {
-                'id': 'card_2',
-                'front': 'What is an integral?',
-                'back': 'The accumulation of quantities / area under curve.',
-                'explanation': 'Fundamental definition of integral calculus.',
-                'isLocalInference': false,
-              },
-              {
-                'id': 'card_3',
-                'front': 'State the Fundamental Theorem of Calculus.',
-                'back': 'Differentiation and integration are inverse operations.',
-                'explanation': 'Connects differential and integral calculus.',
-                'isLocalInference': false,
-              },
-            ],
-          },
+        (_) async => Response<String>(
+          data: '''
+event: card
+data: {"id":"card_1","front":"What is a derivative?","back":"The instantaneous rate of change of a function.","explanation":"Fundamental definition of differential calculus.","isLocalInference":false}
+
+event: card
+data: {"id":"card_2","front":"What is an integral?","back":"The accumulation of quantities / area under curve.","explanation":"Fundamental definition of integral calculus.","isLocalInference":false}
+
+event: card
+data: {"id":"card_3","front":"State the Fundamental Theorem of Calculus.","back":"Differentiation and integration are inverse operations.","explanation":"Connects differential and integral calculus.","isLocalInference":false}
+''',
           requestOptions: RequestOptions(path: '/generate-flashcards-stream'),
         ),
       );
@@ -190,28 +181,31 @@ void main() {
       expect(result.cards.first.isLocalInference, isFalse);
     });
 
-    test('Offline: Reports missing offline model weights when not present', () async {
-      when(() => mockConnectivity.checkConnectivity()).thenAnswer(
-        (_) async => [ConnectivityResult.none],
-      );
+    test(
+      'Offline: Reports missing offline model weights when not present',
+      () async {
+        when(() => mockConnectivity.checkConnectivity()).thenAnswer(
+          (_) async => [ConnectivityResult.none],
+        );
 
-      final router = StudyEngineRouter(
-        connectivity: mockConnectivity,
-        isolateManager: mockIsolateManager,
-        dio: mockDio,
-      );
+        final router = StudyEngineRouter(
+          connectivity: mockConnectivity,
+          isolateManager: mockIsolateManager,
+          dio: mockDio,
+        );
 
-      final result = await router.generateStudyPack(
-        topic: 'Classical Mechanics',
-        count: 2,
-      );
+        final result = await router.generateStudyPack(
+          topic: 'Classical Mechanics',
+          count: 2,
+        );
 
-      expect(
-        result.executionMode,
-        equals(StudyEngineExecutionMode.unavailable),
-      );
-      expect(result.isOfflineModelMissing, isTrue);
-      expect(result.cards, isEmpty);
-    });
+        expect(
+          result.executionMode,
+          equals(StudyEngineExecutionMode.unavailable),
+        );
+        expect(result.isOfflineModelMissing, isTrue);
+        expect(result.cards, isEmpty);
+      },
+    );
   });
 }

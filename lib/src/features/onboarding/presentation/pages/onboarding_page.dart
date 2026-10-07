@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +8,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -41,6 +41,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   late final OnboardingLocalDataSource _dataSource;
   int _currentIndex = 0;
   bool _isLaunching = false;
+  Timer? _autoScrollTimer;
 
   @override
   void initState() {
@@ -51,14 +52,52 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   void dispose() {
+    _stopAutoScrollTimer();
     _pageController.dispose();
     super.dispose();
   }
 
-  void _onPageChanged(int index, List<OnboardingSlideData> slides) {
+  void _updateAutoScroll(bool isWide, int totalSlides) {
+    if (isWide) {
+      if (_autoScrollTimer == null || !_autoScrollTimer!.isActive) {
+        _startAutoScrollTimer(totalSlides);
+      }
+    } else {
+      _stopAutoScrollTimer();
+    }
+  }
+
+  void _startAutoScrollTimer(int totalSlides) {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (!mounted || !_pageController.hasClients) return;
+      final nextIndex = (_currentIndex + 1) % totalSlides;
+      unawaited(
+        _pageController.animateToPage(
+          nextIndex,
+          duration: AppMotion.expressive,
+          curve: AppMotion.easeOutCubic,
+        ),
+      );
+    });
+  }
+
+  void _stopAutoScrollTimer() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = null;
+  }
+
+  void _onPageChanged(
+    int index,
+    List<OnboardingSlideData> slides, {
+    required bool isWide,
+  }) {
     setState(() {
       _currentIndex = index;
     });
+    if (isWide) {
+      _startAutoScrollTimer(slides.length);
+    }
     final announcement = context.l10n.onboardingPageAnnouncement(
       index + 1,
       slides.length,
@@ -131,8 +170,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
-  void _onIndicatorTap(int index) {
+  void _onIndicatorTap(
+    int index,
+    int totalSlides, {
+    required bool isWide,
+  }) {
     unawaited(HapticFeedback.lightImpact());
+    if (isWide) {
+      _startAutoScrollTimer(totalSlides);
+    }
     unawaited(
       _pageController.animateToPage(
         index,
@@ -149,6 +195,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final isLastPage = _currentIndex == slides.length - 1;
     final isWide =
         MediaQuery.sizeOf(context).width >= OnboardingPage.wideBreakpoint;
+    final isWebOrDesktop = kIsWeb ||
+        defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux;
+
+    if (isWebOrDesktop && !isWide) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(_completeOnboarding());
+        }
+      });
+      return Scaffold(
+        backgroundColor: context.colors.surfacePrimary,
+        body: const SizedBox.shrink(),
+      );
+    }
+
+    _updateAutoScroll(isWide, slides.length);
 
     return Semantics(
       scopesRoute: true,
@@ -221,7 +285,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       child: OnboardingPageView(
                         controller: _pageController,
                         slides: slides,
-                        onPageChanged: (index) => _onPageChanged(index, slides),
+                        onPageChanged: (index) =>
+                            _onPageChanged(index, slides, isWide: false),
                       ),
                     ),
 
@@ -238,7 +303,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             count: slides.length,
                             currentIndex: _currentIndex,
                             activeColor: colors.primary,
-                            onTap: _onIndicatorTap,
+                            onTap: (index) => _onIndicatorTap(
+                              index,
+                              slides.length,
+                              isWide: false,
+                            ),
                           ),
 
                           // Tactile Circular Forward Action Trigger
@@ -306,15 +375,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     bool isLastPage,
   ) {
     final colors = context.colors;
-    final l10n = context.l10n;
     final isDark = context.isDarkMode;
-
-    final forwardActionLabel = isLastPage
-        ? l10n.onboardingGetStarted
-        : l10n.onboardingNext;
-    final forwardActionSemantics = isLastPage
-        ? l10n.onboardingGetStartedSemantics
-        : l10n.onboardingNextSemantics;
 
     return MultiBlocProvider(
       providers: [
@@ -372,6 +433,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           children: [
                             OnboardingTopBar(
                               isLastPage: isLastPage,
+                              showSkip: false,
                               onSkip: () => unawaited(_completeOnboarding()),
                             ),
                             const SizedBox(height: 10),
@@ -383,46 +445,29 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 child: OnboardingPageView(
                                   controller: _pageController,
                                   slides: slides,
-                                  onPageChanged: (index) =>
-                                      _onPageChanged(index, slides),
+                                  onPageChanged: (index) => _onPageChanged(
+                                    index,
+                                    slides,
+                                    isWide: true,
+                                  ),
                                 ),
                               ),
                             ),
 
-                            // Bottom dock: indicator, Previous (once past
-                            // the first slide), and the forward trigger.
+                            // Bottom dock: centered indicator dots (auto-repeats, manual swipe enabled)
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(36, 8, 36, 20),
-                              child: Row(
-                                children: [
-                                  AnimatedPageIndicator(
-                                    count: slides.length,
-                                    currentIndex: _currentIndex,
-                                    activeColor: colors.primary,
-                                    onTap: _onIndicatorTap,
+                              padding: const EdgeInsets.fromLTRB(36, 12, 36, 24),
+                              child: Center(
+                                child: AnimatedPageIndicator(
+                                  count: slides.length,
+                                  currentIndex: _currentIndex,
+                                  activeColor: colors.primary,
+                                  onTap: (index) => _onIndicatorTap(
+                                    index,
+                                    slides.length,
+                                    isWide: true,
                                   ),
-                                  const Spacer(),
-                                  AnimatedSize(
-                                    duration: AppMotion.standard,
-                                    curve: AppMotion.easeOutCubic,
-                                    child: _currentIndex > 0
-                                        ? _buildPreviousButton(
-                                            isDark: isDark,
-                                          )
-                                        : const SizedBox(height: 36),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _buildForwardTrigger(
-                                    label: forwardActionLabel,
-                                    semanticsLabel: forwardActionSemantics,
-                                    isLastPage: isLastPage,
-                                    isDark: isDark,
-                                    onTap: () => _onNext(
-                                      slides.length,
-                                      useRocketFinale: false,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                           ],
@@ -537,54 +582,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
             );
           },
         ),
-      ),
-    );
-  }
-
-  /// Ghost back control for pointer users on the wide layout (keyboard
-  /// arrows are bound as well). Appears with an AnimatedSize slot so the
-  /// dock never jumps.
-  Widget _buildPreviousButton({required bool isDark}) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
-
-    return Semantics(
-      button: true,
-      label: l10n.onboardingPreviousSlideSemantics,
-      child: PlatformHoverBuilder(
-        builder: (context, isHovered, child) {
-          return TextButton(
-            onPressed: _onBack,
-            style: TextButton.styleFrom(
-              foregroundColor: colors.textSecondary,
-              backgroundColor: isHovered
-                  ? colors.surfaceSecondary.withAlpha(isDark ? 140 : 180)
-                  : context.colors.transparent,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              shape: RoundedRectangleBorder(
-                borderRadius: AppRadius.radiusBadge,
-              ),
-              minimumSize: const Size(48, 36),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.arrow_back_rounded, size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  l10n.onboardingPreviousSlide,
-                  style: typography.subhead.semiBold.copyWith(
-                    color: isHovered
-                        ? colors.textPrimary
-                        : colors.textSecondary,
-                    fontSize: 13.5,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }

@@ -56,8 +56,6 @@ build CMakeFiles/flutter_llama_bridge.dir/flutter_llama_bridge.cpp.o: CXX_COMPIL
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/src/main/cpp/../../../../llama.cpp/include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/src/main/cpp/../../../../llama.cpp/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/src/main/cpp/../../../../llama.cpp/ggml/include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/src/main/cpp/../../../../llama.cpp/common -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = CMakeFiles/flutter_llama_bridge.dir
   OBJECT_FILE_DIR = CMakeFiles/flutter_llama_bridge.dir
-  TARGET_COMPILE_PDB = CMakeFiles/flutter_llama_bridge.dir/
-  TARGET_PDB = /Users/protector/Documents/projects/kortex/build/flutter_llama/intermediates/cxx/Release/355s492m/obj/x86_64/libflutter_llama_bridge.pdb
 
 
 # =============================================================================
@@ -76,9 +74,8 @@ build /Users/protector/Documents/projects/kortex/build/flutter_llama/intermediat
   PRE_LINK = :
   SONAME = libflutter_llama_bridge.so
   SONAME_FLAG = -Wl,-soname,
-  TARGET_COMPILE_PDB = CMakeFiles/flutter_llama_bridge.dir/
   TARGET_FILE = /Users/protector/Documents/projects/kortex/build/flutter_llama/intermediates/cxx/Release/355s492m/obj/x86_64/libflutter_llama_bridge.so
-  TARGET_PDB = /Users/protector/Documents/projects/kortex/build/flutter_llama/intermediates/cxx/Release/355s492m/obj/x86_64/libflutter_llama_bridge.pdb
+  TARGET_PDB = flutter_llama_bridge.so.dbg
 
 
 #############################################
@@ -309,8 +306,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o: C_COMPILER__ggml-b
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/ggml/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-base.dir/
-  TARGET_PDB = bin/libggml-base.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o: CXX_COMPILER__ggml-base_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml.cpp || cmake_object_order_depends_target_ggml-base
   DEFINES = -DGGML_BUILD -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_base_EXPORTS
@@ -319,8 +314,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o: CXX_COMPILER__gg
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/ggml/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-base.dir/
-  TARGET_PDB = bin/libggml-base.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o: C_COMPILER__ggml-base_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-alloc.c || cmake_object_order_depends_target_ggml-base
   DEFINES = -DGGML_BUILD -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_base_EXPORTS
@@ -329,8 +322,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o: C_COMPILER__
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/ggml/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-base.dir/
-  TARGET_PDB = bin/libggml-base.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o: CXX_COMPILER__ggml-base_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-backend.cpp || cmake_object_order_depends_target_ggml-base
   DEFINES = -DGGML_BUILD -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_base_EXPORTS
@@ -339,8 +330,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o: CXX_COMP
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/ggml/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-base.dir/
-  TARGET_PDB = bin/libggml-base.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o: CXX_COMPILER__ggml-base_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-backend-meta.cpp || cmake_object_order_depends_target_ggml-base
   DEFINES = -DGGML_BUILD -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_base_EXPORTS
@@ -349,8 +338,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o: CXX
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/ggml/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-base.dir/
-  TARGET_PDB = bin/libggml-base.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o: CXX_COMPILER__ggml-base_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-opt.cpp || cmake_object_order_depends_target_ggml-base
   DEFINES = -DGGML_BUILD -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_base_EXPORTS
@@ -359,8 +346,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/ggml/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-base.dir/
-  TARGET_PDB = bin/libggml-base.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o: CXX_COMPILER__ggml-base_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-threading.cpp || cmake_object_order_depends_target_ggml-base
   DEFINES = -DGGML_BUILD -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_base_EXPORTS
@@ -369,8 +354,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o: CXX_CO
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/ggml/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-base.dir/
-  TARGET_PDB = bin/libggml-base.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o: C_COMPILER__ggml-base_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-quants.c || cmake_object_order_depends_target_ggml-base
   DEFINES = -DGGML_BUILD -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_base_EXPORTS
@@ -379,8 +362,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o: C_COMPILER_
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/ggml/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-base.dir/
-  TARGET_PDB = bin/libggml-base.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o: CXX_COMPILER__ggml-base_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/gguf.cpp || cmake_object_order_depends_target_ggml-base
   DEFINES = -DGGML_BUILD -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_base_EXPORTS
@@ -389,8 +370,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o: CXX_COMPILER__gg
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/ggml/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-base.dir
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-base.dir/
-  TARGET_PDB = bin/libggml-base.pdb
 
 
 # =============================================================================
@@ -409,9 +388,8 @@ build bin/libggml-base.so: CXX_SHARED_LIBRARY_LINKER__ggml-base_Release build-ll
   PRE_LINK = :
   SONAME = libggml-base.so
   SONAME_FLAG = -Wl,-soname,
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-base.dir/
   TARGET_FILE = bin/libggml-base.so
-  TARGET_PDB = bin/libggml-base.pdb
+  TARGET_PDB = ggml-base.so.dbg
 
 # =============================================================================
 # Object build statements for SHARED_LIBRARY target ggml
@@ -429,8 +407,6 @@ build build-llama/ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o: CXX_COMPIL
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml.dir
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml.dir/
-  TARGET_PDB = bin/libggml.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o: CXX_COMPILER__ggml_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-backend-reg.cpp || cmake_object_order_depends_target_ggml
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_BUILD -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_EXPORTS
@@ -439,8 +415,6 @@ build build-llama/ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o: CXX_COMPI
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml.dir
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml.dir/
-  TARGET_PDB = bin/libggml.pdb
 
 
 # =============================================================================
@@ -459,9 +433,8 @@ build bin/libggml.so: CXX_SHARED_LIBRARY_LINKER__ggml_Release build-llama/ggml/s
   PRE_LINK = :
   SONAME = libggml.so
   SONAME_FLAG = -Wl,-soname,
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml.dir/
   TARGET_FILE = bin/libggml.so
-  TARGET_PDB = bin/libggml.pdb
+  TARGET_PDB = ggml.so.dbg
 
 # =============================================================================
 # Object build statements for SHARED_LIBRARY target ggml-cpu
@@ -479,8 +452,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o: C_COMP
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/ggml-cpu.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -489,8 +460,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o: CXX_
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/repack.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -499,8 +468,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o: CXX_CO
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/hbm.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -509,8 +476,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o: CXX_COMPI
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o: C_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/quants.c || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -519,8 +484,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o: C_COMPIL
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/traits.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -529,8 +492,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o: CXX_CO
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/amx/amx.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -539,8 +500,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o: CXX_C
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/amx/mmq.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -549,8 +508,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o: CXX_C
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/tiled/tiled.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -559,8 +516,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled.cpp.o: C
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled-kernel.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/tiled/tiled-kernel.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -569,8 +524,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled-kernel.c
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/binary-ops.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -579,8 +532,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o: CX
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/unary-ops.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -589,8 +540,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o: CXX
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/vec.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -599,8 +548,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o: CXX_COMPI
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/ops.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -609,8 +556,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o: CXX_COMPI
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/llamafile/sgemm.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -619,8 +564,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o: C_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/arch/x86/quants.c || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -629,8 +572,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o:
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o: CXX_COMPILER__ggml-cpu_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/arch/x86/repack.cpp || cmake_object_order_depends_target_ggml-cpu
   DEFINES = -DGGML_BACKEND_BUILD -DGGML_BACKEND_SHARED -DGGML_SCHED_MAX_COPIES=4 -DGGML_SHARED -DGGML_USE_CPU_REPACK -DGGML_USE_LLAMAFILE -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -Dggml_cpu_EXPORTS
@@ -639,8 +580,6 @@ build build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir
   OBJECT_FILE_DIR = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
-  TARGET_PDB = bin/libggml-cpu.pdb
 
 
 # =============================================================================
@@ -659,9 +598,8 @@ build bin/libggml-cpu.so: CXX_SHARED_LIBRARY_LINKER__ggml-cpu_Release build-llam
   PRE_LINK = :
   SONAME = libggml-cpu.so
   SONAME_FLAG = -Wl,-soname,
-  TARGET_COMPILE_PDB = build-llama/ggml/src/CMakeFiles/ggml-cpu.dir/
   TARGET_FILE = bin/libggml-cpu.so
-  TARGET_PDB = bin/libggml-cpu.pdb
+  TARGET_PDB = ggml-cpu.so.dbg
 
 
 #############################################
@@ -821,8 +759,6 @@ build build-llama/src/CMakeFiles/llama.dir/Unity/unity_9_cxx.cxx.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir/Unity
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/Unity/unity_8_cxx.cxx.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_8_cxx.cxx || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -831,8 +767,6 @@ build build-llama/src/CMakeFiles/llama.dir/Unity/unity_8_cxx.cxx.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir/Unity
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/Unity/unity_7_cxx.cxx.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_7_cxx.cxx || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -841,8 +775,6 @@ build build-llama/src/CMakeFiles/llama.dir/Unity/unity_7_cxx.cxx.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir/Unity
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/Unity/unity_6_cxx.cxx.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_6_cxx.cxx || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -851,8 +783,6 @@ build build-llama/src/CMakeFiles/llama.dir/Unity/unity_6_cxx.cxx.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir/Unity
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/Unity/unity_5_cxx.cxx.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_5_cxx.cxx || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -861,8 +791,6 @@ build build-llama/src/CMakeFiles/llama.dir/Unity/unity_5_cxx.cxx.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir/Unity
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/Unity/unity_4_cxx.cxx.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_4_cxx.cxx || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -871,8 +799,6 @@ build build-llama/src/CMakeFiles/llama.dir/Unity/unity_4_cxx.cxx.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir/Unity
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/Unity/unity_3_cxx.cxx.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_3_cxx.cxx || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -881,8 +807,6 @@ build build-llama/src/CMakeFiles/llama.dir/Unity/unity_3_cxx.cxx.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir/Unity
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/Unity/unity_2_cxx.cxx.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_2_cxx.cxx || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -891,8 +815,6 @@ build build-llama/src/CMakeFiles/llama.dir/Unity/unity_2_cxx.cxx.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir/Unity
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/Unity/unity_1_cxx.cxx.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_1_cxx.cxx || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -901,8 +823,6 @@ build build-llama/src/CMakeFiles/llama.dir/Unity/unity_1_cxx.cxx.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir/Unity
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/Unity/unity_0_cxx.cxx.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src/CMakeFiles/llama.dir/Unity/unity_0_cxx.cxx || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -911,8 +831,6 @@ build build-llama/src/CMakeFiles/llama.dir/Unity/unity_0_cxx.cxx.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir/Unity
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -921,8 +839,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama.cpp.o: CXX_COMPILER__llama_Rele
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-adapter.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-adapter.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -931,8 +847,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-adapter.cpp.o: CXX_COMPILER__ll
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-arch.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-arch.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -941,8 +855,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-arch.cpp.o: CXX_COMPILER__llama
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-batch.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-batch.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -951,8 +863,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-batch.cpp.o: CXX_COMPILER__llam
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-chat.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-chat.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -961,8 +871,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-chat.cpp.o: CXX_COMPILER__llama
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-context.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-context.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -971,8 +879,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-context.cpp.o: CXX_COMPILER__ll
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-cparams.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-cparams.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -981,8 +887,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-cparams.cpp.o: CXX_COMPILER__ll
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-grammar.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-grammar.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -991,8 +895,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-grammar.cpp.o: CXX_COMPILER__ll
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-graph.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-graph.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1001,8 +903,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-graph.cpp.o: CXX_COMPILER__llam
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-hparams.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-hparams.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1011,8 +911,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-hparams.cpp.o: CXX_COMPILER__ll
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-impl.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-impl.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1021,8 +919,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-impl.cpp.o: CXX_COMPILER__llama
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-io.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-io.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1031,8 +927,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-io.cpp.o: CXX_COMPILER__llama_R
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-kv-cache.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1041,8 +935,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache.cpp.o: CXX_COMPILER__l
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache-iswa.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-kv-cache-iswa.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1051,8 +943,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache-iswa.cpp.o: CXX_COMPIL
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache-dsa.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-kv-cache-dsa.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1061,8 +951,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache-dsa.cpp.o: CXX_COMPILE
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache-dsa-iswa.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-kv-cache-dsa-iswa.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1071,8 +959,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache-dsa-iswa.cpp.o: CXX_CO
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache-msa.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-kv-cache-msa.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1081,8 +967,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache-msa.cpp.o: CXX_COMPILE
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache-dsv4.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-kv-cache-dsv4.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1091,8 +975,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-kv-cache-dsv4.cpp.o: CXX_COMPIL
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-memory.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-memory.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1101,8 +983,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-memory.cpp.o: CXX_COMPILER__lla
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-memory-hybrid.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-memory-hybrid.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1111,8 +991,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-memory-hybrid.cpp.o: CXX_COMPIL
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-memory-hybrid-iswa.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-memory-hybrid-iswa.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1121,8 +999,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-memory-hybrid-iswa.cpp.o: CXX_C
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-memory-hybrid-idx.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-memory-hybrid-idx.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1131,8 +1007,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-memory-hybrid-idx.cpp.o: CXX_CO
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-memory-recurrent.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-memory-recurrent.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1141,8 +1015,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-memory-recurrent.cpp.o: CXX_COM
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-mmap.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-mmap.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1151,8 +1023,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-mmap.cpp.o: CXX_COMPILER__llama
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-model-loader.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-model-loader.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1161,8 +1031,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-model-loader.cpp.o: CXX_COMPILE
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-model-saver.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-model-saver.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1171,8 +1039,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-model-saver.cpp.o: CXX_COMPILER
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-model.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-model.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1181,8 +1047,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-model.cpp.o: CXX_COMPILER__llam
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-quant.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-quant.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1191,8 +1055,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-quant.cpp.o: CXX_COMPILER__llam
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-sampler.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-sampler.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1201,8 +1063,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-sampler.cpp.o: CXX_COMPILER__ll
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/llama-vocab.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-vocab.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1211,8 +1071,6 @@ build build-llama/src/CMakeFiles/llama.dir/llama-vocab.cpp.o: CXX_COMPILER__llam
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/unicode-data.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/unicode-data.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1221,8 +1079,6 @@ build build-llama/src/CMakeFiles/llama.dir/unicode-data.cpp.o: CXX_COMPILER__lla
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 build build-llama/src/CMakeFiles/llama.dir/unicode.cpp.o: CXX_COMPILER__llama_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/unicode.cpp || cmake_object_order_depends_target_llama
   DEFINES = -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -DLLAMA_BUILD -DLLAMA_SHARED -Dllama_EXPORTS
@@ -1231,8 +1087,6 @@ build build-llama/src/CMakeFiles/llama.dir/unicode.cpp.o: CXX_COMPILER__llama_Re
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/android/.cxx/Release/355s492m/x86_64/build-llama/src -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/../include -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/../include
   OBJECT_DIR = build-llama/src/CMakeFiles/llama.dir
   OBJECT_FILE_DIR = build-llama/src/CMakeFiles/llama.dir
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
-  TARGET_PDB = bin/libllama.pdb
 
 
 # =============================================================================
@@ -1251,9 +1105,8 @@ build bin/libllama.so: CXX_SHARED_LIBRARY_LINKER__llama_Release build-llama/src/
   PRE_LINK = :
   SONAME = libllama.so
   SONAME_FLAG = -Wl,-soname,
-  TARGET_COMPILE_PDB = build-llama/src/CMakeFiles/llama.dir/
   TARGET_FILE = bin/libllama.so
-  TARGET_PDB = bin/libllama.pdb
+  TARGET_PDB = llama.so.dbg
 
 
 #############################################
@@ -1412,8 +1265,6 @@ build build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/hash.cpp.o: CXX_COMPILE
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/.
   OBJECT_DIR = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir
   OBJECT_FILE_DIR = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir
-  TARGET_COMPILE_PDB = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/vendor-hash.pdb
-  TARGET_PDB = build-llama/vendor/hash/libvendor-hash.pdb
 
 build build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/xxhash/xxhash.c.o: C_COMPILER__vendor-hash_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/xxhash/xxhash.c || cmake_object_order_depends_target_vendor-hash
   DEP_FILE = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/xxhash/xxhash.c.o.d
@@ -1421,8 +1272,6 @@ build build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/xxhash/xxhash.c.o: C_CO
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/.
   OBJECT_DIR = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir
   OBJECT_FILE_DIR = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/xxhash
-  TARGET_COMPILE_PDB = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/vendor-hash.pdb
-  TARGET_PDB = build-llama/vendor/hash/libvendor-hash.pdb
 
 build build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/sha1/sha1.c.o: CXX_COMPILER__vendor-hash_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/sha1/sha1.c || cmake_object_order_depends_target_vendor-hash
   DEP_FILE = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/sha1/sha1.c.o.d
@@ -1430,8 +1279,6 @@ build build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/sha1/sha1.c.o: CXX_COMP
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/.
   OBJECT_DIR = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir
   OBJECT_FILE_DIR = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/sha1
-  TARGET_COMPILE_PDB = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/vendor-hash.pdb
-  TARGET_PDB = build-llama/vendor/hash/libvendor-hash.pdb
 
 build build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/sha256/sha256.c.o: C_COMPILER__vendor-hash_Release /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/sha256/sha256.c || cmake_object_order_depends_target_vendor-hash
   DEP_FILE = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/sha256/sha256.c.o.d
@@ -1439,8 +1286,6 @@ build build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/sha256/sha256.c.o: C_CO
   INCLUDES = -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/.. -I/Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/.
   OBJECT_DIR = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir
   OBJECT_FILE_DIR = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/sha256
-  TARGET_COMPILE_PDB = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/vendor-hash.pdb
-  TARGET_PDB = build-llama/vendor/hash/libvendor-hash.pdb
 
 
 # =============================================================================
@@ -1455,9 +1300,8 @@ build build-llama/vendor/hash/libvendor-hash.a: CXX_STATIC_LIBRARY_LINKER__vendo
   OBJECT_DIR = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = build-llama/vendor/hash/CMakeFiles/vendor-hash.dir/vendor-hash.pdb
   TARGET_FILE = build-llama/vendor/hash/libvendor-hash.a
-  TARGET_PDB = build-llama/vendor/hash/libvendor-hash.pdb
+  TARGET_PDB = vendor-hash.a.dbg
 
 
 #############################################
@@ -1930,14 +1774,14 @@ build build-llama/vendor/stb/all: phony
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja: RERUN_CMAKE | /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/src/main/cpp/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/build-info.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/common.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/license.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/llama-config.cmake.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/llama.pc.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/cmake/common.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/cmake/ggml-config.cmake.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-version.h.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-version.h.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/miniaudio/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/nlohmann/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/sheredom/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/stb/CMakeLists.txt /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/BasicConfigVersion-SameMajorVersion.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeASMCompiler.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeASMInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCCompiler.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCCompilerABI.c /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCXXCompiler.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCXXCompilerABI.cpp /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCXXInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCommonLanguageInclude.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCompilerIdDetection.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineASMCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCXXCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCompileFeatures.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCompilerABI.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCompilerId.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineSystem.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeFindBinUtils.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeGenericSystem.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeInitializeConfigs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeLanguageInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakePackageConfigHelpers.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeParseImplicitIncludeInfo.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeParseImplicitLinkInfo.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeParseLibraryArchitecture.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeSystem.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeSystemSpecificInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeSystemSpecificInitialize.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeTestASMCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeTestCCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeTestCXXCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeTestCompilerCommon.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCXXCompilerFlag.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCXXSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckForPthreads.c /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckIncludeFile.c.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckIncludeFile.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckIncludeFileCXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckLibraryExists.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/ADSP-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/ARMCC-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/ARMClang-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/AppleClang-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Borland-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Bruce-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/CMakeCommonCompilerMacros.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-ASM.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-C.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-CXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-DetermineCompilerInternal.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-FindBinUtils.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Comeau-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Compaq-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Cray-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Embarcadero-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Fujitsu-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/GHS-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/GNU-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/GNU.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/HP-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/HP-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/IAR-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/IBMCPP-C-DetermineVersionInternal.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Intel-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/MSVC-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/NVHPC-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/NVIDIA-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/PGI-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/PathScale-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/SCO-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/SDCC-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/SunPro-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/TI-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/TinyCC-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/VisualAge-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Watcom-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/XL-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/XL-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/XLClang-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/zOS-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindGit.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindPackageMessage.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindThreads.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/GNUInstallDirs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Internal/CheckCompilerFlag.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Internal/CheckSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Internal/FeatureTesting.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-ASM.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-C.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-CXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Determine-C.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Determine-CXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Determine.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Initialize.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android/Determine-Compiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Linux.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/UnixPaths.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/WriteBasicConfigVersionFile.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/abis.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android-legacy.toolchain.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android.toolchain.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/flags.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android-Clang.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android-Determine.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android-Initialize.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Determine-Compiler.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/platforms.cmake CMakeCache.txt CMakeFiles/3.22.1-g37088a8/CMakeASMCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeCCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeCXXCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeSystem.cmake
+build build.ninja: RERUN_CMAKE | /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/src/main/cpp/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/build-info.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/common.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/license.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/llama-config.cmake.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/llama.pc.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/cmake/common.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/cmake/ggml-config.cmake.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-version.h.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-version.h.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/miniaudio/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/nlohmann/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/sheredom/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/stb/CMakeLists.txt /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/BasicConfigVersion-SameMajorVersion.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeASMInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCXXInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCommonLanguageInclude.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeGenericSystem.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeInitializeConfigs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeLanguageInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakePackageConfigHelpers.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeSystemSpecificInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeSystemSpecificInitialize.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCXXCompilerFlag.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCXXSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckIncludeFile.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckIncludeFileCXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckLibraryExists.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/CMakeCommonCompilerMacros.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-ASM.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-C.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-CXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/GNU.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindGit.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindPackageMessage.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindThreads.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/GNUInstallDirs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Internal/CheckCompilerFlag.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Internal/CheckSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-ASM.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-C.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-CXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Initialize.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Linux.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/UnixPaths.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/WriteBasicConfigVersionFile.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/abis.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android-legacy.toolchain.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android.toolchain.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/flags.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android-Clang.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android-Initialize.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/platforms.cmake CMakeCache.txt CMakeFiles/3.22.1-g37088a8/CMakeASMCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeCCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeCXXCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeSystem.cmake
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/src/main/cpp/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/build-info.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/common.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/license.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/llama-config.cmake.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/llama.pc.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/cmake/common.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/cmake/ggml-config.cmake.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-version.h.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-version.h.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/miniaudio/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/nlohmann/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/sheredom/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/stb/CMakeLists.txt /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/BasicConfigVersion-SameMajorVersion.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeASMCompiler.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeASMInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCCompiler.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCCompilerABI.c /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCXXCompiler.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCXXCompilerABI.cpp /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCXXInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCommonLanguageInclude.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCompilerIdDetection.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineASMCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCXXCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCompileFeatures.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCompilerABI.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineCompilerId.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeDetermineSystem.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeFindBinUtils.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeGenericSystem.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeInitializeConfigs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeLanguageInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakePackageConfigHelpers.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeParseImplicitIncludeInfo.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeParseImplicitLinkInfo.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeParseLibraryArchitecture.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeSystem.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeSystemSpecificInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeSystemSpecificInitialize.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeTestASMCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeTestCCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeTestCXXCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeTestCompilerCommon.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCXXCompilerFlag.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCXXSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckForPthreads.c /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckIncludeFile.c.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckIncludeFile.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckIncludeFileCXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckLibraryExists.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/ADSP-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/ARMCC-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/ARMClang-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/AppleClang-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Borland-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Bruce-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/CMakeCommonCompilerMacros.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-ASM.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-C.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-CXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-DetermineCompilerInternal.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-FindBinUtils.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Comeau-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Compaq-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Cray-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Embarcadero-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Fujitsu-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/GHS-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/GNU-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/GNU.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/HP-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/HP-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/IAR-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/IBMCPP-C-DetermineVersionInternal.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Intel-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/MSVC-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/NVHPC-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/NVIDIA-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/PGI-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/PathScale-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/SCO-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/SDCC-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/SunPro-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/TI-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/TinyCC-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/VisualAge-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Watcom-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/XL-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/XL-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/XLClang-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/zOS-C-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindGit.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindPackageMessage.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindThreads.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/GNUInstallDirs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Internal/CheckCompilerFlag.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Internal/CheckSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Internal/FeatureTesting.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-ASM.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-C.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-CXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Determine-C.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Determine-CXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Determine.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Initialize.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android/Determine-Compiler.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Linux.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/UnixPaths.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/WriteBasicConfigVersionFile.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/abis.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android-legacy.toolchain.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android.toolchain.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/flags.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android-Clang.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android-Determine.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android-Initialize.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Determine-Compiler.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/platforms.cmake CMakeCache.txt CMakeFiles/3.22.1-g37088a8/CMakeASMCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeCCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeCXXCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeSystem.cmake: phony
+build /Users/protector/Documents/projects/kortex/packages/flutter_llama/android/src/main/cpp/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/build-info.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/common.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/license.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/llama-config.cmake.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/cmake/llama.pc.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/cmake/common.cmake /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/cmake/ggml-config.cmake.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-cpu/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/ggml/src/ggml-version.h.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/src/llama-version.h.in /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/hash/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/miniaudio/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/nlohmann/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/sheredom/CMakeLists.txt /Users/protector/Documents/projects/kortex/packages/flutter_llama/llama.cpp/vendor/stb/CMakeLists.txt /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/BasicConfigVersion-SameMajorVersion.cmake.in /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeASMInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCXXInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCommonLanguageInclude.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeGenericSystem.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeInitializeConfigs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeLanguageInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakePackageConfigHelpers.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeSystemSpecificInformation.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeSystemSpecificInitialize.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCXXCompilerFlag.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckCXXSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckIncludeFile.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckIncludeFileCXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/CheckLibraryExists.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/CMakeCommonCompilerMacros.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-ASM.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-C.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang-CXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/Clang.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Compiler/GNU.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindGit.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindPackageMessage.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/FindThreads.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/GNUInstallDirs.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Internal/CheckCompilerFlag.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Internal/CheckSourceCompiles.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-ASM.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-C.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang-CXX.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Clang.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android-Initialize.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Android.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/Linux.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/Platform/UnixPaths.cmake /Users/protector/Library/Android/sdk/cmake/3.22.1/share/cmake-3.22/Modules/WriteBasicConfigVersionFile.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/abis.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android-legacy.toolchain.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android.toolchain.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/flags.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android-Clang.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android-Initialize.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/hooks/pre/Android.cmake /Users/protector/Library/Android/sdk/ndk/27.0.12077973/build/cmake/platforms.cmake CMakeCache.txt CMakeFiles/3.22.1-g37088a8/CMakeASMCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeCCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeCXXCompiler.cmake CMakeFiles/3.22.1-g37088a8/CMakeSystem.cmake: phony
 
 
 #############################################

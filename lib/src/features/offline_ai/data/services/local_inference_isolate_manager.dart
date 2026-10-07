@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_llama/flutter_llama.dart';
+import 'package:kortex/src/core/local_llm/flutter_llama_adapter.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 
 class InferenceTimeoutException implements Exception {
