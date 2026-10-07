@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <!-- 1. Guidelines & Grid -->
+    <group android:name="grid_group" android:pivotX="256" android:pivotY="256">
+        <path
+            android:name="grid_lines"
+            android:strokeColor="#788C7E"
+            android:strokeWidth="1.2"
+            android:strokeAlpha="0.3"
+            android:pathData="M256,256 L256,56 M256,256 L429.2,156 M256,256 L429.2,356 M256,256 L256,456 M256,256 L82.8,356 M256,256 L82.8,156 M256,156 L342.6,206 L342.6,306 L256,356 L169.4,306 L169.4,206 Z" />
+    </group>
+
+    <!-- 2. Outer Shield Frame -->
+    <group android:name="shield_group" android:pivotX="256" android:pivotY="256">
+        <path
+            android:name="shield_path"
+            android:strokeColor="#5B8C93"
+            android:strokeWidth="14"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M256,56 L429.2,156 L429.2,356 L256,456 L82.8,356 L82.8,156 Z" />
+    </group>
+
+    <!-- 3. Neural K Network Mark -->
+    <group android:name="k_mark_group" android:pivotX="256" android:pivotY="256">
+        <path
+            android:name="k_stem"
+            android:strokeColor="#788C7E"
+            android:strokeWidth="16"
+            android:strokeLineCap="round"
+            android:pathData="M156,140 L156,372" />
+        <path
+            android:name="k_connector"
+            android:strokeColor="#5B8C93"
+            android:strokeWidth="16"
+            android:strokeLineCap="round"
+            android:pathData="M156,256 L256,256" />
+        <path
+            android:name="k_arm_top"
+            android:strokeColor="#5B8C93"
+            android:strokeWidth="16"
+            android:strokeLineCap="round"
+            android:pathData="M256,256 L356,140" />
+        <path
+            android:name="k_arm_bottom"
+            android:strokeColor="#D4A373"
+            android:strokeWidth="16"
+            android:strokeLineCap="round"
+            android:pathData="M256,256 L356,372" />
+    </group>
+
+    <!-- 4. Terminal & Outer Nodes -->
+    <group android:name="nodes_group" android:pivotX="256" android:pivotY="256">
+        <path
+            android:name="outer_nodes"
+            android:fillColor="#788C7E"
+            android:pathData="M256,56 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 M429.2,156 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 M429.2,356 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 M256,456 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 M82.8,356 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0 M82.8,156 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0" />
+        <path
+            android:name="k_nodes"
+            android:fillColor="#5B8C93"
+            android:pathData="M156,140 m-13,0 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0 M156,372 m-13,0 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0 M356,140 m-13,0 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0 M356,372 m-13,0 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0" />
+    </group>
+
+    <!-- 5. Central Core -->
+    <group android:name="core_group" android:pivotX="256" android:pivotY="256">
+        <path
+            android:name="core_outer"
+            android:strokeColor="#788C7E"
+            android:strokeWidth="2"
+            android:strokeAlpha="0.4"
+            android:pathData="M256,256 m-42,0 a42,42 0 1,0 84,0 a42,42 0 1,0 -84,0" />
+        <path
+            android:name="core_inner"
+            android:fillColor="#5B8C93"
+            android:pathData="M256,256 m-30,0 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0" />
+    </group>
+</vector>

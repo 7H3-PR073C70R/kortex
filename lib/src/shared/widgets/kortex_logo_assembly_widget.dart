@@ -61,8 +61,9 @@ class _KortexLogoAssemblyWidgetState extends State<KortexLogoAssemblyWidget>
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
     if (disableAnimations) {
-      _controller.stop();
-      _controller.value = 1.0;
+      _controller
+        ..stop()
+        ..value = 1.0;
       widget.onAssemblyComplete?.call();
     } else if (!_controller.isAnimating && _controller.value == 0.0) {
       if (widget.mode == LogoAssemblyMode.splash) {
