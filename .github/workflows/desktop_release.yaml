@@ -95,7 +95,7 @@ jobs:
       - name: Build Flutter Web Bundle
         if: matrix.os-name == 'Web'
         run: |
-          flutter build web --release --flavor production -t lib/main_production.dart
+          flutter build web --release -t lib/main_production.dart
           mkdir -p web_landing/app
           cp -r build/web/* web_landing/app/
 
