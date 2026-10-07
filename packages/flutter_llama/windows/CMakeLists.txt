@@ -14,6 +14,7 @@ set(LLAMA_CPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../llama.cpp")
 
 if(MSVC)
   add_compile_options("/Fo$(IntDir)%(RelativeDir)\\")
+  add_compile_options("/wd4267")
 endif()
 
 if(EXISTS "${LLAMA_CPP_DIR}/CMakeLists.txt")
@@ -39,6 +40,10 @@ set_target_properties(${PLUGIN_NAME} PROPERTIES
 target_compile_definitions(${PLUGIN_NAME} PRIVATE 
   FLUTTER_PLUGIN_IMPL
   _CRT_SECURE_NO_WARNINGS
+)
+
+target_include_directories(${PLUGIN_NAME} PUBLIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_include_directories(${PLUGIN_NAME} PRIVATE

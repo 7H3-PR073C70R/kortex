@@ -1,4 +1,4 @@
-#include "flutter_llama_plugin.h"
+#include "include/flutter_llama/flutter_llama_plugin.h"
 
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>

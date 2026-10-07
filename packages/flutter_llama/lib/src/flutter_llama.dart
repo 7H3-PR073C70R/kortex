@@ -8,7 +8,9 @@ import 'models/llama_response.dart';
 import 'models/model_source.dart';
 import 'models/preset_model.dart';
 import 'services/model_manager.dart';
-import 'ffi/llama_ffi_engine.dart';
+import 'ffi/llama_ffi_stub.dart'
+    if (dart.library.io) 'ffi/llama_ffi_engine.dart';
+
 
 /// Main class for interacting with llama.cpp models
 class FlutterLlama {

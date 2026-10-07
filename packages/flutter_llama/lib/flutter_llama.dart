@@ -11,5 +11,8 @@ export 'src/models/preset_model.dart';
 export 'src/services/model_manager.dart';
 export 'src/services/ollama_downloader.dart';
 export 'src/services/huggingface_downloader.dart';
-export 'src/ffi/llama_ffi_engine.dart';
-export 'src/ffi/llama_ffi_bindings.dart';
+export 'src/ffi/llama_ffi_stub.dart'
+    if (dart.library.io) 'src/ffi/llama_ffi_engine.dart';
+export 'src/ffi/llama_ffi_stub.dart'
+    if (dart.library.io) 'src/ffi/llama_ffi_bindings.dart';
+

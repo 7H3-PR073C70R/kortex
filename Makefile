@@ -19,3 +19,9 @@ apk:
 mac_bundle:
 	(flutter build macos --release --flavor production -t lib/main_production.dart)
 	
+web:
+	(flutter build web --release --target lib/main_production.dart)
+
+deploy_web:
+	(flutter build web --release --target lib/main_production.dart && npx firebase-tools deploy --only hosting)
+	(npx firebase-tools deploy --only hosting)
