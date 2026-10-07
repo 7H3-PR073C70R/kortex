@@ -15,6 +15,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -53,6 +54,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                 children:
                     <Widget>[
                           _ActionItem(
+                            key: AppTourKeys.quickActionOcrKey,
                             icon: Icons.upload_file_rounded,
                             label: l10n.dashboardUploadNotes,
                             color: colors.primary,
@@ -63,6 +65,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                           ),
                           _buildDivider(colors, isDark),
                           _ActionItem(
+                            key: AppTourKeys.quickActionQBankKey,
                             icon: Icons.quiz_rounded,
                             label: l10n.dashboardQBankAction,
                             color: colors.warning,
@@ -90,6 +93,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                           ),
                           _buildDivider(colors, isDark),
                           _ActionItem(
+                            key: AppTourKeys.quickActionDuelKey,
                             icon: Icons.flash_on_rounded,
                             label: '1v1 Duel',
                             color: colors.primary,
@@ -291,6 +295,7 @@ class _ActionItem extends StatelessWidget {
     required this.label,
     required this.color,
     required this.onTap,
+    super.key,
   });
 
   final IconData icon;

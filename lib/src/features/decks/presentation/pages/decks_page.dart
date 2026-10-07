@@ -282,11 +282,7 @@ class _DecksView extends HookWidget {
                                 children: [
                                   // 1. Header Title & Create Action
                                   Row(
-                                    key: AppTourKeys.decksHeaderKey =
-                                        AppTourKeys.safeKey(
-                                          AppTourKeys.decksHeaderKey,
-                                          'tour_decks_header',
-                                        ),
+                                    key: AppTourKeys.decksHeaderKey,
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
@@ -479,6 +475,7 @@ class _DecksView extends HookWidget {
 
                                   // 5. Filter Category Pills
                                   SingleChildScrollView(
+                                    key: AppTourKeys.decksFilterChipKey,
                                     scrollDirection: Axis.horizontal,
                                     physics: const ClampingScrollPhysics(),
                                     child: Row(
@@ -716,9 +713,10 @@ class _DecksView extends HookWidget {
     ValueNotifier<DeckEntity?>? selectedDesktopDeck,
   }) {
     Widget tile = Padding(
-      key: ValueKey<String>(deck.id),
+      key: index == 0 ? AppTourKeys.decksTodayHeroKey : ValueKey<String>(deck.id),
       padding: const EdgeInsets.only(bottom: 14),
       child: DeckListTileCard(
+        key: index == 0 ? AppTourKeys.decksHeroStartBtnKey : null,
         deck: deck,
         isSelected: selectedDesktopDeck?.value?.id == deck.id,
         onSelectDeck: isDesktop && selectedDesktopDeck != null

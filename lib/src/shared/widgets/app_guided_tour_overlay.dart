@@ -14,7 +14,7 @@ import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-/// Representation of a single step in the interactive app walkthrough.
+/// Representation of a granular step in the interactive app walkthrough.
 class _TourStep {
   const _TourStep({
     required this.badge,
@@ -25,7 +25,8 @@ class _TourStep {
     required this.icon,
     required this.accentColor,
     required this.targetTabIndex,
-    required this.resolveTarget,
+    required this.targetKey,
+    this.fallbackKey,
     this.onStepActivated,
   });
 
@@ -37,14 +38,48 @@ class _TourStep {
   final IconData icon;
   final Color accentColor;
   final int targetTabIndex;
-  final Rect Function(BuildContext context, Size screenSize, EdgeInsets insets)
-  resolveTarget;
+  final GlobalKey targetKey;
+  final GlobalKey? fallbackKey;
   final VoidCallback? onStepActivated;
+
+  /// Resolves the spotlight target rectangle accurately based on bound keys
+  /// or dynamic responsive screen layout breakpoints.
+  Rect resolveTarget(BuildContext context, Size screenSize, EdgeInsets insets) {
+    // 1. Primary granular target key check
+    final primaryRect = AppTourKeys.getTargetRect(targetKey);
+    if (primaryRect != null && primaryRect.width > 0 && primaryRect.height > 0) {
+      return primaryRect.inflate(6);
+    }
+
+    // 2. Secondary fallback section key check
+    if (fallbackKey != null) {
+      final fallbackRect = AppTourKeys.getTargetRect(fallbackKey!);
+      if (fallbackRect != null && fallbackRect.width > 0 && fallbackRect.height > 0) {
+        return fallbackRect.inflate(6);
+      }
+    }
+
+    // 3. Dynamic Responsive Breakpoint Geometry
+    final isDesktop = screenSize.width >= 900;
+    final isTablet = screenSize.width >= 600 && screenSize.width < 900;
+
+    final contentWidth = isDesktop
+        ? math.min<double>(screenSize.width - 280, 840)
+        : isTablet
+            ? math.min<double>(screenSize.width - 64, 680)
+            : math.min<double>(screenSize.width - 32, 540);
+
+    final left = isDesktop
+        ? 240 + (screenSize.width - 240 - contentWidth) / 2
+        : (screenSize.width - contentWidth) / 2;
+
+    final top = insets.top + 24;
+    return Rect.fromLTWH(left, top, contentWidth, 120);
+  }
 }
 
 /// Interactive spotlight walkthrough overlay that guides users through ALL core
-/// features of Kortex. Call [AppGuidedTourOverlay.start] — it handles
-/// navigation across tabs automatically during the walkthrough.
+/// and granular features of Kortex across mobile, tablet, and desktop screens.
 class AppGuidedTourOverlay extends StatefulWidget {
   const AppGuidedTourOverlay({
     super.key,
@@ -56,12 +91,6 @@ class AppGuidedTourOverlay extends StatefulWidget {
   final ValueChanged<int>? onTabChange;
 
   /// Launches the full-screen interactive tour over the root navigator.
-  ///
-  /// If [force] is false (default), the tour only shows if the user has
-  /// never completed or skipped it before.
-  ///
-  /// Pass [onBeforeStart] to navigate to Dashboard before the overlay mounts
-  /// (e.g. from About page or profile menu).
   static Future<void> start(
     BuildContext context, {
     VoidCallback? onCompleted,
@@ -82,15 +111,13 @@ class AppGuidedTourOverlay extends StatefulWidget {
     // Switch to Dashboard tab first so spotlights land on the right widgets.
     onBeforeStart?.call();
 
-    // Resolve outer TabsRouter before mounting root dialog!
     TabsRouter? tabsRouter;
     try {
       tabsRouter = AutoTabsRouter.of(context);
     } on Object catch (_) {}
 
-    // Small delay to allow navigation animation to settle.
     if (onBeforeStart != null) {
-      await Future<void>.delayed(const Duration(milliseconds: 420));
+      await Future<void>.delayed(const Duration(milliseconds: 380));
     }
 
     if (!context.mounted) return;
@@ -127,13 +154,12 @@ class AppGuidedTourOverlay extends StatefulWidget {
     );
   }
 
-
   @override
   State<AppGuidedTourOverlay> createState() => _AppGuidedTourOverlayState();
 }
 
 class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   int _currentStepIndex = 0;
 
   late final AnimationController _morphController;
@@ -147,334 +173,9 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
   List<_TourStep> _steps = const [];
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _steps = _buildSteps(context.colors);
-  }
-
-  List<_TourStep> _buildSteps(AppThemeColorsExtension colors) {
-    return [
-      // 1. Academic Command Center
-      _TourStep(
-        badge: 'STEP 1 OF 14 • DASHBOARD',
-        title: 'Academic HQ & Neural Tier',
-        subtitle: 'Streak counter, level progress & scholar identity',
-        description:
-            'Welcome to Kortexify! Track your daily study streak, watch your Neural Scholar tier elevate from Bronze to Diamond, and monitor your XP multipliers.',
-        proTip:
-            'Maintaining a 7+ day streak unlocks double XP multipliers and automatic league promotion.',
-        icon: Icons.speed_rounded,
-        accentColor: colors.primary,
-        targetTabIndex: 0,
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.headerProfileKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 16;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 140);
-        },
-      ),
-
-      // 2. FSRS Spaced-Repetition Queue
-      _TourStep(
-        badge: 'STEP 2 OF 14 • ACTIVE RECALL',
-        title: 'Daily Memory Review Queue',
-        subtitle: 'Smart spaced repetition engine',
-        description:
-            'Cards due for review appear here every morning, scheduled by our smart memory engine. It learns how fast you forget each card and reminds you right before you lose it.',
-        proTip:
-            'Just 10-15 reviews per day maintains 95%+ retention permanently. Do not skip your queue.',
-        icon: Icons.alarm_on_rounded,
-        accentColor: colors.success,
-        targetTabIndex: 0,
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.reviewQueueKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 170;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 120);
-        },
-      ),
-
-      // 3. Exam Countdown & Cram Planner
-      _TourStep(
-        badge: 'STEP 3 OF 14 • EXAM PLANNER',
-        title: 'Exam Countdown & Cram Clock',
-        subtitle: 'Auto-calculated daily study velocity',
-        description:
-            'Add upcoming exams like WAEC, NECO, JAMB, SAT, or university finals. Kortex automatically builds a daily study target and switches to a timed exam clock on test day.',
-        proTip:
-            'Tap "Add Exam" on the countdown banner to let the algorithm balance your weaker topics.',
-        icon: Icons.timer_outlined,
-        accentColor: colors.warning,
-        targetTabIndex: 0,
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.countdownKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 300;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 80);
-        },
-      ),
-
-      // 4. AI Quick Actions Suite
-      _TourStep(
-        badge: 'STEP 4 OF 14 • AI TOOLS',
-        title: 'AI Study Tools & Quick Launcher',
-        subtitle: 'OCR note upload, Q-Bank & 1v1 Quiz Duels',
-        description:
-            'Instant entry point for active learning: snap notes with the AI OCR camera, launch subject past-question banks, or challenge scholars to live 1v1 quiz duels.',
-        proTip:
-            'Use "Upload Notes" to convert physical textbook photos into structured flashcards in seconds.',
-        icon: Icons.auto_awesome_rounded,
-        accentColor: colors.syllabotAccent,
-        targetTabIndex: 0,
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.quickActionsKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 400;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 100);
-        },
-      ),
-
-      // 5. Smart Flashcard Decks & Note Importer
-      _TourStep(
-        badge: 'STEP 5 OF 14 • FLASHCARD DECKS',
-        title: 'Smart Decks & Note Importer',
-        subtitle: 'Syllabus-curated decks & camera scanner',
-        description:
-            'Browse thousands of pre-built past-question decks for your syllabus, or use the camera importer to instantly generate interactive flashcards from your notes.',
-        proTip:
-            'Decks are automatically tagged by subject and difficulty weights for structured revision.',
-        icon: Icons.style_rounded,
-        accentColor: colors.warning,
-        targetTabIndex: 1,
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.decksHeaderKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 16;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 90);
-        },
-      ),
-
-      // 6. Today's Revision Hero Session
-      _TourStep(
-        badge: 'STEP 6 OF 14 • REVISION HERO',
-        title: "Today's Priority Revision Session",
-        subtitle: 'Single-click active recall launcher',
-        description:
-            'Kortex identifies your highest-priority review deck for today. One tap launches active recall mode with real-time AI feedback on incorrect answers.',
-        proTip:
-            'Complete your hero revision card first thing every morning for peak memory retention.',
-        icon: Icons.play_circle_fill_rounded,
-        accentColor: colors.primary,
-        targetTabIndex: 1,
-        resolveTarget: (context, screenSize, insets) {
-          final measured =
-              AppTourKeys.getTargetRect(AppTourKeys.decksTodayHeroKey) ??
-              AppTourKeys.getTargetRect(AppTourKeys.decksHeaderKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 16;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 140);
-        },
-      ),
-
-      // 7. Rapid Study Sprints & Focus Mode
-      _TourStep(
-        badge: 'STEP 7 OF 14 • STUDY SPRINTS',
-        title: 'Rapid Sprints & Hyperdrive Focus',
-        subtitle: '10-card, 20-card & speed-run revision modes',
-        description:
-            'Short on time? Launch Quick 10 or Power 20 sprints. Or activate Hyperdrive Focus Mode for a silent, distraction-free study sprint.',
-        proTip:
-            'Quick 10 sprints are ideal for quick study sessions during commute or break times.',
-        icon: Icons.bolt_rounded,
-        accentColor: colors.warning,
-        targetTabIndex: 1,
-        resolveTarget: (context, screenSize, insets) {
-          final measured =
-              AppTourKeys.getTargetRect(AppTourKeys.decksSprintChipsKey) ??
-              AppTourKeys.getTargetRect(AppTourKeys.decksHeaderKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 16;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 140);
-        },
-      ),
-
-      // 8. Ask Syllabot 24/7 AI Tutor
-      _TourStep(
-        badge: 'STEP 8 OF 14 • AI COPILOT',
-        title: 'Ask Syllabot 24/7 AI Tutor',
-        subtitle: 'Socratic AI tutor — always one tap away',
-        description:
-            'Stuck on a tricky equation, past paper question, or concept? Tap the floating Syllabot button on any screen for step-by-step explanations, essay outlines, or past-paper marking.',
-        proTip:
-            'Syllabot stays visible on every screen so you never have to leave your revision session for help.',
-        icon: Icons.psychology_rounded,
-        accentColor: colors.secondary,
-        targetTabIndex: 1,
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.syllabotFabKey);
-          if (measured != null) return measured.inflate(8);
-          final defaultBottom = math.max(84, insets.bottom + 72);
-          return Rect.fromLTWH(
-            screenSize.width - 160,
-            screenSize.height - defaultBottom - 48,
-            142,
-            48,
-          );
-        },
-      ),
-
-      // 9. Study Hub Command Center
-      _TourStep(
-        badge: 'STEP 9 OF 14 • STUDY HUB',
-        title: 'Study Hub Command Center',
-        subtitle: 'Live focus rooms, Study Circles & Marketplace',
-        description:
-            'Access all deep-work tools using the Liquid Glass tab bar — co-working focus rooms, subject study circles, and community deck marketplace.',
-        proTip:
-            'Swipe horizontally across the Liquid Glass tab bar to switch rooms instantly.',
-        icon: Icons.device_hub_rounded,
-        accentColor: colors.syllabotAccent,
-        targetTabIndex: 3,
-        onStepActivated: () => AppTourKeys.onSelectStudyHubSubTab?.call(0),
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.pomodoroCardKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 50;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 50);
-        },
-      ),
-
-      // 10. Synchronized Live Focus Rooms
-      _TourStep(
-        badge: 'STEP 10 OF 14 • FOCUS ROOMS',
-        title: 'Synchronized Live Focus Rooms',
-        subtitle: 'Shared Pomodoro timers & ambient audio',
-        description:
-            'Join virtual study rooms with scholars worldwide. Features synchronized 25-minute Pomodoro clocks, lo-fi beats, ambient audio, and shared study goals.',
-        proTip:
-            'Co-working in live focus rooms boosts study accountability and earns bonus group XP.',
-        icon: Icons.groups_rounded,
-        accentColor: colors.primary,
-        targetTabIndex: 3,
-        onStepActivated: () => AppTourKeys.onSelectStudyHubSubTab?.call(0),
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.liveRoomsCardKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 120;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 180);
-        },
-      ),
-
-      // 11. Scholar Deck Marketplace
-      _TourStep(
-        badge: 'STEP 11 OF 14 • MARKETPLACE',
-        title: 'Scholar Deck Marketplace',
-        subtitle: 'Community-curated decks & past questions',
-        description:
-            'Browse and clone high-yield flashcard decks curated by top scholars and verified educators for your exact exam track.',
-        proTip:
-            'Clone any marketplace deck with one tap to save it directly to your personal library.',
-        icon: Icons.storefront_rounded,
-        accentColor: colors.warning,
-        targetTabIndex: 3,
-        onStepActivated: () => AppTourKeys.onSelectStudyHubSubTab?.call(2),
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.marketplaceCardKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 120;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 180);
-        },
-      ),
-
-      // 12. Scholar Community & Forum
-      _TourStep(
-        badge: 'STEP 12 OF 14 • COMMUNITY',
-        title: 'Scholar Community & Forum',
-        subtitle: 'Track-specific Q&A forums & discussions',
-        description:
-            'Discuss challenging past questions, share solutions with peers, and filter discussions by your academic track (WAEC, JAMB, A-Levels, SAT).',
-        proTip:
-            'Filter forum discussions by "Trending" or "Unanswered" to help fellow scholars.',
-        icon: Icons.forum_rounded,
-        accentColor: colors.latexHighlight,
-        targetTabIndex: 2,
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.communityHeroKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 16;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 120);
-        },
-      ),
-
-      // 13. Post Questions & Discuss Solutions
-      _TourStep(
-        badge: 'STEP 13 OF 14 • CREATE DISCUSSION',
-        title: 'Post Questions & Discuss Solutions',
-        subtitle: 'Ask the scholar community for help',
-        description:
-            'Post questions, attach images of past paper equations, or start academic debates with scholars studying the same syllabus.',
-        proTip:
-            'Add subject tags when posting so scholars in your track get instant notifications.',
-        icon: Icons.post_add_rounded,
-        accentColor: colors.primary,
-        targetTabIndex: 2,
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.communityPostBtnKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 16;
-          return Rect.fromLTWH(screenSize.width - 100, top, 80, 40);
-        },
-      ),
-
-      // 14. Analytics, Settings & Customization
-      _TourStep(
-        badge: 'STEP 14 OF 14 • PROFILE',
-        title: 'Analytics, Settings & Customization',
-        subtitle: 'Retention heatmaps, theme swatches & security',
-        description:
-            'Track long-term retention heatmaps and XP curves. Customize your theme palette, Socratic AI behavior, biometric lock, and account security.',
-        proTip:
-            'Check your weekly retention heatmap every Sunday to target weak topics for the upcoming week.',
-        icon: Icons.person_rounded,
-        accentColor: colors.primary,
-        targetTabIndex: 4,
-        resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.profileCardKey);
-          if (measured != null) return measured.inflate(6);
-          final top = insets.top + 16;
-          final width = math.min<double>(screenSize.width - 32, 560);
-          final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 180);
-        },
-      ),
-    ];
-  }
-
-  @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     _morphController = AnimationController(
       vsync: this,
@@ -496,23 +197,291 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _updateTargetRect(initial: true);
+        unawaited(_updateTargetRect(initial: true));
       }
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _steps = _buildSteps(context.colors);
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    // React to window resizes and orientation changes dynamically
+    if (mounted) {
+      unawaited(_updateTargetRect());
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _morphController.dispose();
     _pulseController.dispose();
     super.dispose();
   }
 
-  void _updateTargetRect({bool initial = false}) {
-    final screenSize = MediaQuery.sizeOf(context);
-    final insets = MediaQuery.paddingOf(context);
+  List<_TourStep> _buildSteps(AppThemeColorsExtension colors) {
+    return [
+      // 1. Streak & Neural Scholar Tier
+      _TourStep(
+        badge: 'STEP 1 OF 15 • DASHBOARD HQ',
+        title: 'Daily Streak & Neural Scholar Tier',
+        subtitle: 'Streak multiplier & rank elevation',
+        description:
+            'Track your daily revision consistency. Complete reviews every day to watch your Scholar Tier elevate from Bronze to Diamond and unlock double XP multipliers.',
+        proTip:
+            'A 7+ day streak unlocks automatic rank promotions and exclusive study room badges.',
+        icon: Icons.local_fire_department_rounded,
+        accentColor: colors.primary,
+        targetTabIndex: 0,
+        targetKey: AppTourKeys.headerStreakKey,
+        fallbackKey: AppTourKeys.headerProfileKey,
+      ),
+
+      // 2. Custom Exam Clock & Track Selector
+      _TourStep(
+        badge: 'STEP 2 OF 15 • EXAM COUNTDOWN',
+        title: 'Exam Clock & Target Syllabus Track',
+        subtitle: 'WAEC, NECO, JAMB, SAT & Degree targets',
+        description:
+            'Set your upcoming exam date. Kortex automatically computes your daily target velocity and tunes practice question difficulty to your track.',
+        proTip:
+            'Tap your exam badge to manage exam dates and auto-prioritize syllabus topics.',
+        icon: Icons.timer_rounded,
+        accentColor: colors.warning,
+        targetTabIndex: 0,
+        targetKey: AppTourKeys.countdownBadgeKey,
+        fallbackKey: AppTourKeys.countdownKey,
+      ),
+
+      // 3. FSRS Active Recall Memory Queue
+      _TourStep(
+        badge: 'STEP 3 OF 15 • SPACED REPETITION',
+        title: 'Daily Memory Review Queue',
+        subtitle: 'FSRS memory retention algorithm',
+        description:
+            'Cards due for review appear here every morning. Our smart FSRS memory engine schedules cards right before you forget them for 95%+ long-term retention.',
+        proTip:
+            'Clearing 10-15 due cards each morning keeps your review queue manageable.',
+        icon: Icons.alarm_on_rounded,
+        accentColor: colors.success,
+        targetTabIndex: 0,
+        targetKey: AppTourKeys.reviewQueueCountKey,
+        fallbackKey: AppTourKeys.reviewQueueKey,
+      ),
+
+      // 4. AI Camera OCR Scanner
+      _TourStep(
+        badge: 'STEP 4 OF 15 • AI OCR SCANNER',
+        title: 'AI OCR Note Importer',
+        subtitle: 'Convert physical notes to flashcards',
+        description:
+            'Snap textbook pages, handwriting, or PDF notes with your camera. Syllabot AI automatically extracts key concepts and generates interactive Q&A flashcards.',
+        proTip:
+            'You can upload multiple pages at once — AI handles diagram labels and formulas.',
+        icon: Icons.camera_enhance_rounded,
+        accentColor: colors.syllabotAccent,
+        targetTabIndex: 0,
+        targetKey: AppTourKeys.quickActionOcrKey,
+        fallbackKey: AppTourKeys.quickActionsKey,
+      ),
+
+      // 5. 1v1 Quiz Duels & Past Question Bank
+      _TourStep(
+        badge: 'STEP 5 OF 15 • QUIZ DUELS',
+        title: 'Live 1v1 Duels & Past Questions',
+        subtitle: 'Challenge scholars & test past papers',
+        description:
+            'Practice past questions grouped by topic, or jump into live 1v1 speed duels with fellow scholars studying the same syllabus track.',
+        proTip:
+            'Winning quiz duels earns instant XP bonuses and climbs the global leaderboard.',
+        icon: Icons.sports_esports_rounded,
+        accentColor: colors.primary,
+        targetTabIndex: 0,
+        targetKey: AppTourKeys.quickActionDuelKey,
+        fallbackKey: AppTourKeys.quickActionsKey,
+      ),
+
+      // 6. Today's Priority Revision Session
+      _TourStep(
+        badge: 'STEP 6 OF 15 • REVISION HERO',
+        title: "Today's Priority Revision Deck",
+        subtitle: 'One-tap active recall launcher',
+        description:
+            'Kortex selects your highest-yield review deck for today. One tap launches active recall mode with immediate AI feedback on incorrect answers.',
+        proTip:
+            'Tap "Start Revision" first thing in your morning study session for maximum efficiency.',
+        icon: Icons.play_circle_fill_rounded,
+        accentColor: colors.primary,
+        targetTabIndex: 1,
+        targetKey: AppTourKeys.decksHeroStartBtnKey,
+        fallbackKey: AppTourKeys.decksTodayHeroKey,
+      ),
+
+      // 7. Rapid Study Sprints
+      _TourStep(
+        badge: 'STEP 7 OF 15 • STUDY SPRINTS',
+        title: 'Rapid Sprints (Quick 10 & Power 20)',
+        subtitle: 'Bite-sized revision for busy schedules',
+        description:
+            'Short on time? Choose a 10-card Quick Sprint or a 20-card Power Sprint for fast, focused review sessions during breaks or commutes.',
+        proTip:
+            'Sprints use smart card weighting to focus on your weakest memory tags first.',
+        icon: Icons.bolt_rounded,
+        accentColor: colors.warning,
+        targetTabIndex: 1,
+        targetKey: AppTourKeys.decksSprintChip10Key,
+        fallbackKey: AppTourKeys.decksSprintChipsKey,
+      ),
+
+      // 8. Subject Track Filter Bar
+      _TourStep(
+        badge: 'STEP 8 OF 15 • DECK FILTERS',
+        title: 'Subject & Syllabus Filter Bar',
+        subtitle: 'Organize decks by subject & difficulty',
+        description:
+            'Filter your deck library by subject (Math, Physics, Biology, Chemistry, Literature) or syllabus track for structured exam revision.',
+        proTip:
+            'Custom tags let you group decks by chapter or upcoming school test dates.',
+        icon: Icons.filter_alt_rounded,
+        accentColor: colors.latexHighlight,
+        targetTabIndex: 1,
+        targetKey: AppTourKeys.decksFilterChipKey,
+        fallbackKey: AppTourKeys.decksHeaderKey,
+      ),
+
+      // 9. Syllabot 24/7 Socratic AI Tutor
+      _TourStep(
+        badge: 'STEP 9 OF 15 • AI COPILOT',
+        title: 'Ask Syllabot 24/7 AI Tutor',
+        subtitle: 'Socratic tutor — floating on every screen',
+        description:
+            'Stuck on a complex equation or past-paper solution? Tap the floating Syllabot pill on any screen for step-by-step explanations and hint prompts.',
+        proTip:
+            'Syllabot stays accessible on every page so you never have to leave your session for help.',
+        icon: Icons.psychology_rounded,
+        accentColor: colors.secondary,
+        targetTabIndex: 1,
+        targetKey: AppTourKeys.syllabotFabKey,
+      ),
+
+      // 10. Study Hub & Liquid Tabs
+      _TourStep(
+        badge: 'STEP 10 OF 15 • STUDY HUB',
+        title: 'Study Hub & Liquid Glass Bar',
+        subtitle: 'Focus rooms, Study Circles & Marketplace',
+        description:
+            'Access all deep-work productivity tools in one command center — live co-working rooms, Pomodoro timers, and deck sharing.',
+        proTip:
+            'Swipe horizontally across the liquid glass bar to switch hub sections smoothly.',
+        icon: Icons.device_hub_rounded,
+        accentColor: colors.syllabotAccent,
+        targetTabIndex: 3,
+        targetKey: AppTourKeys.pomodoroCardKey,
+        onStepActivated: () => AppTourKeys.onSelectStudyHubSubTab?.call(0),
+      ),
+
+      // 11. Synchronized Live Focus Rooms
+      _TourStep(
+        badge: 'STEP 11 OF 15 • FOCUS ROOMS',
+        title: 'Synchronized Live Focus Rooms',
+        subtitle: 'Shared Pomodoro & ambient lo-fi audio',
+        description:
+            'Join virtual study rooms with scholars worldwide. Sync 25-minute Pomodoro cycles, stream ambient study beats, and share focus goals.',
+        proTip:
+            'Studying in live focus rooms boosts accountability and awards bonus group XP.',
+        icon: Icons.groups_rounded,
+        accentColor: colors.primary,
+        targetTabIndex: 3,
+        targetKey: AppTourKeys.liveRoomJoinBtnKey,
+        fallbackKey: AppTourKeys.liveRoomsCardKey,
+        onStepActivated: () => AppTourKeys.onSelectStudyHubSubTab?.call(0),
+      ),
+
+      // 12. Scholar Deck Marketplace
+      _TourStep(
+        badge: 'STEP 12 OF 15 • MARKETPLACE',
+        title: 'Scholar Deck Marketplace',
+        subtitle: 'Community decks & past question sets',
+        description:
+            'Explore high-yield flashcard decks curated by top scholars and verified educators for your exact exam track.',
+        proTip:
+            'Tap "Clone Deck" to save any community deck instantly into your library.',
+        icon: Icons.storefront_rounded,
+        accentColor: colors.warning,
+        targetTabIndex: 3,
+        targetKey: AppTourKeys.marketplaceCloneBtnKey,
+        fallbackKey: AppTourKeys.marketplaceCardKey,
+        onStepActivated: () => AppTourKeys.onSelectStudyHubSubTab?.call(2),
+      ),
+
+      // 13. Scholar Forum Tag Filters
+      _TourStep(
+        badge: 'STEP 13 OF 15 • FORUM FILTERS',
+        title: 'Scholar Forum & Subject Tags',
+        subtitle: 'Track-specific Q&A discussions',
+        description:
+            'Discuss past question solutions with peers. Filter forum threads by subject tag, exam track (WAEC, NECO, JAMB, SAT), or status.',
+        proTip:
+            'Filter discussions by "Unanswered" to help fellow scholars and earn reputation points.',
+        icon: Icons.forum_rounded,
+        accentColor: colors.latexHighlight,
+        targetTabIndex: 2,
+        targetKey: AppTourKeys.communityTagFilterKey,
+        fallbackKey: AppTourKeys.communityHeroKey,
+      ),
+
+      // 14. Post Question Button
+      _TourStep(
+        badge: 'STEP 14 OF 15 • ASK COMMUNITY',
+        title: 'Post Questions & Share Solutions',
+        subtitle: 'Get answers from scholars & educators',
+        description:
+            'Post tricky questions, attach paper photos, or discuss exam strategies with students preparing for the same syllabus.',
+        proTip:
+            'Tag your posts accurately so top scholars in your subject get notified.',
+        icon: Icons.post_add_rounded,
+        accentColor: colors.primary,
+        targetTabIndex: 2,
+        targetKey: AppTourKeys.communityPostBtnKey,
+      ),
+
+      // 15. Analytics, Settings & Profile
+      _TourStep(
+        badge: 'STEP 15 OF 15 • PROFILE & HEATMAP',
+        title: 'Retention Analytics & Settings',
+        subtitle: 'Memory heatmaps, theme swatches & security',
+        description:
+            'Monitor long-term memory retention heatmaps, view XP progress curves, customize your color palette, and configure AI tutor settings.',
+        proTip:
+            'Review your weekly retention heatmap every Sunday to target weak topics early.',
+        icon: Icons.person_rounded,
+        accentColor: colors.primary,
+        targetTabIndex: 4,
+        targetKey: AppTourKeys.profileHeatmapKey,
+        fallbackKey: AppTourKeys.profileCardKey,
+      ),
+    ];
+  }
+
+  Future<void> _updateTargetRect({bool initial = false}) async {
     final step = _steps[_currentStepIndex];
-    final newRect = step.resolveTarget(context, screenSize, insets);
+    final size = MediaQuery.sizeOf(context);
+    final insets = MediaQuery.paddingOf(context);
+    final fallbackRect = step.resolveTarget(context, size, insets);
+
+    // Ensure target is scrolled into view if in a Scrollable
+    final measuredRect = await AppTourKeys.ensureVisibleAndGetRect(
+      step.targetKey,
+    );
+    final newRect = measuredRect ?? fallbackRect;
+
+    if (!mounted) return;
 
     setState(() {
       _previousTargetRect = initial ? newRect : (_currentTargetRect ?? newRect);
@@ -547,18 +516,17 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
     // Trigger sub-tab activation callback (e.g. Study Hub inner tabs)
     step.onStepActivated?.call();
 
-    // Multi-phase target re-measurement as tabs transition & layout
     _scheduleTargetRemeasurement();
   }
 
   void _scheduleTargetRemeasurement() {
-    _updateTargetRect();
+    unawaited(_updateTargetRect());
 
-    final delays = [50, 150, 300, 450, 600];
+    final delays = [60, 180, 350, 520];
     for (final delay in delays) {
       Future.delayed(Duration(milliseconds: delay), () {
         if (mounted) {
-          _updateTargetRect();
+          unawaited(_updateTargetRect());
         }
       });
     }
@@ -579,7 +547,6 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
       _onStepChange(_currentStepIndex - 1);
     }
   }
-
 
   void _finishTour() {
     unawaited(HapticFeedback.mediumImpact());
@@ -621,7 +588,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
     final spaceAbove = animatedRect.top - minTop - 16;
     final spaceBelow = (screenSize.height - maxBottom) - animatedRect.bottom - 16;
 
-    final placeBelow = spaceBelow >= 220 || spaceBelow >= spaceAbove;
+    final placeBelow = spaceBelow >= 210 || spaceBelow >= spaceAbove;
 
     double? cardTop;
     double? cardBottom;
@@ -637,6 +604,8 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         screenSize.height - minTop - 260,
       );
     }
+
+    final cardMaxWidth = math.min<double>(screenSize.width - 32, 440);
 
     return PopScope(
       canPop: false,
@@ -675,14 +644,14 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
 
             // 3. Interactive Floating Guide Card
             Positioned(
-              left: 20,
-              right: 20,
+              left: 16,
+              right: 16,
               top: cardTop,
               bottom: cardBottom,
               child: Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    maxWidth: 420,
+                    maxWidth: cardMaxWidth,
                     maxHeight: math.max(
                       180,
                       screenSize.height - minTop - maxBottom - 20,
@@ -706,311 +675,311 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
                       child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Badge & Skip
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: step.accentColor.withAlpha(30),
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.badge,
-                                  ),
-                                  border: Border.all(
-                                    color: step.accentColor.withAlpha(90),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: step.accentColor,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        step.badge,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: typography.caption.bold.copyWith(
-                                          color: step.accentColor,
-                                          fontSize: 10.5,
-                                          letterSpacing: 1.1,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            PlatformHoverBuilder(
-                              builder: (context, isHovered, child) {
-                                return AnimatedScale(
-                                  scale: isHovered ? 1.05 : 1.0,
-                                  duration: AppMotion.snappy,
-                                  curve: AppMotion.easeOutCubic,
-                                  child: child,
-                                );
-                              },
-                              child: TextButton(
-                                onPressed: _finishTour,
-                                style: TextButton.styleFrom(
-                                  visualDensity: VisualDensity.compact,
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Badge & Skip
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
+                                    horizontal: 10,
                                     vertical: 4,
                                   ),
-                                ),
-                                child: Text(
-                                  'Skip Tour',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.textSecondary,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Title and Icon Row
-                        Row(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: step.accentColor.withAlpha(35),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.card,
-                                ),
-                                border: Border.all(
-                                  color: step.accentColor.withAlpha(80),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Icon(
-                                step.icon,
-                                color: step.accentColor,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    step.title,
-                                    style: typography.headline.bold.copyWith(
-                                      color: colors.textPrimary,
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w800,
+                                  decoration: BoxDecoration(
+                                    color: step.accentColor.withAlpha(30),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.badge,
+                                    ),
+                                    border: Border.all(
+                                      color: step.accentColor.withAlpha(90),
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    step.subtitle,
-                                    style: typography.caption.regular.copyWith(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: step.accentColor,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          step.badge,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: typography.caption.bold.copyWith(
+                                            color: step.accentColor,
+                                            fontSize: 10.5,
+                                            letterSpacing: 1.1,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return AnimatedScale(
+                                    scale: isHovered ? 1.05 : 1.0,
+                                    duration: AppMotion.snappy,
+                                    curve: AppMotion.easeOutCubic,
+                                    child: child,
+                                  );
+                                },
+                                child: TextButton(
+                                  onPressed: _finishTour,
+                                  style: TextButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Skip Tour',
+                                    style: typography.caption.bold.copyWith(
                                       color: colors.textSecondary,
                                       fontSize: 12,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Description
-                        Text(
-                          step.description,
-                          style: typography.footnote.regular.copyWith(
-                            color: colors.textSecondary,
-                            height: 1.45,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Pro-Tip Box
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: step.accentColor.withAlpha(16),
-                            borderRadius: BorderRadius.circular(AppRadius.card),
-                            border: Border.all(
-                              color: step.accentColor.withAlpha(50),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.lightbulb_outline_rounded,
-                                size: 16,
-                                color: step.accentColor,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  step.proTip,
-                                  style: typography.caption.medium.copyWith(
-                                    color: colors.textPrimary,
-                                    fontSize: 11.5,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 16),
+                          const SizedBox(height: 10),
 
-                        // Navigation Controls
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Step dots
-                            Flexible(
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: List.generate(_steps.length, (idx) {
-                                    final isSelected = idx == _currentStepIndex;
-                                    return AnimatedContainer(
-                                      duration: const Duration(milliseconds: 250),
-                                      margin: const EdgeInsets.only(right: 4),
-                                      width: isSelected ? 14 : 4,
-                                      height: 4,
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? step.accentColor
-                                            : colors.surfaceBorderHighlight,
-                                        borderRadius: BorderRadius.circular(
-                                          AppRadius.micro,
-                                        ),
-                                      ),
-                                    );
-                                  }),
+                          // Title and Icon Row
+                          Row(
+                            children: [
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: step.accentColor.withAlpha(35),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.card,
+                                  ),
+                                  border: Border.all(
+                                    color: step.accentColor.withAlpha(80),
+                                    width: 1.2,
+                                  ),
+                                ),
+                                child: Icon(
+                                  step.icon,
+                                  color: step.accentColor,
+                                  size: 22,
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      step.title,
+                                      style: typography.headline.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 16.5,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      step.subtitle,
+                                      style: typography.caption.regular.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 11.5,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
 
-                            // Back + Next/Finish buttons
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
+                          // Description
+                          Text(
+                            step.description,
+                            style: typography.footnote.regular.copyWith(
+                              color: colors.textSecondary,
+                              height: 1.4,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Pro-Tip Box
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: step.accentColor.withAlpha(16),
+                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              border: Border.all(
+                                color: step.accentColor.withAlpha(50),
+                              ),
+                            ),
+                            child: Row(
                               children: [
-                                if (_currentStepIndex > 0)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 6),
-                                    child: PlatformHoverBuilder(
-                                      builder: (context, isHovered, child) {
-                                        return AnimatedScale(
-                                          scale: isHovered ? 1.05 : 1.0,
-                                          duration: AppMotion.snappy,
-                                          curve: AppMotion.easeOutCubic,
-                                          child: child,
-                                        );
-                                      },
-                                      child: TextButton(
-                                        onPressed: _goToPreviousStep,
-                                        style: TextButton.styleFrom(
-                                          visualDensity: VisualDensity.compact,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        child: Text(
-                                          'Back',
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: colors.textSecondary,
-                                                fontSize: 12,
-                                              ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ShrinkableButton(
-                                  onTap: _goToNextStep,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: step.accentColor,
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.card,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          isLastStep
-                                              ? 'Start Learning'
-                                              : 'Next Step',
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: colors.white,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Icon(
-                                          isLastStep
-                                              ? Icons
-                                                    .check_circle_outline_rounded
-                                              : Icons.arrow_forward_rounded,
-                                          color: colors.white,
-                                          size: 15,
-                                        ),
-                                      ],
+                                Icon(
+                                  Icons.lightbulb_outline_rounded,
+                                  size: 15,
+                                  color: step.accentColor,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    step.proTip,
+                                    style: typography.caption.medium.copyWith(
+                                      color: colors.textPrimary,
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Navigation Controls
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Step dots
+                              Flexible(
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: List.generate(_steps.length, (idx) {
+                                      final isSelected = idx == _currentStepIndex;
+                                      return AnimatedContainer(
+                                        duration: const Duration(milliseconds: 250),
+                                        margin: const EdgeInsets.only(right: 3),
+                                        width: isSelected ? 12 : 4,
+                                        height: 4,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? step.accentColor
+                                              : colors.surfaceBorderHighlight,
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.micro,
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // Back + Next/Finish buttons
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_currentStepIndex > 0)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 6),
+                                      child: PlatformHoverBuilder(
+                                        builder: (context, isHovered, child) {
+                                          return AnimatedScale(
+                                            scale: isHovered ? 1.05 : 1.0,
+                                            duration: AppMotion.snappy,
+                                            curve: AppMotion.easeOutCubic,
+                                            child: child,
+                                          );
+                                        },
+                                        child: TextButton(
+                                          onPressed: _goToPreviousStep,
+                                          style: TextButton.styleFrom(
+                                            visualDensity: VisualDensity.compact,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize:
+                                                MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                          child: Text(
+                                            'Back',
+                                            style: typography.caption.bold
+                                                .copyWith(
+                                                  color: colors.textSecondary,
+                                                  fontSize: 12,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ShrinkableButton(
+                                    onTap: _goToNextStep,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: step.accentColor,
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.card,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            isLastStep
+                                                ? 'Start Learning'
+                                                : 'Next Step',
+                                            style: typography.caption.bold
+                                                .copyWith(
+                                                  color: colors.white,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            isLastStep
+                                                ? Icons
+                                                      .check_circle_outline_rounded
+                                                : Icons.arrow_forward_rounded,
+                                            color: colors.white,
+                                            size: 15,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
             ),
           ],
         ),

@@ -456,10 +456,7 @@ class _StudyHubView extends HookWidget {
                       maxWidth: hasSelectedDeck ? 520 : 860,
                     ),
                     child: AppLiquidGlassTabBar(
-                      key: AppTourKeys.pomodoroCardKey = AppTourKeys.safeKey(
-                        AppTourKeys.pomodoroCardKey,
-                        'tour_pomodoro_card',
-                      ),
+                      key: AppTourKeys.pomodoroCardKey,
                       tabs: isWide
                           ? [
                               l10n.liveRoomsTab,
@@ -514,10 +511,7 @@ class _StudyHubView extends HookWidget {
                     ? [
                         // 0. Live Focus Rooms
                         _LiveRoomsTab(
-                          key: AppTourKeys.liveRoomsCardKey = AppTourKeys.safeKey(
-                            AppTourKeys.liveRoomsCardKey,
-                            'tour_live_rooms_card',
-                          ),
+                          key: AppTourKeys.liveRoomsCardKey,
                           state: state,
                           targetTrack: targetTrack,
                           hasSelectedDeck: hasSelectedDeck,
@@ -532,11 +526,7 @@ class _StudyHubView extends HookWidget {
 
                         // 2. Deck Marketplace
                         _DeckMarketplaceTab(
-                          key: AppTourKeys.marketplaceCardKey =
-                              AppTourKeys.safeKey(
-                            AppTourKeys.marketplaceCardKey,
-                            'tour_marketplace_card',
-                          ),
+                          key: AppTourKeys.marketplaceCardKey,
                           state: state,
                           selectedDeckId: selectedDesktopDeck.value?.id,
                           hasSelectedDeck: hasSelectedDeck,
@@ -562,10 +552,7 @@ class _StudyHubView extends HookWidget {
 
                         // 1. Live Focus Rooms
                         _LiveRoomsTab(
-                          key: AppTourKeys.liveRoomsCardKey = AppTourKeys.safeKey(
-                            AppTourKeys.liveRoomsCardKey,
-                            'tour_live_rooms_card',
-                          ),
+                          key: AppTourKeys.liveRoomsCardKey,
                           state: state,
                           targetTrack: targetTrack,
                           hasSelectedDeck: hasSelectedDeck,
@@ -580,11 +567,7 @@ class _StudyHubView extends HookWidget {
 
                         // 3. Deck Marketplace
                         _DeckMarketplaceTab(
-                          key: AppTourKeys.marketplaceCardKey =
-                              AppTourKeys.safeKey(
-                            AppTourKeys.marketplaceCardKey,
-                            'tour_marketplace_card',
-                          ),
+                          key: AppTourKeys.marketplaceCardKey,
                           state: state,
                           selectedDeckId: selectedDesktopDeck.value?.id,
                           hasSelectedDeck: hasSelectedDeck,

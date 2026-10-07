@@ -25,6 +25,7 @@ import 'package:kortex/src/features/community/presentation/widgets/community_for
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_headers.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_shimmer.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
+import 'package:kortex/src/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
@@ -180,10 +181,7 @@ class _CommunityHubView extends HookWidget {
                     activeFilterCount: activeFilterCount,
                   )
                 : CommunityStandardHeader(
-                    key: AppTourKeys.communityHeroKey = AppTourKeys.safeKey(
-                      AppTourKeys.communityHeroKey,
-                      'tour_community_hero',
-                    ),
+                    key: AppTourKeys.communityHeroKey,
                     title: l10n.forumTab,
                     selectedTrack: selectedTrack,
                     selectedForumFilter: selectedForumFilter,
@@ -202,6 +200,7 @@ class _CommunityHubView extends HookWidget {
 
                   // 2. Consolidated Dynamic Action Capsule (Search + Filter with Badge)
                   _CommunitySearchFilterCapsule(
+                    key: AppTourKeys.communityTagFilterKey,
                     hasActiveFilters: hasActiveFilters,
                     activeFilterCount: activeFilterCount,
                     isDark: isDark,
@@ -260,11 +259,7 @@ class _CommunityHubView extends HookWidget {
                           }
                         },
                         child: Container(
-                          key: AppTourKeys.communityPostBtnKey =
-                              AppTourKeys.safeKey(
-                                AppTourKeys.communityPostBtnKey,
-                                'tour_community_post_btn',
-                              ),
+                          key: AppTourKeys.communityPostBtnKey,
                           height: 38,
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
@@ -496,7 +491,7 @@ class _CommunityNotificationAction extends StatelessWidget {
         child: ShrinkableButton(
           onTap: () {
             unawaited(HapticFeedback.lightImpact());
-            unawaited(context.router.push(const NotificationsRoute()));
+            unawaited(NotificationsPage.show(context));
           },
           child: Container(
             width: 38,
@@ -579,6 +574,7 @@ class _CommunitySearchFilterCapsule extends StatelessWidget {
     required this.isDark,
     required this.onOpenSearch,
     required this.onOpenFilter,
+    super.key,
   });
 
   final bool hasActiveFilters;

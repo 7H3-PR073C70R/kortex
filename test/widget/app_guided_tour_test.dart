@@ -87,7 +87,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         // Step 1: Dashboard
-        expect(find.text('Academic HQ & Neural Tier'), findsOneWidget);
+        expect(find.text('Daily Streak & Neural Scholar Tier'), findsOneWidget);
         expect(find.text('Next Step'), findsOneWidget);
 
         // Tap Next Step -> Step 2
@@ -95,7 +95,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(find.text('FSRS-6 Daily Review Queue'), findsOneWidget);
+        expect(find.text('Exam Clock & Target Syllabus Track'), findsOneWidget);
         expect(find.text('Back'), findsOneWidget);
 
         // Tap Back -> Back to Step 1
@@ -103,7 +103,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(find.text('Academic HQ & Neural Tier'), findsOneWidget);
+        expect(find.text('Daily Streak & Neural Scholar Tier'), findsOneWidget);
 
         // Skip Tour
         await tester.tap(find.text('Skip Tour'));
@@ -140,7 +140,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tour should NOT appear because it was already completed/skipped
-        expect(find.text('Academic HQ & Neural Tier'), findsNothing);
+        expect(find.text('Daily Streak & Neural Scholar Tier'), findsNothing);
 
         locator.unregister<LocalStorageService>();
       },
@@ -173,7 +173,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         // Tour SHOULD appear because force: true was specified
-        expect(find.text('Academic HQ & Neural Tier'), findsOneWidget);
+        expect(find.text('Daily Streak & Neural Scholar Tier'), findsOneWidget);
 
         locator.unregister<LocalStorageService>();
       },

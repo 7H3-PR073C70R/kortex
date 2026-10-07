@@ -16,6 +16,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
+import 'package:kortex/src/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
@@ -280,9 +281,7 @@ class HeaderProfileBar extends StatelessWidget {
                           badgeCount: unreadCount,
                           onTap: () {
                             unawaited(HapticFeedback.lightImpact());
-                            unawaited(
-                              context.router.push(const NotificationsRoute()),
-                            );
+                            unawaited(NotificationsPage.show(context));
                           },
                         ),
                       ]

@@ -134,10 +134,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
                         );
                       },
                       child: ShrinkableButton(
-                        key: AppTourKeys.syllabotFabKey = AppTourKeys.safeKey(
-                          AppTourKeys.syllabotFabKey,
-                          'tour_syllabot_fab',
-                        ),
+                        key: AppTourKeys.syllabotFabKey,
                         onTap: _expand,
                         child: const _SyllabotLogoOrb(),
                       ),

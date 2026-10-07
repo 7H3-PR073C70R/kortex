@@ -120,7 +120,10 @@ class AppAdaptiveSheet {
           top: Radius.circular(AppRadius.dialog),
         ),
       ),
-      builder: builder,
+      builder: (sheetCtx) => Align(
+        alignment: Alignment.bottomCenter,
+        child: builder(sheetCtx),
+      ),
     );
   }
 
@@ -200,7 +203,10 @@ class AppAdaptiveSheet {
           top: Radius.circular(AppRadius.dialog),
         ),
       ),
-      builder: builder,
+      builder: (sheetCtx) => Align(
+        alignment: Alignment.bottomCenter,
+        child: builder(sheetCtx),
+      ),
     );
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
+import 'package:kortex/src/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
 
 /// Centralized router for parsing notification payloads and executing deep-linking.
@@ -79,7 +80,12 @@ class NotificationRouter {
 
       // 8. Notifications screen
       if (clean == '/notifications' || clean == 'notifications') {
-        await router.push(const NotificationsRoute());
+        final navCtx = router.navigatorKey.currentContext;
+        if (navCtx != null) {
+          await NotificationsPage.show(navCtx);
+        } else {
+          await router.push(const NotificationsRoute());
+        }
         return true;
       }
 

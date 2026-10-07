@@ -500,10 +500,7 @@ class _CompactDashboardLayout extends StatelessWidget {
           <Widget>[
                 // 1. User Profile Header (Identity & Streak Anchor)
                 HeaderProfileBar(
-                  key: AppTourKeys.headerProfileKey = AppTourKeys.safeKey(
-                    AppTourKeys.headerProfileKey,
-                    'tour_header_profile',
-                  ),
+                  key: AppTourKeys.headerProfileKey,
                   analytics: feed.analyticsSummary,
                   isProfileUncalibrated: feed.isProfileUncalibratedFor(
                     targetTrack,
@@ -528,10 +525,7 @@ class _CompactDashboardLayout extends StatelessWidget {
                     children: [
                       if (feed.curatedCourses.isNotEmpty) ...[
                         ExamCountdownBanner(
-                          key: AppTourKeys.countdownKey = AppTourKeys.safeKey(
-                            AppTourKeys.countdownKey,
-                            'tour_countdown',
-                          ),
+                          key: AppTourKeys.countdownKey,
                         ),
                         const SizedBox(height: 16),
                       ],
@@ -545,10 +539,7 @@ class _CompactDashboardLayout extends StatelessWidget {
 
                 // 3. Daily Recall Status Banner ("All caught up!" / due-cards state)
                 _DailyRecallStatusBanner(
-                  key: AppTourKeys.reviewQueueKey = AppTourKeys.safeKey(
-                    AppTourKeys.reviewQueueKey,
-                    'tour_review_queue',
-                  ),
+                  key: AppTourKeys.reviewQueueKey,
                   feed: feed,
                 ),
 
@@ -556,10 +547,7 @@ class _CompactDashboardLayout extends StatelessWidget {
 
                 // 4. Quick Actions Grid (Upload Notes | Q-Bank | 1v1 Duel | New Deck)
                 _QuickActionsGrid(
-                  key: AppTourKeys.quickActionsKey = AppTourKeys.safeKey(
-                    AppTourKeys.quickActionsKey,
-                    'tour_quick_actions',
-                  ),
+                  key: AppTourKeys.quickActionsKey,
                 ),
                 const SizedBox(height: 16),
 

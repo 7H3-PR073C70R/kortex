@@ -487,14 +487,12 @@ class _ProfileView extends HookWidget {
         ),
         const SizedBox(height: 20),
         StudyStatisticsSummaryCard(
+          key: AppTourKeys.profileHeatmapKey,
           profile: profile,
         ),
         const SizedBox(height: 20),
         ProfileNavigationMenu(
-          key: AppTourKeys.profileCardKey = AppTourKeys.safeKey(
-            AppTourKeys.profileCardKey,
-            'tour_profile_card',
-          ),
+          key: AppTourKeys.profileCardKey,
           targetTrack: targetTrack,
           dailyTarget: dailyTarget,
           selectedSection: selectedSection,

@@ -18,6 +18,7 @@ import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state
 import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class ExamCountdownBanner extends StatelessWidget {
@@ -519,6 +520,7 @@ class ExamCountdownBanner extends StatelessWidget {
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Container(
+                                key: AppTourKeys.countdownBadgeKey,
                                 constraints: const BoxConstraints(maxWidth: 210),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
