@@ -60,6 +60,12 @@ class KokoroModelDownloader {
 
   /// Initializes state, checks if model files exist/are valid, and sets up network listener.
   Future<void> initialize() async {
+    if (kIsWeb) {
+      statusNotifier.value = 'Web Speech Synthesizer Ready';
+      progressNotifier.value = 1.0;
+      isReadyNotifier.value = true;
+      return;
+    }
     final ready = await isReady();
     isReadyNotifier.value = ready;
 
@@ -90,6 +96,7 @@ class KokoroModelDownloader {
 
   /// Checks whether all model files are completely downloaded and match expected hashes.
   Future<bool> isReady() async {
+    if (kIsWeb) return true;
     try {
       final dir = await _getModelDir();
       final marker = File(p.join(dir.path, _readyMarker));
@@ -111,7 +118,7 @@ class KokoroModelDownloader {
 
   /// Triggers automatic background download if online and not already ready.
   Future<void> startAutoDownload() async {
-    if (_isDownloading || isReadyNotifier.value) return;
+    if (kIsWeb || _isDownloading || isReadyNotifier.value) return;
 
     final isOnline = await _checkInternetConnection();
     if (!isOnline) {
@@ -124,7 +131,7 @@ class KokoroModelDownloader {
 
   /// Manually starts or resumes downloading with HTTP Range headers.
   Future<void> downloadModelAndVoices() async {
-    if (_isDownloading) return;
+    if (kIsWeb || _isDownloading) return;
     _isDownloading = true;
     _shouldCancel = false;
     isDownloadingNotifier.value = true;

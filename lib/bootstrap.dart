@@ -38,6 +38,13 @@ Future<void> bootstrap({
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Load environment variables before initializing services
+  try {
+    await dotenv.load(fileName: environment.envFileName);
+  } on Object catch (e) {
+    log('Failed to load dotenv: $e');
+  }
+
   // Initialize Firebase and crash reporting hooks
   try {
     await Firebase.initializeApp(
@@ -96,21 +103,20 @@ Future<void> bootstrap({
     log('Failed to initialize NotificationService: $e');
   }
 
-  // ! For envs
-  await dotenv.load(fileName: environment.envFileName);
-
   await locator<LocalStorageService>().initDB();
   
   await locator<UserStorageService>().initStorage().timeout(const Duration(seconds: 5), onTimeout: () {
   });
 
-  // Pre-initialize TextToSpeechService to kick off Kokoro offline model download in background
-  try {
-    if (locator.isRegistered<TextToSpeechService>()) {
-      locator<TextToSpeechService>();
+  // Pre-initialize TextToSpeechService to kick off Kokoro offline model download in background (native only)
+  if (!kIsWeb) {
+    try {
+      if (locator.isRegistered<TextToSpeechService>()) {
+        locator<TextToSpeechService>();
+      }
+    } on Object catch (e) {
+      log('Failed to pre-initialize TextToSpeechService: $e');
     }
-  } on Object catch (e) {
-    log('Failed to pre-initialize TextToSpeechService: $e');
   }
   
   final app = await builder();
