@@ -8,6 +8,7 @@ import 'models/llama_response.dart';
 import 'models/model_source.dart';
 import 'models/preset_model.dart';
 import 'services/model_manager.dart';
+import 'ffi/llama_ffi_engine.dart';
 
 /// Main class for interacting with llama.cpp models
 class FlutterLlama {
@@ -26,19 +27,37 @@ class FlutterLlama {
     return _instance!;
   }
 
+  /// Check if desktop FFI should be used (Windows and Linux)
+  static bool get isDesktopFfi =>
+      !kIsWeb && (Platform.isWindows || Platform.isLinux);
+
   /// Check if model is loaded
-  bool get isModelLoaded => _isModelLoaded;
+  bool get isModelLoaded => isDesktopFfi
+      ? LlamaFfiEngine.instance.isModelLoaded
+      : _isModelLoaded;
 
   /// Check if instance is initialized
-  bool get isInitialized => _isInitialized;
+  bool get isInitialized => isDesktopFfi
+      ? LlamaFfiEngine.instance.isModelLoaded
+      : _isInitialized;
 
   /// Get current model path
-  String? get modelPath => _modelPath;
+  String? get modelPath => isDesktopFfi
+      ? LlamaFfiEngine.instance.modelPath
+      : _modelPath;
 
   /// Initialize and load a GGUF model
   /// 
   /// Returns true if successful, false otherwise
   Future<bool> loadModel(LlamaConfig config) async {
+    if (isDesktopFfi) {
+      final success = await LlamaFfiEngine.instance.loadModel(config);
+      _isModelLoaded = success;
+      _isInitialized = success;
+      _modelPath = success ? config.modelPath : null;
+      return success;
+    }
+
     try {
       if (kDebugMode) {
         print('[FlutterLlama] Loading model: ${config.modelPath}');
@@ -79,6 +98,10 @@ class FlutterLlama {
   /// 
   /// Returns [LlamaResponse] with generated text and metadata
   Future<LlamaResponse> generate(GenerationParams params) async {
+    if (isDesktopFfi) {
+      return LlamaFfiEngine.instance.generate(params);
+    }
+
     if (!_isModelLoaded) {
       throw StateError('Model not loaded. Call loadModel() first.');
     }
@@ -116,6 +139,11 @@ class FlutterLlama {
   /// 
   /// Returns Stream of strings (individual tokens)
   Stream<String> generateStream(GenerationParams params) async* {
+    if (isDesktopFfi) {
+      yield* LlamaFfiEngine.instance.generateStream(params);
+      return;
+    }
+
     if (!_isModelLoaded) {
       throw StateError('Model not loaded. Call loadModel() first.');
     }
@@ -168,6 +196,14 @@ class FlutterLlama {
 
   /// Unload the current model and free resources
   Future<void> unloadModel() async {
+    if (isDesktopFfi) {
+      await LlamaFfiEngine.instance.unloadModel();
+      _isModelLoaded = false;
+      _isInitialized = false;
+      _modelPath = null;
+      return;
+    }
+
     try {
       if (kDebugMode) {
         print('[FlutterLlama] Unloading model');
@@ -191,6 +227,10 @@ class FlutterLlama {
 
   /// Get model information
   Future<Map<String, dynamic>?> getModelInfo() async {
+    if (isDesktopFfi) {
+      return LlamaFfiEngine.instance.getModelInfo();
+    }
+
     if (!_isModelLoaded) {
       return null;
     }
@@ -211,6 +251,11 @@ class FlutterLlama {
 
   /// Stop ongoing generation
   Future<void> stopGeneration() async {
+    if (isDesktopFfi) {
+      await LlamaFfiEngine.instance.stopGeneration();
+      return;
+    }
+
     try {
       await _channel.invokeMethod<void>('stopGeneration');
     } catch (e) {

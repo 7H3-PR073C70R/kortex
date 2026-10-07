@@ -44,7 +44,7 @@ class SpeechToTextHandler {
 
     try {
       try {
-        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)) {
+        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
           final micStatus = await Permission.microphone.status;
           if (!micStatus.isGranted) {
             final res = await Permission.microphone.request();
@@ -58,7 +58,7 @@ class SpeechToTextHandler {
             }
           }
 
-          if (Platform.isIOS || Platform.isMacOS) {
+          if (Platform.isIOS) {
             final speechStatus = await Permission.speech.status;
             if (!speechStatus.isGranted) {
               await Permission.speech.request();
@@ -97,13 +97,13 @@ class SpeechToTextHandler {
       );
 
       if (!_isAvailable) {
-        if (!kIsWeb && (Platform.isIOS || Platform.isAndroid || Platform.isMacOS)) {
+        if (!kIsWeb && (Platform.isIOS || Platform.isAndroid)) {
           final micStatus = await Permission.microphone.status;
           if (micStatus.isPermanentlyDenied || micStatus.isDenied) {
             onError?.call(
               'Microphone permission is required. Please enable it in Settings.',
             );
-          } else if (Platform.isIOS || Platform.isMacOS) {
+          } else if (Platform.isIOS) {
             final speechStatus = await Permission.speech.status;
             if (speechStatus.isPermanentlyDenied || speechStatus.isDenied) {
               onError?.call(
@@ -119,6 +119,10 @@ class SpeechToTextHandler {
               'Speech recognition is unavailable on this device.',
             );
           }
+        } else if (!kIsWeb && Platform.isMacOS) {
+          onError?.call(
+            'Speech recognition is unavailable or not permitted. Please check System Settings > Privacy & Security > Speech Recognition & Microphone.',
+          );
         } else {
           onError?.call(
             'Speech recognition is unavailable on this device.',

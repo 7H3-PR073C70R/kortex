@@ -21,8 +21,8 @@ Supports GPU acceleration via Metal and CPU optimization via Accelerate framewor
   # Pre-built xcframework
   s.vendored_frameworks = 'llama.xcframework'
   
-  # Preserve llama.cpp headers
-  s.preserve_paths = '../llama.cpp/include/**/*'
+  # Preserve headers
+  s.preserve_paths = 'include/**/*', 'llama.xcframework/**/*'
   
   # C++ settings
   s.library = 'c++'
@@ -35,7 +35,7 @@ Supports GPU acceleration via Metal and CPU optimization via Accelerate framewor
     'GCC_ENABLE_CPP_RTTI' => 'YES',
     'CLANG_WARN_DOCUMENTATION_COMMENTS' => 'NO',
     'GCC_WARN_INHIBIT_ALL_WARNINGS' => 'YES',
-    'HEADER_SEARCH_PATHS' => '"${PODS_TARGET_SRCROOT}/../llama.cpp/include" "${PODS_TARGET_SRCROOT}/../llama.cpp/src" "${PODS_TARGET_SRCROOT}/../llama.cpp/ggml/include" "${PODS_TARGET_SRCROOT}/../llama.cpp/ggml/src"',
+    'HEADER_SEARCH_PATHS' => '"${PODS_TARGET_SRCROOT}/../include" "${PODS_TARGET_SRCROOT}/llama.xcframework/ios-arm64/llama.framework/Headers"',
     'OTHER_LDFLAGS' => '$(inherited) -framework "llama"'
   }
   

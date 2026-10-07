@@ -192,7 +192,11 @@ class SpeechTextNormalizer {
         .replaceAll('&amp;', ' and ')
         .replaceAll('&lt;', ' is less than ')
         .replaceAll('&gt;', ' is greater than ')
-        .replaceAll('&quot;', '"')
+        .replaceAll('&quot;', ' ')
+        .replaceAll('&ldquo;', ' ')
+        .replaceAll('&rdquo;', ' ')
+        .replaceAll('&lsquo;', "'")
+        .replaceAll('&rsquo;', "'")
         .replaceAll('&apos;', "'")
         .replaceAll('&#39;', "'")
         .replaceAll('&cent;', ' cents')
@@ -678,10 +682,14 @@ class SpeechTextNormalizer {
         .replaceAll('~', ' ')
         .replaceAll(RegExp(r'\$'), '');
 
-    // Normalize quotes
+    // Clean quotation marks so TTS engines (Kokoro, Edge, System TTS) never read
+    // quote characters aloud as "quotation mark" or "quote".
+    // 1) Strip all double quotes (standard, smart, escaped).
+    text = text.replaceAll(RegExp(r'["“”«»]'), ' ');
+    // 2) Strip single quotes that are NOT word-internal apostrophes (e.g. keep don't, it's).
     text = text
-        .replaceAll(RegExp('[“”«»]'), '"')
-        .replaceAll(RegExp('[‘’`]'), "'");
+        .replaceAll(RegExp('[‘’`]'), "'")
+        .replaceAll(RegExp(r"(?<![a-zA-Z0-9])'|'(?![a-zA-Z0-9])"), ' ');
 
     // 25. Clean punctuation & whitespace
     // Replace em-dash or en-dash with comma pause

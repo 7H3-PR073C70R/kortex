@@ -544,7 +544,7 @@ SPEC CHECKSUMS:
   FirebaseSharedSwift: e17c654ef1f1a616b0b33054e663ad1035c8fd40
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_kokoro_tts: 80e2aa43ca54bda80713dc537bdd327393035d4d
-  flutter_llama: 22038666f894cef587c8b61215195b07b0c61076
+  flutter_llama: 2a7b29e4be5f1246b3a7c3bc83f304cfc9555dbd
   flutter_local_notifications: 395056b3175ba4f08480a7c5de30cd36d69827e4
   flutter_native_splash: c32d145d68aeda5502d5f543ee38c192065986cf
   flutter_onnxruntime: 5c16abbb94ec57759a244095eb62cab0eaab312c

@@ -9,6 +9,7 @@
 #include <audioplayers_linux/audioplayers_linux_plugin.h>
 #include <desktop_drop/desktop_drop_plugin.h>
 #include <file_selector_linux/file_selector_plugin.h>
+#include <flutter_llama/flutter_llama_plugin.h>
 #include <flutter_onnxruntime/flutter_onnxruntime_plugin.h>
 #include <flutter_secure_storage_linux/flutter_secure_storage_linux_plugin.h>
 #include <flutter_timezone/flutter_timezone_plugin.h>
@@ -27,6 +28,9 @@ void fl_register_plugins(FlPluginRegistry* registry) {
   g_autoptr(FlPluginRegistrar) file_selector_linux_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "FileSelectorPlugin");
   file_selector_plugin_register_with_registrar(file_selector_linux_registrar);
+  g_autoptr(FlPluginRegistrar) flutter_llama_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "FlutterLlamaPlugin");
+  flutter_llama_plugin_register_with_registrar(flutter_llama_registrar);
   g_autoptr(FlPluginRegistrar) flutter_onnxruntime_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "FlutterOnnxruntimePlugin");
   flutter_onnxruntime_plugin_register_with_registrar(flutter_onnxruntime_registrar);

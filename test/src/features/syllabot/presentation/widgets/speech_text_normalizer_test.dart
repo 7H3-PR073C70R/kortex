@@ -352,6 +352,18 @@ Question 2: What is gravity?
       expect(result.contains('✅'), isFalse);
       expect(result.contains('❌'), isFalse);
     });
+
+    test('strips quotation marks cleanly so TTS never utters quotation mark while preserving contractions', () {
+      const input = 'He said "Hello world" &quot;WAEC&quot; ‘mitochondria’ and it\'s 10 o\'clock so don\'t worry.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains('"'), isFalse);
+      expect(result.contains('“'), isFalse);
+      expect(result.contains('”'), isFalse);
+      expect(result.contains('‘'), isFalse);
+      expect(result.contains('’'), isFalse);
+      expect(result, contains('He said Hello world Way-eck mitochondria'));
+      expect(result, contains("it's 10 o'clock so don't worry"));
+    });
   });
 
   group('TtsConfig', () {

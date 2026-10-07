@@ -11,8 +11,12 @@
 #include <vector>
 #include <mutex>
 
-// Include llama.cpp headers
-#include "../../llama.cpp/include/llama.h"
+// Include llama.cpp headers matching llama.xcframework
+#if __has_include(<llama/llama.h>)
+#include <llama/llama.h>
+#else
+#include "llama.h"
+#endif
 
 // Global state
 static llama_model* g_model = nullptr;
@@ -105,6 +109,8 @@ bool llama_init_model(
     g_sampler = llama_sampler_chain_init(sparams);
     
     // Add samplers
+    const int32_t n_vocab = g_vocab ? llama_vocab_n_tokens(g_vocab) : 32000;
+    llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(n_vocab, 64, 1.15f, 0.0f, 0.0f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(0.8f));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(0.95f, 1));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_top_k(40));
@@ -142,6 +148,10 @@ bool llama_generate(
     
     // Tokenize prompt with BOS token if required (add_special = true, parse_special = true)
     const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, true, true);
+    if (n_prompt <= 0) {
+        NSLog(@"[llama_cpp_bridge] Failed to calculate prompt token count");
+        return false;
+    }
     std::vector<llama_token> prompt_tokens(n_prompt);
     
     if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {
@@ -298,6 +308,10 @@ void llama_generate_stream_init(
     
     // Tokenize prompt with BOS token if required (add_special = true, parse_special = true)
     const int n_prompt = -llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), NULL, 0, true, true);
+    if (n_prompt <= 0) {
+        NSLog(@"[llama_cpp_bridge] Failed to calculate prompt token count");
+        return;
+    }
     std::vector<llama_token> prompt_tokens(n_prompt);
     
     if (llama_tokenize(g_vocab, prompt_text.c_str(), prompt_text.size(), prompt_tokens.data(), prompt_tokens.size(), true, true) < 0) {

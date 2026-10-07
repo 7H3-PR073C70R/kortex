@@ -20,6 +20,7 @@ dependencies:
   http: ^1.2.0
   path_provider: ^2.1.2
   path: ^1.9.0
+  ffi: ^2.1.2
 
 dev_dependencies:
   flutter_test:
@@ -55,6 +56,10 @@ flutter:
       ios:
         pluginClass: FlutterLlamaPlugin
       macos:
+        pluginClass: FlutterLlamaPlugin
+      windows:
+        pluginClass: FlutterLlamaPlugin
+      linux:
         pluginClass: FlutterLlamaPlugin
 
   # Assets for multimodal models (commented out - will be downloaded via Hugging Face)
