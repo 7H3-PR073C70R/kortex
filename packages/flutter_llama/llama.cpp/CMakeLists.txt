@@ -27,6 +27,10 @@ set(CMAKE_WARN_UNUSED_CLI YES)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if (MSVC)
+    add_compile_options("/Fo$(IntDir)%(RelativeDir)\\")
+endif()
+
 if (NOT XCODE AND NOT MSVC AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")

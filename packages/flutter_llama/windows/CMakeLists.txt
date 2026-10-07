@@ -12,10 +12,15 @@ set(PLUGIN_SOURCES
 # llama.cpp build
 set(LLAMA_CPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../llama.cpp")
 
+if(MSVC)
+  add_compile_options("/Fo$(IntDir)%(RelativeDir)\\")
+endif()
+
 if(EXISTS "${LLAMA_CPP_DIR}/CMakeLists.txt")
   set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
   set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
+  set(LLAMA_BUILD_COMMON OFF CACHE BOOL "" FORCE)
   set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
   add_subdirectory("${LLAMA_CPP_DIR}" build-llama EXCLUDE_FROM_ALL)
 endif()
