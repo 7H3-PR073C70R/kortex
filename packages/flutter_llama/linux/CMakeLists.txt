@@ -5,6 +5,8 @@ set(PLUGIN_NAME "flutter_llama_plugin")
 
 set(LLAMA_CPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../llama.cpp")
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 if(EXISTS "${LLAMA_CPP_DIR}/CMakeLists.txt")
   set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
   set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -28,8 +30,11 @@ set_target_properties(${PLUGIN_NAME} PROPERTIES
 
 target_compile_definitions(${PLUGIN_NAME} PRIVATE FLUTTER_PLUGIN_IMPL)
 
-target_include_directories(${PLUGIN_NAME} PRIVATE
+target_include_directories(${PLUGIN_NAME} PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_include_directories(${PLUGIN_NAME} PRIVATE
   "${LLAMA_CPP_DIR}/include"
   "${LLAMA_CPP_DIR}/ggml/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../include"
