@@ -21,8 +21,8 @@ import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repo
 import 'package:kortex/src/features/decks/domain/services/fsrs_settings_sync_service.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
-import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/kortex_logo_assembly_widget.dart';
 import 'package:kortex/src/shared/widgets/tailored_biometric_lock_view.dart';
 
 @RoutePage()
@@ -36,7 +36,6 @@ class SplashPage extends StatefulWidget {
 class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   late final AnimationController _entranceController;
   late final AnimationController _pulseController;
-  late final Animation<double> _logoScaleAnimation;
   late final Animation<double> _logoOpacityAnimation;
   late final Animation<double> _textFadeAnimation;
   Timer? _navigationTimer;
@@ -57,13 +56,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
-    );
-
-    _logoScaleAnimation = Tween<double>(begin: 0.72, end: 1).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0, 0.65, curve: Curves.easeOutBack),
-      ),
     );
 
     _logoOpacityAnimation = Tween<double>(begin: 0, end: 1).animate(
@@ -305,20 +297,13 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                 _pulseController,
               ]),
               builder: (context, child) {
-                final scale = disableAnimations
-                    ? 1.0
-                    : _logoScaleAnimation.value;
                 final opacity = disableAnimations
                     ? 1.0
                     : _logoOpacityAnimation.value;
                 return Opacity(
                   opacity: opacity,
-                  child: Transform.scale(
-                    scale: scale,
-                    child: AppAssets.svgs.kortexLogo.svg(
-                      width: 92,
-                      height: 92,
-                    ),
+                  child: const KortexLogoAssemblyWidget(
+                    size: 140,
                   ),
                 );
               },
