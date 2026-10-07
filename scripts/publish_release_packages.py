@@ -224,7 +224,6 @@ def sign_macos_target(target_path, is_app_bundle=False):
         return False
 
 
-def build_macos_bundle():
 def find_macos_app_path():
     for sub in ["Release-production", "Release"]:
         pdir = os.path.join(PROJECT_ROOT, "build", "macos", "Build", "Products", sub)
