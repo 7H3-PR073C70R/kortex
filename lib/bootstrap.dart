@@ -12,6 +12,7 @@ import 'package:kortex/firebase_options.dart';
 import 'package:kortex/src/core/enums/environment.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/services/text_to_speech_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 
@@ -97,11 +98,20 @@ Future<void> bootstrap({
 
   // ! For envs
   await dotenv.load(fileName: environment.envFileName);
-  
+
   await locator<LocalStorageService>().initDB();
   
   await locator<UserStorageService>().initStorage().timeout(const Duration(seconds: 5), onTimeout: () {
   });
+
+  // Pre-initialize TextToSpeechService to kick off Kokoro offline model download in background
+  try {
+    if (locator.isRegistered<TextToSpeechService>()) {
+      locator<TextToSpeechService>();
+    }
+  } on Object catch (e) {
+    log('Failed to pre-initialize TextToSpeechService: $e');
+  }
   
   final app = await builder();
   runApp(app);

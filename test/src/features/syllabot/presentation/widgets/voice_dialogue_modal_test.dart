@@ -10,6 +10,21 @@ class FakeTextToSpeechService implements TextToSpeechService {
   @override
   final ValueNotifier<bool> isSpeakingNotifier = ValueNotifier<bool>(false);
 
+  @override
+  final ValueNotifier<double> kokoroDownloadProgressNotifier = ValueNotifier<double>(1);
+
+  @override
+  final ValueNotifier<bool> isKokoroModelReadyNotifier = ValueNotifier<bool>(true);
+
+  @override
+  final ValueNotifier<String> kokoroDownloadStatusNotifier = ValueNotifier<String>('Ready');
+
+  @override
+  final ValueNotifier<bool> isKokoroDownloadingNotifier = ValueNotifier<bool>(false);
+
+  @override
+  Future<void> startKokoroModelDownload() async {}
+
   final List<String> spokenTexts = [];
   VoiceGender _gender = VoiceGender.female;
   bool _speaking = false;
@@ -93,6 +108,10 @@ class FakeTextToSpeechService implements TextToSpeechService {
   @override
   void dispose() {
     isSpeakingNotifier.dispose();
+    kokoroDownloadProgressNotifier.dispose();
+    isKokoroModelReadyNotifier.dispose();
+    kokoroDownloadStatusNotifier.dispose();
+    isKokoroDownloadingNotifier.dispose();
   }
 }
 

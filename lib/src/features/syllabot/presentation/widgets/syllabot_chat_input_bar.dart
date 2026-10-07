@@ -243,7 +243,10 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
         builder: (ctx) {
           final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
           return SafeArea(
-            child: Center(
+            top: isDesktop,
+            bottom: false,
+            child: Align(
+              alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: Container(
@@ -264,9 +267,11 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                           ]
                         : null,
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
+                  padding: EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 16,
+                    bottom: isDesktop ? 16 : MediaQuery.paddingOf(ctx).bottom + 16,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

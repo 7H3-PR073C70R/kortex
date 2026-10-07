@@ -69,6 +69,18 @@ class TextToSpeechHandler {
   TtsEngineType get lastEngineUsed => _service.lastEngineUsed;
   List<String> get availableKokoroVoices => _service.availableKokoroVoices;
 
+  ValueNotifier<double> get kokoroDownloadProgressNotifier =>
+      _service.kokoroDownloadProgressNotifier;
+  ValueNotifier<bool> get isKokoroModelReadyNotifier =>
+      _service.isKokoroModelReadyNotifier;
+  ValueNotifier<String> get kokoroDownloadStatusNotifier =>
+      _service.kokoroDownloadStatusNotifier;
+  ValueNotifier<bool> get isKokoroDownloadingNotifier =>
+      _service.isKokoroDownloadingNotifier;
+
+  Future<void> startKokoroModelDownload() =>
+      _service.startKokoroModelDownload();
+
   TtsConfig get config => TtsConfig.forCurrentPlatform(
         gender: _service.voiceGender,
         speechRateMultiplier: _service.speechRate,

@@ -74,6 +74,12 @@ jobs:
         run: |
           flutter build windows --release --flavor production -t lib/main_production.dart
 
+      - name: Install Inno Setup for Windows Installer Generation
+        if: matrix.runner-os == 'windows-latest'
+        run: |
+          choco install innosetup -y
+          echo "C:\Program Files (x86)\Inno Setup 6" >> $GITHUB_PATH
+
       - name: Build Native Linux Desktop Bundle
         if: matrix.runner-os == 'ubuntu-latest'
         run: |

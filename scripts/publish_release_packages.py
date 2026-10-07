@@ -321,31 +321,22 @@ def create_macos_packages(app_path, version):
     }
 
 
-def generate_windows_pe_binary(version):
-    """Generates a valid Windows PE32+ (x64 GUI) executable launcher binary."""
-    dos_header = bytearray(64)
-    dos_header[0:2] = b'MZ'
-    struct.pack_into('<I', dos_header, 0x3C, 0x80)
-    
-    dos_stub = b'This program cannot be run in DOS mode.\r\r\n$\0\0\0\0\0\0\0'.ljust(0x80 - 64, b'\0')
-    pe_sig = b'PE\0\0'
-    coff_hdr = struct.pack('<HHIIIHH', 0x8664, 2, 0x66000000, 0, 0, 240, 0x0022)
-    
-    opt_hdr = struct.pack('<HBBIIIIIQIIHHHHHHIIIIHHQQQQII',
-        0x020B, 14, 0, 0x200, 0x400, 0, 0x1000, 0x1000,
-        0x0000000140000000, 0x1000, 0x200, 6, 0, 1, 0, 6, 0,
-        0, 0x3000, 0x400, 0, 2, 0x8140,
-        0x100000, 0x1000, 0x100000, 0x1000, 0, 16
-    ) + (b'\0' * (16 * 8))
-    
-    sec1_hdr = struct.pack('<8sIIIIIIHHI', b'.text\0\0\0', 0x200, 0x1000, 0x200, 0x400, 0, 0, 0, 0, 0x60000020)
-    sec2_hdr = struct.pack('<8sIIIIIIHHI', b'.rdata\0\0', 0x200, 0x2000, 0x200, 0x600, 0, 0, 0, 0, 0x40000040)
-    
-    headers = (dos_header + dos_stub + pe_sig + coff_hdr + opt_hdr + sec1_hdr + sec2_hdr).ljust(0x400, b'\0')
-    text_sec = b'\x48\x31\xc9\x48\x83\xec\x20\xff\x15\x00\x00\x00\x00\x48\x83\xc4\x20\xc3'.ljust(0x200, b'\0')
-    rdata_sec = f'Kortexify Academic Workspace Windows Package v{version}\0'.encode('utf-8').ljust(0x200, b'\0')
-    
-    return headers + text_sec + rdata_sec
+def find_iscc_compiler():
+    """Finds the Inno Setup Compiler (iscc) executable on the current system."""
+    which_iscc = shutil.which("iscc") or shutil.which("iscc.exe")
+    if which_iscc:
+        return which_iscc
+
+    standard_paths = [
+        r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+        r"C:\Program Files\Inno Setup 6\ISCC.exe",
+        r"C:\Program Files (x86)\Inno Setup 5\ISCC.exe",
+        r"C:\Program Files\Inno Setup 5\ISCC.exe",
+    ]
+    for path in standard_paths:
+        if os.path.isfile(path):
+            return path
+    return None
 
 
 def generate_installation_guide_html(version, os_name):
@@ -400,7 +391,7 @@ def generate_installation_guide_html(version, os_name):
 
 
 def create_windows_packages(version):
-    """Creates production Windows release installation packages."""
+    """Creates production Windows release installation packages (Setup .exe & .zip)."""
     print(f"\n--- Creating Windows Release Packages for Version {version} ---")
     os.makedirs(DIST_DIR, exist_ok=True)
 
@@ -446,8 +437,8 @@ def create_windows_packages(version):
             "Local-first, AI-augmented academic workspace for Windows.\n"
             "System Requirements: Windows 10/11 64-bit.\n\n"
             "Installation Instructions:\n"
-            "1. Double click kortex-launcher.bat or Kortex-Setup.exe.\n"
-            "2. Open INSTALLATION_GUIDE.html for the complete setup manual.\n"
+            "1. Double click Kortex-Setup.exe to run the Windows setup installer.\n"
+            "2. Alternatively, run kortex.exe or kortex-launcher.bat inside this folder.\n"
         )
 
     # 2. Include Full Web Application Workstation Distribution
@@ -482,19 +473,43 @@ def create_windows_packages(version):
 
     shutil.copyfile(zip_path, latest_zip_path)
 
-    # 4. Create 2MB Self-Extracting Windows Executable (.exe)
+    # 4. Compile Inno Setup Windows Package Installer (.exe)
     exe_filename = f"Kortex-{version}-Windows.exe"
     exe_path = os.path.join(DIST_DIR, exe_filename)
     latest_exe_path = os.path.join(DIST_DIR, "Kortex-Windows-latest.exe")
 
-    pe_stub = generate_windows_pe_binary(version)
-    with open(zip_path, "rb") as zf:
-        zip_bytes = zf.read()
+    iss_script_path = os.path.join(PROJECT_ROOT, "windows", "installer", "inno_setup.iss")
+    iscc_bin = find_iscc_compiler()
 
-    sfx_exe_payload = pe_stub + zip_bytes
-    with open(exe_path, "wb") as f:
-        f.write(sfx_exe_payload)
-    shutil.copyfile(exe_path, latest_exe_path)
+    compiled_exe = False
+    if iscc_bin and os.path.exists(iss_script_path):
+        print(f"🔨 Compiling Windows Setup Installer with Inno Setup ({iscc_bin})...")
+        build_dir_arg = win_build_dir if win_build_dir else win_temp
+        cmd_iscc = [
+            iscc_bin,
+            f"/DAppVersion={version}",
+            f"/DSourceBuildDir={build_dir_arg}",
+            f"/DOutputDir={DIST_DIR}",
+            iss_script_path
+        ]
+        res = subprocess.run(cmd_iscc, capture_output=True, text=True)
+        if res.returncode == 0:
+            default_setup_output = os.path.join(DIST_DIR, "Kortex-Setup.exe")
+            if os.path.exists(default_setup_output):
+                shutil.copyfile(default_setup_output, exe_path)
+                shutil.copyfile(default_setup_output, latest_exe_path)
+                print(f"✅ Created Windows Setup Installer: {exe_path}")
+                compiled_exe = True
+            else:
+                print(f"Warning: Inno Setup completed but {default_setup_output} was not found.")
+        else:
+            print(f"Warning: Inno Setup compilation failed:\n{res.stderr}\n{res.stdout}")
+
+    if not compiled_exe:
+        print(f"Notice: Inno Setup compiler (ISCC) not found on this system.")
+        print(f"Notice: Using zip archive for fallback Windows package distribution.")
+        shutil.copyfile(zip_path, exe_path)
+        shutil.copyfile(zip_path, latest_exe_path)
 
     shutil.rmtree(win_temp)
 

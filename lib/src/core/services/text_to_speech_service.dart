@@ -8,6 +8,7 @@ import 'package:flutter_edge_tts/flutter_edge_tts.dart';
 import 'package:flutter_kokoro_tts/flutter_kokoro_tts.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/services/kokoro_model_downloader.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_text_normalizer.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/tts_config.dart';
@@ -90,6 +91,21 @@ abstract class TextToSpeechService {
   /// Retrieves list of available system/neural voices for configuration.
   Future<List<Map<String, dynamic>>> getAvailableVoices();
 
+  /// Notifier for Kokoro on-device model download progress (0.0 to 1.0).
+  ValueNotifier<double> get kokoroDownloadProgressNotifier;
+
+  /// Notifier for Kokoro on-device model ready status.
+  ValueNotifier<bool> get isKokoroModelReadyNotifier;
+
+  /// Notifier for Kokoro download status message.
+  ValueNotifier<String> get kokoroDownloadStatusNotifier;
+
+  /// Notifier for Kokoro downloading state.
+  ValueNotifier<bool> get isKokoroDownloadingNotifier;
+
+  /// Manually starts or resumes downloading Kokoro offline neural model.
+  Future<void> startKokoroModelDownload();
+
   /// Releases resources.
   void dispose();
 }
@@ -106,6 +122,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
     Connectivity? connectivity,
     AudioPlayer? audioPlayer,
     KokoroTts? kokoroTts,
+    KokoroModelDownloader? kokoroModelDownloader,
     FlutterTts? flutterTts,
     this.onError,
     this.onSpeakingChanged,
@@ -113,18 +130,22 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
         _connectivity = connectivity ?? Connectivity(),
         _audioPlayer = audioPlayer,
         _kokoroTts = kokoroTts,
+        _downloader = kokoroModelDownloader ??
+            KokoroModelDownloader(connectivity: connectivity),
         _flutterTts = flutterTts ?? FlutterTts() {
     _loadSavedPreferences();
     if (_audioPlayer != null) {
       _initAudioPlayer();
     }
     _initFlutterTts();
+    unawaited(_downloader.initialize());
   }
 
   final LocalStorageService? _localStorageService;
   final Connectivity _connectivity;
   AudioPlayer? _audioPlayer;
   KokoroTts? _kokoroTts;
+  final KokoroModelDownloader _downloader;
   final FlutterTts _flutterTts;
 
   final ValueChanged<String>? onError;
@@ -185,6 +206,26 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
         'Adam',
         'Michael',
       ];
+
+  @override
+  ValueNotifier<double> get kokoroDownloadProgressNotifier =>
+      _downloader.progressNotifier;
+
+  @override
+  ValueNotifier<bool> get isKokoroModelReadyNotifier =>
+      _downloader.isReadyNotifier;
+
+  @override
+  ValueNotifier<String> get kokoroDownloadStatusNotifier =>
+      _downloader.statusNotifier;
+
+  @override
+  ValueNotifier<bool> get isKokoroDownloadingNotifier =>
+      _downloader.isDownloadingNotifier;
+
+  @override
+  Future<void> startKokoroModelDownload() =>
+      _downloader.downloadModelAndVoices();
 
   // ---------------------------------------------------------------------------
   // Voice Mappings
@@ -848,6 +889,17 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   // ---------------------------------------------------------------------------
 
   Future<Uint8List?> _synthesizeWithKokoroTts(String text, int sessionId) async {
+    if (!_downloader.isReadyNotifier.value) {
+      final isReady = await _downloader.isReady();
+      if (!isReady) {
+        unawaited(_downloader.startAutoDownload());
+        debugPrint(
+          '[TTS] Kokoro model not ready yet. Auto-download initiated, using fallback.',
+        );
+        return null;
+      }
+    }
+
     final kokoro = _kokoroTts ??= KokoroTts();
     await kokoro.initialize();
 
@@ -987,6 +1039,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
     if (_isDisposed) return;
     _isDisposed = true;
     unawaited(stop());
+    _downloader.dispose();
     unawaited(_playerCompleteSub?.cancel());
     unawaited(_audioPlayer?.dispose());
     unawaited(_kokoroTts?.dispose());
