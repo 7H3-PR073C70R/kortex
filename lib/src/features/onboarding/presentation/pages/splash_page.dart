@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
@@ -119,8 +120,12 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     // Determine whether user should see intro onboarding slides or auth screen
     final onboardingLocal = locator<OnboardingLocalDataSource>();
     final hasCompletedOnboarding = onboardingLocal.hasCompletedOnboarding();
+    final isWebOrDesktop = kIsWeb ||
+        defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux;
 
-    if (!hasCompletedOnboarding) {
+    if (!hasCompletedOnboarding && !isWebOrDesktop) {
       await context.router.replaceAll([const OnboardingRoute()]);
     } else {
       await context.router.replaceAll([const AuthRoute()]);

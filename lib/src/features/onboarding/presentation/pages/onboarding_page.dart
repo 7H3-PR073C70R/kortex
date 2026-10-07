@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -194,6 +195,22 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final isLastPage = _currentIndex == slides.length - 1;
     final isWide =
         MediaQuery.sizeOf(context).width >= OnboardingPage.wideBreakpoint;
+    final isWebOrDesktop = kIsWeb ||
+        defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux;
+
+    if (isWebOrDesktop && !isWide) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(_completeOnboarding());
+        }
+      });
+      return Scaffold(
+        backgroundColor: context.colors.surfacePrimary,
+        body: const SizedBox.shrink(),
+      );
+    }
 
     _updateAutoScroll(isWide, slides.length);
 

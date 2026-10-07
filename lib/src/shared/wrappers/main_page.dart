@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -105,6 +106,12 @@ String _getForumLabel(AppLocalizations l10n) => l10n.navTabCommunity;
 String _getStudyHubLabel(AppLocalizations l10n) => l10n.navTabStudyHub;
 String _getProfileLabel(AppLocalizations l10n) => l10n.navTabProfile;
 
+bool get _isWebOrDesktop =>
+    kIsWeb ||
+    defaultTargetPlatform == TargetPlatform.macOS ||
+    defaultTargetPlatform == TargetPlatform.windows ||
+    defaultTargetPlatform == TargetPlatform.linux;
+
 /// Main application shell wrapper using [AutoTabsScaffold], responsive
 /// desktop navigation rail, and native platform adaptive bottom dock.
 @RoutePage()
@@ -122,6 +129,19 @@ class MainPage extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final isDark = context.isDarkMode;
+    final isDrawerOpen = useState(false);
+    final drawerAnimController = useAnimationController(
+      duration: AppMotion.expressive,
+    );
+
+    useEffect(() {
+      if (isDrawerOpen.value) {
+        unawaited(drawerAnimController.forward());
+      } else {
+        unawaited(drawerAnimController.reverse());
+      }
+      return null;
+    }, [isDrawerOpen.value]);
 
     return FloatingSyllabotOverlay(
       child: Stack(
@@ -152,11 +172,186 @@ class MainPage extends HookWidget {
                         isTablet &&
                         constraints.maxWidth >= tabletBreakpoint &&
                         isLandscape;
+                    final isWebOrDesktop = _isWebOrDesktop;
 
-                    if (isDesktop || isTabletLandscape) {
+                    // 1. Web & Desktop Narrow Viewport (< 720px): 3D Flip Perspective Drawer
+                    if (isWebOrDesktop && constraints.maxWidth < tabletBreakpoint) {
+                      return AnimatedBuilder(
+                        animation: drawerAnimController,
+                        builder: (context, _) {
+                          final progress = CurvedAnimation(
+                            parent: drawerAnimController,
+                            curve: AppMotion.easeOutCubic,
+                          ).value;
+
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              // Semi-transparent backdrop barrier when drawer open
+                              if (progress > 0)
+                                Positioned.fill(
+                                  child: GestureDetector(
+                                    onTap: () => isDrawerOpen.value = false,
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Container(
+                                      color: Colors.black.withAlpha(
+                                        (90 * progress).toInt(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                              // Main Page Content with 3D Flip Window Perspective Shift
+                              Positioned.fill(
+                                child: Transform(
+                                  alignment: Alignment.centerLeft,
+                                  transform: Matrix4.identity()
+                                    ..setEntry(3, 2, 0.001)
+                                    ..rotateY(0.12 * progress)
+                                    // ignore: deprecated_member_use, Matrix4 3D perspective scale transform
+                                    ..scale(
+                                      1 - (0.12 * progress),
+                                      1 - (0.12 * progress),
+                                      1,
+                                    )
+                                    // ignore: deprecated_member_use, Matrix4 3D perspective translation transform
+                                    ..translate(180.0 * progress),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(
+                                      20 * progress,
+                                    ),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          20 * progress,
+                                        ),
+                                        boxShadow: progress > 0
+                                            ? [
+                                                BoxShadow(
+                                                  color: Colors.black.withAlpha(
+                                                    isDark ? 120 : 40,
+                                                  ),
+                                                  blurRadius: 24,
+                                                  spreadRadius: 2,
+                                                  offset: const Offset(-8, 8),
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
+                                      child: IgnorePointer(
+                                        ignoring: progress > 0.3,
+                                        child: SafeArea(
+                                          top: false,
+                                          bottom: false,
+                                          child: FadeTransition(
+                                            opacity: animation,
+                                            child: child,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Slide-in Navigation Drawer Overlay
+                              if (progress > 0)
+                                Positioned(
+                                  left: -260.0 * (1 - progress),
+                                  top: 0,
+                                  bottom: 0,
+                                  width: 250,
+                                  child: SafeArea(
+                                    child: Material(
+                                      elevation: 16,
+                                      shadowColor: Colors.black.withAlpha(
+                                        isDark ? 160 : 60,
+                                      ),
+                                      borderRadius:
+                                          const BorderRadius.horizontal(
+                                        right: Radius.circular(24),
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      color: colors.surfacePrimary,
+                                      child: _DesktopNavRail(
+                                        tabsRouter: tabsRouter,
+                                        width: 250,
+                                        onTabSelected: () =>
+                                            isDrawerOpen.value = false,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                              // Floating Hamburger Button (Top-Left)
+                              Positioned(
+                                left: 12 + (180.0 * progress),
+                                top: 12,
+                                child: SafeArea(
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: ShrinkableButton(
+                                      onTap: () =>
+                                          isDrawerOpen.value =
+                                              !isDrawerOpen.value,
+                                      child: PlatformHoverBuilder(
+                                        builder: (context, isHovered, _) {
+                                          return Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: isDark
+                                                  ? colors.surfaceSecondary
+                                                      .withAlpha(220)
+                                                  : colors.surfacePrimary
+                                                      .withAlpha(240),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: isHovered
+                                                    ? colors.primary
+                                                        .withAlpha(120)
+                                                    : colors.surfaceBorder,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withAlpha(
+                                                    isDark ? 80 : 20,
+                                                  ),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: AnimatedSwitcher(
+                                              duration: AppMotion.snappy,
+                                              child: Icon(
+                                                progress > 0.5
+                                                    ? Icons.close_rounded
+                                                    : Icons.menu_rounded,
+                                                key: ValueKey(
+                                                  progress > 0.5,
+                                                ),
+                                                size: 22,
+                                                color: colors.textPrimary,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    }
+
+                    // 2. Wide & Medium Rail Layouts (Desktop >= 1024 / Tablet 720-1023)
+                    if (isDesktop || isTabletLandscape || (isWebOrDesktop && constraints.maxWidth >= tabletBreakpoint)) {
                       return Row(
                         children: [
-                          if (isDesktop)
+                          if (isDesktop || constraints.maxWidth >= desktopBreakpoint)
                             _DesktopNavRail(
                               tabsRouter: tabsRouter,
                               width: railWidth,
@@ -210,7 +405,7 @@ class MainPage extends HookWidget {
               final isTabletLandscape =
                   isTablet && width >= tabletBreakpoint && isLandscape;
 
-              if (width >= desktopBreakpoint || isTabletLandscape) {
+              if (_isWebOrDesktop || width >= desktopBreakpoint || isTabletLandscape) {
                 return const SizedBox.shrink();
               }
               return Align(
@@ -241,10 +436,12 @@ class _DesktopNavRail extends StatelessWidget {
   const _DesktopNavRail({
     required this.tabsRouter,
     required this.width,
+    this.onTabSelected,
   });
 
   final TabsRouter tabsRouter;
   final double width;
+  final VoidCallback? onTabSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -328,12 +525,15 @@ class _DesktopNavRail extends StatelessWidget {
                       isSelected: isSelected,
                       itemIndex: index,
                       totalItems: _kNavItems5.length,
-                      onTap: () => _handleTabTap(
-                        context,
-                        tabsRouter,
-                        index,
-                        label,
-                      ),
+                      onTap: () {
+                        _handleTabTap(
+                          context,
+                          tabsRouter,
+                          index,
+                          label,
+                        );
+                        onTabSelected?.call();
+                      },
                     );
                   },
                 ),
