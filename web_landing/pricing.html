@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-accent="sage">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Kortexify Pricing | Simple, transparent plans for students. Start free with no credit card required.">
+  <title>Pricing | Kortexify</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/kortexify_logo.svg?v=2">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Local Kortex Stylesheets -->
+  <link rel="stylesheet" href="css/variables.css?v=8.0">
+  <link rel="stylesheet" href="css/styles.css?v=8.0">
+</head>
+<body class="bg-[var(--bg-canvas)] text-[var(--text-primary)] antialiased font-['Inter']">
+
+  <!-- Header Navigation -->
+  <header class="site-header sticky top-0 z-50 w-full backdrop-blur-md bg-[var(--nav-bg)] border-b border-[var(--nav-border)]">
+    <div class="max-w-[1340px] mx-auto px-5 h-[66px] flex items-center justify-between">
+      
+      <div class="flex items-center gap-10">
+        <a href="index.html" class="flex items-center gap-2.5 font-['Plus_Jakarta_Sans'] font-extrabold text-lg text-[var(--text-primary)]">
+          <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-8 h-8 rounded-lg">
+          <span class="tracking-wide">KORTEXIFY</span>
+        </a>
+
+        <nav class="hidden lg:flex items-center gap-7">
+          <a href="index.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Features</a>
+          <a href="about.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">About Us</a>
+          <a href="pricing.html" class="text-sm font-semibold text-[var(--color-primary)] transition-colors">Pricing</a>
+          <a href="downloads.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Downloads</a>
+          <a href="contact.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Contact</a>
+        </nav>
+      </div>
+
+      <div class="hidden lg:flex items-center gap-4">
+        <!-- Palette Accent Switcher -->
+        <div class="accent-picker" title="Switch Accent Color" role="group" aria-label="Color Accents">
+          <button class="accent-dot active" data-set-accent="sage" type="button" aria-label="Muted Sage"></button>
+          <button class="accent-dot" data-set-accent="ochre" type="button" aria-label="Warm Ochre"></button>
+          <button class="accent-dot" data-set-accent="moss" type="button" aria-label="Alpine Moss"></button>
+          <button class="accent-dot" data-set-accent="bronze" type="button" aria-label="Deep Bronze"></button>
+          <button class="accent-dot" data-set-accent="terracotta" type="button" aria-label="Terracotta"></button>
+          <button class="accent-dot" data-set-accent="quartz" type="button" aria-label="Quartz Cyan"></button>
+        </div>
+
+        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+
+        <a href="app/#/login" class="px-4 py-2 rounded-full border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated1)] transition-colors">
+          Log In
+        </a>
+
+        <a href="app/#/signup" class="px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-xs font-bold text-[var(--text-inverse)] hover:brightness-110 transition-all shadow-md">
+          Start for free
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Pricing Main Content -->
+  <main class="py-16 px-5 max-w-[1240px] mx-auto">
+    
+    <!-- Title Header -->
+    <div class="text-center max-w-3xl mx-auto mb-12">
+      <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">Simple Transparent Pricing</span>
+      <h1 class="text-4xl sm:text-5xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] mt-3">
+        Invest in your grades
+      </h1>
+      <p class="text-base text-[var(--text-secondary)] mt-4">
+        Start 100% free. Upgrade anytime to unlock unlimited flashcards, Syllabot AI, and practice exams.
+      </p>
+
+      <!-- Monthly / Yearly Billing Toggle -->
+      <div class="inline-flex items-center gap-3 p-1.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] mt-8">
+        <button id="billingMonthlyBtn" class="px-5 py-2 rounded-full text-xs font-bold bg-[var(--color-primary)] text-[var(--text-inverse)] transition-all">
+          Monthly Billing
+        </button>
+        <button id="billingYearlyBtn" class="px-5 py-2 rounded-full text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all flex items-center gap-1.5">
+          <span>Annual Billing</span>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">SAVE 25%</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Pricing Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1140px] mx-auto mb-20">
+      
+      <!-- Tier 1: Free Starter -->
+      <div class="bg-[var(--bg-card)] p-8 rounded-3xl border border-[var(--border-subtle)] flex flex-col justify-between">
+        <div>
+          <h3 class="text-xl font-bold text-[var(--text-primary)] mb-2">Starter</h3>
+          <p class="text-xs text-[var(--text-muted)] mb-6">Perfect for testing the platform with your notes.</p>
+          
+          <div class="mb-6">
+            <span class="text-4xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)]">$0</span>
+            <span class="text-xs text-[var(--text-muted)]">/ forever free</span>
+          </div>
+
+          <ul class="space-y-3 text-xs text-[var(--text-secondary)] mb-8">
+            <li class="flex items-center gap-2.5">
+              <span class="text-emerald-400">✓</span> 5 Document Flashcard Decks
+            </li>
+            <li class="flex items-center gap-2.5">
+              <span class="text-emerald-400">✓</span> Smart Active Recall Scheduling
+            </li>
+            <li class="flex items-center gap-2.5">
+              <span class="text-emerald-400">✓</span> Access on Web & Desktop Apps
+            </li>
+          </ul>
+        </div>
+
+        <a href="app/#/signup" class="w-full text-center py-3 rounded-full border border-[var(--border-subtle)] text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated1)] transition-colors">
+          Get Started Free
+        </a>
+      </div>
+
+      <!-- Tier 2: Student Pro (Featured) -->
+      <div class="bg-[var(--bg-card)] p-8 rounded-3xl border-2 border-[var(--color-primary)] relative flex flex-col justify-between shadow-xl">
+        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[var(--color-primary)] text-[var(--text-inverse)] text-[10px] font-extrabold uppercase tracking-wider">
+          MOST POPULAR FOR STUDENTS
+        </div>
+
+        <div>
+          <h3 class="text-xl font-bold text-[var(--text-primary)] mb-2">Student Pro</h3>
+          <p class="text-xs text-[var(--text-muted)] mb-6">Full suite for high school & university exam prep.</p>
+          
+          <div class="mb-6">
+            <span id="proPriceText" class="text-4xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)]">$9.99</span>
+            <span class="text-xs text-[var(--text-muted)]">/ month</span>
+          </div>
+
+          <ul class="space-y-3 text-xs text-[var(--text-secondary)] mb-8">
+            <li class="flex items-center gap-2.5">
+              <span class="text-emerald-400">✓</span> <strong>Unlimited</strong> Smart Flashcards
+            </li>
+            <li class="flex items-center gap-2.5">
+              <span class="text-emerald-400">✓</span> <strong>Syllabot AI Tutor Access</strong>
+            </li>
+            <li class="flex items-center gap-2.5">
+              <span class="text-emerald-400">✓</span> Practice Exams & 1v1 Quiz Battles
+            </li>
+            <li class="flex items-center gap-2.5">
+              <span class="text-emerald-400">✓</span> Live Study Rooms with Voice Chat
+            </li>
+          </ul>
+        </div>
+
+        <a href="app/#/signup" class="w-full text-center py-3 rounded-full bg-[var(--color-primary)] text-xs font-bold text-[var(--text-inverse)] hover:brightness-110 transition-all shadow-md">
+          Start 7-Day Free Trial
+        </a>
+      </div>
+
+      <!-- Tier 3: Campus Unlimited -->
+      <div class="bg-[var(--bg-card)] p-8 rounded-3xl border border-[var(--border-subtle)] flex flex-col justify-between">
+        <div>
+          <h3 class="text-xl font-bold text-[var(--text-primary)] mb-2">Campus Unlimited</h3>
+          <p class="text-xs text-[var(--text-muted)] mb-6">For study groups & postgraduate students.</p>
+          
+          <div class="mb-6">
+            <span id="campusPriceText" class="text-4xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)]">$19.99</span>
+            <span class="text-xs text-[var(--text-muted)]">/ month</span>
+          </div>
+
+          <ul class="space-y-3 text-xs text-[var(--text-secondary)] mb-8">
+            <li class="flex items-center gap-2.5">
+              <span class="text-emerald-400">✓</span> Everything in Student Pro
+            </li>
+            <li class="flex items-center gap-2.5">
+              <span class="text-emerald-400">✓</span> Priority AI Response Speed
+            </li>
+            <li class="flex items-center gap-2.5">
+              <span class="text-emerald-400">✓</span> Real-Time Multi-Device Sync
+            </li>
+          </ul>
+        </div>
+
+        <a href="app/#/signup" class="w-full text-center py-3 rounded-full border border-[var(--border-subtle)] text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated1)] transition-colors">
+          Upgrade to Campus
+        </a>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer bg-[var(--bg-canvas)] border-t border-[var(--border-subtle)] py-12">
+    <div class="max-w-[1240px] mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-6 h-6">
+        <span class="font-['Plus_Jakarta_Sans'] font-extrabold text-sm text-[var(--text-primary)] tracking-wide">KORTEXIFY</span>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[var(--text-secondary)]">
+        <a href="index.html" class="hover:text-[var(--text-primary)]">Home</a>
+        <a href="about.html" class="hover:text-[var(--text-primary)]">About Us</a>
+        <a href="pricing.html" class="hover:text-[var(--text-primary)] font-semibold text-[var(--color-primary)]">Pricing</a>
+        <a href="downloads.html" class="hover:text-[var(--text-primary)]">Downloads</a>
+        <a href="privacy.html" class="hover:text-[var(--text-primary)]">Privacy Policy</a>
+        <a href="terms.html" class="hover:text-[var(--text-primary)]">Terms of Service</a>
+        <a href="contact.html" class="hover:text-[var(--text-primary)]">Contact</a>
+      </div>
+      <p class="text-xs text-[var(--text-muted)]">&copy; 2026 Kortexify Inc. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/storage.js?v=8.0"></script>
+  <script src="js/main.js?v=8.0"></script>
+
+  <script>
+    const monthlyBtn = document.getElementById('billingMonthlyBtn');
+    const yearlyBtn = document.getElementById('billingYearlyBtn');
+    const proPriceText = document.getElementById('proPriceText');
+    const campusPriceText = document.getElementById('campusPriceText');
+
+    yearlyBtn.addEventListener('click', () => {
+      yearlyBtn.classList.add('bg-[var(--color-primary)]', 'text-[var(--text-inverse)]');
+      yearlyBtn.classList.remove('text-[var(--text-secondary)]');
+      monthlyBtn.classList.remove('bg-[var(--color-primary)]', 'text-[var(--text-inverse)]');
+      monthlyBtn.classList.add('text-[var(--text-secondary)]');
+      proPriceText.textContent = '$7.49';
+      campusPriceText.textContent = '$14.99';
+    });
+
+    monthlyBtn.addEventListener('click', () => {
+      monthlyBtn.classList.add('bg-[var(--color-primary)]', 'text-[var(--text-inverse)]');
+      monthlyBtn.classList.remove('text-[var(--text-secondary)]');
+      yearlyBtn.classList.remove('bg-[var(--color-primary)]', 'text-[var(--text-inverse)]');
+      yearlyBtn.classList.add('text-[var(--text-secondary)]');
+      proPriceText.textContent = '$9.99';
+      campusPriceText.textContent = '$19.99';
+    });
+  </script>
+</body>
+</html>

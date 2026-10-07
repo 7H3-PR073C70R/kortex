@@ -15,10 +15,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=6.15">
-  <link rel="stylesheet" href="css/animations.css?v=6.15">
-  <link rel="stylesheet" href="css/styles.css?v=6.15">
+  <link rel="stylesheet" href="css/variables.css?v=8.0">
+  <link rel="stylesheet" href="css/animations.css?v=8.0">
+  <link rel="stylesheet" href="css/styles.css?v=8.0">
 
   <!-- No-JS fallback: reveal classes must never hide the form -->
   <noscript><style>.reveal-on-scroll, [data-reveal-group] > * { opacity: 1 !important; transform: none !important; }</style></noscript>
@@ -387,42 +390,53 @@
   <!-- Scroll Progress -->
   <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
-  <!-- Site Header -->
-  <header class="site-header">
-    <div class="container nav-content">
-      <a href="/" class="brand-logo" aria-label="Kortexify Home">
-        <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" width="32" height="32">
-        <span class="brand-name">KORTEXIFY</span>
-      </a>
+  <!-- Header Navigation -->
+  <header class="site-header sticky top-0 z-50 w-full backdrop-blur-md bg-[var(--nav-bg)] border-b border-[var(--nav-border)]">
+    <div class="max-w-[1340px] mx-auto px-5 h-[66px] flex items-center justify-between">
+      
+      <!-- Left: Logo & Navigation Links -->
+      <div class="flex items-center gap-10">
+        <a href="index.html" class="flex items-center gap-2.5 font-['Plus_Jakarta_Sans'] font-extrabold text-lg text-[var(--text-primary)]">
+          <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-8 h-8 rounded-lg">
+          <span class="tracking-wide">KORTEXIFY</span>
+        </a>
 
-      <nav aria-label="Primary Navigation">
-        <ul class="nav-links">
-          <li><a href="/#pillars" class="nav-link">How It Works</a></li>
-          <li><a href="/#differentiators" class="nav-link">Privacy & Access</a></li>
-          <li><a href="/#newsletter" class="nav-link">Updates</a></li>
-          <li><a href="privacy.html" class="nav-link">Privacy</a></li>
-        </ul>
-      </nav>
+        <!-- Desktop Navigation -->
+        <nav class="hidden lg:flex items-center gap-7">
+          <a href="index.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Features</a>
+          <a href="about.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">About Us</a>
+          <a href="pricing.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Pricing</a>
+          <a href="downloads.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Downloads</a>
+          <a href="contact.html" class="text-sm font-semibold text-[var(--color-primary)] transition-colors">Contact</a>
+        </nav>
+      </div>
 
-      <div class="nav-actions">
-        <!-- Palette Switcher -->
-        <div class="accent-picker" title="Switch Theme Palette Accent" role="group" aria-label="Theme Palette Accents">
-          <button class="accent-dot active" data-set-accent="sage" type="button" aria-label="Muted Sage Focus"></button>
-          <button class="accent-dot" data-set-accent="ochre" type="button" aria-label="Warm Ochre Academic"></button>
-          <button class="accent-dot" data-set-accent="moss" type="button" aria-label="Alpine Moss STEM"></button>
-          <button class="accent-dot" data-set-accent="bronze" type="button" aria-label="Deep Bronze Editorial"></button>
-          <button class="accent-dot" data-set-accent="terracotta" type="button" aria-label="Slate Terracotta"></button>
-          <button class="accent-dot" data-set-accent="quartz" type="button" aria-label="Quartz Cyan LaTeX"></button>
+      <!-- Right: Theme Controls + Auth Actions -->
+      <div class="hidden lg:flex items-center gap-4">
+        <!-- Palette Accent Switcher -->
+        <div class="accent-picker" title="Switch Accent Color" role="group" aria-label="Color Accents">
+          <button class="accent-dot active" data-set-accent="sage" type="button" aria-label="Muted Sage"></button>
+          <button class="accent-dot" data-set-accent="ochre" type="button" aria-label="Warm Ochre"></button>
+          <button class="accent-dot" data-set-accent="moss" type="button" aria-label="Alpine Moss"></button>
+          <button class="accent-dot" data-set-accent="bronze" type="button" aria-label="Deep Bronze"></button>
+          <button class="accent-dot" data-set-accent="terracotta" type="button" aria-label="Terracotta"></button>
+          <button class="accent-dot" data-set-accent="quartz" type="button" aria-label="Quartz Cyan"></button>
         </div>
 
-        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle dark or light theme">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="5"></circle>
-            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
-          </svg>
+        <!-- Light / Dark Mode Button -->
+        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
         </button>
 
-        <a href="/#try-free" class="nav-cta">Try Free</a>
+        <!-- Log In (Ghost Button) -->
+        <a href="app/#/login" class="px-4 py-2 rounded-full border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated1)] transition-colors">
+          Log In
+        </a>
+
+        <!-- Sign Up (Primary Button) -->
+        <a href="app/#/signup" class="px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-xs font-bold text-[var(--text-inverse)] shadow-md hover:brightness-110 transition-all">
+          Sign Up
+        </a>
       </div>
     </div>
   </header>
@@ -580,22 +594,25 @@
   </main>
 
   <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="container footer-content">
-      <div class="brand-logo">
-        <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" width="26" height="26">
-        <span class="brand-name" style="font-size: 0.95rem;">KORTEXIFY</span>
+  <footer class="site-footer bg-[var(--bg-canvas)] border-t border-[var(--border-subtle)] py-12">
+    <div class="max-w-[1240px] mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-6">
+      
+      <div class="flex items-center gap-2.5">
+        <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-6 h-6">
+        <span class="font-['Plus_Jakarta_Sans'] font-extrabold text-sm text-[var(--text-primary)] tracking-wide">KORTEXIFY</span>
       </div>
 
-      <div class="footer-copyright">
-        © 2026 Kortexify Inc. All rights reserved.
+      <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[var(--text-secondary)]">
+        <a href="index.html" class="hover:text-[var(--text-primary)]">Home</a>
+        <a href="about.html" class="hover:text-[var(--text-primary)]">About Us</a>
+        <a href="pricing.html" class="hover:text-[var(--text-primary)]">Pricing</a>
+        <a href="downloads.html" class="hover:text-[var(--text-primary)]">Downloads</a>
+        <a href="privacy.html" class="hover:text-[var(--text-primary)]">Privacy Policy</a>
+        <a href="terms.html" class="hover:text-[var(--text-primary)]">Terms of Service</a>
+        <a href="contact.html" class="hover:text-[var(--text-primary)] font-semibold text-[var(--color-primary)]">Contact</a>
       </div>
 
-      <div class="footer-legal-links">
-        <a href="privacy.html">Privacy Policy</a>
-        <a href="terms.html">Terms of Service</a>
-        <a href="contact.html">Contact</a>
-      </div>
+      <p class="text-xs text-[var(--text-muted)]">&copy; 2026 Kortexify Inc. All rights reserved.</p>
     </div>
   </footer>
 
