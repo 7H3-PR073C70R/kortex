@@ -14,6 +14,7 @@ class MarketplaceDeckCard extends StatelessWidget {
     this.onCloneTap,
     this.isSelected = false,
     this.isAlreadyCloned = false,
+    this.margin,
     super.key,
   });
 
@@ -22,6 +23,7 @@ class MarketplaceDeckCard extends StatelessWidget {
   final VoidCallback? onCloneTap;
   final bool isSelected;
   final bool isAlreadyCloned;
+  final EdgeInsetsGeometry? margin;
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +46,8 @@ class MarketplaceDeckCard extends StatelessWidget {
           builder: (context, isHovered, child) {
             return AnimatedContainer(
               duration: AppMotion.snappy,
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(18),
+              margin: margin,
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isSelected
                     ? (isDark
@@ -162,12 +164,14 @@ class MarketplaceDeckCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // Deck Title
                 Text(
                   deck.title,
-                  style: typography.title3.bold.copyWith(
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.subhead.bold.copyWith(
                     color: colors.textPrimary,
                   ),
                 ),
@@ -181,6 +185,8 @@ class MarketplaceDeckCard extends StatelessWidget {
                   children: [
                     Text(
                       '${deck.subject} • by ${deck.ownerName}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: typography.footnote.regular.copyWith(
                         color: colors.textSecondary,
                       ),
@@ -219,7 +225,7 @@ class MarketplaceDeckCard extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
                 // Bottom Row: Stats & Clone Action
                 Row(

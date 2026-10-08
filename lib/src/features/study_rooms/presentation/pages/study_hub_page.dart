@@ -1559,20 +1559,24 @@ class _DeckMarketplaceTab extends HookWidget {
                       crossAxisCount: gridCrossAxisCount,
                       crossAxisSpacing: 14,
                       mainAxisSpacing: 14,
-                      childAspectRatio: gridCrossAxisCount == 3 ? 1.37 : 1.75,
+                      mainAxisExtent: 205,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final deck = filteredDecks[index];
                         final isSelected = selectedDeckId == deck.id;
+                        final isCloned = isDeckAlreadyCloned(deck, userDecks: userDecks);
                         return MarketplaceDeckCard(
                           deck: deck,
                           isSelected: isSelected,
-                          onCloneTap: () {
-                            context.read<CommunityHubBloc>().add(
-                              CloneDeckEvent(deck.id),
-                            );
-                          },
+                          isAlreadyCloned: isCloned,
+                          onCloneTap: isCloned
+                              ? null
+                              : () {
+                                  context.read<CommunityHubBloc>().add(
+                                    CloneDeckEvent(deck.id),
+                                  );
+                                },
                           onTap: () {
                             if (onDeckSelected != null) {
                               onDeckSelected!(deck);
@@ -1613,6 +1617,7 @@ class _DeckMarketplaceTab extends HookWidget {
                           deck: deck,
                           isSelected: isSelected,
                           isAlreadyCloned: isCloned,
+                          margin: const EdgeInsets.only(bottom: 12),
                           onCloneTap: isCloned
                               ? null
                               : () {
