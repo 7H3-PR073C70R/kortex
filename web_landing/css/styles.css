@@ -43,6 +43,18 @@ img, svg {
   height: auto;
 }
 
+.site-header img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.site-footer img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
 a {
   color: inherit;
   text-decoration: none;
