@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Enumeration of primary application main navigation tabs.
@@ -11,10 +12,15 @@ enum AppMainTab {
 }
 
 /// Enumeration of Study Hub sub-tabs.
+///
+/// The enum order defines the stable *logical* index used by callbacks
+/// (e.g. the guided tour). [forum] is appended last so existing indices
+/// stay valid; its visual position is resolved via [AppTabNavigation.hubSubTabs].
 enum StudyHubSubTab {
   liveRooms,
   studyCircles,
   marketplace,
+  forum,
 }
 
 /// Callback definition for sub-tab navigation handlers inside nested pages.
@@ -24,7 +30,9 @@ typedef SubTabNavigationHandler = void Function(int subTabIndex);
 ///
 /// Matrix:
 /// - Main Navigation Tabs (5): Home (0), Decks (1), Forum (2), Hub (3), Profile (4)
-/// - Hub Sub-Tabs (3): Live Rooms (0), Study Circles (1), Marketplace (2)
+/// - Compact Dock (4): Home, Decks, Hub (hosts Forum), Profile
+/// - Hub Sub-Tabs (wide, 3): Live Rooms, Study Pods, Marketplace
+/// - Hub Sub-Tabs (compact, 4): Forum, Live Rooms, Study Pods, Marketplace
 class AppTabNavigation {
   const AppTabNavigation._();
 
@@ -32,7 +40,39 @@ class AppTabNavigation {
   static const double desktopBreakpoint = 1024;
 
   /// Global callback hook for dynamically setting the Study Hub sub-tab.
+  /// Receives a logical [StudyHubSubTab] index (enum order).
   static SubTabNavigationHandler? onSelectStudyHubSubTab;
+
+  /// Sub-tab requested before the Study Hub was mounted; consumed on mount.
+  static StudyHubSubTab? pendingHubSubTab;
+
+  /// Ordered Study Hub sub-tabs for the given layout.
+  ///
+  /// On compact layouts the dock has no Forum item, so Forum lives inside Hub.
+  static List<StudyHubSubTab> hubSubTabs({required bool isWide}) {
+    return (isWide || kIsWeb)
+        ? const [
+            StudyHubSubTab.liveRooms,
+            StudyHubSubTab.studyCircles,
+            StudyHubSubTab.marketplace,
+          ]
+        : const [
+            StudyHubSubTab.forum,
+            StudyHubSubTab.liveRooms,
+            StudyHubSubTab.studyCircles,
+            StudyHubSubTab.marketplace,
+          ];
+  }
+
+  /// Resolves the TabController position for [subTab], or `null` if the
+  /// sub-tab is not shown in the current layout.
+  static int? hubTabControllerIndex(
+    StudyHubSubTab subTab, {
+    required bool isWide,
+  }) {
+    final index = hubSubTabs(isWide: isWide).indexOf(subTab);
+    return index < 0 ? null : index;
+  }
 
   /// Returns `true` if the screen width qualifies for the desktop layout.
   static bool isWideLayout(double screenWidth) {
@@ -107,31 +147,37 @@ class AppTabNavigation {
     }
   }
 
-  /// Calculates the sub-tab index inside the Study Hub view.
+  /// Calculates the logical sub-tab index (enum order) inside the Study Hub view.
   static int getHubSubTabIndex(StudyHubSubTab subTab, [double? screenWidth]) {
-    switch (subTab) {
-      case StudyHubSubTab.liveRooms:
-        return 0;
-      case StudyHubSubTab.studyCircles:
-        return 1;
-      case StudyHubSubTab.marketplace:
-        return 2;
-    }
+    return subTab.index;
   }
 
   /// Centralized function for switching tabs across the application with responsive routing.
+  ///
+  /// On compact layouts, [AppMainTab.forum] is redirected to the Hub's Forum sub-tab.
   static void navigateTo(
     BuildContext context,
     AppMainTab targetTab, {
     StudyHubSubTab? subTab,
   }) {
-    final targetMainIndex = getMainTabIndex(targetTab);
+    final isWide = isWideLayout(MediaQuery.sizeOf(context).width);
 
-    AutoTabsRouter.of(context).setActiveIndex(targetMainIndex);
+    var resolvedTab = targetTab;
+    var resolvedSubTab = subTab;
+    if (targetTab == AppMainTab.forum && !isWide) {
+      resolvedTab = AppMainTab.hub;
+      resolvedSubTab = StudyHubSubTab.forum;
+    }
 
-    if (targetTab == AppMainTab.hub && subTab != null) {
-      final hubSubIndex = getHubSubTabIndex(subTab);
-      onSelectStudyHubSubTab?.call(hubSubIndex);
+    AutoTabsRouter.of(context).setActiveIndex(getMainTabIndex(resolvedTab));
+
+    if (resolvedTab == AppMainTab.hub && resolvedSubTab != null) {
+      final handler = onSelectStudyHubSubTab;
+      if (handler != null) {
+        handler(getHubSubTabIndex(resolvedSubTab));
+      } else {
+        pendingHubSubTab = resolvedSubTab;
+      }
     }
   }
 }

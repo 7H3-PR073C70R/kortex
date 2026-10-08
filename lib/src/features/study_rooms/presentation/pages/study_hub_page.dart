@@ -18,7 +18,9 @@ import 'package:kortex/src/features/community/presentation/bloc/auto_community_c
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
+import 'package:kortex/src/features/community/presentation/pages/create_forum_discussion_page.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_filter_bottom_sheet.dart';
+import 'package:kortex/src/features/community/presentation/widgets/community_forum_feed_list.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_headers.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_shimmer.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -75,7 +77,7 @@ class StudyHubPage extends HookWidget {
 
 Widget _buildHeaderActionButton(
   BuildContext context, {
-  required int tabIndex,
+  required StudyHubSubTab subTab,
   required bool isWide,
   required String? targetTrack,
 }) {
@@ -88,8 +90,31 @@ Widget _buildHeaderActionButton(
   String label;
   VoidCallback onTap;
 
-  switch (tabIndex) {
-    case 0:
+  switch (subTab) {
+    case StudyHubSubTab.forum:
+      icon = Icons.edit_note_rounded;
+      label = 'Post Thread';
+      onTap = () async {
+        unawaited(HapticFeedback.lightImpact());
+        final hubBloc = context.read<CommunityHubBloc>();
+        final initialTrack = targetTrack ?? hubBloc.state.selectedTrack;
+        final created = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: hubBloc,
+              child: CreateForumDiscussionPage(
+                initialTrack: initialTrack.isNotEmpty ? initialTrack : 'WAEC',
+              ),
+            ),
+          ),
+        );
+        if (created == true) {
+          hubBloc.add(
+            ChangeForumSortFilterEvent(hubBloc.state.selectedForumFilter),
+          );
+        }
+      };
+    case StudyHubSubTab.liveRooms:
       icon = Icons.add_rounded;
       label = l10n.newRoomAction;
       onTap = () {
@@ -125,7 +150,7 @@ Widget _buildHeaderActionButton(
           ),
         );
       };
-    case 1:
+    case StudyHubSubTab.studyCircles:
       icon = Icons.groups_rounded;
       label = 'Start Pod';
       onTap = () {
@@ -154,7 +179,7 @@ Widget _buildHeaderActionButton(
           ),
         );
       };
-    default:
+    case StudyHubSubTab.marketplace:
       icon = Icons.publish_rounded;
       label = 'Publish Deck';
       onTap = () {
@@ -247,18 +272,43 @@ class _StudyHubView extends HookWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isWide = AppTabNavigation.isWideLayout(screenWidth);
 
-    final tabController = useTabController(initialLength: 3);
+    final hubSubTabs = AppTabNavigation.hubSubTabs(isWide: isWide);
+    final tabController = useTabController(
+      initialLength: hubSubTabs.length,
+      keys: [isWide],
+    );
     useListenable(tabController);
+    final activeSubTab =
+        hubSubTabs[tabController.index.clamp(0, hubSubTabs.length - 1)];
 
     useEffect(() {
-      void handler(int index) {
-        if (tabController.length > index) {
+      void selectSubTab(StudyHubSubTab subTab) {
+        final index = AppTabNavigation.hubTabControllerIndex(
+          subTab,
+          isWide: isWide,
+        );
+        if (index != null && index < tabController.length) {
           tabController.animateTo(index);
         }
       }
 
+      // Handlers receive a logical StudyHubSubTab index (enum order).
+      void handler(int logicalIndex) {
+        if (logicalIndex < 0 ||
+            logicalIndex >= StudyHubSubTab.values.length) {
+          return;
+        }
+        selectSubTab(StudyHubSubTab.values[logicalIndex]);
+      }
+
       AppTabNavigation.onSelectStudyHubSubTab = handler;
       AppTourKeys.onSelectStudyHubSubTab = handler;
+
+      final pending = AppTabNavigation.pendingHubSubTab;
+      if (pending != null) {
+        AppTabNavigation.pendingHubSubTab = null;
+        selectSubTab(pending);
+      }
 
       return () {
         AppTabNavigation.onSelectStudyHubSubTab = null;
@@ -388,11 +438,29 @@ class _StudyHubView extends HookWidget {
             actions: isSearchExpanded.value
                 ? null
                 : [
+                    if (activeSubTab == StudyHubSubTab.forum) ...[
+                      CommunitySearchFilterCapsule(
+                        hasActiveFilters: hasActiveFilters,
+                        activeFilterCount: activeFilterCount,
+                        isDark: isDark,
+                        onOpenSearch: () {
+                          isSearchExpanded.value = true;
+                        },
+                        onOpenFilter: () {
+                          showCommunityFilterSheet(
+                            context: context,
+                            availableTracks: availableTracks,
+                            effectiveTrack: effectiveTrack,
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     Padding(
                       padding: const EdgeInsets.only(right: 16),
                       child: _buildHeaderActionButton(
                         context,
-                        tabIndex: tabController.index,
+                        subTab: activeSubTab,
                         isWide: isWide,
                         targetTrack: targetTrack,
                       ),
@@ -410,9 +478,13 @@ class _StudyHubView extends HookWidget {
                     child: AppLiquidGlassTabBar(
                       key: AppTourKeys.pomodoroCardKey,
                       tabs: [
-                        l10n.liveRoomsTab,
-                        'Study Pods',
-                        l10n.marketplaceTab,
+                        for (final subTab in hubSubTabs)
+                          switch (subTab) {
+                            StudyHubSubTab.forum => l10n.forumTab,
+                            StudyHubSubTab.liveRooms => l10n.liveRoomsTab,
+                            StudyHubSubTab.studyCircles => 'Study Pods',
+                            StudyHubSubTab.marketplace => l10n.marketplaceTab,
+                          },
                       ],
                       selectedIndex: tabController.index,
                       onTabSelected: tabController.animateTo,
@@ -446,46 +518,52 @@ class _StudyHubView extends HookWidget {
                   state.sharedDecks.isEmpty &&
                   state.forumPosts.isEmpty) {
                 return CommunityHubShimmer(
-                  tabIndex: tabController.index,
+                  tabIndex: switch (activeSubTab) {
+                    StudyHubSubTab.forum => 1,
+                    StudyHubSubTab.marketplace => 2,
+                    _ => 0,
+                  },
                 );
               }
 
               final hubTabBarView = TabBarView(
                 controller: tabController,
                 children: [
-                  // 0. Live Focus Rooms
-                  _LiveRoomsTab(
-                    key: AppTourKeys.liveRoomsCardKey,
-                    state: state,
-                    targetTrack: targetTrack,
-                    hasSelectedDeck: hasSelectedDeck,
-                  ),
-
-                  // 1. Study Circles
-                  _StudyCirclesTab(
-                    state: state,
-                    targetTrack: targetTrack,
-                    hasSelectedDeck: hasSelectedDeck,
-                  ),
-
-                  // 2. Deck Marketplace
-                  _DeckMarketplaceTab(
-                    key: AppTourKeys.marketplaceCardKey,
-                    state: state,
-                    selectedDeckId: selectedDesktopDeck.value?.id,
-                    hasSelectedDeck: hasSelectedDeck,
-                    onDeckSelected: (deck) {
-                      if (isWide) {
-                        selectedDesktopDeck.value = deck;
-                      } else {
-                        unawaited(
-                          context.router.push(
-                            DeckMarketplaceDetailRoute(deck: deck),
-                          ),
-                        );
-                      }
+                  for (final subTab in hubSubTabs)
+                    switch (subTab) {
+                      StudyHubSubTab.forum => _ForumTab(
+                          state: state,
+                          targetTrack: targetTrack,
+                        ),
+                      StudyHubSubTab.liveRooms => _LiveRoomsTab(
+                          key: AppTourKeys.liveRoomsCardKey,
+                          state: state,
+                          targetTrack: targetTrack,
+                          hasSelectedDeck: hasSelectedDeck,
+                        ),
+                      StudyHubSubTab.studyCircles => _StudyCirclesTab(
+                          state: state,
+                          targetTrack: targetTrack,
+                          hasSelectedDeck: hasSelectedDeck,
+                        ),
+                      StudyHubSubTab.marketplace => _DeckMarketplaceTab(
+                          key: AppTourKeys.marketplaceCardKey,
+                          state: state,
+                          selectedDeckId: selectedDesktopDeck.value?.id,
+                          hasSelectedDeck: hasSelectedDeck,
+                          onDeckSelected: (deck) {
+                            if (isWide) {
+                              selectedDesktopDeck.value = deck;
+                            } else {
+                              unawaited(
+                                context.router.push(
+                                  DeckMarketplaceDetailRoute(deck: deck),
+                                ),
+                              );
+                            }
+                          },
+                        ),
                     },
-                  ),
                 ],
               );
 
@@ -1572,6 +1650,34 @@ class _DeckMarketplaceTab extends HookWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Forum feed shown as a Hub sub-tab on compact layouts, where the
+/// 4-item dock has no dedicated Forum destination.
+class _ForumTab extends StatelessWidget {
+  const _ForumTab({
+    required this.state,
+    required this.targetTrack,
+  });
+
+  final CommunityState state;
+  final String? targetTrack;
+
+  @override
+  Widget build(BuildContext context) {
+    final track = targetTrack?.trim();
+    final effectiveTrack =
+        (track != null && track.isNotEmpty && track != 'General')
+            ? track
+            : 'WAEC';
+
+    return CommunityForumFeedList(
+      state: state,
+      searchQuery: state.forumSearchQuery,
+      availableTracks: getAvailableTracks(targetTrack),
+      effectiveTrack: effectiveTrack,
     );
   }
 }
