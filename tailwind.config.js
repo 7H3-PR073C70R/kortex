@@ -1,8 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./web_landing/**/*.html",
-    "./web_landing/**/*.js",
+    "./web_landing/*.html",
+    "./web_landing/features/*.html",
+    "./web_landing/js/*.js",
   ],
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
