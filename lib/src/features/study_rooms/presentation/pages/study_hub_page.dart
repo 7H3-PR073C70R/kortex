@@ -1559,7 +1559,7 @@ class _DeckMarketplaceTab extends HookWidget {
                       crossAxisCount: gridCrossAxisCount,
                       crossAxisSpacing: 14,
                       mainAxisSpacing: 14,
-                      childAspectRatio: gridCrossAxisCount == 3 ? 1.85 : 1.75,
+                      childAspectRatio: gridCrossAxisCount == 3 ? 1.37 : 1.75,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
