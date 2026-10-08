@@ -39,14 +39,38 @@ class AppTabNavigation {
     return screenWidth >= desktopBreakpoint;
   }
 
-  /// Maps a main AutoTabsRouter route index (0..4) to the dock index.
+  /// Maps a main AutoTabsRouter route index (0..4) to the dock index (0..3).
   static int mainIndexToDockIndex(int mainRouteIndex, [double? screenWidth]) {
-    return mainRouteIndex.clamp(0, 4);
+    switch (mainRouteIndex) {
+      case 0:
+        return 0; // Home
+      case 1:
+        return 1; // Decks
+      case 2:
+        return 2; // Forum -> maps to Hub dock tab
+      case 3:
+        return 2; // Hub
+      case 4:
+        return 3; // Profile
+      default:
+        return 0;
+    }
   }
 
-  /// Maps a visual dock item index to the corresponding AutoTabsRouter route index (0..4).
+  /// Maps a visual dock item index (0..3) to the corresponding AutoTabsRouter route index (0..4).
   static int dockIndexToMainIndex(int dockIndex, [double? screenWidth]) {
-    return dockIndex.clamp(0, 4);
+    switch (dockIndex) {
+      case 0:
+        return 0; // Home (DashboardRoute)
+      case 1:
+        return 1; // Decks (DecksRoute)
+      case 2:
+        return 3; // Hub (StudyHubRoute)
+      case 3:
+        return 4; // Profile (ProfileRoute)
+      default:
+        return 0;
+    }
   }
 
   /// Calculates the main navigation tab index based on the requested tab.

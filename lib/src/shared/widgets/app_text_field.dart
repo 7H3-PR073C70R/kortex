@@ -23,6 +23,7 @@ class AppTextField extends StatefulWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.isPassword = false,
+    this.autofillHints,
     this.keyboardType,
     this.textInputAction,
     this.textCapitalization = TextCapitalization.none,
@@ -65,6 +66,7 @@ class AppTextField extends StatefulWidget {
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final bool isPassword;
+  final Iterable<String>? autofillHints;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final TextCapitalization textCapitalization;
@@ -255,6 +257,7 @@ class _AppTextFieldState extends State<AppTextField> {
       controller: widget.controller,
       initialValue: widget.initialValue,
       focusNode: _effectiveFocusNode,
+      autofillHints: widget.autofillHints,
       keyboardType: widget.keyboardType,
       textInputAction: widget.textInputAction,
       textCapitalization: widget.textCapitalization,

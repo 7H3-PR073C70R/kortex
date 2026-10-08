@@ -54,6 +54,7 @@ class AuthLoginFormContent extends StatelessWidget {
           label: l10n.authEmailLabel,
           hintText: l10n.authEmailHint,
           controller: emailController,
+          autofillHints: const [AutofillHints.email],
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
           prefixIcon: const Icon(
@@ -66,6 +67,7 @@ class AuthLoginFormContent extends StatelessWidget {
           label: l10n.authPasswordLabel,
           hintText: l10n.authPasswordHint,
           controller: passwordController,
+          autofillHints: const [AutofillHints.password],
           isPassword: true,
           textInputAction: TextInputAction.done,
           onFieldSubmitted: (_) => onSubmit(),

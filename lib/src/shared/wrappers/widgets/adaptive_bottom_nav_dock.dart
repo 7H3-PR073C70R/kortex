@@ -413,12 +413,12 @@ class _AdaptiveBottomNavDockState extends State<AdaptiveBottomNavDock>
                                       (1.0 - distance).clamp(0.0, 1.0);
                                   final isSelected = activeWeight > 0.5;
 
-                                  final mainIndex = AppTabNavigation.dockIndexToMainIndex(
-                                    dockIndex,
-                                    totalWidth,
-                                  );
                                   final isRouteSelected =
-                                      widget.tabsRouter.activeIndex == mainIndex;
+                                      AppTabNavigation.mainIndexToDockIndex(
+                                            widget.tabsRouter.activeIndex,
+                                            totalWidth,
+                                          ) ==
+                                          dockIndex;
 
                                   final iconColor = isSelected && transitionWeight <= 0.01
                                       ? colors.transparent
