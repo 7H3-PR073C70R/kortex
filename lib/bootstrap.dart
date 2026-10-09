@@ -97,16 +97,28 @@ Future<void> bootstrap({
 
   // Initialize notifications
   try {
-    await locator<NotificationService>().initialize().timeout(const Duration(seconds: 5), onTimeout: () {
-    });
+    await locator<NotificationService>()
+        .initialize()
+        .timeout(const Duration(seconds: 4), onTimeout: () {});
   } on Object catch (e) {
     log('Failed to initialize NotificationService: $e');
   }
 
-  await locator<LocalStorageService>().initDB();
-  
-  await locator<UserStorageService>().initStorage().timeout(const Duration(seconds: 5), onTimeout: () {
-  });
+  try {
+    await locator<LocalStorageService>()
+        .initDB()
+        .timeout(const Duration(seconds: 4), onTimeout: () {});
+  } on Object catch (e) {
+    log('Failed to initialize LocalStorageService: $e');
+  }
+
+  try {
+    await locator<UserStorageService>()
+        .initStorage()
+        .timeout(const Duration(seconds: 4), onTimeout: () {});
+  } on Object catch (e) {
+    log('Failed to initialize UserStorageService: $e');
+  }
 
   // Pre-initialize TextToSpeechService to kick off Kokoro offline model download in background (native only)
   if (!kIsWeb) {

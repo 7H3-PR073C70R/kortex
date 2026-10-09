@@ -53,7 +53,6 @@ extension SyllabotStreamExtension on Dio {
       options: Options(
         headers: {
           'Accept': 'text/event-stream',
-          'Cache-Control': 'no-cache',
         },
         responseType: ResponseType.stream,
         receiveTimeout: const Duration(minutes: 5),

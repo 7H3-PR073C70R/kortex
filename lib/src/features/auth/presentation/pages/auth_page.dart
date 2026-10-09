@@ -78,93 +78,81 @@ class _AuthView extends HookWidget {
                 }
 
                 // Mobile & Tablet Layout
-                if (isChatMode) {
-                  return SafeArea(
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: isTablet ? 560 : 480,
-                        ),
-                        child: Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 14,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const RevealOnMount(
+                return SafeArea(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: isTablet ? 560 : 480,
+                      ),
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 14,
+                            ),
+                            child: Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Expanded(
+                                  child: RevealOnMount(
                                     child: AuthBrandLockup(),
                                   ),
-                                  RevealOnMount(
-                                    delayMs: 90,
-                                    child: ModeSwitchButton(
-                                      isChatMode: isChatMode,
-                                      onToggle: () {
-                                        context
-                                            .read<AuthModeCubit>()
-                                            .toggleMode();
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: RevealOnMount(
-                                delayMs: 150,
-                                child: AuthChatView(
-                                  key: const ValueKey<String>(
-                                    'auth_chat_view',
-                                  ),
-                                  onGooglePressed: () =>
-                                      authGoogleSignIn(context),
-                                  onApplePressed: () =>
-                                      authAppleSignIn(context),
-                                  onForgotPassword: () {
-                                    unawaited(
-                                      context.router.push(
-                                        const ForgotPasswordRoute(),
-                                      ),
-                                    );
-                                  },
                                 ),
-                              ),
+                                RevealOnMount(
+                                  delayMs: 90,
+                                  child: ModeSwitchButton(
+                                    isChatMode: isChatMode,
+                                    onToggle: () {
+                                      context
+                                          .read<AuthModeCubit>()
+                                          .toggleMode();
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                // Quick Form Mode: extends full-bleed to device screen edges
-                // covering app bar and status bar without horizontal sharp cuts
-                return Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: isTablet ? 560 : 480,
-                    ),
-                    child: RevealOnMount(
-                      delayMs: 150,
-                      child: AuthFormView(
-                        key: const ValueKey<String>(
-                          'auth_form_view',
-                        ),
-                        onForgotPassword: () {
-                          unawaited(
-                            context.router.push(
-                              const ForgotPasswordRoute(),
+                          ),
+                          Expanded(
+                            child: RevealOnMount(
+                              delayMs: 150,
+                              child: isChatMode
+                                  ? AuthChatView(
+                                      key: const ValueKey<String>(
+                                        'auth_chat_view',
+                                      ),
+                                      onGooglePressed: () =>
+                                          authGoogleSignIn(context),
+                                      onApplePressed: () =>
+                                          authAppleSignIn(context),
+                                      onForgotPassword: () {
+                                        unawaited(
+                                          context.router.push(
+                                            const ForgotPasswordRoute(),
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : AuthFormView(
+                                      key: const ValueKey<String>(
+                                        'auth_form_view',
+                                      ),
+                                      onForgotPassword: () {
+                                        unawaited(
+                                          context.router.push(
+                                            const ForgotPasswordRoute(),
+                                          ),
+                                        );
+                                      },
+                                      onGooglePressed: () =>
+                                          authGoogleSignIn(context),
+                                      onApplePressed: () =>
+                                          authAppleSignIn(context),
+                                    ),
                             ),
-                          );
-                        },
-                        onGooglePressed: () =>
-                            authGoogleSignIn(context),
-                        onApplePressed: () =>
-                            authAppleSignIn(context),
+                          ),
+                        ],
                       ),
                     ),
                   ),

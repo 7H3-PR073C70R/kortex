@@ -34,7 +34,7 @@ void main() {
       final errorMessage = dioException.errorMessage;
 
       //! Assert
-      expect(errorMessage, 'something went wrong');
+      expect(errorMessage, 'An unexpected error occurred. Please try again');
     });
 
     test('errorMessage should handle failed host lookup message', () {

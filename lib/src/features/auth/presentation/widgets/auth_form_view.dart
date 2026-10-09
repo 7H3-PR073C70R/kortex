@@ -57,6 +57,12 @@ class AuthFormView extends HookWidget {
     final otpController = useTextEditingController();
     final errorMessageState = useState<String?>(null);
 
+    useListenable(emailController);
+    useListenable(passwordController);
+    useListenable(confirmPasswordController);
+    useListenable(nameController);
+    useListenable(promoCodeController);
+
     useEffect(() {
       if (emailController.text != draftState.email) {
         emailController.text = draftState.email;
@@ -92,20 +98,55 @@ class AuthFormView extends HookWidget {
 
       emailController.addListener(listener);
       passwordController.addListener(listener);
+      confirmPasswordController.addListener(listener);
       nameController.addListener(listener);
       promoCodeController.addListener(listener);
       return () {
         emailController.removeListener(listener);
         passwordController.removeListener(listener);
+        confirmPasswordController.removeListener(listener);
         nameController.removeListener(listener);
         promoCodeController.removeListener(listener);
       };
     }, [
       emailController,
       passwordController,
+      confirmPasswordController,
       nameController,
       promoCodeController,
     ]);
+
+    bool isValidEmail(String input) {
+      final trimmed = input.trim();
+      if (trimmed.isEmpty) return false;
+      return RegExp(
+        r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+      ).hasMatch(trimmed);
+    }
+
+    bool isValidPromoCode(String code) {
+      final trimmed = code.trim();
+      if (trimmed.isEmpty) return true; // Optional when empty
+      return RegExp(r'^[a-zA-Z0-9_-]{3,20}$').hasMatch(trimmed);
+    }
+
+    final isLoginEmailValid = isValidEmail(emailController.text);
+    final isLoginPasswordValid = passwordController.text.trim().isNotEmpty;
+    final isLoginFormValid = isLoginEmailValid && isLoginPasswordValid;
+
+    final isSignupNameValid = nameController.text.trim().isNotEmpty;
+    final isSignupEmailValid = isValidEmail(emailController.text);
+    final isSignupPasswordValid = passwordController.text.length >= 8;
+    final isSignupConfirmPasswordValid =
+        confirmPasswordController.text.isNotEmpty &&
+            confirmPasswordController.text == passwordController.text;
+    final isSignupPromoValid = isValidPromoCode(promoCodeController.text);
+
+    final isSignupFormValid = isSignupNameValid &&
+        isSignupEmailValid &&
+        isSignupPasswordValid &&
+        isSignupConfirmPasswordValid &&
+        isSignupPromoValid;
 
     final animController = useAnimationController(
       duration: const Duration(milliseconds: 580),
@@ -140,12 +181,20 @@ class AuthFormView extends HookWidget {
       final name = nameController.text.trim();
       final promoCode = promoCodeController.text.trim();
 
-      if (email.isEmpty || password.isEmpty) return;
-
       if (isRegister) {
-        final confirmPassword = confirmPasswordController.text;
-        if (confirmPassword.isNotEmpty && confirmPassword != password) {
-          errorMessageState.value = 'Passwords do not match';
+        if (!isSignupFormValid) {
+          if (!isSignupNameValid) {
+            errorMessageState.value = 'Please enter your full name';
+          } else if (!isSignupEmailValid) {
+            errorMessageState.value = 'Please enter a valid email address';
+          } else if (!isSignupPasswordValid) {
+            errorMessageState.value = 'Password must be at least 8 characters';
+          } else if (!isSignupConfirmPasswordValid) {
+            errorMessageState.value = 'Passwords do not match';
+          } else if (!isSignupPromoValid) {
+            errorMessageState.value =
+                'Please enter a valid promo or referral code (3-20 characters)';
+          }
           return;
         }
 
@@ -158,6 +207,15 @@ class AuthFormView extends HookWidget {
           ),
         );
       } else {
+        if (!isLoginFormValid) {
+          if (!isLoginEmailValid) {
+            errorMessageState.value = 'Please enter a valid email address';
+          } else if (!isLoginPasswordValid) {
+            errorMessageState.value = 'Please enter your password';
+          }
+          return;
+        }
+
         context.read<AuthBloc>().add(
           AuthLoginRequested(
             email: email,

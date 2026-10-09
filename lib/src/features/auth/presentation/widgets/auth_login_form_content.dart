@@ -13,16 +13,26 @@ class AuthLoginFormContent extends StatelessWidget {
     required this.onForgotPassword,
     required this.onToggleForm,
     required this.errorMessage,
+    this.isFormValid = true,
     super.key,
   });
 
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final bool isLoading;
+  final bool isFormValid;
   final VoidCallback onSubmit;
   final VoidCallback onForgotPassword;
   final VoidCallback onToggleForm;
   final String? errorMessage;
+
+  bool _isValidEmail(String email) {
+    final trimmed = email.trim();
+    if (trimmed.isEmpty) return false;
+    return RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    ).hasMatch(trimmed);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +67,10 @@ class AuthLoginFormContent extends StatelessWidget {
           autofillHints: const [AutofillHints.email],
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
+          errorText: emailController.text.isNotEmpty &&
+                  !_isValidEmail(emailController.text)
+              ? 'Please enter a valid email address'
+              : null,
           prefixIcon: const Icon(
             Icons.mail_outline_rounded,
             size: 20,
@@ -70,7 +84,7 @@ class AuthLoginFormContent extends StatelessWidget {
           autofillHints: const [AutofillHints.password],
           isPassword: true,
           textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => onSubmit(),
+          onFieldSubmitted: (_) => isFormValid ? onSubmit() : null,
           prefixIcon: const Icon(
             Icons.lock_outline_rounded,
             size: 20,
@@ -98,7 +112,8 @@ class AuthLoginFormContent extends StatelessWidget {
         AppButton(
           text: 'Login',
           isLoading: isLoading,
-          onPressed: isLoading ? null : onSubmit,
+          isEnabled: isFormValid && !isLoading,
+          onPressed: (isFormValid && !isLoading) ? onSubmit : null,
           borderRadius: 24,
         ),
         const SizedBox(height: 14),

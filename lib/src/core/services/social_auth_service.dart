@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -77,6 +78,43 @@ class SocialAuthService {
   /// Returns `null` if user cancelled.
   Future<SocialAuthResult?> signInWithGoogle() async {
     try {
+      if (kIsWeb && _isFirebaseAvailable) {
+        try {
+          final googleProvider = GoogleAuthProvider();
+          final userCredential = await _auth!.signInWithPopup(googleProvider);
+          final user = userCredential.user;
+          if (user == null) return null;
+          final idToken = await user.getIdToken() ?? '';
+          return SocialAuthResult(
+            provider: 'google',
+            idToken: idToken,
+            email: user.email,
+            displayName: user.displayName,
+          );
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'popup-closed-by-user' ||
+              e.code == 'cancelled-popup-request' ||
+              e.code == 'user-cancelled' ||
+              e.code == 'closed') {
+            developer.log('Google sign-in popup closed by user.');
+            return null;
+          }
+          throw SocialAuthException(
+            e.message ?? 'Google Sign-In failed (${e.code}).',
+          );
+        } on Object catch (e) {
+          if (e.toString().contains('closed') ||
+              e.toString().contains('canceled') ||
+              e.toString().contains('cancelled')) {
+            return null;
+          }
+          developer.log('Google web sign-in error: $e');
+          throw const SocialAuthException(
+            'Google Sign-In failed. Please try again.',
+          );
+        }
+      }
+
       final GoogleSignInAccount? googleUser;
       try {
         googleUser = await _googleSignIn.signIn();
@@ -92,6 +130,15 @@ class SocialAuthService {
         }
         throw SocialAuthException(
           e.message ?? 'Google Sign-In failed on this device (${e.code}).',
+        );
+      } on Object catch (e) {
+        if (e.toString().contains('canceled') ||
+            e.toString().contains('cancelled') ||
+            e.toString().contains('closed')) {
+          return null;
+        }
+        throw const SocialAuthException(
+          'Google Sign-In is unavailable or unconfigured on this browser.',
         );
       }
 
@@ -149,7 +196,50 @@ class SocialAuthService {
   /// Returns `null` if user cancelled.
   Future<SocialAuthResult?> signInWithApple() async {
     try {
-      final isAvailable = await SignInWithApple.isAvailable();
+      if (kIsWeb && _isFirebaseAvailable) {
+        try {
+          final appleProvider = OAuthProvider('apple.com');
+          final userCredential = await _auth!.signInWithPopup(appleProvider);
+          final user = userCredential.user;
+          if (user == null) return null;
+          final idToken = await user.getIdToken() ?? '';
+          return SocialAuthResult(
+            provider: 'apple',
+            idToken: idToken,
+            email: user.email,
+            displayName: user.displayName,
+          );
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'popup-closed-by-user' ||
+              e.code == 'cancelled-popup-request' ||
+              e.code == 'user-cancelled' ||
+              e.code == 'closed') {
+            developer.log('Apple sign-in popup closed by user.');
+            return null;
+          }
+          throw SocialAuthException(
+            e.message ?? 'Apple Sign-In failed (${e.code}).',
+          );
+        } on Object catch (e) {
+          if (e.toString().contains('closed') ||
+              e.toString().contains('canceled') ||
+              e.toString().contains('cancelled')) {
+            return null;
+          }
+          developer.log('Apple web sign-in error: $e');
+          throw SocialAuthException('Apple Sign-In failed: $e');
+        }
+      }
+
+      final bool isAvailable;
+      try {
+        isAvailable = await SignInWithApple.isAvailable();
+      } on Object catch (_) {
+        throw const SocialAuthException(
+          'Sign in with Apple is not supported on this browser.',
+        );
+      }
+
       if (!isAvailable) {
         developer.log(
           'Sign in with Apple is not supported on this platform/device.',

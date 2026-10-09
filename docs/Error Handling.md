@@ -42,7 +42,7 @@ extension RepositoryExtension<T> on Future<T> {
       onFailure?.call();
       debugPrint(e.toString());
       debugPrint(s.toString());
-      return const Left(ServerFailure(message: 'Something went wrong.'));
+      return const Left(ServerFailure(message: 'An unexpected error occurred. Please try again in a few moments.'));
     }
   }
 }
@@ -85,7 +85,7 @@ extension ErrorHandler on Exception {
     try {
       final error = this as DioException;
       final backendMessage = (error.response?.data as Map?)?['message'] as String?;
-      final message = backendMessage ?? error.message ?? 'Something went wrong';
+      final message = backendMessage ?? error.message ?? 'An unexpected error occurred. Please try again';
       return message.toLowerCase().contains('failed host lookup')
           ? 'Please check your internet connection.'
           : message;

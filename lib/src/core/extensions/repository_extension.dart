@@ -49,10 +49,19 @@ extension RepositoryExtension<T> on Future<T> {
       onFailure?.call();
       debugPrint(e.toString());
       debugPrint(s.toString());
-      final msg = e is Exception ? e.errorMessage : null;
+      String? msg;
+      if (e is Exception) {
+        msg = e.errorMessage;
+      } else if (e is Error) {
+        final errStr = e.toString().toLowerCase();
+        if (errStr.contains('<!doctype') || errStr.contains('<html')) {
+          msg = 'The remote service is temporarily unavailable. Please try again.';
+        }
+      }
       return Left(
         ServerFailure(
-          message: msg ?? e.toString(),
+          message: msg ??
+              'An unexpected error occurred. Please try again in a few moments',
         ),
       );
     }

@@ -36,8 +36,8 @@ class AuthRouteGuard extends AutoRouteGuard {
     final hasSession = _userStorageService.hasActiveSession();
     final status = _authBloc.state.sessionStatus;
 
-    // 1. If not authenticated at all (no active session and unauthenticated in state)
-    if (!hasSession && status == AuthSessionStatus.unauthenticated) {
+    // 1. If not authenticated at all (no active session or unauthenticated in state)
+    if (!hasSession || status == AuthSessionStatus.unauthenticated) {
       if (currentRouteName == AuthRoute.name ||
           currentRouteName == OnboardingRoute.name ||
           currentRouteName == ForgotPasswordRoute.name ||

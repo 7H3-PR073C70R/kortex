@@ -10,6 +10,7 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/services/dynamic_link_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/session_expired_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
 import 'package:kortex/src/core/themes/theme_state.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -96,6 +97,17 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     final isShareHost = uri.host == 'share' || uri.path.contains('share');
     final typeStr =
         uri.queryParameters['type']?.trim().toLowerCase().replaceAll('-', '_');
+
+    if (uri.path == '/signup' || uri.path.endsWith('/signup')) {
+      if (locator.isRegistered<AuthModeCubit>()) {
+        locator<AuthModeCubit>().resetToRegister();
+      }
+      return uri.replace(path: '/login');
+    }
+
+    if (uri.path == '/auth' || uri.path.endsWith('/auth')) {
+      return uri.replace(path: '/login');
+    }
 
     if (isCustomScheme || isShareHost || typeStr != null) {
       switch (typeStr) {
@@ -184,9 +196,12 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   }
 
   void _handleSessionExpired(String message) {
+    if (locator.isRegistered<UserStorageService>()) {
+      locator<UserStorageService>().clearStorage();
+    }
     locator<AuthModeCubit>().resetToLogin();
-    unawaited(_appRouter.replaceAll([const AuthRoute()]));
     locator<AuthBloc>().add(const AuthSignOutRequested());
+    unawaited(_appRouter.replaceAll([const AuthRoute()]));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final navContext = _appRouter.navigatorKey.currentContext;

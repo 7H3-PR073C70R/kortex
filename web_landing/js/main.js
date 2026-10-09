@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       } catch (err) {
         setBtn('idle');
-        showStatus('error', err.message || 'Something went wrong. Please try again.');
+        showStatus('error', err.message || 'An unexpected error occurred. Please try again.');
       }
     });
   };

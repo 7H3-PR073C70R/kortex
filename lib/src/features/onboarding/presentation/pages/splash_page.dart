@@ -158,7 +158,9 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     // Verify or refresh profile against server if auth repository is available
     if (locator.isRegistered<AuthRepository>()) {
       try {
-        final profileResult = await locator<AuthRepository>().getUserProfile();
+        final profileResult = await locator<AuthRepository>()
+            .getUserProfile()
+            .timeout(const Duration(seconds: 4));
         profileResult.fold(
           (failure) {
             // Note: If session was explicitly revoked/invalidated on the server,

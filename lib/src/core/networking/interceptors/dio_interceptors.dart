@@ -540,7 +540,20 @@ class DataParserInterceptor extends Interceptor {
     ResponseInterceptorHandler handler,
   ) {
     final dynamic data = response.data;
-    if (data is Map<String, dynamic>) {
+    if (data is String) {
+      final trimmed = data.trim().toLowerCase();
+      if (trimmed.startsWith('<!doctype') || trimmed.startsWith('<html')) {
+        handler.reject(
+          DioException(
+            requestOptions: response.requestOptions,
+            response: response,
+            type: DioExceptionType.badResponse,
+            error: 'Unexpected error occur. Please try again in few minutes.',
+          ),
+        );
+        return;
+      }
+    } else if (data is Map<String, dynamic>) {
       if (data.containsKey('data')) {
         response.data = data['data'];
       }

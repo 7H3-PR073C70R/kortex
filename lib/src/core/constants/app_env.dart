@@ -1,16 +1,37 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppEnv {
-  static String get apiBaseURL =>
-      dotenv.isInitialized ? (dotenv.env['API_BASE_URL'] ?? '') : '';
-  static String get apiKey => dotenv.isInitialized
-      ? (dotenv.env['API_KEY'] ?? dotenv.env['SUPABASE_ANON_KEY'] ?? '')
-      : '';
+  static const String _defaultApiBaseUrl =
+      'https://mongizqfijuhycdxltpw.supabase.co';
+  static const String _defaultApiKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbmdpenFmaWp1aHljZHhsdHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjk0ODksImV4cCI6MjEwMzcwNTQ4OX0.WdbPP0hWHnm2P7IWOOPOPv8emJsNql2jf5z6XnPa0wg';
+  static const String _defaultLiveKitUrl =
+      'wss://kortexify-nj9viqjp.livekit.cloud';
+  static const String _defaultR2Domain =
+      'https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev';
+
+  static String get apiBaseURL {
+    if (dotenv.isInitialized) {
+      final val = dotenv.env['API_BASE_URL'];
+      if (val != null && val.trim().isNotEmpty) return val.trim();
+    }
+    return _defaultApiBaseUrl;
+  }
+
+  static String get apiKey {
+    if (dotenv.isInitialized) {
+      final val = dotenv.env['API_KEY'] ?? dotenv.env['SUPABASE_ANON_KEY'];
+      if (val != null && val.trim().isNotEmpty) return val.trim();
+    }
+    return _defaultApiKey;
+  }
+
   static String get liveKitUrl {
-    if (!dotenv.isInitialized) return '';
-    final val = dotenv.env['LIVEKIT_URL'];
-    assert(val != null && val.isNotEmpty, 'LIVEKIT_URL must be set in .env');
-    return val ?? '';
+    if (dotenv.isInitialized) {
+      final val = dotenv.env['LIVEKIT_URL'];
+      if (val != null && val.trim().isNotEmpty) return val.trim();
+    }
+    return _defaultLiveKitUrl;
   }
 
   static String get revenueCatWebApiKey =>
@@ -23,12 +44,10 @@ class AppEnv {
       : '';
 
   static String get r2PublicDomain {
-    if (!dotenv.isInitialized) return '';
-    final val = dotenv.env['R2_PUBLIC_DOMAIN'];
-    assert(
-      val != null && val.isNotEmpty,
-      'R2_PUBLIC_DOMAIN must be set in .env',
-    );
-    return val ?? '';
+    if (dotenv.isInitialized) {
+      final val = dotenv.env['R2_PUBLIC_DOMAIN'];
+      if (val != null && val.trim().isNotEmpty) return val.trim();
+    }
+    return _defaultR2Domain;
   }
 }

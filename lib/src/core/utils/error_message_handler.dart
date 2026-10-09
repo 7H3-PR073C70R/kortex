@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/error/exceptions.dart';
+import 'package:kortex/src/core/services/social_auth_service.dart';
 
 extension ErrorHandler on Exception {
   /// Converts technical network, server, and authentication exceptions into
@@ -13,6 +14,9 @@ extension ErrorHandler on Exception {
       } else if (this is ServerException) {
         final raw = (this as ServerException).message;
         return raw != null ? _cleanUserMessage(raw) : null;
+      } else if (this is SocialAuthException) {
+        final raw = (this as SocialAuthException).message;
+        return _cleanUserMessage(raw);
       } else if (this is SocketException) {
         return 'Please check your internet connection and try again';
       } else {
@@ -37,7 +41,10 @@ extension ErrorHandler on Exception {
             (data['details'] as String?) ??
             (data['hint'] as String?);
       } else if (data is String && data.isNotEmpty) {
-        rawBackendMsg = data;
+        final lowerData = data.toLowerCase();
+        if (!lowerData.contains('<!doctype') && !lowerData.contains('<html')) {
+          rawBackendMsg = data;
+        }
       }
 
       if (rawBackendMsg != null && rawBackendMsg.trim().isNotEmpty) {
@@ -96,11 +103,29 @@ extension ErrorHandler on Exception {
       }
     }
 
-    return error.message ?? 'something went wrong';
+    return (error.message != null && error.message!.trim().isNotEmpty)
+        ? _cleanUserMessage(error.message!.trim())
+        : 'An unexpected error occurred. Please try again';
   }
 
   static String _cleanUserMessage(String raw) {
     final lower = raw.toLowerCase();
+
+    // Generic, unhelpful, or technical failure strings
+    if (lower.contains('something went wrong') ||
+        lower.contains('went wrong') ||
+        lower.contains('unexpected_failure') ||
+        lower.contains('unexpected failure') ||
+        lower.contains('unknown error') ||
+        lower.contains('nullcheckoperator') ||
+        lower.contains('typeerror') ||
+        lower.contains('formatexception') ||
+        lower.contains('rangeerror') ||
+        lower.contains('stateerror') ||
+        lower.contains('nosuchmethoderror') ||
+        lower.contains('unhandled exception')) {
+      return 'An unexpected error occurred. Please try again in a few moments';
+    }
 
     // HTML error pages from proxies / CDN / CloudFront / Cloudflare
     if (lower.contains('<!doctype') ||
@@ -117,7 +142,6 @@ extension ErrorHandler on Exception {
     // Database or internal technical failure patterns
     if (lower.contains('database error') ||
         lower.contains('saving new user') ||
-        lower.contains('unexpected_failure') ||
         lower.contains('internal server error') ||
         lower.contains('postgres') ||
         lower.contains('pq:') ||
@@ -188,6 +212,20 @@ extension ErrorHandler on Exception {
     }
     if (sanitized.startsWith('DioException: ')) {
       sanitized = sanitized.substring(14);
+    }
+    if (sanitized.startsWith('FormatException: ')) {
+      sanitized = sanitized.substring(18);
+    }
+
+    if (sanitized.trim().isEmpty) {
+      return 'An unexpected error occurred. Please try again';
+    }
+
+    // Capitalize initial letter if necessary
+    if (sanitized.isNotEmpty &&
+        sanitized[0].toLowerCase() == sanitized[0] &&
+        sanitized[0].toUpperCase() != sanitized[0]) {
+      sanitized = sanitized[0].toUpperCase() + sanitized.substring(1);
     }
 
     return sanitized;

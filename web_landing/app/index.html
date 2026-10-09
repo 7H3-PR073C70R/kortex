@@ -261,12 +261,18 @@
       window.addEventListener('flutter-first-frame', removeSplash);
 
       const observer = new MutationObserver(function (mutations, obs) {
-        if (document.querySelector('flutter-view') || document.querySelector('flt-glass-pane')) {
+        if (document.querySelector('flutter-view') || document.querySelector('flt-glass-pane') || document.querySelector('flt-scene-host')) {
           removeSplash();
           obs.disconnect();
         }
       });
       observer.observe(document.body, { childList: true, subtree: true });
+
+      setTimeout(function() {
+        if (document.querySelector('flutter-view') || document.querySelector('flt-glass-pane') || document.querySelector('flt-scene-host')) {
+          removeSplash();
+        }
+      }, 5000);
     })();
   </script>
   <script src="flutter_bootstrap.js" async></script>

@@ -16,6 +16,7 @@ class AuthSignupFormContent extends StatelessWidget {
     required this.onSubmit,
     required this.onToggleForm,
     required this.errorMessage,
+    this.isFormValid = true,
     super.key,
   });
 
@@ -26,9 +27,24 @@ class AuthSignupFormContent extends StatelessWidget {
   final TextEditingController promoCodeController;
   final ValueNotifier<bool> showPromoField;
   final bool isLoading;
+  final bool isFormValid;
   final VoidCallback onSubmit;
   final VoidCallback onToggleForm;
   final String? errorMessage;
+
+  bool _isValidEmail(String email) {
+    final trimmed = email.trim();
+    if (trimmed.isEmpty) return false;
+    return RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    ).hasMatch(trimmed);
+  }
+
+  bool _isValidPromoCode(String promo) {
+    final trimmed = promo.trim();
+    if (trimmed.isEmpty) return true;
+    return RegExp(r'^[a-zA-Z0-9_-]{3,20}$').hasMatch(trimmed);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +78,7 @@ class AuthSignupFormContent extends StatelessWidget {
           controller: nameController,
           autofillHints: const [AutofillHints.name],
           keyboardType: TextInputType.name,
+          textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.next,
           prefixIcon: const Icon(
             Icons.person_outline_rounded,
@@ -76,6 +93,10 @@ class AuthSignupFormContent extends StatelessWidget {
           autofillHints: const [AutofillHints.email],
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
+          errorText: emailController.text.isNotEmpty &&
+                  !_isValidEmail(emailController.text)
+              ? 'Please enter a valid email address'
+              : null,
           prefixIcon: const Icon(
             Icons.mail_outline_rounded,
             size: 20,
@@ -89,6 +110,10 @@ class AuthSignupFormContent extends StatelessWidget {
           autofillHints: const [AutofillHints.newPassword],
           isPassword: true,
           textInputAction: TextInputAction.next,
+          errorText: passwordController.text.isNotEmpty &&
+                  passwordController.text.length < 8
+              ? 'Password must be at least 8 characters'
+              : null,
           prefixIcon: const Icon(
             Icons.lock_outline_rounded,
             size: 20,
@@ -102,7 +127,11 @@ class AuthSignupFormContent extends StatelessWidget {
           autofillHints: const [AutofillHints.newPassword],
           isPassword: true,
           textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => onSubmit(),
+          onFieldSubmitted: (_) => isFormValid ? onSubmit() : null,
+          errorText: confirmPasswordController.text.isNotEmpty &&
+                  confirmPasswordController.text != passwordController.text
+              ? 'Passwords do not match'
+              : null,
           prefixIcon: const Icon(
             Icons.lock_outline_rounded,
             size: 20,
@@ -119,6 +148,10 @@ class AuthSignupFormContent extends StatelessWidget {
                   label: l10n.authPromoCodeOptionalLabel,
                   hintText: l10n.authPromoCodeHint,
                   controller: promoCodeController,
+                  errorText: promoCodeController.text.isNotEmpty &&
+                          !_isValidPromoCode(promoCodeController.text)
+                      ? 'Promo code must be 3 to 20 alphanumeric characters'
+                      : null,
                   prefixIcon: const Icon(
                     Icons.card_giftcard_rounded,
                     size: 20,
@@ -162,7 +195,8 @@ class AuthSignupFormContent extends StatelessWidget {
         AppButton(
           text: 'Signup',
           isLoading: isLoading,
-          onPressed: isLoading ? null : onSubmit,
+          isEnabled: isFormValid && !isLoading,
+          onPressed: (isFormValid && !isLoading) ? onSubmit : null,
           borderRadius: 24,
         ),
         const SizedBox(height: 14),

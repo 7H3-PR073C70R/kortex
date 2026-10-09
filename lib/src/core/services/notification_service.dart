@@ -204,9 +204,11 @@ class NotificationService {
     // 4. Setup Firebase Messaging listeners.
     if (_isAvailable) {
       try {
-        FirebaseMessaging.onBackgroundMessage(
-          firebaseMessagingBackgroundHandler,
-        );
+        if (!kIsWeb) {
+          FirebaseMessaging.onBackgroundMessage(
+            firebaseMessagingBackgroundHandler,
+          );
+        }
 
         // 4a. Handle cold-start notification tap (app terminated).
         final initialMessage = await _messaging!.getInitialMessage();

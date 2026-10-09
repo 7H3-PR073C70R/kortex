@@ -75,4 +75,12 @@ class AuthModeCubit extends Cubit<AuthModeState> {
   void resetToLogin() {
     emit(const AuthModeState());
   }
+
+  void resetToRegister() {
+    emit(
+      const AuthModeState(
+        formType: AuthFormType.register,
+      ),
+    );
+  }
 }
