@@ -286,11 +286,15 @@ class LocalPdfParserService {
           buffer.write('\n');
         } else {
           final currentStr = buffer.toString();
-          if (currentStr.endsWith('-') && !currentStr.endsWith(' -')) {
+          if (RegExp(r'[a-z]-$').hasMatch(currentStr) &&
+              RegExp('^[a-z]').hasMatch(rawText)) {
             final withoutHyphen = currentStr.substring(0, currentStr.length - 1);
             buffer
               ..clear()
               ..write(withoutHyphen);
+          } else if (RegExp(r'\d-$').hasMatch(currentStr) &&
+              RegExp(r'^\d').hasMatch(rawText)) {
+            // Preserve number ranges like "20-" and "40" -> "20-40"
           } else {
             buffer.write(' ');
           }

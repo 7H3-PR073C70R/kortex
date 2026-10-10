@@ -79,7 +79,7 @@ jobs:
 
     - name: Build Android APK
       run: |
-        flutter build apk --release --flavor ${{ inputs.init_env }} --target lib/main_${{ inputs.init_env }}.dart
+        flutter build apk --release --flavor ${{ inputs.init_env }} --target lib/main_${{ inputs.init_env }}.dart --android-skip-build-dependency-validation
 
     - name: Upload APK to Firebase App Distribution
       uses: wzieba/Firebase-Distribution-Github-Action@bd494989dd4bec0343f78adee87fe66e48279ad6 # pin@v1

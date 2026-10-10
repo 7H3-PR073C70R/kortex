@@ -540,13 +540,18 @@ class DocumentAstExtractor {
       }
 
       final prev = buffer.toString();
-      // Handle line-end hyphenation (e.g. imple- \n mentation)
-      if (prev.endsWith('-') && !prev.endsWith(' -')) {
+      // Handle line-end hyphenation (only for lowercase word continuations)
+      if (RegExp(r'[a-z]-$').hasMatch(prev) &&
+          RegExp('^[a-z]').hasMatch(current)) {
         final withoutHyphen = prev.substring(0, prev.length - 1);
         buffer
           ..clear()
           ..write(withoutHyphen)
           ..write(current);
+      } else if (RegExp(r'\d-$').hasMatch(prev) &&
+          RegExp(r'^\d').hasMatch(current)) {
+        // Number range like 20- 40 -> 20-40
+        buffer.write(current);
       } else {
         buffer
           ..write(' ')
@@ -675,21 +680,23 @@ class DocumentAstExtractor {
   /// Extracts the broad contextual domain of the document.
   String _extractDocumentContext(String text, String? filename) {
     if (filename != null) {
-      final lower = filename.toLowerCase();
-      if (lower.contains('flutter')) return 'Flutter';
-      if (lower.contains('java') || lower.contains('jls')) return 'Java';
-      if (lower.contains('respiration') || lower.contains('biology')) {
-        return 'Cellular Respiration';
-      }
-      if (lower.contains('engagement') || lower.contains('letter')) {
-        return 'Engagement Agreement';
+      final clean = filename
+          .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+          .replaceAll(RegExp(r'[_\-]+'), ' ')
+          .trim();
+      if (clean.isNotEmpty) {
+        return clean;
       }
     }
 
-    final firstLines = text.split('\n').take(10).join(' ');
-    if (firstLines.contains('Flutter')) return 'Flutter';
-    if (firstLines.contains('Java')) return 'Java';
-    if (firstLines.contains('respiration')) return 'Cellular Respiration';
+    final firstLines = text.split('\n').take(15);
+    for (final line in firstLines) {
+      final match = _headingRegex.firstMatch(line.trim());
+      if (match != null) {
+        final title = match.group(2)!.trim();
+        if (title.length <= 40) return title;
+      }
+    }
     return 'General';
   }
 }

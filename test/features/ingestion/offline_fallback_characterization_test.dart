@@ -31,6 +31,9 @@ void main() {
         fileType: ext,
         filename: name,
       );
+      if (name.contains('Flutter_Dev')) {
+        print('=== RAW TEXT OF $name ===\n$text\n=== END RAW TEXT ===');
+      }
       final cards = service.synthesizeSnippetsFromDocument(
         documentId: 'fixture',
         fullText: text,
@@ -50,12 +53,18 @@ void main() {
         models: cards,
       );
 
-      print('\n===== $name: ${deck.totalCards} cards (PedagogicalDeckSchema) =====\n');
-      print(deck.toPrettyJson());
+      final outputDir = Directory('build/characterization_output')
+        ..createSync(recursive: true);
+      final jsonFile = File('${outputDir.path}/${cleanName}_deck.json')
+      ..writeAsStringSync(deck.toPrettyJson());
+
+      print('\n===== $name: ${deck.totalCards} cards (PedagogicalDeckSchema) =====');
+      print('Output saved to: ${jsonFile.path}\n');
 
       expect(cards, isNotNull);
       expect(deck.cards, isNotEmpty);
       expect(deck.schemaVersion, equals('1.0.0'));
+      expect(jsonFile.existsSync(), isTrue);
     });
   }
 }

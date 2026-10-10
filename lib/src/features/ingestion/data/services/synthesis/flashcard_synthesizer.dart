@@ -443,10 +443,24 @@ class FlashcardSynthesizer {
       final term = colonMatch.group(1)!.trim();
       final explanation = colonMatch.group(2)!.trim();
       if (explanation.length >= 15) {
-        final contextPrefix = _resolveContextPrefix(term, headingContext, documentContext);
+        String front;
+        if (headingContext != null &&
+            !{'key terms', 'definitions', 'glossary'}.contains(headingContext.toLowerCase())) {
+          final isAction = RegExp(
+            r'^(?:implement|add|allow|build|develop|create|integrate|support|work|track|collaborate|write|maintain)\b',
+            caseSensitive: false,
+          ).hasMatch(explanation);
+          if (isAction) {
+            front = 'In "$headingContext", what does "$term" involve?';
+          } else {
+            front = 'In "$headingContext", what is $term?';
+          }
+        } else {
+          front = 'What is $term?';
+        }
         return [
           PedagogicalCandidateCard(
-            front: '${contextPrefix}What is $term?',
+            front: front,
             back: node.rawText,
             type: CognitiveQuestionType.definition,
             sourceTopic: headingContext ?? documentContext,
@@ -470,9 +484,23 @@ class FlashcardSynthesizer {
     String documentContext,
   ) {
     if (_isAnaphora(node.term)) return null;
-    final contextPrefix = _resolveContextPrefix(node.term, node.headingContext, documentContext);
+    String front;
+    if (node.headingContext != null &&
+        !{'key terms', 'definitions', 'glossary'}.contains(node.headingContext!.toLowerCase())) {
+      final isAction = RegExp(
+        r'^(?:implement|add|allow|build|develop|create|integrate|support|work|track|collaborate|write|maintain)\b',
+        caseSensitive: false,
+      ).hasMatch(node.definition);
+      if (isAction) {
+        front = 'In "${node.headingContext}", what does "${node.term}" involve?';
+      } else {
+        front = 'In "${node.headingContext}", what is ${node.term}?';
+      }
+    } else {
+      front = 'What is ${node.term}?';
+    }
     return PedagogicalCandidateCard(
-      front: '${contextPrefix}What is ${node.term}?',
+      front: front,
       back: node.rawText,
       type: CognitiveQuestionType.definition,
       sourceTopic: node.headingContext ?? documentContext,

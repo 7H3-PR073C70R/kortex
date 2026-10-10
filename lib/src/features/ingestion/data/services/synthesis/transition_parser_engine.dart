@@ -436,11 +436,15 @@ class TransitionParserEngine {
     if (lower.endsWith('tion') || lower.endsWith('sion') || lower.endsWith('ment') || lower.endsWith('ness')) {
       return 'NN';
     }
-    if (lower.endsWith('s') && !lower.endsWith('ss')) {
+    if (lower.endsWith('s') &&
+        !lower.endsWith('ss') &&
+        !lower.endsWith('is') &&
+        !lower.endsWith('us') &&
+        !lower.endsWith('as')) {
       // Third-person verb vs Plural noun heuristic
       if (index > 0) {
         final prev = context[index - 1].toLowerCase();
-        if (['he', 'she', 'it', 'flutter', 'java'].contains(prev)) {
+        if (['he', 'she', 'it'].contains(prev)) {
           return 'VBZ';
         }
       }
@@ -545,10 +549,6 @@ class TransitionParserEngine {
         'yield': 'VBP',
         'yields': 'VBZ',
         'cells': 'NNS',
-        'enzymes': 'NNS',
-        'glucose': 'NN',
-        'glycolysis': 'NN',
-        'flutter': 'NNP',
         'code': 'NN',
         'compiler': 'NN',
         'state': 'NN',

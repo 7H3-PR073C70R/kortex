@@ -28,13 +28,16 @@ class OfflineCard {
 /// a heading-based prompt quoting a source heading, or a cloze sentence from
 /// the source. No sentence is ever invented.
 class OfflineCardBuilder {
-  const OfflineCardBuilder({this.maxCards = 150});
+  const OfflineCardBuilder({
+    this.maxCards,
+    this.maxClozePerSection,
+  });
 
-  final int maxCards;
+  final int? maxCards;
+  final int? maxClozePerSection;
 
   static const _minClozeWords = 8;
   static const _maxClozeWords = 35;
-  static const _maxClozePerSection = 4;
   static const _maxDefinitionBackChars = 320;
 
   /// Builds cards from [fullText]. Returns an empty list when nothing in the
@@ -122,9 +125,9 @@ class OfflineCardBuilder {
               clozeCandidates.length,
             );
             if (cloze == null) continue;
-            if (heading != null) {
+            if (heading != null && maxClozePerSection != null) {
               final used = clozePerSection[sectionKey] ?? 0;
-              if (used >= _maxClozePerSection) continue;
+              if (used >= maxClozePerSection!) continue;
               clozePerSection[sectionKey] = used + 1;
             }
             clozeCandidates.add(cloze);
@@ -151,7 +154,7 @@ class OfflineCardBuilder {
         s.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
 
     for (final card in structured) {
-      if (result.length >= maxCards) break;
+      if (maxCards != null && result.length >= maxCards!) break;
       if (_isMeaningfulCard(card) && seen.add(norm(card.front))) {
         result.add(card);
       }
@@ -161,10 +164,10 @@ class OfflineCardBuilder {
     final sortedClozes = List<_ClozeCandidate>.from(clozes)
       ..sort((a, b) => b.score.compareTo(a.score));
 
-    final room = maxCards - result.length;
+    final room = maxCards == null ? sortedClozes.length : (maxCards! - result.length);
     if (room > 0 && sortedClozes.isNotEmpty) {
       for (final c in sortedClozes) {
-        if (result.length >= maxCards) break;
+        if (maxCards != null && result.length >= maxCards!) break;
         if (_isMeaningfulCard(c.card) && seen.add(norm(c.card.front))) {
           result.add(c.card);
         }
@@ -315,13 +318,14 @@ class OfflineCardBuilder {
 
     final blocks = <_Block>[];
     final paragraph = <String>[];
+    String? currentSectionTitle;
 
     void flushParagraph() {
       if (paragraph.isEmpty) return;
       final joined = _joinWrapped(paragraph);
       paragraph.clear();
       if (joined.length >= 20) {
-        blocks.add(_Block(_BlockKind.paragraph, joined));
+        blocks.add(_Block(_BlockKind.paragraph, joined, sectionTitle: currentSectionTitle));
       }
     }
 
@@ -445,10 +449,27 @@ class OfflineCardBuilder {
       final headingText = _headingText(line, previousBlank);
       if (headingText != null) {
         flushParagraph();
-        blocks.add(_Block(_BlockKind.heading, _cleanInline(headingText)));
+        currentSectionTitle = _cleanInline(headingText);
+        blocks.add(_Block(_BlockKind.heading, currentSectionTitle, sectionTitle: currentSectionTitle));
         previousBlank = false;
         i++;
         continue;
+      }
+
+      // Check if line is an introductory header for a bullet/glossary list (ends with ':')
+      if (line.endsWith(':') && i + 1 < lines.length) {
+        final nextLine = lines.sublist(i + 1).firstWhere(
+          (l) => l.trim().isNotEmpty,
+          orElse: () => '',
+        ).trim();
+        if (_bulletRe.hasMatch(nextLine) || _glossaryRe.hasMatch(nextLine)) {
+          flushParagraph();
+          currentSectionTitle = _cleanSectionTitle(line);
+          blocks.add(_Block(_BlockKind.heading, currentSectionTitle, sectionTitle: currentSectionTitle));
+          previousBlank = false;
+          i++;
+          continue;
+        }
       }
 
       final glossary = _glossaryRe.firstMatch(line);
@@ -460,7 +481,7 @@ class OfflineCardBuilder {
         if (_isGlossaryTerm(term)) {
           flushParagraph();
           final (body, last) = absorb(i, _cleanInline(glossary.group(2)!));
-          blocks.add(_Block(_BlockKind.glossary, body, term: term));
+          blocks.add(_Block(_BlockKind.glossary, body, term: term, sectionTitle: currentSectionTitle));
           previousBlank = false;
           i = last + 1;
           continue;
@@ -478,6 +499,7 @@ class OfflineCardBuilder {
             body,
             ordered: ordered,
             marker: bullet.group(1),
+            sectionTitle: currentSectionTitle,
           ),
         );
         previousBlank = false;
@@ -626,7 +648,7 @@ class OfflineCardBuilder {
   }
 
   static final _bannedHeadingPattern = RegExp(
-    r'\b(?:dear\s|welcome\s|copyright|rights reserved|version\b|status\b|release\b|author|contributor|contractor|agreement|engagement|mr\.|mrs\.|dr\.|inc\.|llc|ltd|specification|contents|table of contents|overview of the|page\s+\d|fig\b|figure\s+\d|table\s+\d|date\b|signed|signature|alex buckley|james gosling|guy steele|bill joy|gilad bracha|oluwatobi|okanlawon|street|road|avenue|lagos|nigeria|token\b|challenge\b|services\b|scope\b|schedule\b|appointment\b|duties\b|responsibilities\b|remuneration\b|compensation\b|benefits\b|confidentiality\b|termination\b|jurisdiction\b|governing law\b)\b',
+    r'\b(?:dear\s|welcome\s|copyright|rights reserved|all rights reserved|version\b|status\b|release\b|isbn\b|issn\b|contents\b|table of contents|page\s+\d|figure\s+\d|table\s+\d|signature)\b',
     caseSensitive: false,
   );
 
@@ -722,6 +744,9 @@ class OfflineCardBuilder {
           ..clear()
           ..write(current.substring(0, current.length - 1))
           ..write(line);
+      } else if (RegExp(r'\d-$').hasMatch(buffer.toString()) &&
+          RegExp(r'^\d').hasMatch(line)) {
+        buffer.write(line);
       } else {
         buffer
           ..write(' ')
@@ -747,6 +772,30 @@ class OfflineCardBuilder {
 
   bool _endsSentence(String s) => RegExp(r'[.!?]["”)]?$').hasMatch(s.trim());
 
+  static String _cleanSectionTitle(String leadIn) {
+    final clean = leadIn.trim().replaceFirst(RegExp(r':\s*$'), '').trim();
+    final lower = clean.toLowerCase();
+
+    if (lower.contains('bonus feature')) return 'Bonus Features';
+    if (lower.contains('anti-pattern') || lower.contains('avoid')) return 'Anti-patterns to avoid';
+    if (lower.contains('non-functional requirement')) return 'Non-functional requirements';
+    if (lower.contains('functional requirement')) return 'Functional requirements';
+    if (lower.contains('api service')) return 'API Services';
+    if (lower.contains('scope of work')) return 'Scope of Work';
+    if (lower.contains('duties') || lower.contains('responsibilities')) return 'Duties and Responsibilities';
+    if (clean.length <= 40) return clean;
+
+    final m = RegExp(
+      r'\b(?:the following|these|a few|some)\s+([A-Za-z0-9_\s\-]+)',
+      caseSensitive: false,
+    ).firstMatch(clean);
+    if (m != null) {
+      final candidate = m.group(1)!.trim();
+      if (candidate.length <= 35) return candidate;
+    }
+    return clean;
+  }
+
   // ---------------------------------------------------------------------------
   // Card builders
   // ---------------------------------------------------------------------------
@@ -770,13 +819,16 @@ class OfflineCardBuilder {
   };
 
   String _extractDocumentContext(String fullText) {
-    final lower = fullText.toLowerCase();
-    if (lower.contains('flutter') || lower.contains('dart')) return 'Flutter';
-    if (lower.contains('java language specification') || lower.contains('jls')) return 'Java';
-    if (lower.contains('cellular respiration') ||
-        lower.contains('glycolysis') ||
-        lower.contains('krebs cycle')) {
-      return 'Cellular Respiration';
+    final firstLines = fullText.split('\n').take(15);
+    for (final l in firstLines) {
+      final trimmed = l.trim();
+      final md = _markdownHeadingRe.firstMatch(trimmed);
+      if (md != null) {
+        final title = md.group(1)!.trim();
+        if (title.length <= 40 && !_bannedHeadingPattern.hasMatch(title)) {
+          return title;
+        }
+      }
     }
     return '';
   }
@@ -815,38 +867,68 @@ class OfflineCardBuilder {
     final lowerBody = sanitizedBody.toLowerCase();
     String front;
 
-    if (lowerBody.contains('suggests that you') || lowerBody.contains('principle suggests')) {
-      front = 'What is the core principle of $term?';
-    } else if (lowerBody.contains('should be designed with') || lowerBody.contains('designed with the user')) {
-      front = 'What are the main principles of $term?';
-    } else if (lowerBody.contains('optimized for performance') || lowerBody.contains('fast loading')) {
-      front = 'What does $term require?';
-    } else if (lowerBody.contains('development process') || lowerBody.contains('process relying on')) {
-      front = 'What is the core process of $term?';
-    } else if (lowerBody.contains('compatible with both android and ios') || lowerBody.contains('cross-platform')) {
-      front = 'How is $term achieved across Android and iOS?';
-    } else if (lowerBody.contains('allow users to customize') || lowerBody.contains('customize the look')) {
-      front = 'What capability does $term provide?';
-    } else if (lowerBody.contains('integrate with other') || lowerBody.contains('third-party')) {
-      front = 'What is the goal of $term?';
-    } else if (lowerBody.contains('work offline')) {
-      front = 'What does $term allow?';
-    } else if (lowerBody.contains('add support for different languages') || lowerBody.contains('multi-language')) {
-      front = 'What is the purpose of $term?';
-    } else if (lowerBody.contains('reusable and maintainable') && lowerBody.contains('widgets')) {
-      front = 'What is the objective of $term in Flutter?';
-    } else if (lowerBody.contains('collaborate with the design team')) {
-      front = 'What is the focus of $term?';
-    } else if (lowerBody.contains('write unit tests') || lowerBody.contains('perform debugging')) {
-      front = 'What is the role of $term?';
-    } else if (lowerBody.contains('code reviews')) {
-      front = 'What is the purpose of $term?';
-    } else if (lowerBody.contains('documentation for the')) {
-      front = 'What is the goal of $term?';
-    } else if (lowerBody.contains('backend engineers') || lowerBody.contains('collaborate')) {
-      front = 'What is the focus of $term?';
+    final sectionTitle = block.sectionTitle;
+    final isGenericSection = sectionTitle == null ||
+        {'key terms', 'definitions', 'glossary', 'key terms:'}.contains(sectionTitle.toLowerCase());
+
+    if (!isGenericSection) {
+      final sec = sectionTitle;
+      if (lowerBody.contains('suggests that you') || lowerBody.contains('principle suggests')) {
+        front = 'In "$sec", what is the core principle of $term?';
+      } else if (lowerBody.contains('development process') || lowerBody.contains('process relying on')) {
+        front = 'In "$sec", what is the core process of $term?';
+      } else if (lowerBody.contains('optimized for performance') ||
+          lowerBody.contains('fast loading') ||
+          lowerBody.contains('designed with the user')) {
+        front = 'In "$sec", what does $term require?';
+      } else if (RegExp(
+            r'^(?:implement|add|allow|build|develop|create|integrate|support|work|track|collaborate|write|maintain)\b',
+            caseSensitive: false,
+          ).hasMatch(sanitizedBody) ||
+          lowerBody.contains('allow users') ||
+          lowerBody.contains('integrate with other')) {
+        front = 'In "$sec", what does "$term" involve?';
+      } else {
+        front = 'In "$sec", what is $term?';
+      }
     } else {
-      front = 'What is $term?';
+      if (lowerBody.contains('suggests that you') || lowerBody.contains('principle suggests')) {
+        front = 'What is the core principle of $term?';
+      } else if (lowerBody.contains('should be designed with') || lowerBody.contains('designed with the user')) {
+        front = 'What are the main principles of $term?';
+      } else if (lowerBody.contains('optimized for performance') || lowerBody.contains('fast loading')) {
+        front = 'What does $term require?';
+      } else if (lowerBody.contains('development process') || lowerBody.contains('process relying on')) {
+        front = 'What is the core process of $term?';
+      } else if (lowerBody.contains('compatible with both android and ios') || lowerBody.contains('cross-platform')) {
+        front = 'How is $term achieved across Android and iOS?';
+      } else if (lowerBody.contains('allow users to customize') || lowerBody.contains('customize the look')) {
+        front = 'What capability does $term provide?';
+      } else if (lowerBody.contains('integrate with other') || lowerBody.contains('third-party')) {
+        front = 'What is the goal of $term?';
+      } else if (lowerBody.contains('work offline')) {
+        front = 'What does $term allow?';
+      } else if (lowerBody.contains('add support for different languages') || lowerBody.contains('multi-language')) {
+        front = 'What is the purpose of $term?';
+      } else if (lowerBody.contains('reusable and maintainable') && lowerBody.contains('widgets')) {
+        front = 'What is the objective of $term in Flutter?';
+      } else if (lowerBody.contains('collaborate with the design team')) {
+        front = 'What is the focus of $term?';
+      } else if (lowerBody.contains('write unit tests') || lowerBody.contains('perform debugging')) {
+        front = 'What is the role of $term?';
+      } else if (lowerBody.contains('code reviews')) {
+        front = 'What is the purpose of $term?';
+      } else if (lowerBody.contains('documentation for the')) {
+        front = 'What is the goal of $term?';
+      } else if (lowerBody.contains('backend engineers') || lowerBody.contains('collaborate')) {
+        front = 'What is the focus of $term?';
+      } else {
+        front = 'What is $term?';
+      }
+    }
+
+    if (term.endsWith(' principle') && front.contains('principle of $term')) {
+      front = front.replaceFirst(' principle?', '?');
     }
 
     return OfflineCard(
@@ -1482,6 +1564,15 @@ class OfflineCardBuilder {
     'letter',
     'shall',
     'terms',
+    'challenge',
+    'requirements',
+    'requirement',
+    'estimate',
+    'experience',
+    'ideas',
+    'factors',
+    'something',
+    'anything',
   };
 
   Map<String, int> _termFrequency(List<_Block> blocks) {
@@ -1511,6 +1602,14 @@ class OfflineCardBuilder {
     if (sentence.endsWith('?')) return null;
     if (RegExp(r'https?://|www\.').hasMatch(sentence)) return null;
     if (!_looksLikeProse(sentence)) return null;
+
+    final trimmed = sentence.trim();
+    if (RegExp(
+      r'^(?:however\b|keep in mind\b|it(?:\x27|’|s)? important\b|as a rough estimate\b|we recommend\b|please submit\b|good luck\b|you can\b)',
+      caseSensitive: false,
+    ).hasMatch(trimmed)) {
+      return null;
+    }
 
     final firstWord = sentence
         .split(RegExp(r'\s+'))
@@ -1624,26 +1723,17 @@ class OfflineCardBuilder {
         frontLower.contains('dear ') ||
         frontLower.contains('copyright') ||
         frontLower.contains('rights reserved') ||
-        frontLower.contains('alex buckley') ||
-        frontLower.contains('james gosling') ||
-        frontLower.contains('okanlawon') ||
-        frontLower.contains('contractor') ||
-        frontLower.contains('letter of engagement') ||
+        frontLower.contains('all rights reserved') ||
         frontLower.contains('status') ||
         frontLower.contains('version') ||
         frontLower.contains('specification') ||
-        frontLower.contains('what does "') ||
         frontLower.contains('take-home')) {
       return false;
     }
 
     if (backLower.contains('copyright ©') ||
         backLower.contains('all rights reserved') ||
-        backLower.contains('oracle america') ||
-        backLower.contains('redwood city') ||
-        backLower.contains('5, raheemat oyebode street') ||
         backLower.contains('take-home challenge') ||
-        backLower.contains('dear oluwatobi') ||
         backLower.contains('we write further')) {
       return false;
     }
@@ -1760,6 +1850,7 @@ class _Block {
     this.term,
     this.ordered = false,
     this.marker,
+    this.sectionTitle,
   });
 
   final _BlockKind kind;
@@ -1767,6 +1858,7 @@ class _Block {
   final String? term;
   final bool ordered;
   final String? marker;
+  final String? sectionTitle;
 }
 
 class _DefinitionResult {
