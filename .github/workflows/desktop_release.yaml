@@ -95,16 +95,16 @@ jobs:
       - name: Build Flutter Web Bundle
         if: matrix.os-name == 'Web'
         run: |
-          flutter build web --release -t lib/main_production.dart --wasm
-          mkdir -p web_landing/app
-          cp -r build/web/* web_landing/app/
+          flutter build web --release --target lib/main_production.dart --base-href "/workspace/"
+          mkdir -p web_landing/workspace
+          cp -r build/web/* web_landing/workspace/
 
       - name: Upload Web Build Artifact
         if: matrix.os-name == 'Web'
         uses: actions/upload-artifact@v4
         with:
           name: web-build
-          path: web_landing/app/
+          path: web_landing/workspace/
 
       - name: Package & Upload Native Release Artifacts to Cloudflare R2
         if: matrix.os-name != 'Web'
@@ -129,7 +129,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-build
-          path: web_landing/app/
+          path: web_landing/workspace/
+
+      - name: Sync App Directory
+        run: |
+          mkdir -p web_landing/app
+          cp -r web_landing/workspace/* web_landing/app/
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
