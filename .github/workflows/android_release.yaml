@@ -84,7 +84,6 @@ jobs:
         with:
           appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KORTEX_STUDY_APP_2026 }}
-          token: ${{ secrets.FIREBASE_TOKEN }}
           groups: testers
           file: build/app/outputs/flutter-apk/app-production-release.apk
           releaseNotes: "Production Android Release ${{ github.ref_name || github.sha }}"

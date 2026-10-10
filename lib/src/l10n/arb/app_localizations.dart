@@ -2819,7 +2819,7 @@ abstract class AppLocalizations {
   /// Instruction for drop zone widget
   ///
   /// In en, this message translates to:
-  /// **'Drag & drop PDF, PPTX, or image files here'**
+  /// **'Drag & drop PDF, PPTX, DoCX, EPUB, TXT, HTML, MD or image files here'**
   String get dragAndDropHint;
 
   /// Button to open device file picker

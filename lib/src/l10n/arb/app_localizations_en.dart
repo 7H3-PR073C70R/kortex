@@ -1575,7 +1575,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ingestionTitle => 'Document Ingestion & OCR';
 
   @override
-  String get dragAndDropHint => 'Drag & drop PDF, PPTX, or image files here';
+  String get dragAndDropHint =>
+      'Drag & drop PDF, PPTX, DoCX, EPUB, TXT, HTML, MD or image files here';
 
   @override
   String get browseFilesButton => 'Browse Files';
