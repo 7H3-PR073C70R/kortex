@@ -691,5 +691,52 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   });
+
+  // 6. Mouse Spotlight Tracking on Glass Cards
+  const spotlightCards = document.querySelectorAll('.spotlight-card');
+  spotlightCards.forEach((card) => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.setProperty('--mouse-x', `${x}px`);
+      card.style.setProperty('--mouse-y', `${y}px`);
+    });
+  });
+
+  // 7. Scroll-Triggered Animated Number Counters
+  const counterElements = document.querySelectorAll('[data-count-to]');
+  if (counterElements.length > 0 && 'IntersectionObserver' in window) {
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const targetNum = parseInt(el.getAttribute('data-count-to'), 10);
+          if (isNaN(targetNum)) return;
+          
+          let startNum = 0;
+          const duration = 1800; // ms
+          const stepTime = 20;
+          const steps = duration / stepTime;
+          const increment = targetNum / steps;
+
+          const timer = setInterval(() => {
+            startNum += increment;
+            if (startNum >= targetNum) {
+              el.textContent = `${targetNum.toLocaleString()}+`;
+              clearInterval(timer);
+            } else {
+              el.textContent = `${Math.floor(startNum).toLocaleString()}+`;
+            }
+          }, stepTime);
+
+          counterObserver.unobserve(el);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    counterElements.forEach((el) => counterObserver.observe(el));
+  }
 });
+
 

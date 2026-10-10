@@ -44466,7 +44466,8 @@ _.a=a
 _.b=b
 _.c=c
 _.d=d},
-a0L:function a0L(a){this.a=a},
+a0L:function a0L(a){this.a=a
+this.b=!1},
 c1Y:function c1Y(a,b,c,d,e){var _=this
 _.a=a
 _.c=null
@@ -54029,9 +54030,11 @@ _.b=b
 _.c=c
 _.d=d
 _.e=e},
-bPX:function bPX(a,b,c){this.a=a
-this.b=b
-this.c=c},
+bPX:function bPX(a,b,c,d){var _=this
+_.a=a
+_.b=b
+_.c=c
+_.d=d},
 bPU:function bPU(a){this.a=a},
 bPV:function bPV(a){this.a=a},
 bPW:function bPW(a,b,c){this.a=a
@@ -192308,45 +192311,56 @@ A.SS.prototype={}
 A.a0L.prototype={
 CB(a){return this.coM(a)},
 coL(){return this.CB(B.cwT)},
-coM(a){var s=0,r=A.j(t.yx),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e
+coM(a){var s=0,r=A.j(t.yx),q,p=2,o=[],n=[],m=this,l,k,j,i,h,g,f,e,d
 var $async$CB=A.e(function(b,c){if(b===1){o.push(c)
-s=p}for(;;)switch(s){case 0:p=4
+s=p}for(;;)switch(s){case 0:if(m.b){q=null
+s=1
+break}m.b=!0
+p=4
 s=7
 return A.c($.e7D().ZH(a,B.aRK,0,B.aRZ,null,null,B.aT0,null,B.a1W,B.aU9,B.aUb),$async$CB)
-case 7:m=c
-s=m!=null?8:9
+case 7:l=c
+s=l!=null?8:9
 break
 case 8:s=10
-return A.c(m.qG(),$async$CB)
-case 10:l=c
-if(!J.d5(l)){h=A.Sm(m.a,$.ue().a).bYF(1)[1]
-g=h.length===0?null:B.c.b9(h,1)
-h=g==null?null:g.toLowerCase()
-if(h==null)h=B.c.n(m.a,".")?B.f.ga4(m.a.split(".")).toLowerCase():"pdf"
-k=h
-g=m.a
-q=new A.SS(g,k,l,null)
-s=1
+return A.c(l.qG(),$async$CB)
+case 10:k=c
+if(!J.d5(k)){g=A.Sm(l.a,$.ue().a).bYF(1)[1]
+f=g.length===0?null:B.c.b9(g,1)
+g=f==null?null:f.toLowerCase()
+if(g==null)g=B.c.n(l.a,".")?B.f.ga4(l.a.split(".")).toLowerCase():"pdf"
+j=g
+f=l.a
+q=new A.SS(f,j,k,null)
+n=[1]
+s=5
 break}case 9:q=null
-s=1
+n=[1]
+s=5
 break
-p=2
-s=6
+n.push(6)
+s=5
 break
 case 4:p=3
-e=o.pop()
-g=A.a1(e)
-if(g instanceof A.kc){j=g
-n.a.JI("FilePicker platform exception: "+A.n(j))
+d=o.pop()
+f=A.a1(d)
+if(f instanceof A.kc){i=f
+m.a.JI("FilePicker platform exception: "+A.n(i))
 q=null
-s=1
-break}else{i=g
-n.a.JI("FilePicker error: "+A.n(i))
+n=[1]
+s=5
+break}else{h=f
+m.a.JI("FilePicker error: "+A.n(h))
 q=null
-s=1
-break}s=6
+n=[1]
+s=5
+break}n.push(6)
+s=5
 break
-case 3:s=2
+case 3:n=[2]
+case 5:p=2
+m.b=!1
+s=n.pop()
 break
 case 6:case 1:return A.h(q,r)
 case 2:return A.f(o.at(-1),r)}})
@@ -230929,49 +230943,49 @@ s=2
 return A.c(A.iy(null,null,!0,null,new A.bPL(q,a,o,p,c,d,b),a,null,!0,t.H),$async$a7r)
 case 2:return A.h(null,r)}})
 return A.i($async$a7r,r)},
-F(a0){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c=null,b="Drag & drop PDF, PPTX, or image files here",a=t.A.a(A.m(a0).c.j(0,A.z(t.D)))
-a.toString
-s=t.l.a(A.m(a0).c.j(0,A.z(t.g)))
+F(a1){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b=null,a="Drag & drop PDF, PPTX, or image files here",a0=t.A.a(A.m(a1).c.j(0,A.z(t.D)))
+a0.toString
+s=t.l.a(A.m(a1).c.j(0,A.z(t.g)))
 s.toString
-r=A.aN(a0,B.a1,t.J)
+r=A.aN(a1,B.a1,t.J)
 r.toString
-q=A.m(a0).ax.a===B.D
+q=A.m(a1).ax.a===B.D
 p=t.Kr
 o=t.G
-n=$.ag.X(new A.aG(!1,c,p),o)
-o=$.ag.X(new A.aG(!1,c,p),o)
+n=$.ag.X(new A.aG(!1,b,p),o)
+m=$.ag.X(new A.aG(!1,b,p),o)
+o=$.ag.X(new A.aG(!1,b,p),o)
 p=new A.bPY(this)
-r=new A.bPX(a0,p,r)
-if(o.gm()){m=q?50:30
-m=a.a.E(m)}else if(n.gm())m=a.fx
-else m=q?a.fx:a.fr
-l=$.hV()
-k=o.gm()||n.gm()
-j=a.a
-if(k)k=j
-else k=j.E(q?80:40)
-k=A.K(k,o.gm()?2.5:1.5)
-i=j.E(q?30:20)
-h=A.K(j.E(q?60:40),1)
-g=s.x
-f=t.p
-h=A.b([A.r(c,A.aM(A.D(B.Ms,j,c,c,34),c,c),B.j,c,c,new A.o(i,c,h,c,c,c,B.R),c,72,c,c,c,c,c,72),B.bE,A.d(b,c,c,c,c,s.d.d.J(a.k4),B.ap,c,c),B.aw,A.d("Supported formats: PDF, PPTX, PNG, JPG (Max 50MB)",c,c,c,c,g.a.J(a.ok),B.ap,c,c)],f)
+if(m.gm()){l=q?50:30
+l=a0.a.E(l)}else if(n.gm())l=a0.fx
+else l=q?a0.fx:a0.fr
+k=$.hV()
+j=m.gm()||n.gm()
+i=a0.a
+if(j)j=i
+else j=i.E(q?80:40)
+j=A.K(j,m.gm()?2.5:1.5)
+h=i.E(q?30:20)
+g=A.K(i.E(q?60:40),1)
+f=s.x
+e=t.p
+g=A.b([A.r(b,A.aM(A.D(B.Ms,i,b,b,34),b,b),B.j,b,b,new A.o(h,b,g,b,b,b,B.R),b,72,b,b,b,b,b,72),B.bE,A.d(a,b,b,b,b,s.d.d.J(a0.k4),B.ap,b,b),B.aw,A.d("Supported formats: PDF, PPTX, PNG, JPG (Max 50MB)",b,b,b,b,f.a.J(a0.ok),B.ap,b,b)],e)
 $.kI()
-if(!new A.mm(c,c).gmQ())B.f.t(h,A.b([B.a0,new A.hF(new A.bPP(a,q,s),c)],f))
-h.push(B.bF)
-s=A.b([j,j.E(210)],t.O)
-i=$.bT()
-e=a.ry
-d=q?50:20
-e=A.b([new A.aj(0,B.E,A.k(d,e.i()>>>16&255,e.i()>>>8&255,e.i()&255),B.cb,10)],t.V)
-d=a.rx
-g=g.d
-s=A.b([new A.aW(new A.bPQ(),A.aq(!1,A.r(c,A.x(A.b([A.D(B.ME,d,c,c,18),B.F,A.d("Browse Files",c,c,c,c,g.J(d),c,c,c)],f),B.k,c,B.h,B.x,0,c,c),B.j,c,c,new A.o(c,c,c,i,e,new A.bW(B.aG,B.aO,B.ag,s,c,c),B.o),c,c,c,c,B.Bn,c,c,c),c,c,c,r,c,0.97),B.V,!0,c)],f)
-a=q?a.fy:a.fx
-e=A.K(j.E(q?90:60),1)
-s.push(new A.aW(new A.bPR(),A.aq(!1,A.r(c,A.x(A.b([A.D(B.bo3,j,c,c,18),B.F,A.d("Scan with Camera",c,c,c,c,g.J(j),c,c,c)],f),B.k,c,B.h,B.x,0,c,c),B.j,c,c,new A.o(a,c,e,i,c,c,B.o),c,c,c,c,B.Bn,c,c,c),c,c,c,this.e,c,0.97),B.V,!0,c))
-h.push(A.fq(B.qU,s,B.cE,10,12))
-return new A.aeN(A.bs(!0,c,A.dy(c,A.rg(A.ba(c,A.M(h,B.k,c,B.aB,B.i,0,B.v),c,c,B.G,new A.o(m,c,k,l,c,c,B.o),B.K,c,c,c,B.Bo,c,1/0),B.V,c,c,new A.bPS(n),new A.bPT(n),c),B.X,!1,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,r,c,c,c,c,c,c,c,c,!1,B.bb),!1,c,c,c,!1,c,!1,c,c,c,c,c,c,c,c,c,c,b,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,B.a8,c),new A.bPU(o),new A.bPV(o),new A.bPW(o,a0,p),c)},
+if(!new A.mm(b,b).gmQ())B.f.t(g,A.b([B.a0,new A.hF(new A.bPP(a0,q,s),b)],e))
+g.push(B.bF)
+s=A.b([i,i.E(210)],t.O)
+h=$.bT()
+d=a0.ry
+c=q?50:20
+d=A.b([new A.aj(0,B.E,A.k(c,d.i()>>>16&255,d.i()>>>8&255,d.i()&255),B.cb,10)],t.V)
+c=a0.rx
+f=f.d
+s=A.b([new A.aW(new A.bPQ(),A.aq(!1,A.r(b,A.x(A.b([A.D(B.ME,c,b,b,18),B.F,A.d("Browse Files",b,b,b,b,f.J(c),b,b,b)],e),B.k,b,B.h,B.x,0,b,b),B.j,b,b,new A.o(b,b,b,h,d,new A.bW(B.aG,B.aO,B.ag,s,b,b),B.o),b,b,b,b,B.Bn,b,b,b),b,b,b,b,b,0.97),B.V,!0,b)],e)
+a0=q?a0.fy:a0.fx
+d=A.K(i.E(q?90:60),1)
+s.push(new A.aW(new A.bPR(),A.aq(!1,A.r(b,A.x(A.b([A.D(B.bo3,i,b,b,18),B.F,A.d("Scan with Camera",b,b,b,b,f.J(i),b,b,b)],e),B.k,b,B.h,B.x,0,b,b),B.j,b,b,new A.o(a0,b,d,h,b,b,B.o),b,b,b,b,B.Bn,b,b,b),b,b,b,this.e,b,0.97),B.V,!0,b))
+g.push(A.fq(B.qU,s,B.cE,10,12))
+return new A.aeN(A.bs(!0,b,A.dy(b,A.rg(A.ba(b,A.M(g,B.k,b,B.aB,B.i,0,B.v),b,b,B.G,new A.o(l,b,j,k,b,b,B.o),B.K,b,b,b,B.Bo,b,1/0),B.V,b,b,new A.bPS(n),new A.bPT(n),b),B.X,!1,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,new A.bPX(o,a1,p,r),b,b,b,b,b,b,b,b,!1,B.bb),!1,b,b,b,!1,b,!1,b,b,b,b,b,b,b,b,b,b,a,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,B.a8,b),new A.bPU(m),new A.bPV(m),new A.bPW(m,a1,p),b)},
 geo(){return this.w}}
 A.bPD.prototype={
 $1(a){return a.a===this.a.a},
@@ -231127,35 +231141,42 @@ if(r!=null)r.R3()
 s.a.d.$3$fileBytes$fileType$filename(s.e,s.d,s.c)},
 $S:0}
 A.bPX.prototype={
-$0(){var s=0,r=A.j(t.H),q=1,p=[],o=this,n,m,l,k,j,i
-var $async$$0=A.e(function(a,b){if(a===1){p.push(b)
-s=q}for(;;)switch(s){case 0:A.bM()
-q=3
-l=$.Q()
-k=t.L4
-n=l.S(k)?l.C(null,null,null,null,k):$.XZ()
-s=6
-return A.c(n.coL(),$async$$0)
-case 6:m=b
-s=m!=null&&!B.W.gag(m.c)&&o.a.e!=null?7:8
+$0(){var s=0,r=A.j(t.H),q,p=2,o=[],n=[],m=this,l,k,j,i,h,g,f
+var $async$$0=A.e(function(a,b){if(a===1){o.push(b)
+s=p}for(;;)switch(s){case 0:g=m.a
+if(g.gm()){s=1
+break}g.sm(!0)
+A.bM()
+p=4
+j=$.Q()
+i=t.L4
+l=j.S(i)?j.C(null,null,null,null,i):$.XZ()
+s=7
+return A.c(l.coL(),$async$$0)
+case 7:k=b
+s=k!=null&&!B.W.gag(k.c)&&m.b.e!=null?8:9
 break
-case 7:l=m.a
-k=m.b
-s=9
-return A.c(o.b.$4$bytes$extension$filename(o.a,m.c,k,l),$async$$0)
-case 9:case 8:q=1
+case 8:j=k.a
+i=k.b
+s=10
+return A.c(m.c.$4$bytes$extension$filename(m.b,k.c,i,j),$async$$0)
+case 10:case 9:n.push(6)
 s=5
 break
-case 3:q=2
-i=p.pop()
-l=o.a
-if(l.e!=null)A.aU(l,B.T,null,u.eP,null,null,null,B.b6)
+case 4:p=3
+f=o.pop()
+j=m.b
+if(j.e!=null)A.aU(j,B.T,null,u.eP,null,null,null,B.b6)
+n.push(6)
 s=5
 break
-case 2:s=1
+case 3:n=[2]
+case 5:p=2
+g.sm(!1)
+s=n.pop()
 break
-case 5:return A.h(null,r)
-case 1:return A.f(p.at(-1),r)}})
+case 6:case 1:return A.h(q,r)
+case 2:return A.f(o.at(-1),r)}})
 return A.i($async$$0,r)},
 $S:1}
 A.bPU.prototype={

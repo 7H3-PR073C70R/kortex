@@ -697,7 +697,7 @@ class FileDropZoneWidget extends HookWidget {
                           );
                         },
                         child: ShrinkableButton(
-                          onTap: handlePickFile,
+                          onTap: null,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 18,
