@@ -112,6 +112,7 @@ class AppApiEndpoint {
   /// Accepts `{ "audio_url": "<r2_url>", "reply_id"/"post_id": "<id>" }`.
   static const String transcribeVoiceNote = '/functions/v1/transcribe-voice-note';
   static const String rateSharedDeckRpc = '/rest/v1/rpc/rate_shared_deck';
+  static const String deleteSharedDeckRpc = '/rest/v1/rpc/delete_shared_deck';
   static const String verifyForumReplyRpc = '/rest/v1/rpc/verify_forum_reply';
   static const String voteForumPostAtomicRpc =
       '/rest/v1/rpc/vote_forum_post_atomic';

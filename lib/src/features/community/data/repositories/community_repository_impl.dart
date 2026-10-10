@@ -768,6 +768,11 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<Either<Failure, bool>> deleteSharedDeck(String sharedDeckId) {
+    return _remoteDataSource.deleteSharedDeck(sharedDeckId).makeRequest();
+  }
+
+  @override
   Future<Either<Failure, bool>> toggleBookmarkSharedDeck(String sharedDeckId) {
     return _remoteDataSource
         .toggleBookmarkSharedDeck(sharedDeckId)

@@ -65,4 +65,32 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
       },
     );
   }
+
+  Future<void> deleteSharedDeck(String deckId) async {
+    final res = await _repository.deleteSharedDeck(deckId);
+    res.fold(
+      (failure) => emit(state.copyWith(errorMessage: failure.message)),
+      (success) {
+        final updated = state.sharedDecks.where((d) => d.id != deckId).toList();
+        emit(state.copyWith(sharedDecks: updated));
+      },
+    );
+  }
+
+  Future<void> rateSharedDeck(String deckId, double rating) async {
+    final res = await _repository.rateSharedDeck(
+      sharedDeckId: deckId,
+      rating: rating,
+    );
+    res.fold(
+      (failure) => emit(state.copyWith(errorMessage: failure.message)),
+      (success) {
+        final updated = state.sharedDecks.map((d) {
+          if (d.id == deckId) return d.copyWith(rating: rating);
+          return d;
+        }).toList();
+        emit(state.copyWith(sharedDecks: updated));
+      },
+    );
+  }
 }

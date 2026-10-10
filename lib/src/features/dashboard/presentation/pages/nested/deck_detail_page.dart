@@ -14,6 +14,7 @@ import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/latex_card_content_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
@@ -477,21 +478,21 @@ class _DeckDetailContent extends HookWidget {
                                               ),
                                             ),
                                             const SizedBox(height: 24),
-                                            Text(
-                                              isFlipped.value
-                                                  ? dynamicCards[currentCardIndex
-                                                            .value]
-                                                        .back
-                                                  : dynamicCards[currentCardIndex
-                                                            .value]
-                                                        .front,
-                                              textAlign: TextAlign.center,
-                                              style: typography.title2.bold
-                                                  .copyWith(
-                                                    color: colors.textPrimary,
-                                                    fontSize: 19,
-                                                    height: 1.4,
-                                                  ),
+                                            LatexCardContentViewer(
+                                              text: isFlipped.value
+                                                  ? dynamicCards[currentCardIndex.value].back
+                                                  : dynamicCards[currentCardIndex.value].front,
+                                              latexFormula: isFlipped.value
+                                                  ? (currentCardIndex.value < loadedCards.value.length
+                                                        ? loadedCards.value[currentCardIndex.value].backLatex
+                                                        : null)
+                                                  : (currentCardIndex.value < loadedCards.value.length
+                                                        ? loadedCards.value[currentCardIndex.value].frontLatex
+                                                        : null),
+                                              imageUrl: currentCardIndex.value < loadedCards.value.length
+                                                  ? loadedCards.value[currentCardIndex.value].imageUrl
+                                                  : null,
+                                              isBackFace: isFlipped.value,
                                             ),
                                             const SizedBox(height: 24),
                                             Text(

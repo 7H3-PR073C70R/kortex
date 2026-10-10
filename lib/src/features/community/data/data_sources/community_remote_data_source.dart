@@ -176,6 +176,8 @@ abstract class CommunityRemoteDataSource {
     required double rating,
   });
 
+  Future<bool> deleteSharedDeck(String sharedDeckId);
+
   Future<bool> toggleBookmarkSharedDeck(String sharedDeckId);
 
   Future<List<String>> getBookmarkedSharedDeckIds();

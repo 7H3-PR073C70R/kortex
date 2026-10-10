@@ -213,6 +213,9 @@ abstract class CommunityRepository {
     required double rating,
   });
 
+  /// Deletes a published shared deck from the community marketplace (owner only).
+  Future<Either<Failure, bool>> deleteSharedDeck(String sharedDeckId);
+
   /// Toggles bookmark state for a community shared deck.
   Future<Either<Failure, bool>> toggleBookmarkSharedDeck(String sharedDeckId);
 

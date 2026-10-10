@@ -400,3 +400,25 @@ class ToggleFollowTopicEvent extends CommunityEvent {
   @override
   List<Object?> get props => [topic];
 }
+
+class DeleteSharedDeckEvent extends CommunityEvent {
+  const DeleteSharedDeckEvent(this.sharedDeckId);
+
+  final String sharedDeckId;
+
+  @override
+  List<Object?> get props => [sharedDeckId];
+}
+
+class RateSharedDeckEvent extends CommunityEvent {
+  const RateSharedDeckEvent({
+    required this.sharedDeckId,
+    required this.rating,
+  });
+
+  final String sharedDeckId;
+  final double rating;
+
+  @override
+  List<Object?> get props => [sharedDeckId, rating];
+}

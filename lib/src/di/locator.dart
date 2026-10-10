@@ -78,6 +78,8 @@ import 'package:kortex/src/features/dashboard/domain/use_cases/sync_user_courses
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_cubit.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/use_cases/clone_shared_deck_use_case.dart';
+import 'package:kortex/src/features/deck_marketplace/domain/use_cases/delete_shared_deck_use_case.dart';
+import 'package:kortex/src/features/deck_marketplace/domain/use_cases/rate_shared_deck_use_case.dart';
 import 'package:kortex/src/features/deck_marketplace/presentation/bloc/marketplace_cubit.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';

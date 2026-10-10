@@ -1790,6 +1790,31 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
+  Future<bool> deleteSharedDeck(String sharedDeckId) async {
+    try {
+      final res = await _client.deleteSharedDeck({
+        'p_shared_deck_id': sharedDeckId,
+      });
+      if (res.data is Map<String, dynamic>) {
+        final data = res.data as Map<String, dynamic>;
+        return data['success'] as bool? ?? true;
+      }
+      return true;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.deleteSharedDeck failed',
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  @override
   Future<bool> toggleBookmarkSharedDeck(String sharedDeckId) async {
     final storage = _localStorage;
     final current = await getBookmarkedSharedDeckIds();

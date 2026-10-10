@@ -39,6 +39,8 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     on<RecordPodFocusMinutesEvent>(_onRecordPodFocusMinutes);
     on<CloneDeckEvent>(_onCloneDeck);
     on<PublishDeckEvent>(_onPublishDeck);
+    on<DeleteSharedDeckEvent>(_onDeleteSharedDeck);
+    on<RateSharedDeckEvent>(_onRateSharedDeck);
     on<LeaderboardUpdatedEvent>(_onLeaderboardUpdated);
     on<StudyCirclesUpdatedEvent>(_onStudyCirclesUpdated);
     on<FetchMoreForumPostsEvent>(_onFetchMoreForumPosts);
@@ -855,6 +857,52 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
             sharedDecks: [sharedDeck, ...state.sharedDecks],
           ),
         );
+      },
+    );
+  }
+
+  Future<void> _onDeleteSharedDeck(
+    DeleteSharedDeckEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final res = await _repository.deleteSharedDeck(event.sharedDeckId);
+    res.fold(
+      (failure) => emit(
+        state.copyWith(
+          errorMessage: failure.message,
+        ),
+      ),
+      (success) {
+        final updatedDecks = state.sharedDecks
+            .where((d) => d.id != event.sharedDeckId)
+            .toList();
+        emit(state.copyWith(sharedDecks: updatedDecks));
+      },
+    );
+  }
+
+  Future<void> _onRateSharedDeck(
+    RateSharedDeckEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final res = await _repository.rateSharedDeck(
+      sharedDeckId: event.sharedDeckId,
+      rating: event.rating,
+    );
+    res.fold(
+      (failure) => emit(
+        state.copyWith(
+          errorMessage: failure.message,
+        ),
+      ),
+      (success) {
+        final updatedDecks = state.sharedDecks.map((d) {
+          if (d.id == event.sharedDeckId) {
+            return d.copyWith(rating: event.rating);
+          }
+          return d;
+        }).toList();
+        emit(state.copyWith(sharedDecks: updatedDecks));
       },
     );
   }

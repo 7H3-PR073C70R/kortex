@@ -220,6 +220,12 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<CloneSharedDeckUseCase>(
       () => CloneSharedDeckUseCase(locator<CommunityRepository>()),
     )
+    ..registerLazySingleton<DeleteSharedDeckUseCase>(
+      () => DeleteSharedDeckUseCase(locator<CommunityRepository>()),
+    )
+    ..registerLazySingleton<RateSharedDeckUseCase>(
+      () => RateSharedDeckUseCase(locator<CommunityRepository>()),
+    )
     ..registerLazySingleton<StreamLeaderboardRankingsUseCase>(
       () => StreamLeaderboardRankingsUseCase(locator<CommunityRepository>()),
     )

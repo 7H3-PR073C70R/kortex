@@ -182,6 +182,11 @@ abstract class CommunityApiClient {
     @Body() Map<String, dynamic> body,
   );
 
+  @POST(AppApiEndpoint.deleteSharedDeckRpc)
+  Future<HttpResponse<dynamic>> deleteSharedDeck(
+    @Body() Map<String, dynamic> body,
+  );
+
   @GET(AppApiEndpoint.leaderboards)
   Future<HttpResponse<dynamic>> fetchLeaderboards(
     @Queries() Map<String, dynamic> query,
