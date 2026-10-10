@@ -695,7 +695,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         text.contains('what is the key takeaway of') ||
         text.contains('study content extracted') ||
         text.contains('advanced pedagogical') ||
-        text.contains('multi-step procedure');
+        text.contains('multi-step procedure') ||
+        text.contains('study material for');
   }
 
   static bool _isExtractionModelPromptJargonOrMock(OcrExtractionModel model) {
@@ -718,7 +719,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         text.contains('what is the key takeaway of') ||
         text.contains('study content extracted') ||
         text.contains('advanced pedagogical') ||
-        text.contains('multi-step procedure');
+        text.contains('multi-step procedure') ||
+        text.contains('study material for');
   }
 
   @override

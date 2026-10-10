@@ -5,6 +5,8 @@ import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ocr_local_data_source.dart';
+import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
+import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/repositories/local_ocr_repository.dart';
 
@@ -39,6 +41,13 @@ class LocalOcrRepositoryImpl implements LocalOcrRepository {
     bool isOnline = true,
   }) {
     return Future<List<OcrExtractionEntity>>.sync(() async {
+      // 0. Cache bytes in remote data source so processStemOcr has access to them
+      _remote.cacheDocumentBytes(
+        documentId,
+        imageBytes,
+        filename: 'Scanned Image',
+      );
+
       // 1. Instant on-device ML Kit OCR extraction
       final localEntities = await _local.extractFromImage(
         imageBytes,
@@ -46,7 +55,7 @@ class LocalOcrRepositoryImpl implements LocalOcrRepository {
         imagePath: imagePath,
       );
 
-      final combinedRawText = localEntities.map((e) => e.rawText).join('\n');
+      final combinedRawText = localEntities.map((e) => e.rawText).join('\n\n');
 
       // 2. Queue for offline sync
       await _local.queueForSync(
@@ -55,7 +64,7 @@ class LocalOcrRepositoryImpl implements LocalOcrRepository {
         localPath: imagePath ?? '',
       );
 
-      // 3. Attempt cloud LaTeX enhancement handshake if online
+      // 3. Attempt cloud AI synthesis if online
       if (isOnline) {
         try {
           final cloudModels = await _remote.processStemOcr(
@@ -64,16 +73,45 @@ class LocalOcrRepositoryImpl implements LocalOcrRepository {
             fileType: 'image/jpeg',
           );
           await _local.markSyncComplete(documentId);
-          if (cloudModels.isNotEmpty) {
-            return cloudModels.map((m) => m.toEntity()).toList();
+
+          final validCloudModels = cloudModels.where(
+            (m) => !_isMockModel(m),
+          ).toList();
+
+          if (validCloudModels.isNotEmpty) {
+            return validCloudModels.map((m) => m.toEntity()).toList();
           }
         } on Object catch (_) {
-          // If remote fails, seamlessly return local extraction
+          // Fall through to local synthesis
+        }
+      }
+
+      // If remote failed or returned fallback, synthesize cards locally from ML Kit text
+      if (combinedRawText.trim().isNotEmpty) {
+        final localSynthesized = const DocumentParserService().synthesizeSnippetsFromDocument(
+          documentId: documentId,
+          fullText: combinedRawText,
+          filename: 'Scanned Image',
+        );
+        if (localSynthesized.isNotEmpty) {
+          return localSynthesized.map((m) => m.toEntity()).toList();
         }
       }
 
       return localEntities;
     }).makeRequest();
+  }
+
+  static bool _isMockModel(OcrExtractionModel model) {
+    final text = [
+      model.topic,
+      model.rawText,
+      model.latexContent ?? '',
+    ].join(' ').toLowerCase();
+
+    return text.contains('study material for') ||
+        text.contains('pedagogical ai tutor') ||
+        text.contains('system prompt');
   }
 
   @override
