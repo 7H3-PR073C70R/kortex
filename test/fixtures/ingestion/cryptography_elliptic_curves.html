@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elliptic Curve Cryptography and Finite Fields</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 40px auto; max-width: 900px; padding: 0 20px; color: #222; }
+    h1 { color: #111; border-bottom: 2px solid #eaeaea; padding-bottom: 8px; }
+    h2 { color: #333; margin-top: 28px; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+    th, td { border: 1px solid #ddd; padding: 10px 14px; text-align: left; }
+    th { background: #f7f7f7; }
+    pre, code { background: #f4f4f4; border-radius: 4px; font-family: monospace; }
+    pre { padding: 14px; overflow-x: auto; }
+    .formula { background: #fdfdfd; border-left: 4px solid #0066cc; padding: 10px 16px; margin: 16px 0; font-family: "Times New Roman", serif; font-size: 1.15em; }
+    figure { margin: 24px 0; text-align: center; background: #fafafa; padding: 16px; border: 1px solid #e0e0e0; }
+    figcaption { font-style: italic; color: #555; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Elliptic Curve Cryptography and Finite Fields</h1>
+  
+<section>
+  <h2>1. Elliptic Curve Cryptography over Finite Fields (F_p)</h2>
+  <p>Elliptic curve cryptography (ECC) provides equivalent cryptographic security to RSA with significantly smaller key sizes. A Weierstrass elliptic curve is defined by:</p>
+  <div class="formula">
+    y<sup>2</sup> = x<sup>3</sup> + a x + b &nbsp;&nbsp;(mod p)
+  </div>
+  <p>For the secp256k1 curve utilized in Bitcoin and Ethereum: a = 0, b = 7, and p = 2<sup>256</sup> - 2<sup>32</sup> - 977.</p>
+  <h2>2. Point Addition and Discrete Logarithm Problem (ECDLP)</h2>
+  <p>Given base point G and scalar private key d, public key Q is calculated as Q = d &middot; G via repeated point addition and doubling. The ECDLP states that finding d given Q and G is computationally infeasible for large prime orders.</p>
+</section>
+
+</body>
+</html>

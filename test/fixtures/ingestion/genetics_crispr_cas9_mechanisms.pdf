@@ -1,0 +1,49 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1329 >>
+stream
+BT /F1 11 Tf 54 730 Td 15 TL
+(CRISPR-Cas9 Endonuclease Mechanisms and Genome Editing Precision) Tj T*
+(Laboratory of Molecular Genetics and Gene Therapy) Tj T*
+(1. Bacterial Adaptive Immunity and Guide RNA Hybridization) Tj T*
+(The Type II CRISPR-Cas9 system from Streptococcus pyogenes uses a dual RNA guide consisting of) Tj T*
+(CRISPR RNA \(crRNA\) and trans-activating crRNA \(tracrRNA\), engineered into a single guide RNA \(sgRNA\).) Tj T*
+(2. Protospacer Adjacent Motif \(PAM\) Recognition and Double-Strand Breaks) Tj T*
+(Target DNA cleavage requires a canonical 5'-NGG-3' PAM sequence immediately adjacent to the 20-nucleotide protospacer.) Tj T*
+(Cas9 catalyzes double-stranded breaks via two endonuclease domains:) Tj T*
+(- RuvC domain: cleaves the non-target DNA strand) Tj T*
+(- HNH domain: cleaves the target DNA strand complementary to the gRNA) Tj T*
+(3. DNA Repair Pathways: NHEJ vs HDR) Tj T*
+(Table 1: Comparison of Cas9 repair outcomes.) Tj T*
+(Pathway | Template Required | Error Rate | Primary Outcome) Tj T*
+(NHEJ    | None              | High \(InDels\) | Gene Knockout / Frameshift) Tj T*
+(HDR     | Exogenous Donor   | High Fidelity | Precision Gene Knock-in / Point Mutation) Tj T*
+(Figure 1 \(Page 1\): Crystal structure depiction of Cas9-sgRNA ribonucleoprotein complex bound to DNA target.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001566 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1692
+%%EOF

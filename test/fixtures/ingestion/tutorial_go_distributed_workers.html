@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Concurrent Distributed Worker Pipelines in Go</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 40px auto; max-width: 900px; padding: 0 20px; color: #222; }
+    h1 { color: #111; border-bottom: 2px solid #eaeaea; padding-bottom: 8px; }
+    h2 { color: #333; margin-top: 28px; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+    th, td { border: 1px solid #ddd; padding: 10px 14px; text-align: left; }
+    th { background: #f7f7f7; }
+    pre, code { background: #f4f4f4; border-radius: 4px; font-family: monospace; }
+    pre { padding: 14px; overflow-x: auto; }
+    .formula { background: #fdfdfd; border-left: 4px solid #0066cc; padding: 10px 16px; margin: 16px 0; font-family: "Times New Roman", serif; font-size: 1.15em; }
+    figure { margin: 24px 0; text-align: center; background: #fafafa; padding: 16px; border: 1px solid #e0e0e0; }
+    figcaption { font-style: italic; color: #555; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Concurrent Distributed Worker Pipelines in Go</h1>
+  
+<section>
+  <h2>1. Worker Pool Pattern with Go Channels</h2>
+  <p>In Go, concurrency is coordinated via goroutines and typed channels rather than shared locking structures.</p>
+  <pre><code>package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+type Job struct {
+	ID    int
+	Input int
+}
+
+type Result struct {
+	Job   Job
+	Value int
+}
+
+func worker(id int, jobs &lt;-chan Job, results chan&lt;- Result, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for j := range jobs {
+		// Process computation
+		results &lt;- Result{Job: j, Value: j.Input * j.Input}
+	}
+}
+
+func RunPool(workerCount, jobCount int) {
+	jobs := make(chan Job, jobCount)
+	results := make(chan Result, jobCount)
+	var wg sync.WaitGroup
+
+	for w := 1; w &lt;= workerCount; w++ {
+		wg.Add(1)
+		go worker(w, jobs, results, &amp;wg)
+	}
+
+	for j := 1; j &lt;= jobCount; j++ {
+		jobs &lt;- Job{ID: j, Input: j * 10}
+	}
+	close(jobs)
+	wg.Wait()
+	close(results)
+}
+</code></pre>
+</section>
+
+</body>
+</html>

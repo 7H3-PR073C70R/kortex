@@ -1,0 +1,49 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1201 >>
+stream
+BT /F1 11 Tf 54 730 Td 15 TL
+([CONFIDENTIAL LAB NOTEBOOK - OPTICS LAB EXP #4]) Tj T*
+(Date: October 14, 2026. Station: Michelson Interferometer & Diffraction Grating.) Tj T*
+(Observer: Dr. K. Vance. Room temp: 21.4 C. Pressure: 101.3 kPa.) Tj T*
+(1. Diffraction Grating Equation and Orders of Interference) Tj T*
+(Light from a 632.8 nm He-Ne laser incident on a grating with d = 1.667 micrometers \(600 lines/mm\).) Tj T*
+(Principal maxima condition:) Tj T*
+(d * sin\(theta_m\) = m * lambda) Tj T*
+(where m is the integer diffraction order \(m = 0, +/-1, +/-2\).) Tj T*
+(2. Experimental Measurement Data Log) Tj T*
+(Order m | Measured Angle \(deg\) | Theoretical Angle \(deg\) | Discrepancy) Tj T*
+(+1      | 22.31                | 22.31                   | 0.00%) Tj T*
+(+2      | 49.44                | 49.42                   | +0.04%) Tj T*
+(-1      | 22.33                | 22.31                   | +0.09%) Tj T*
+(-2      | 49.39                | 49.42                   | -0.06%) Tj T*
+(Figure 1 \(Page 1\): Handwritten sketch of spectrometer detector sweep and laser photodiode alignment.) Tj T*
+(Notes: Grating optical axis re-calibrated. Zero-order reflection beam blocked by stop.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001438 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1564
+%%EOF

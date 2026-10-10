@@ -1,0 +1,54 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1603 >>
+stream
+BT /F1 11 Tf 54 730 Td 15 TL
+(Chemical Kinetics, Reaction Coordinates and Temperature Dependence) Tj T*
+(Department of Physical Chemistry - Chemical Dynamics Lecture Series) Tj T*
+(1. Rate Laws and Reaction Order) Tj T*
+(For reaction aA + bB -> cC + dD, the experimental rate law takes the general form:) Tj T*
+(Rate = k * [A]^m * [B]^n) Tj T*
+(The reaction orders m and n must be determined empirically and cannot be inferred from stoichiometry.) Tj T*
+(2. The Arrhenius Equation) Tj T*
+(The temperature dependence of the reaction rate constant k is modeled by the Arrhenius equation:) Tj T*
+(k = A * exp\(-E_a / \(R * T\)\)) Tj T*
+(where A is the pre-exponential frequency factor, E_a is the activation energy in J/mol,) Tj T*
+(R is the universal gas constant \(8.314 J/\(mol K\)\), and T is absolute temperature in Kelvin.) Tj T*
+(Linearization of the Arrhenius relation yields the standard diagnostic plot:) Tj T*
+(ln\(k\) = ln\(A\) - \(E_a / R\) * \(1 / T\)) Tj T*
+(Plotting ln\(k\) vs 1/T produces a straight line whose slope is -E_a / R.) Tj T*
+(Table 1: Kinetic rate constants for ester hydrolysis across temperature range.) Tj T*
+(Temperature \(K\) | 1/T \(10^-3 K^-1\) | k \(M^-1 s^-1\) | ln\(k\)) Tj T*
+(283.15          | 3.532            | 0.00142       | -6.557) Tj T*
+(298.15          | 3.354            | 0.00512       | -5.275) Tj T*
+(313.15          | 3.193            | 0.01680       | -4.086) Tj T*
+(328.15          | 3.047            | 0.05040       | -2.988) Tj T*
+(Figure 1 \(Page 1\): Arrhenius plot of ln\(k\) versus inverse temperature showing linear activation slope.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001840 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1966
+%%EOF

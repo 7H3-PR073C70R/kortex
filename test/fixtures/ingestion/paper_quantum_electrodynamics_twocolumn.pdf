@@ -1,0 +1,58 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1678 >>
+stream
+BT /F1 10 Tf 54 730 Td 13 TL
+(Quantum Electrodynamics of Bound States in Strong Coulomb Fields) Tj T*
+(J. R. Oppenheimer and H. A. Bethe - Institute for Advanced Study) Tj T*
+(Abstract) Tj T*
+(We calculate radiative corrections to electron binding energies in high-Z hydrogenic ions.) Tj T*
+(Section 1: Introduction and Field Equations) Tj T*
+(The Dirac Hamiltonian in an external four-vector potential A_mu is defined as:) Tj T*
+(H_D = alpha * \(p - e A\) + beta m + e A_0) Tj T*
+(The relativistic S-matrix expansion yields the self-energy operator Sigma\(p\):) Tj T*
+(Sigma\(p\) = -i e^2 int d^4k / \(2 pi\)^4 gamma^mu S_F\(p - k\) gamma_mu D_F\(k\)) Tj T*
+(Section 2: Vacuum Polarization Tensor) Tj T*
+(The regularized polarization tensor Pi^{mu nu}\(q\) satisfies current conservation:) Tj T*
+(q_mu Pi^{mu nu}\(q\) = 0) Tj T*
+ET
+BT /F1 10 Tf 320 730 Td 13 TL
+(Figure 1 \(Page 1\): Feynman diagram for one-loop electron self-energy and vertex correction.) Tj T*
+(Section 3: Radiative Shift Calculations) Tj T*
+(The Lamb shift energy difference Delta E_L is given by:) Tj T*
+(Delta E_L = \(alpha / pi\) * \(Z alpha\)^4 * \(m / n^3\) * F\(Z alpha\)) Tj T*
+(Table 1: Theoretical vs experimental binding energies in eV for Z=92 uranium.) Tj T*
+(State | Dirac Energy \(eV\) | Self Energy \(eV\) | Net Bound Energy \(eV\)) Tj T*
+(1s1/2 | -132279.9 | +355.1 | -131924.8) Tj T*
+(2s1/2 | -33069.9 | +58.3 | -33011.6) Tj T*
+(Figure 2 \(Page 1\): Comparison of calculated self-energy shifts across nuclear charge Z.) Tj T*
+(Section 4: Concluding Remarks and Higher Order Perturbation) Tj T*
+(Higher-order loop corrections remain perturbative even in the critical field regime.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001915 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2041
+%%EOF

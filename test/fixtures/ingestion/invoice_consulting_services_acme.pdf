@@ -1,0 +1,46 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1024 >>
+stream
+BT /F1 11 Tf 54 730 Td 15 TL
+(ACME SOFTWARE CONSULTING SERVICES - INVOICE) Tj T*
+(Invoice Number: INV-90422. Invoice Date: October 10, 2026. Due Date: November 09, 2026.) Tj T*
+(Billed To: Vanguard Financial Technology LLC, 100 Wall Street, New York, NY 10005.) Tj T*
+(Consultant: Dr. Alexander Hamilton, Principal Systems Architect.) Tj T*
+(Item | Description                                      | Hours | Rate/Hr | Total Amount) Tj T*
+(1    | Distributed Consensus & Raft Protocol Audit     | 40    | $250.00 | $10,000.00) Tj T*
+(2    | Database Sharding & Cassandra Tuning            | 35    | $250.00 | $8,750.00) Tj T*
+(3    | Penetration Testing & Vulnerability Assessment   | 25    | $275.00 | $6,875.00) Tj T*
+(Subtotal Amount: $25,625.00) Tj T*
+(Sales Tax \(0.0% Professional Services\): $0.00) Tj T*
+(Total Balance Due: $25,625.00 USD) Tj T*
+(Payment Wire Instructions: Chase Bank N.A. Account: 8829-441-291. Routing: 021000021.) Tj T*
+(Thank you for your business. Please remit payments within 30 days.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001261 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1387
+%%EOF

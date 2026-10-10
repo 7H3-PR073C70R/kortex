@@ -1,0 +1,48 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1124 >>
+stream
+BT /F1 11 Tf 54 730 Td 15 TL
+(Machine Learning Foundations and Deep Neural Architectures) Tj T*
+(Faculty of Computer Science and Artificial Intelligence) Tj T*
+(1. Gradient Descent Optimization \(Inhidar Al-Tadarruj\)) Tj T*
+(The parameter update equation for weight matrix W under gradient descent is:) Tj T*
+(W_{t+1} = W_t - eta * nabla_W L\(W_t\)) Tj T*
+(where eta represents the learning rate and L denotes the scalar loss objective.) Tj T*
+(2. Mean Squared Error and Cross-Entropy Loss) Tj T*
+(MSE Loss = \(1 / N\) * sum_{i=1}^N \(y_i - y_hat_i\)^2) Tj T*
+(Cross-Entropy Loss = - sum_{i=1}^C y_i * log\(y_hat_i\)) Tj T*
+(Table 1: Activation function characteristics and vanishing gradient behavior.) Tj T*
+(Function | Equation | Range | Gradient at Extreme) Tj T*
+(Sigmoid  | 1 / \(1 + exp\(-z\)\) | \(0, 1\) | Zero \(Vanishing\)) Tj T*
+(Tanh     | \(exp\(z\) - exp\(-z\)\) / \(exp\(z\) + exp\(-z\)\) | \(-1, 1\) | Zero \(Vanishing\)) Tj T*
+(ReLU     | max\(0, z\) | [0, inf\) | 1 for z > 0 \(Constant\)) Tj T*
+(Figure 1 \(Page 1\): Multilayer perceptron architecture showing forward pass and backpropagation.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001361 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1487
+%%EOF

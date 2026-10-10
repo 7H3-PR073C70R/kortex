@@ -1,0 +1,54 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1723 >>
+stream
+BT /F1 11 Tf 54 730 Td 15 TL
+(MASTER CLOUD SERVICES AND LEVEL AGREEMENT \(SLA\)) Tj T*
+(Contract Reference: MSA-2026-CLOUD-9941. Effective Date: October 1, 2026.) Tj T*
+(Parties: Apex Cloud Infrastructure LLC \('Provider'\) and Horizon Global Corp \('Customer'\).) Tj T*
+(Section 1: Scope of Managed Cloud Services and Deliverables) Tj T*
+(Provider agrees to provision and maintain multi-region Kubernetes clusters,) Tj T*
+(database replication, and automated CI/CD deployment pipelines as defined in Exhibit A.) Tj T*
+(Section 2: Service Level Availability and Downtime Credits) Tj T*
+(Provider covenants that Monthly Uptime Percentage shall equal or exceed 99.95%.) Tj T*
+(Monthly Uptime % = \(\(Total Minutes in Month - Downtime Minutes\) / Total Minutes\) * 100) Tj T*
+(If Provider fails to maintain the Uptime Percentage, Customer receives service credits:) Tj T*
+(- 99.0% to < 99.95%: 15% credit of Monthly Base Fee) Tj T*
+(- 95.0% to < 99.0%: 30% credit of Monthly Base Fee) Tj T*
+(- < 95.0%: 100% credit of Monthly Base Fee) Tj T*
+(Section 3: Mutual Indemnification and Limitation of Liability) Tj T*
+(Neither party shall be liable for indirect, incidental, or consequential damages.) Tj T*
+(Maximum aggregate liability is capped at fees paid by Customer in preceding 12 months.) Tj T*
+(Section 4: Governing Law and Dispute Jurisdiction) Tj T*
+(This Agreement is governed by the laws of the State of Delaware without reference to conflicts of law.) Tj T*
+(IN WITNESS WHEREOF, authorized representatives have executed this Agreement.) Tj T*
+(Apex Cloud Infrastructure LLC: [Authorized Officer Signature] Date: Oct 1, 2026) Tj T*
+(Horizon Global Corp: [Chief Information Officer Signature] Date: Oct 1, 2026) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001960 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2086
+%%EOF

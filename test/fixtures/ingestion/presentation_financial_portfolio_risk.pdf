@@ -1,0 +1,49 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1255 >>
+stream
+BT /F1 11 Tf 54 730 Td 15 TL
+(Quantitative Portfolio Risk and Asset Pricing Models) Tj T*
+(Center for Financial Engineering and Asset Management) Tj T*
+(1. The Black-Scholes Option Pricing PDE) Tj T*
+(Under geometric Brownian motion for underlying asset price S, the European call price C satisfies:) Tj T*
+(dC/dt + \(1/2\) * sigma^2 * S^2 * \(d^2C / dS^2\) + r * S * \(dC/dS\) - r * C = 0) Tj T*
+(where sigma is implied volatility and r is the risk-free continuously compounded interest rate.) Tj T*
+(2. Modern Portfolio Theory and Sharpe Ratio) Tj T*
+(The Sharpe ratio S_p measures excess return per unit of portfolio standard deviation:) Tj T*
+(Sharpe Ratio = \(R_p - R_f\) / sigma_p) Tj T*
+(Table 1: Asset class performance metrics across a 10-year investment horizon.) Tj T*
+(Asset Class     | Annual Return | Annual Volatility | Sharpe Ratio) Tj T*
+(US Large Cap    | 12.4%         | 15.2%             | 0.68) Tj T*
+(Emerging Mkts   | 8.1%          | 22.4%             | 0.27) Tj T*
+(US Treasuries   | 3.2%          | 4.1%              | 0.29) Tj T*
+(Commodities     | 5.8%          | 18.6%             | 0.20) Tj T*
+(Figure 1 \(Page 1\): The Efficient Frontier curve with capital allocation line tangent at the optimal tangency portfolio.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001492 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1618
+%%EOF

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>超导量子计算与量子信息理论</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 40px auto; max-width: 900px; padding: 0 20px; color: #222; }
+    h1 { color: #111; border-bottom: 2px solid #eaeaea; padding-bottom: 8px; }
+    h2 { color: #333; margin-top: 28px; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+    th, td { border: 1px solid #ddd; padding: 10px 14px; text-align: left; }
+    th { background: #f7f7f7; }
+    pre, code { background: #f4f4f4; border-radius: 4px; font-family: monospace; }
+    pre { padding: 14px; overflow-x: auto; }
+    .formula { background: #fdfdfd; border-left: 4px solid #0066cc; padding: 10px 16px; margin: 16px 0; font-family: "Times New Roman", serif; font-size: 1.15em; }
+    figure { margin: 24px 0; text-align: center; background: #fafafa; padding: 16px; border: 1px solid #e0e0e0; }
+    figcaption { font-style: italic; color: #555; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>超导量子计算与量子信息理论</h1>
+  
+<section>
+  <h2>1. 量子比特与布洛赫球面 (Bloch Sphere)</h2>
+  <p>量子比特（Qubit）是量子计算的基本信息单元。不同于经典二进制比特，量子比特可处于基态 |0&rang; 与 |1&rang; 的任意相干叠加态：</p>
+  <div class="formula">
+    |&psi;&rang; = cos(&theta; / 2) |0&rang; + e<sup>i &phi;</sup> sin(&theta; / 2) |1&rang;
+  </div>
+  <p>其中 &theta; 与 &phi; 定义了布洛赫球面上的极角与方位角坐标。</p>
+  <h2>2. 常用量子单比特与双比特门</h2>
+  <table>
+    <tr><th>量子逻辑门</th><th>矩阵表示</th><th>物理功能</th></tr>
+    <tr><td>阿达马门 (Hadamard, H)</td><td>(1 / &radic;2) [[1, 1], [1, -1]]</td><td>创建等概率基态叠加态 (|0&rang; &rarr; (|0&rang; + |1&rang;)/&radic;2)</td></tr>
+    <tr><td>泡利-X 门 (Pauli-X)</td><td>[[0, 1], [1, 0]]</td><td>量子比特翻转门（相当于经典非门 NOT）</td></tr>
+    <tr><td>控制非门 (CNOT)</td><td>4&times;4 置换矩阵</td><td>创建两量子比特纠缠态（贝尔态，Bell State）</td></tr>
+  </table>
+  <figure>
+    <div style="background:#f0f8ff;height:100px;display:flex;align-items:center;justify-content:center;">[布洛赫球面示意图：极轴为|0>和|1>，赤道为相干叠加态]</div>
+    <figcaption>图 1: 量子比特状态在三维单位布洛赫球面上的几何映射表征。</figcaption>
+  </figure>
+</section>
+
+</body>
+</html>

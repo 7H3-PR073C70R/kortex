@@ -1,0 +1,40 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Filter /Standard /V 2 /R 3 /O (\x82\x11\x9a...) /U (\x5b\x4c...) /P -3904 /Length 128 >>
+endobj
+5 0 obj
+<< /Length 214 >>
+stream
+BT /F1 11 Tf 54 730 Td 15 TL
+(TOP SECRET CORPORATE SECURITY CLEARANCE POLICY) Tj T*
+(This document is encrypted under 128-bit AES standard PDF encryption.) Tj T*
+(Restricted to Level 5 Security Personnel.) Tj T*
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000000293 00000 n 
+0000000558 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Encrypt 4 0 R >>
+startxref
+684
+%%EOF

@@ -1,0 +1,55 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1111 >>
+stream
+BT /F1 11 Tf 54 730 Td 15 TL
+(Modern C++20 Custom Polymorphic Memory Resources) Tj T*
+(High-Frequency Trading and Low-Latency Systems Architecture) Tj T*
+(1. Memory Allocation Overhead in Real-Time Systems) Tj T*
+(Standard heap allocations via malloc/new introduce variable latency due to kernel calls and heap fragmentation.) Tj T*
+(2. Custom Arena Pool Allocator Implementation) Tj T*
+(template <typename T, size_t BlockSize = 4096>) Tj T*
+(class FixedArenaAllocator {) Tj T*
+(public:) Tj T*
+(  using value_type = T;) Tj T*
+(  T* allocate\(size_t n\) {) Tj T*
+(    if \(offset_ + n * sizeof\(T\) > BlockSize\) throw std::bad_alloc\(\);) Tj T*
+(    T* ptr = reinterpret_cast<T*>\(&buffer_[offset_]\);) Tj T*
+(    offset_ += n * sizeof\(T\);) Tj T*
+(    return ptr;) Tj T*
+(  }) Tj T*
+(  void deallocate\(T* p, size_t n\) noexcept { /* no-op in arena */ }) Tj T*
+(private:) Tj T*
+(  alignas\(std::max_align_t\) std::byte buffer_[BlockSize];) Tj T*
+(  size_t offset_{0};) Tj T*
+(};) Tj T*
+(3. Performance Benchmark Summary) Tj T*
+(Arena allocation achieves O\(1\) allocation speed with zero heap locks.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001348 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1474
+%%EOF

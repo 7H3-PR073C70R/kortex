@@ -1,0 +1,974 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Labeled corpus ground truth for document ingestion benchmarks across multimodal formats",
+  "total_documents": 43,
+  "documents": [
+    {
+      "filename": "paper_quantum_electrodynamics_twocolumn.pdf",
+      "format": "PDF",
+      "language": "en",
+      "category": "Physics",
+      "sections": [
+        "Abstract",
+        "Section 1: Introduction and Field Equations",
+        "Section 2: Vacuum Polarization Tensor",
+        "Section 3: Radiative Shift Calculations",
+        "Section 4: Concluding Remarks"
+      ],
+      "expected_formulas": [
+        "H_D = \\alpha \\cdot (p - e A) + \\beta m + e A_0",
+        "\\Sigma(p) = -i e^2 \\int \\frac{d^4k}{(2\\pi)^4} \\gamma^\\mu S_F(p - k) \\gamma_\\mu D_F(k)",
+        "q_\\mu \\Pi^{\\mu\\nu}(q) = 0",
+        "\\Delta E_L = \\frac{\\alpha}{\\pi} (Z \\alpha)^4 \\frac{m}{n^3} F(Z\\alpha)"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Feynman diagram for one-loop electron self-energy and vertex correction."
+        },
+        {
+          "page": 1,
+          "caption": "Comparison of calculated self-energy shifts across nuclear charge Z."
+        }
+      ],
+      "special_attributes": [
+        "two_column",
+        "academic_paper",
+        "relativistic_physics"
+      ]
+    },
+    {
+      "filename": "paper_quantum_electrodynamics_twocolumn.tex",
+      "format": "TEX",
+      "language": "en",
+      "category": "Physics",
+      "sections": [
+        "Introduction and Field Equations",
+        "Vacuum Polarization"
+      ],
+      "expected_formulas": [
+        "H_D = \\boldsymbol{\\alpha}\\cdot(\\mathbf{p} - e\\mathbf{A}) + \\beta m + e A_0",
+        "q_\\mu \\Pi^{\\mu\\nu}(q) = 0"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "One-loop vacuum polarization and electron self-energy Feynman graphs."
+        }
+      ],
+      "special_attributes": [
+        "latex_source",
+        "two_column"
+      ]
+    },
+    {
+      "filename": "organic_chemistry_reaction_mechanisms.docx",
+      "format": "DOCX",
+      "language": "en",
+      "category": "Chemistry",
+      "sections": [
+        "1. Nucleophilic Aliphatic Substitution: SN1 vs SN2",
+        "1.1 Kinetic Rate Laws",
+        "1.2 Stereochemical Consequences",
+        "2. Reaction Parameter Comparison",
+        "3. Energy Profiles and Transition States"
+      ],
+      "expected_formulas": [
+        "Rate = k_2 [Substrate][Nucleophile]",
+        "Rate = k_1 [Substrate]"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Reaction coordinate diagram illustrating the double-well potential of SN1 with intermediate carbocation versus single concerted transition state of SN2."
+        }
+      ],
+      "special_attributes": [
+        "docx_table",
+        "chemical_kinetics"
+      ]
+    },
+    {
+      "filename": "classical_electrodynamics_maxwells_equations.html",
+      "format": "HTML",
+      "language": "en",
+      "category": "Physics",
+      "sections": [
+        "1. Differential Form of Maxwell's Equations",
+        "2. Electromagnetic Fundamental Constants"
+      ],
+      "expected_formulas": [
+        "\\nabla \\cdot \\mathbf{E} = \\frac{\\rho}{\\epsilon_0}",
+        "\\nabla \\cdot \\mathbf{B} = 0",
+        "\\nabla \\times \\mathbf{E} = -\\frac{\\partial\\mathbf{B}}{\\partial t}",
+        "\\nabla \\times \\mathbf{B} = \\mu_0\\mathbf{J} + \\mu_0\\epsilon_0 \\frac{\\partial\\mathbf{E}}{\\partial t}",
+        "\\mathbf{S} = \\frac{1}{\\mu_0} \\mathbf{E} \\times \\mathbf{B}"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Energy flux density Poynting vector perpendicular to mutually orthogonal electric and magnetic wave fronts."
+        }
+      ],
+      "special_attributes": [
+        "math_equations",
+        "html5_tables"
+      ]
+    },
+    {
+      "filename": "thermodynamics_statistical_physics.epub",
+      "format": "EPUB",
+      "language": "en",
+      "category": "Physics",
+      "sections": [
+        "Chapter 1: The Canonical Ensemble and Partition Function",
+        "Chapter 2: Ideal Quantum Gases"
+      ],
+      "expected_formulas": [
+        "P_i = \\frac{1}{Z} \\exp\\left(-\\frac{E_i}{k_B T}\\right)",
+        "Z = \\sum_i \\exp\\left(-\\frac{E_i}{k_B T}\\right)",
+        "F = -k_B T \\ln Z",
+        "n_k = \\frac{1}{e^{(\\epsilon_k - \\mu)/k_B T} + 1}",
+        "n_k = \\frac{1}{e^{(\\epsilon_k - \\mu)/k_B T} - 1}"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 2,
+          "caption": "Fermi-Dirac step function degeneration at zero Kelvin versus Bose-Einstein condensation singularity."
+        }
+      ],
+      "special_attributes": [
+        "epub_ebook",
+        "multi_chapter"
+      ]
+    },
+    {
+      "filename": "chemistry_chemical_kinetics_arrhenius.pdf",
+      "format": "PDF",
+      "language": "en",
+      "category": "Chemistry",
+      "sections": [
+        "1. Rate Laws and Reaction Order",
+        "2. The Arrhenius Equation"
+      ],
+      "expected_formulas": [
+        "Rate = k [A]^m [B]^n",
+        "k = A \\exp\\left(-\\frac{E_a}{R T}\\right)",
+        "\\ln(k) = \\ln(A) - \\frac{E_a}{R} \\frac{1}{T}"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Arrhenius plot of ln(k) versus inverse temperature showing linear activation slope."
+        }
+      ],
+      "special_attributes": [
+        "pdf_table",
+        "physical_chemistry"
+      ]
+    },
+    {
+      "filename": "general_relativity_einstein_field_equations.html",
+      "format": "HTML",
+      "language": "en",
+      "category": "Physics",
+      "sections": [
+        "1. The Geometrization of Gravitation",
+        "2. The Schwarzschild Vacuum Metric"
+      ],
+      "expected_formulas": [
+        "G_{\\mu\\nu} + \\Lambda g_{\\mu\\nu} = \\frac{8\\pi G}{c^4} T_{\\mu\\nu}",
+        "G_{\\mu\\nu} = R_{\\mu\\nu} - \\frac{1}{2} R g_{\\mu\\nu}",
+        "r_s = \\frac{2GM}{c^2}"
+      ],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "tensor_calculus",
+        "astrophysics"
+      ]
+    },
+    {
+      "filename": "tutorial_dart_concurrency_isolates.md",
+      "format": "MD",
+      "language": "en",
+      "category": "Computer Science",
+      "sections": [
+        "1. Threading Model and Memory Isolation",
+        "2. Bidirectional Isolate Handshake Pattern"
+      ],
+      "expected_formulas": [],
+      "exact_code": [
+        {
+          "language": "dart",
+          "snippet": "void isolateWorker(WorkPayload payload) {\n  var sum = 0;\n  for (final n in payload.data) {\n    sum += n * n;\n  }\n  payload.replyPort.send({'id': payload.id, 'result': sum});\n}"
+        }
+      ],
+      "figures": [],
+      "special_attributes": [
+        "code_tutorial",
+        "dart_language"
+      ]
+    },
+    {
+      "filename": "tutorial_python_asyncio_architecture.html",
+      "format": "HTML",
+      "language": "en",
+      "category": "Computer Science",
+      "sections": [
+        "1. Structured Concurrency with asyncio.TaskGroup (Python 3.11+)",
+        "2. Cooperative Scheduling Principles"
+      ],
+      "expected_formulas": [],
+      "exact_code": [
+        {
+          "language": "python",
+          "snippet": "async with asyncio.TaskGroup() as tg:\n    tasks = [tg.create_task(fetch_endpoint(session, u)) for u in urls]"
+        }
+      ],
+      "figures": [],
+      "special_attributes": [
+        "code_tutorial",
+        "python_language"
+      ]
+    },
+    {
+      "filename": "tutorial_rust_memory_safety_lifetimes.docx",
+      "format": "DOCX",
+      "language": "en",
+      "category": "Computer Science",
+      "sections": [
+        "1. The Borrow Checker and Lifetime Parameters",
+        "2. Invariant Rules of Lifetimes"
+      ],
+      "expected_formulas": [],
+      "exact_code": [
+        {
+          "language": "rust",
+          "snippet": "pub struct TokenBuffer<'a> {\n    pub raw_source: &'a str,\n    pub cursor: usize,\n}"
+        }
+      ],
+      "figures": [],
+      "special_attributes": [
+        "code_tutorial",
+        "rust_language"
+      ]
+    },
+    {
+      "filename": "tutorial_go_distributed_workers.html",
+      "format": "HTML",
+      "language": "en",
+      "category": "Computer Science",
+      "sections": [
+        "1. Worker Pool Pattern with Go Channels"
+      ],
+      "expected_formulas": [],
+      "exact_code": [
+        {
+          "language": "go",
+          "snippet": "func worker(id int, jobs <-chan Job, results chan<- Result, wg *sync.WaitGroup)"
+        }
+      ],
+      "figures": [],
+      "special_attributes": [
+        "code_tutorial",
+        "go_language"
+      ]
+    },
+    {
+      "filename": "tutorial_typescript_react_patterns.epub",
+      "format": "EPUB",
+      "language": "en",
+      "category": "Computer Science",
+      "sections": [
+        "Chapter 1: Generic Debounce Hooks and Type Guards",
+        "Chapter 2: Discriminated Union State Reducers"
+      ],
+      "expected_formulas": [],
+      "exact_code": [
+        {
+          "language": "typescript",
+          "snippet": "export function useDebounce<T>(value: T, delayMs: number): T"
+        }
+      ],
+      "figures": [],
+      "special_attributes": [
+        "code_tutorial",
+        "typescript_language"
+      ]
+    },
+    {
+      "filename": "tutorial_cpp_memory_allocators.pdf",
+      "format": "PDF",
+      "language": "en",
+      "category": "Computer Science",
+      "sections": [
+        "1. Memory Allocation Overhead in Real-Time Systems",
+        "2. Custom Arena Pool Allocator Implementation",
+        "3. Performance Benchmark Summary"
+      ],
+      "expected_formulas": [],
+      "exact_code": [
+        {
+          "language": "cpp",
+          "snippet": "T* allocate(size_t n) {\n  if (offset_ + n * sizeof(T) > BlockSize) throw std::bad_alloc();\n  T* ptr = reinterpret_cast<T*>(&buffer_[offset_]);\n  offset_ += n * sizeof(T);\n  return ptr;\n}"
+        }
+      ],
+      "figures": [],
+      "special_attributes": [
+        "code_tutorial",
+        "cpp_language"
+      ]
+    },
+    {
+      "filename": "presentation_machine_learning_transformers.pptx",
+      "format": "PPTX",
+      "language": "en",
+      "category": "Artificial Intelligence",
+      "sections": [
+        "Slide 1: Attention Is All You Need",
+        "Slide 2: Scaled Dot-Product Self-Attention",
+        "Slide 3: Architectural Performance Comparison"
+      ],
+      "expected_formulas": [
+        "\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{Q K^T}{\\sqrt{d_k}}\\right) V"
+      ],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "pptx_slide_deck",
+        "formula_in_presentation",
+        "presentation_table"
+      ]
+    },
+    {
+      "filename": "presentation_cloud_microservices_architecture.pptx",
+      "format": "PPTX",
+      "language": "en",
+      "category": "Cloud Architecture",
+      "sections": [
+        "Slide 1: Reliability",
+        "Slide 2: Circuit Breakers and SLAs"
+      ],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "pptx_slide_deck",
+        "sla_table"
+      ]
+    },
+    {
+      "filename": "presentation_biochemistry_cellular_metabolism.pptx",
+      "format": "PPTX",
+      "language": "en",
+      "category": "Biochemistry",
+      "sections": [
+        "Slide 1: Bioenergetics",
+        "Slide 2: ATP Yield Across Respiration Stages"
+      ],
+      "expected_formulas": [
+        "\\text{C}_6\\text{H}_{12}\\text{O}_6 + 6\\text{O}_2 \\rightarrow 6\\text{CO}_2 + 6\\text{H}_2\\text{O} + 30\\text{-}32\\text{ATP} \\quad (\\Delta G = -2870\\text{ kJ/mol})"
+      ],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "pptx_slide_deck",
+        "biochemistry_table"
+      ]
+    },
+    {
+      "filename": "presentation_financial_portfolio_risk.pdf",
+      "format": "PDF",
+      "language": "en",
+      "category": "Finance",
+      "sections": [
+        "1. The Black-Scholes Option Pricing PDE",
+        "2. Modern Portfolio Theory and Sharpe Ratio"
+      ],
+      "expected_formulas": [
+        "\\frac{\\partial C}{\\partial t} + \\frac{1}{2}\\sigma^2 S^2 \\frac{\\partial^2 C}{\\partial S^2} + r S \\frac{\\partial C}{\\partial S} - r C = 0",
+        "\\text{Sharpe Ratio} = \\frac{R_p - R_f}{\\sigma_p}"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "The Efficient Frontier curve with capital allocation line tangent at the optimal tangency portfolio."
+        }
+      ],
+      "special_attributes": [
+        "financial_engineering",
+        "pdf_slides"
+      ]
+    },
+    {
+      "filename": "scanned_lab_notebook_optics.pdf",
+      "format": "PDF",
+      "language": "en",
+      "category": "Physics",
+      "sections": [
+        "1. Diffraction Grating Equation and Orders of Interference",
+        "2. Experimental Measurement Data Log"
+      ],
+      "expected_formulas": [
+        "d \\sin(\\theta_m) = m \\lambda"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Handwritten sketch of spectrometer detector sweep and laser photodiode alignment."
+        }
+      ],
+      "special_attributes": [
+        "scanned_notebook",
+        "optics_experiment"
+      ]
+    },
+    {
+      "filename": "scanned_receipt_ocr_test.png",
+      "format": "PNG",
+      "language": "en",
+      "category": "OCR Image",
+      "sections": [
+        "Header",
+        "Line Items",
+        "Tax & Total"
+      ],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Itemized commercial retail purchase receipt with date, VAT, and transaction total."
+        }
+      ],
+      "special_attributes": [
+        "image_ocr",
+        "receipt_scan"
+      ]
+    },
+    {
+      "filename": "diagram_biochemical_pathway.png",
+      "format": "PNG",
+      "language": "en",
+      "category": "Scientific Diagram",
+      "sections": [],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Flow diagram of oxidative phosphorylation and chemiosmotic proton pump."
+        }
+      ],
+      "special_attributes": [
+        "diagram_image",
+        "biochemistry_schematic"
+      ]
+    },
+    {
+      "filename": "chart_astronomy_stellar_spectrum.png",
+      "format": "PNG",
+      "language": "en",
+      "category": "Scientific Chart",
+      "sections": [],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Hertzsprung-Russell stellar luminosity vs surface temperature distribution curve."
+        }
+      ],
+      "special_attributes": [
+        "chart_image",
+        "astronomy_plot"
+      ]
+    },
+    {
+      "filename": "doc_russian_neuroscience_memory.docx",
+      "format": "DOCX",
+      "language": "ru",
+      "category": "Neuroscience",
+      "sections": [
+        "Нейробиология синаптической пластичности и памяти",
+        "1. Долговременная потенциация (LTP)",
+        "2. Таблица синаптических медиаторов"
+      ],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Внутриклеточный сигнальный каскад CaMKII при индукции долговременной потенциации."
+        }
+      ],
+      "special_attributes": [
+        "russian_language",
+        "cyrillic_script"
+      ]
+    },
+    {
+      "filename": "doc_chinese_quantum_computing.html",
+      "format": "HTML",
+      "language": "zh",
+      "category": "Quantum Computing",
+      "sections": [
+        "1. 量子比特与布洛赫球面",
+        "2. 常用量子单比特与双比特门"
+      ],
+      "expected_formulas": [
+        "|\\psi\\rangle = \\cos(\\theta / 2) |0\\rangle + e^{i \\phi} \\sin(\\theta / 2) |1\\rangle"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "量子比特状态在三维单位布洛赫球面上的几何映射表征。"
+        }
+      ],
+      "special_attributes": [
+        "chinese_language",
+        "hanzi_script"
+      ]
+    },
+    {
+      "filename": "doc_arabic_machine_learning.pdf",
+      "format": "PDF",
+      "language": "ar",
+      "category": "Machine Learning",
+      "sections": [
+        "1. Gradient Descent Optimization",
+        "2. Mean Squared Error and Cross-Entropy Loss"
+      ],
+      "expected_formulas": [
+        "W_{t+1} = W_t - \\eta \\nabla_W L(W_t)",
+        "\\text{MSE} = \\frac{1}{N} \\sum_{i=1}^N (y_i - \\hat{y}_i)^2",
+        "\\text{Cross-Entropy} = - \\sum_{i=1}^C y_i \\log(\\hat{y}_i)"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Multilayer perceptron architecture showing forward pass and backpropagation."
+        }
+      ],
+      "special_attributes": [
+        "arabic_context",
+        "deep_learning"
+      ]
+    },
+    {
+      "filename": "doc_hindi_astrophysics_gravitation.docx",
+      "format": "DOCX",
+      "language": "hi",
+      "category": "Astrophysics",
+      "sections": [
+        "खगोल भौतिकी और न्यूटन का सार्वत्रिक गुरुत्वाकर्षण नियम",
+        "1. गुरुत्वाकर्षण सूत्र",
+        "2. सौर मंडल के ग्रहों की तुलनात्मक तालिका"
+      ],
+      "expected_formulas": [
+        "F = G \\frac{m_1 m_2}{r^2}"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "केपलर के नियमों के अनुसार सूर्य के चारों ओर ग्रहों की दीर्घवृत्ताकार कक्षाएँ।"
+        }
+      ],
+      "special_attributes": [
+        "hindi_language",
+        "devanagari_script"
+      ]
+    },
+    {
+      "filename": "doc_yoruba_traditional_medicine_botany.html",
+      "format": "HTML",
+      "language": "yo",
+      "category": "Ethnobotany",
+      "sections": [
+        "1. Ìmọ̀ Ẹ̀kọ́ Nípa Àwọn Ewéko Ìwòsàn",
+        "2. Àkójọ Àwọn Ewéko Àti Èròjà Wọn"
+      ],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Ìrísí ewé Vernonia amygdalina àti ètò kẹ́míkà luteolin."
+        }
+      ],
+      "special_attributes": [
+        "yoruba_language",
+        "tonal_diacritics"
+      ]
+    },
+    {
+      "filename": "doc_french_philosophy_epistemology.epub",
+      "format": "EPUB",
+      "language": "fr",
+      "category": "Philosophy of Science",
+      "sections": [
+        "Chapitre 1: La Logique de la Découverte Scientifique",
+        "Chapitre 2: Les Paradigmes et Révolutions Scientifiques"
+      ],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 2,
+          "caption": "Le cycle de Kuhn : Pré-science, Science normale, Crise du modèle, Révolution paradigmatique."
+        }
+      ],
+      "special_attributes": [
+        "french_language",
+        "humanities_epub"
+      ]
+    },
+    {
+      "filename": "contract_master_services_and_sla_agreement.pdf",
+      "format": "PDF",
+      "language": "en",
+      "category": "Legal",
+      "sections": [
+        "Section 1: Scope of Managed Cloud Services",
+        "Section 2: Service Level Availability and Downtime Credits",
+        "Section 3: Mutual Indemnification and Limitation of Liability",
+        "Section 4: Governing Law and Dispute Jurisdiction"
+      ],
+      "expected_formulas": [
+        "\\text{Uptime \\%} = \\frac{\\text{Total Minutes} - \\text{Downtime Minutes}}{\\text{Total Minutes}} \\times 100"
+      ],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "legal_contract",
+        "sla_penalties"
+      ]
+    },
+    {
+      "filename": "contract_employment_non_disclosure.docx",
+      "format": "DOCX",
+      "language": "en",
+      "category": "Legal",
+      "sections": [
+        "1. Definition of Proprietary Information",
+        "2. Exclusions from Confidentiality",
+        "3. Assignment of Inventions",
+        "4. Injunctive Relief and Severability"
+      ],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "legal_nda",
+        "docx_contract"
+      ]
+    },
+    {
+      "filename": "invoice_enterprise_cloud_billing_2026.html",
+      "format": "HTML",
+      "language": "en",
+      "category": "Invoice",
+      "sections": [
+        "Invoice Header",
+        "Line Item Breakdown",
+        "Payment Terms"
+      ],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "invoice_billing",
+        "tax_calculation"
+      ]
+    },
+    {
+      "filename": "invoice_consulting_services_acme.pdf",
+      "format": "PDF",
+      "language": "en",
+      "category": "Invoice",
+      "sections": [
+        "Invoice Header",
+        "Itemized Consulting Services",
+        "Payment Instructions"
+      ],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "invoice_pdf",
+        "consulting_rates"
+      ]
+    },
+    {
+      "filename": "book_principles_of_computing_700_pages.pdf",
+      "format": "PDF",
+      "language": "en",
+      "category": "Computer Science Book",
+      "sections": [
+        "Chapter 1: Foundations of Discrete Algorithms",
+        "Chapter 2: Foundations of Discrete Algorithms",
+        "Chapter 3: Foundations of Discrete Algorithms",
+        "Chapter 4: Foundations of Discrete Algorithms",
+        "Chapter 5: Foundations of Discrete Algorithms",
+        "Chapter 6: Foundations of Discrete Algorithms",
+        "Chapter 7: Foundations of Discrete Algorithms",
+        "Chapter 8: Foundations of Discrete Algorithms",
+        "Chapter 9: Foundations of Discrete Algorithms",
+        "Chapter 10: Foundations of Discrete Algorithms",
+        "Chapter 11: Foundations of Discrete Algorithms",
+        "Chapter 12: Foundations of Discrete Algorithms",
+        "Chapter 13: Foundations of Discrete Algorithms",
+        "Chapter 14: Foundations of Discrete Algorithms",
+        "Chapter 15: Foundations of Discrete Algorithms",
+        "Chapter 16: Foundations of Discrete Algorithms",
+        "Chapter 17: Foundations of Discrete Algorithms",
+        "Chapter 18: Foundations of Discrete Algorithms",
+        "Chapter 19: Foundations of Discrete Algorithms",
+        "Chapter 20: Foundations of Discrete Algorithms",
+        "Chapter 21: Foundations of Discrete Algorithms",
+        "Chapter 22: Foundations of Discrete Algorithms",
+        "Chapter 23: Foundations of Discrete Algorithms",
+        "Chapter 24: Foundations of Discrete Algorithms",
+        "Chapter 25: Foundations of Discrete Algorithms"
+      ],
+      "expected_formulas": [
+        "T(n) = 2T(n/2) + \\Theta(n) \\implies \\Theta(n \\log n)",
+        "\\log_2(n!) = \\Theta(n \\log n)"
+      ],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "700_page_volume",
+        "master_theorem",
+        "textbook"
+      ]
+    },
+    {
+      "filename": "handbook_organic_synthesis_reference.epub",
+      "format": "EPUB",
+      "language": "en",
+      "category": "Chemistry Book",
+      "sections": [
+        "Chapter 1: Transition Metal Catalyzed Cross-Couplings",
+        "Chapter 2: Transition Metal Catalyzed Cross-Couplings",
+        "Chapter 3: Transition Metal Catalyzed Cross-Couplings",
+        "Chapter 4: Transition Metal Catalyzed Cross-Couplings",
+        "Chapter 5: Transition Metal Catalyzed Cross-Couplings",
+        "Chapter 6: Transition Metal Catalyzed Cross-Couplings",
+        "Chapter 7: Transition Metal Catalyzed Cross-Couplings",
+        "Chapter 8: Transition Metal Catalyzed Cross-Couplings",
+        "Chapter 9: Transition Metal Catalyzed Cross-Couplings",
+        "Chapter 10: Transition Metal Catalyzed Cross-Couplings",
+        "Chapter 11: Transition Metal Catalyzed Cross-Couplings",
+        "Chapter 12: Transition Metal Catalyzed Cross-Couplings"
+      ],
+      "expected_formulas": [
+        "\\text{R-X} + \\text{R'-B(OH)}_2 \\xrightarrow{\\text{Pd, Base}} \\text{R-R'}"
+      ],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "epub_reference_handbook",
+        "12_chapters"
+      ]
+    },
+    {
+      "filename": "encrypted_security_policy.pdf",
+      "format": "PDF",
+      "language": "en",
+      "category": "Security",
+      "sections": [
+        "Security Clearance Policy"
+      ],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "encrypted_file",
+        "pdf_standard_encryption",
+        "password_protected"
+      ]
+    },
+    {
+      "filename": "corrupt_malformed_syntax.pdf",
+      "format": "PDF",
+      "language": "en",
+      "category": "Corrupted Files",
+      "sections": [],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "corrupt_file",
+        "truncated_header",
+        "invalid_xref"
+      ]
+    },
+    {
+      "filename": "corrupt_truncated_header.docx",
+      "format": "DOCX",
+      "language": "en",
+      "category": "Corrupted Files",
+      "sections": [],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "corrupt_file",
+        "malformed_zip_archive"
+      ]
+    },
+    {
+      "filename": "corrupt_invalid_xml.epub",
+      "format": "EPUB",
+      "language": "en",
+      "category": "Corrupted Files",
+      "sections": [],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "corrupt_file",
+        "invalid_xml_syntax"
+      ]
+    },
+    {
+      "filename": "neurobiology_action_potentials.docx",
+      "format": "DOCX",
+      "language": "en",
+      "category": "Neurobiology",
+      "sections": [
+        "Biophysics of the Neuronal Action Potential",
+        "1. The Nernst and Goldman-Hodgkin-Katz Equations",
+        "2. Channel Dynamics and Phases of the Spike"
+      ],
+      "expected_formulas": [
+        "E_{\\text{ion}} = \\frac{RT}{zF} \\ln\\left(\\frac{[\\text{ion}]_{\\text{out}}}{[\\text{ion}]_{\\text{in}}}\\right)"
+      ],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Membrane potential oscilloscope trace depicting rapid depolarization, peak overshoot, and relative refractory period."
+        }
+      ],
+      "special_attributes": [
+        "docx_table",
+        "electrophysiology"
+      ]
+    },
+    {
+      "filename": "cryptography_elliptic_curves.html",
+      "format": "HTML",
+      "language": "en",
+      "category": "Cryptography",
+      "sections": [
+        "1. Elliptic Curve Cryptography over Finite Fields",
+        "2. Point Addition and Discrete Logarithm Problem"
+      ],
+      "expected_formulas": [
+        "y^2 = x^3 + ax + b \\pmod{p}",
+        "Q = d \\cdot G"
+      ],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "cryptography",
+        "finite_fields"
+      ]
+    },
+    {
+      "filename": "astrophysics_black_holes_hawking.html",
+      "format": "HTML",
+      "language": "en",
+      "category": "Astrophysics",
+      "sections": [
+        "1. Quantum Field Theory in Curved Spacetime"
+      ],
+      "expected_formulas": [
+        "T_H = \\frac{\\hbar c^3}{8 \\pi G M k_B}",
+        "S_{BH} = \\frac{k_B c^3 A}{4 G \\hbar}"
+      ],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "black_holes",
+        "quantum_gravity"
+      ]
+    },
+    {
+      "filename": "economics_macroeconomic_equilibrium.epub",
+      "format": "EPUB",
+      "language": "en",
+      "category": "Economics",
+      "sections": [
+        "Chapter 1: The IS-LM Model",
+        "Chapter 2: The Phillips Curve"
+      ],
+      "expected_formulas": [
+        "Y = C(Y - T) + I(r) + G",
+        "\\frac{M}{P} = L(r, Y)",
+        "\\Delta Y = \\frac{1}{1 - \\text{MPC}} \\Delta G",
+        "\\pi = \\pi_e - \\beta(u - u_n) + v"
+      ],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "macroeconomics",
+        "monetary_policy"
+      ]
+    },
+    {
+      "filename": "presentation_robotics_kinematics_dh_parameters.pptx",
+      "format": "PPTX",
+      "language": "en",
+      "category": "Robotics",
+      "sections": [
+        "Slide 1: Forward Kinematics",
+        "Slide 2: Denavit-Hartenberg Parameters"
+      ],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [],
+      "special_attributes": [
+        "pptx_slide_deck",
+        "dh_parameters_table"
+      ]
+    },
+    {
+      "filename": "genetics_crispr_cas9_mechanisms.pdf",
+      "format": "PDF",
+      "language": "en",
+      "category": "Genetics",
+      "sections": [
+        "1. Bacterial Adaptive Immunity",
+        "2. Protospacer Adjacent Motif (PAM)",
+        "3. DNA Repair Pathways"
+      ],
+      "expected_formulas": [],
+      "exact_code": [],
+      "figures": [
+        {
+          "page": 1,
+          "caption": "Crystal structure depiction of Cas9-sgRNA ribonucleoprotein complex bound to DNA target."
+        }
+      ],
+      "special_attributes": [
+        "molecular_biology",
+        "gene_editing"
+      ]
+    }
+  ]
+}
