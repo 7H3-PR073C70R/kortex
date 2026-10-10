@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -28,26 +27,44 @@ class FilePickerService {
   static final FilePickerService _filePicker = FilePickerService._internal();
 
   final log = Logger();
+  bool _isPicking = false;
 
-  /// Picks a document file (PDF, PPTX, image) and reads its raw bytes.
+  /// Picks a document file (PDF, PPTX, image, TXT, etc.) and reads its raw bytes.
   Future<PickedDocument?> pickStudyDocument({
-    List<String> extensions = const ['pdf', 'pptx', 'png', 'jpg', 'jpeg'],
+    List<String> extensions = const [
+      'pdf',
+      'pptx',
+      'png',
+      'jpg',
+      'jpeg',
+      'txt',
+      'docx',
+    ],
   }) async {
+    if (_isPicking) return null;
+    _isPicking = true;
     try {
       final file = await FilePicker.pickFile(
         allowedExtensions: extensions,
         type: FileType.custom,
       );
 
-      if (file != null && file.path != null) {
-        final ioFile = File(file.path!);
-        final bytes = await ioFile.readAsBytes();
-        return PickedDocument(
-          name: file.name,
-          extension: file.extension?.toLowerCase() ?? 'pdf',
-          bytes: bytes,
-          path: file.path,
-        );
+      if (file != null) {
+        final bytes = await file.readAsBytes();
+
+        if (bytes.isNotEmpty) {
+          final ext = file.extension?.toLowerCase() ??
+              (file.name.contains('.')
+                  ? file.name.split('.').last.toLowerCase()
+                  : 'pdf');
+
+          return PickedDocument(
+            name: file.name,
+            extension: ext,
+            bytes: bytes,
+            path: file.path,
+          );
+        }
       }
       return null;
     } on PlatformException catch (e) {
@@ -56,6 +73,8 @@ class FilePickerService {
     } on Object catch (e) {
       log.e('FilePicker error: $e');
       return null;
+    } finally {
+      _isPicking = false;
     }
   }
 

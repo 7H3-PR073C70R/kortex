@@ -199,6 +199,17 @@ class FormulaAwareTextFormatter {
 
     // 1. Raw LaTeX command without delimiters (e.g. "\frac{1}{2}" or "\sqrt{16}")
     if (_rawLatexCmdRegex.hasMatch(body)) {
+      // Check for common label prefixes like "is:", "where:", "given:", "Note:"
+      final labelMatch = RegExp(r'^(is|where|given|note|equation|formula)[:\s]\s*', caseSensitive: false).firstMatch(body);
+      if (labelMatch != null) {
+        final labelText = labelMatch.group(0)!;
+        final remainder = body.substring(labelText.length).trim();
+        if (remainder.isNotEmpty && !_commonEnglishWordsRegex.hasMatch(remainder)) {
+          final formattedRemainder = _wrapRawLatex(remainder);
+          return '$prefix$labelText\n$formattedRemainder';
+        }
+      }
+
       final hasEnglishWords = _commonEnglishWordsRegex.hasMatch(body);
       if (hasEnglishWords) {
         final formatted = _wrapInlineLatexExpressions(body);

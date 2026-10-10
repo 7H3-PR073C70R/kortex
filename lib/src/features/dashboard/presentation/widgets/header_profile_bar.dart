@@ -21,6 +21,7 @@ import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -223,6 +224,7 @@ class HeaderProfileBar extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   GestureDetector(
+                                    key: AppTourKeys.headerStreakKey,
                                     onTap: () {
                                       unawaited(HapticFeedback.lightImpact());
                                       _showRankProgressSheet(

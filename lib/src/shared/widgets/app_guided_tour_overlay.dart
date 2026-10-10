@@ -476,10 +476,20 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
     final fallbackRect = step.resolveTarget(context, size, insets);
 
     // Ensure target is scrolled into view if in a Scrollable
-    final measuredRect = await AppTourKeys.ensureVisibleAndGetRect(
+    var measuredRect = await AppTourKeys.ensureVisibleAndGetRect(
       step.targetKey,
     );
-    final newRect = measuredRect ?? fallbackRect;
+    if ((measuredRect == null || measuredRect.width <= 0) &&
+        step.fallbackKey != null) {
+      measuredRect = await AppTourKeys.ensureVisibleAndGetRect(
+        step.fallbackKey!,
+      );
+    }
+
+    final newRect =
+        (measuredRect != null && measuredRect.width > 0 && measuredRect.height > 0)
+            ? measuredRect.inflate(6)
+            : fallbackRect;
 
     if (!mounted) return;
 

@@ -1130,7 +1130,6 @@ class _StudyCirclesTab extends StatefulWidget {
     required this.state,
     required this.targetTrack,
     this.hasSelectedDeck = false,
-    super.key,
   });
 
   final CommunityState state;

@@ -415,6 +415,7 @@ class FileDropZoneWidget extends HookWidget {
 
     final isHovering = useState<bool>(false);
     final isDragging = useState<bool>(false);
+    final isPickingFile = useState<bool>(false);
 
     Future<void> processPickedFileBytes(
       BuildContext context, {
@@ -487,6 +488,8 @@ class FileDropZoneWidget extends HookWidget {
     }
 
     Future<void> handlePickFile() async {
+      if (isPickingFile.value) return;
+      isPickingFile.value = true;
       unawaited(HapticFeedback.lightImpact());
       try {
         final filePickerService = locator.isRegistered<FilePickerService>()
@@ -510,6 +513,8 @@ class FileDropZoneWidget extends HookWidget {
             type: SnackBarType.error,
           );
         }
+      } finally {
+        isPickingFile.value = false;
       }
     }
 

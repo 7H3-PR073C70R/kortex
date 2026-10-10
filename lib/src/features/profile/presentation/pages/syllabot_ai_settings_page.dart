@@ -80,7 +80,8 @@ class SyllabotAiSettingsPage extends HookWidget {
     }();
 
     final initialVoiceName = () {
-      final raw = storage?.getPreference(key: PrefKeys.kokoroVoiceName) ??
+      final raw =
+          storage?.getPreference(key: PrefKeys.kokoroVoiceName) ??
           storage?.getPreference(key: PrefKeys.syllabotVoiceName);
       return (raw != null && raw.isNotEmpty) ? raw : 'Bella';
     }();
@@ -102,8 +103,12 @@ class SyllabotAiSettingsPage extends HookWidget {
 
     final localModels = useState<List<LocalLlmModelInfo>>([]);
     final isLoadingLocalModels = useState<bool>(true);
-    final isGlobalDownloadActive = useState<bool>(LocalLlmEngineClient.isGlobalDownloadActive);
-    final activeDownloadingModelId = useState<String?>(LocalLlmEngineClient.activeDownloadingModelId);
+    final isGlobalDownloadActive = useState<bool>(
+      LocalLlmEngineClient.isGlobalDownloadActive,
+    );
+    final activeDownloadingModelId = useState<String?>(
+      LocalLlmEngineClient.activeDownloadingModelId,
+    );
 
     final localClient = useMemoized(() {
       return locator.isRegistered<LocalLlmEngineClient>()
@@ -126,7 +131,9 @@ class SyllabotAiSettingsPage extends HookWidget {
           if (isGlobalDownloadActive.value != state.isDownloading ||
               activeDownloadingModelId.value != state.modelId) {
             isGlobalDownloadActive.value = state.isDownloading;
-            activeDownloadingModelId.value = state.isDownloading ? state.modelId : null;
+            activeDownloadingModelId.value = state.isDownloading
+                ? state.modelId
+                : null;
           }
           if (!state.isDownloading) {
             unawaited(refreshLocalModels());
@@ -375,377 +382,511 @@ class SyllabotAiSettingsPage extends HookWidget {
                   const SizedBox(height: 20),
 
                   // Section 2: On-Device Local LLM Models & Engine Management
-                  _buildSectionContainer(
-                    title: 'ON-DEVICE NEURAL MODELS',
-                    subtitle:
-                        'Switch active local model, download neural weights, or delete models to free disk space (Only 1 active download allowed per device)',
-                    colors: colors,
-                    typography: typography,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Active Download Progress Lock Banner
-                        const _ActiveDownloadProgressBanner(),
+                  if (!kIsWeb) ...[
+                    _buildSectionContainer(
+                      title: 'ON-DEVICE NEURAL MODELS',
+                      subtitle:
+                          'Switch active local model, download neural weights, or delete models to free disk space (Only 1 active download allowed per device)',
+                      colors: colors,
+                      typography: typography,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Active Download Progress Lock Banner
+                          const _ActiveDownloadProgressBanner(),
 
-                        if (isLoadingLocalModels.value)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 20),
-                            child: Center(child: CircularProgressIndicator.adaptive()),
-                          )
-                        else
-                          Column(
-                            children: localModels.value.map((model) {
-                              final isDownloadingThisModel =
-                                  activeDownloadingModelId.value == model.id;
+                          if (isLoadingLocalModels.value)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                child: CircularProgressIndicator.adaptive(),
+                              ),
+                            )
+                          else
+                            Column(
+                              children: localModels.value.map((model) {
+                                final isDownloadingThisModel =
+                                    activeDownloadingModelId.value == model.id;
 
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Container(
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: model.isActive
-                                        ? colors.primary.withAlpha(isDark ? 35 : 18)
-                                        : colors.surfaceSecondary,
-                                    borderRadius: AppRadius.radiusCard,
-                                    border: Border.all(
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
                                       color: model.isActive
-                                          ? colors.primary.withAlpha(isDark ? 110 : 80)
-                                          : colors.surfaceBorder.withAlpha(70),
-                                      width: model.isActive ? 1.5 : 1,
+                                          ? colors.primary.withAlpha(
+                                              isDark ? 35 : 18,
+                                            )
+                                          : colors.surfaceSecondary,
+                                      borderRadius: AppRadius.radiusCard,
+                                      border: Border.all(
+                                        color: model.isActive
+                                            ? colors.primary.withAlpha(
+                                                isDark ? 110 : 80,
+                                              )
+                                            : colors.surfaceBorder.withAlpha(
+                                                70,
+                                              ),
+                                        width: model.isActive ? 1.5 : 1,
+                                      ),
                                     ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: colors.primary.withAlpha(25),
-                                              borderRadius: AppRadius.radiusBadge,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: colors.primary.withAlpha(
+                                                  25,
+                                                ),
+                                                borderRadius:
+                                                    AppRadius.radiusBadge,
+                                              ),
+                                              child: Icon(
+                                                Icons.memory_rounded,
+                                                size: 20,
+                                                color: colors.primary,
+                                              ),
                                             ),
-                                            child: Icon(
-                                              Icons.memory_rounded,
-                                              size: 20,
-                                              color: colors.primary,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    Flexible(
-                                                      child: Text(
-                                                        model.name,
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow.ellipsis,
-                                                        style: typography.body.bold.copyWith(
-                                                          color: colors.textPrimary,
-                                                          fontSize: 14,
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Flexible(
+                                                        child: Text(
+                                                          model.name,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style: typography
+                                                              .body
+                                                              .bold
+                                                              .copyWith(
+                                                                color: colors
+                                                                    .textPrimary,
+                                                                fontSize: 14,
+                                                              ),
                                                         ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      if (model.isActive)
+                                                        Container(
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                horizontal: 6,
+                                                                vertical: 2,
+                                                              ),
+                                                          decoration: BoxDecoration(
+                                                            color:
+                                                                colors.primary,
+                                                            borderRadius:
+                                                                AppRadius
+                                                                    .radiusMicro,
+                                                          ),
+                                                          child: Text(
+                                                            'ACTIVE ENGINE',
+                                                            style: typography
+                                                                .caption
+                                                                .bold
+                                                                .copyWith(
+                                                                  color: colors
+                                                                      .white,
+                                                                  fontSize: 9,
+                                                                  letterSpacing:
+                                                                      0.5,
+                                                                ),
+                                                          ),
+                                                        )
+                                                      else if (model
+                                                          .isDownloaded)
+                                                        Container(
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                horizontal: 6,
+                                                                vertical: 2,
+                                                              ),
+                                                          decoration: BoxDecoration(
+                                                            color: colors
+                                                                .success
+                                                                .withAlpha(30),
+                                                            borderRadius:
+                                                                AppRadius
+                                                                    .radiusMicro,
+                                                            border: Border.all(
+                                                              color: colors
+                                                                  .success
+                                                                  .withAlpha(
+                                                                    80,
+                                                                  ),
+                                                              width: 0.8,
+                                                            ),
+                                                          ),
+                                                          child: Text(
+                                                            'DOWNLOADED',
+                                                            style: typography
+                                                                .caption
+                                                                .bold
+                                                                .copyWith(
+                                                                  color: colors
+                                                                      .success,
+                                                                  fontSize: 9,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    model.description,
+                                                    style: typography
+                                                        .caption
+                                                        .regular
+                                                        .copyWith(
+                                                          color: colors
+                                                              .textSecondary,
+                                                          fontSize: 11.5,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Text(
+                                              model.sizeLabel,
+                                              style: typography.caption.bold
+                                                  .copyWith(
+                                                    color: colors.textSecondary,
+                                                    fontSize: 12,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.end,
+                                          children: [
+                                            if (model.isDownloaded) ...[
+                                              if (!model.isActive)
+                                                ShrinkableButton(
+                                                  onTap: () async {
+                                                    AppFeedback.selection();
+                                                    try {
+                                                      await localClient
+                                                          .setActiveModel(
+                                                            model.id,
+                                                          );
+                                                      await refreshLocalModels();
+                                                      if (context.mounted) {
+                                                        context.showSnackBar(
+                                                          message:
+                                                              '${model.name} is now the active on-device neural engine!',
+                                                          type: SnackBarType
+                                                              .success,
+                                                        );
+                                                      }
+                                                    } on Object catch (e) {
+                                                      if (context.mounted) {
+                                                        context.showSnackBar(
+                                                          message:
+                                                              'Failed to set active model: $e',
+                                                          type: SnackBarType
+                                                              .error,
+                                                        );
+                                                      }
+                                                    }
+                                                  },
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 7,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: colors.primary
+                                                          .withAlpha(25),
+                                                      borderRadius:
+                                                          AppRadius.radiusBadge,
+                                                      border: Border.all(
+                                                        color: colors.primary
+                                                            .withAlpha(80),
                                                       ),
                                                     ),
-                                                    const SizedBox(width: 8),
-                                                    if (model.isActive)
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(
-                                                          horizontal: 6,
-                                                          vertical: 2,
-                                                        ),
-                                                        decoration: BoxDecoration(
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons
+                                                              .check_circle_outline_rounded,
+                                                          size: 14,
                                                           color: colors.primary,
-                                                          borderRadius: AppRadius.radiusMicro,
                                                         ),
-                                                        child: Text(
-                                                          'ACTIVE ENGINE',
-                                                          style: typography.caption.bold.copyWith(
-                                                            color: colors.white,
-                                                            fontSize: 9,
-                                                            letterSpacing: 0.5,
-                                                          ),
+                                                        const SizedBox(
+                                                          width: 4,
                                                         ),
-                                                      )
-                                                    else if (model.isDownloaded)
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(
-                                                          horizontal: 6,
-                                                          vertical: 2,
+                                                        Text(
+                                                          'Switch to Active',
+                                                          style: typography
+                                                              .caption
+                                                              .bold
+                                                              .copyWith(
+                                                                color: colors
+                                                                    .primary,
+                                                                fontSize: 11,
+                                                              ),
                                                         ),
-                                                        decoration: BoxDecoration(
-                                                          color: colors.success.withAlpha(30),
-                                                          borderRadius: AppRadius.radiusMicro,
-                                                          border: Border.all(
-                                                            color: colors.success.withAlpha(80),
-                                                            width: 0.8,
-                                                          ),
-                                                        ),
-                                                        child: Text(
-                                                          'DOWNLOADED',
-                                                          style: typography.caption.bold.copyWith(
-                                                            color: colors.success,
-                                                            fontSize: 9,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  model.description,
-                                                  style: typography.caption.regular.copyWith(
-                                                    color: colors.textSecondary,
-                                                    fontSize: 11.5,
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
-                                              ],
-                                            ),
-                                          ),
-                                          Text(
-                                            model.sizeLabel,
-                                            style: typography.caption.bold.copyWith(
-                                              color: colors.textSecondary,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          if (model.isDownloaded) ...[
-                                            if (!model.isActive)
+                                              const SizedBox(width: 8),
                                               ShrinkableButton(
                                                 onTap: () async {
-                                                  AppFeedback.selection();
-                                                  try {
-                                                    await localClient.setActiveModel(model.id);
+                                                  AppFeedback.light();
+                                                  final confirmed = await showDialog<bool>(
+                                                    context: context,
+                                                    builder: (dialogCtx) => AlertDialog(
+                                                      backgroundColor:
+                                                          colors.surfacePrimary,
+                                                      title: Text(
+                                                        'Delete Model Weights?',
+                                                        style: typography
+                                                            .body
+                                                            .bold
+                                                            .copyWith(
+                                                              color: colors
+                                                                  .textPrimary,
+                                                            ),
+                                                      ),
+                                                      content: Text(
+                                                        'Are you sure you want to delete ${model.name} weights (${model.sizeLabel}) from local device storage?',
+                                                        style: typography
+                                                            .caption
+                                                            .regular
+                                                            .copyWith(
+                                                              color: colors
+                                                                  .textSecondary,
+                                                            ),
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.of(
+                                                                dialogCtx,
+                                                              ).pop(false),
+                                                          child: const Text(
+                                                            'Cancel',
+                                                          ),
+                                                        ),
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.of(
+                                                                dialogCtx,
+                                                              ).pop(true),
+                                                          child: Text(
+                                                            'Delete',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  colors.error,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+
+                                                  if (confirmed == true) {
+                                                    await localClient
+                                                        .deleteModel(model.id);
                                                     await refreshLocalModels();
                                                     if (context.mounted) {
                                                       context.showSnackBar(
-                                                        message: '${model.name} is now the active on-device neural engine!',
-                                                        type: SnackBarType.success,
-                                                      );
-                                                    }
-                                                  } on Object catch (e) {
-                                                    if (context.mounted) {
-                                                      context.showSnackBar(
-                                                        message: 'Failed to set active model: $e',
-                                                        type: SnackBarType.error,
+                                                        message:
+                                                            '${model.name} weights deleted successfully.',
                                                       );
                                                     }
                                                   }
                                                 },
                                                 child: Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 7,
-                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 7,
+                                                      ),
                                                   decoration: BoxDecoration(
-                                                    color: colors.primary.withAlpha(25),
-                                                    borderRadius: AppRadius.radiusBadge,
+                                                    color: colors.error
+                                                        .withAlpha(20),
+                                                    borderRadius:
+                                                        AppRadius.radiusBadge,
                                                     border: Border.all(
-                                                      color: colors.primary.withAlpha(80),
+                                                      color: colors.error
+                                                          .withAlpha(60),
                                                     ),
                                                   ),
                                                   child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
                                                     children: [
                                                       Icon(
-                                                        Icons.check_circle_outline_rounded,
+                                                        Icons
+                                                            .delete_outline_rounded,
                                                         size: 14,
-                                                        color: colors.primary,
+                                                        color: colors.error,
                                                       ),
                                                       const SizedBox(width: 4),
                                                       Text(
-                                                        'Switch to Active',
-                                                        style: typography.caption.bold.copyWith(
-                                                          color: colors.primary,
-                                                          fontSize: 11,
-                                                        ),
+                                                        'Delete',
+                                                        style: typography
+                                                            .caption
+                                                            .bold
+                                                            .copyWith(
+                                                              color:
+                                                                  colors.error,
+                                                              fontSize: 11,
+                                                            ),
                                                       ),
                                                     ],
                                                   ),
                                                 ),
                                               ),
-                                            const SizedBox(width: 8),
-                                            ShrinkableButton(
-                                              onTap: () async {
-                                                AppFeedback.light();
-                                                final confirmed = await showDialog<bool>(
-                                                  context: context,
-                                                  builder: (dialogCtx) => AlertDialog(
-                                                    backgroundColor: colors.surfacePrimary,
-                                                    title: Text(
-                                                      'Delete Model Weights?',
-                                                      style: typography.body.bold.copyWith(
-                                                        color: colors.textPrimary,
-                                                      ),
-                                                    ),
-                                                    content: Text(
-                                                      'Are you sure you want to delete ${model.name} weights (${model.sizeLabel}) from local device storage?',
-                                                      style: typography.caption.regular.copyWith(
-                                                        color: colors.textSecondary,
-                                                      ),
-                                                    ),
-                                                    actions: [
-                                                      TextButton(
-                                                        onPressed: () => Navigator.of(dialogCtx).pop(false),
-                                                        child: const Text('Cancel'),
-                                                      ),
-                                                      TextButton(
-                                                        onPressed: () => Navigator.of(dialogCtx).pop(true),
-                                                        child: Text(
-                                                          'Delete',
-                                                          style: TextStyle(color: colors.error),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-
-                                                if (confirmed == true) {
-                                                  await localClient.deleteModel(model.id);
-                                                  await refreshLocalModels();
-                                                  if (context.mounted) {
-                                                    context.showSnackBar(
-                                                      message: '${model.name} weights deleted successfully.',
-                                                    );
-                                                  }
-                                                }
-                                              },
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 10,
-                                                  vertical: 7,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: colors.error.withAlpha(20),
-                                                  borderRadius: AppRadius.radiusBadge,
-                                                  border: Border.all(
-                                                    color: colors.error.withAlpha(60),
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.delete_outline_rounded,
-                                                      size: 14,
-                                                      color: colors.error,
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      'Delete',
-                                                      style: typography.caption.bold.copyWith(
-                                                        color: colors.error,
-                                                        fontSize: 11,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ] else ...[
-                                            ShrinkableButton(
-                                              onTap: isDownloadingThisModel ||
-                                                      LocalLlmEngineClient.isGlobalDownloadActive
-                                                  ? () {
-                                                      AppFeedback.light();
-                                                      context.showSnackBar(
-                                                        message:
-                                                            'Another model download is already in progress on this device.',
-                                                      );
-                                                    }
-                                                  : () {
-                                                      AppFeedback.light();
-                                                      try {
-                                                        unawaited(
-                                                          localClient
-                                                              .downloadModel(preset: model.preset)
-                                                              .drain<void>()
-                                                              .catchError((Object err) {
-                                                            if (context.mounted) {
-                                                              context.showSnackBar(
-                                                                message: 'Download failed: $err',
-                                                                type: SnackBarType.error,
-                                                              );
-                                                            }
-                                                          }),
+                                            ] else ...[
+                                              ShrinkableButton(
+                                                onTap:
+                                                    isDownloadingThisModel ||
+                                                        LocalLlmEngineClient
+                                                            .isGlobalDownloadActive
+                                                    ? () {
+                                                        AppFeedback.light();
+                                                        context.showSnackBar(
+                                                          message:
+                                                              'Another model download is already in progress on this device.',
                                                         );
-                                                      } on LocalLlmAlreadyDownloadingException catch (e) {
-                                                        if (context.mounted) {
-                                                          context.showSnackBar(
-                                                            message: e.message,
-                                                          );
-                                                        }
                                                       }
-                                                    },
-                                              child: AnimatedContainer(
-                                                duration: AppMotion.snappy,
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 14,
-                                                  vertical: 7.5,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: LocalLlmEngineClient.isGlobalDownloadActive
-                                                      ? colors.surfaceSecondary
-                                                      : colors.primary,
-                                                  borderRadius: AppRadius.radiusBadge,
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.download_rounded,
-                                                      size: 14,
-                                                      color: LocalLlmEngineClient.isGlobalDownloadActive
-                                                          ? colors.textSecondary
-                                                          : colors.white,
-                                                    ),
-                                                    const SizedBox(width: 6),
-                                                    Text(
-                                                      isDownloadingThisModel
-                                                          ? 'Downloading...'
-                                                          : LocalLlmEngineClient.isGlobalDownloadActive
-                                                              ? 'Download Locked'
-                                                              : model.hasPartialDownload
-                                                                  ? 'Resume (${(model.partialBytes / 1024 / 1024).toInt()} MB)'
-                                                                  : 'Download Model',
-                                                      style: typography.caption.bold.copyWith(
-                                                        color: LocalLlmEngineClient.isGlobalDownloadActive
-                                                            ? colors.textSecondary
-                                                            : colors.white,
-                                                        fontSize: 11.5,
+                                                    : () {
+                                                        AppFeedback.light();
+                                                        try {
+                                                          unawaited(
+                                                            localClient
+                                                                .downloadModel(
+                                                                  preset: model
+                                                                      .preset,
+                                                                )
+                                                                .drain<void>()
+                                                                .catchError((
+                                                                  Object err,
+                                                                ) {
+                                                                  if (context
+                                                                      .mounted) {
+                                                                    context.showSnackBar(
+                                                                      message:
+                                                                          'Download failed: $err',
+                                                                      type: SnackBarType
+                                                                          .error,
+                                                                    );
+                                                                  }
+                                                                }),
+                                                          );
+                                                        } on LocalLlmAlreadyDownloadingException catch (
+                                                          e
+                                                        ) {
+                                                          if (context.mounted) {
+                                                            context
+                                                                .showSnackBar(
+                                                                  message:
+                                                                      e.message,
+                                                                );
+                                                          }
+                                                        }
+                                                      },
+                                                child: AnimatedContainer(
+                                                  duration: AppMotion.snappy,
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 14,
+                                                        vertical: 7.5,
                                                       ),
-                                                    ),
-                                                  ],
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        LocalLlmEngineClient
+                                                            .isGlobalDownloadActive
+                                                        ? colors
+                                                              .surfaceSecondary
+                                                        : colors.primary,
+                                                    borderRadius:
+                                                        AppRadius.radiusBadge,
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.download_rounded,
+                                                        size: 14,
+                                                        color:
+                                                            LocalLlmEngineClient
+                                                                .isGlobalDownloadActive
+                                                            ? colors
+                                                                  .textSecondary
+                                                            : colors.white,
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Text(
+                                                        isDownloadingThisModel
+                                                            ? 'Downloading...'
+                                                            : LocalLlmEngineClient
+                                                                  .isGlobalDownloadActive
+                                                            ? 'Download Locked'
+                                                            : model
+                                                                  .hasPartialDownload
+                                                            ? 'Resume (${(model.partialBytes / 1024 / 1024).toInt()} MB)'
+                                                            : 'Download Model',
+                                                        style: typography
+                                                            .caption
+                                                            .bold
+                                                            .copyWith(
+                                                              color:
+                                                                  LocalLlmEngineClient
+                                                                      .isGlobalDownloadActive
+                                                                  ? colors
+                                                                        .textSecondary
+                                                                  : colors
+                                                                        .white,
+                                                              fontSize: 11.5,
+                                                            ),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
-                                            ),
+                                            ],
                                           ],
-                                        ],
-                                      ),
-                                    ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                      ],
+                                );
+                              }).toList(),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
+                  ],
 
                   // Section 3: Voice Dialogue Persona & AI Character
                   _buildSectionContainer(
                     title: 'VOICE DIALOGUE & TUTOR PERSONA',
-                    subtitle: 'Select personality archetype and audio characteristics',
+                    subtitle:
+                        'Select personality archetype and audio characteristics',
                     colors: colors,
                     typography: typography,
                     child: Column(
@@ -762,135 +903,183 @@ class SyllabotAiSettingsPage extends HookWidget {
                         ),
                         const SizedBox(height: 8),
                         Column(
-                          children: [
-                            {
-                              'title': 'Socratic Tutor',
-                              'icon': '🏛️',
-                              'desc': 'Scaffolded questions & deep conceptual breakdown.',
-                              'sample': 'Hello! I am your Socratic AI Tutor. What concept would you like to explore today?'
-                            },
-                            {
-                              'title': 'Strict Exam Coach',
-                              'icon': '⏱️',
-                              'desc': 'High precision, timed drill pressure & direct feedback.',
-                              'sample': 'Welcome scholar. Let us jump right into your exam drill questions and master key formulas.'
-                            },
-                            {
-                              'title': 'Friendly Peer',
-                              'icon': '🤝',
-                              'desc': 'Encouraging tone with relatable study analogies.',
-                              'sample': 'Hey there! Ready to crush some study flashcards together? We got this!'
-                            },
-                          ].map((p) {
-                            final title = p['title']!;
-                            final isSelected = tutorPersona.value == title;
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: PlatformHoverBuilder(
-                                builder: (context, isHovered, child) {
-                                  return AnimatedScale(
-                                    scale: isHovered && !isSelected ? 1.01 : 1.0,
-                                    duration: AppMotion.snappy,
-                                    curve: Curves.easeOutCubic,
-                                    child: child,
-                                  );
+                          children:
+                              [
+                                {
+                                  'title': 'Socratic Tutor',
+                                  'icon': '🏛️',
+                                  'desc':
+                                      'Scaffolded questions & deep conceptual breakdown.',
+                                  'sample':
+                                      'Hello! I am your Socratic AI Tutor. What concept would you like to explore today?',
                                 },
-                                child: ShrinkableButton(
-                                  onTap: () {
-                                    AppFeedback.selection();
-                                    tutorPersona.value = title;
-                                    if (storage != null) {
-                                      unawaited(
-                                        storage.savePreference(
-                                          key: '__syllabot_tutor_persona',
-                                          data: title,
-                                        ),
+                                {
+                                  'title': 'Strict Exam Coach',
+                                  'icon': '⏱️',
+                                  'desc':
+                                      'High precision, timed drill pressure & direct feedback.',
+                                  'sample':
+                                      'Welcome scholar. Let us jump right into your exam drill questions and master key formulas.',
+                                },
+                                {
+                                  'title': 'Friendly Peer',
+                                  'icon': '🤝',
+                                  'desc':
+                                      'Encouraging tone with relatable study analogies.',
+                                  'sample':
+                                      'Hey there! Ready to crush some study flashcards together? We got this!',
+                                },
+                              ].map((p) {
+                                final title = p['title']!;
+                                final isSelected = tutorPersona.value == title;
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: PlatformHoverBuilder(
+                                    builder: (context, isHovered, child) {
+                                      return AnimatedScale(
+                                        scale: isHovered && !isSelected
+                                            ? 1.01
+                                            : 1.0,
+                                        duration: AppMotion.snappy,
+                                        curve: Curves.easeOutCubic,
+                                        child: child,
                                       );
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? colors.primary.withAlpha(isDark ? 40 : 20)
-                                          : colors.surfaceSecondary,
-                                      borderRadius: AppRadius.radiusCard,
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? colors.primary
-                                            : colors.surfaceBorder.withAlpha(70),
-                                        width: isSelected ? 1.5 : 1,
+                                    },
+                                    child: ShrinkableButton(
+                                      onTap: () {
+                                        AppFeedback.selection();
+                                        tutorPersona.value = title;
+                                        if (storage != null) {
+                                          unawaited(
+                                            storage.savePreference(
+                                              key: '__syllabot_tutor_persona',
+                                              data: title,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? colors.primary.withAlpha(
+                                                  isDark ? 40 : 20,
+                                                )
+                                              : colors.surfaceSecondary,
+                                          borderRadius: AppRadius.radiusCard,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? colors.primary
+                                                : colors.surfaceBorder
+                                                      .withAlpha(70),
+                                            width: isSelected ? 1.5 : 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              p['icon']!,
+                                              style: const TextStyle(
+                                                fontSize: 20,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    title,
+                                                    style: typography.body.bold
+                                                        .copyWith(
+                                                          color: isSelected
+                                                              ? colors.primary
+                                                              : colors
+                                                                    .textPrimary,
+                                                          fontSize: 13.5,
+                                                        ),
+                                                  ),
+                                                  Text(
+                                                    p['desc']!,
+                                                    style: typography
+                                                        .caption
+                                                        .regular
+                                                        .copyWith(
+                                                          color: colors
+                                                              .textSecondary,
+                                                          fontSize: 11,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            ShrinkableButton(
+                                              onTap: () async {
+                                                AppFeedback.light();
+                                                if (isPlayingPreview.value) {
+                                                  await ttsHandler.stop();
+                                                } else {
+                                                  await ttsHandler
+                                                      .setSpeechRate(
+                                                        speechRate.value,
+                                                      );
+                                                  await ttsHandler
+                                                      .setVoiceGender(
+                                                        voiceGender.value,
+                                                      );
+                                                  await ttsHandler.speak(
+                                                    p['sample']!,
+                                                  );
+                                                }
+                                              },
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 6,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: colors.primary
+                                                      .withAlpha(30),
+                                                  borderRadius:
+                                                      AppRadius.radiusBadge,
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      isPlayingPreview.value
+                                                          ? Icons.stop_rounded
+                                                          : Icons
+                                                                .volume_up_rounded,
+                                                      size: 14,
+                                                      color: colors.primary,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      'Sample',
+                                                      style: typography
+                                                          .caption
+                                                          .bold
+                                                          .copyWith(
+                                                            color:
+                                                                colors.primary,
+                                                            fontSize: 10.5,
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        Text(p['icon']!, style: const TextStyle(fontSize: 20)),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                title,
-                                                style: typography.body.bold.copyWith(
-                                                  color: isSelected ? colors.primary : colors.textPrimary,
-                                                  fontSize: 13.5,
-                                                ),
-                                              ),
-                                              Text(
-                                                p['desc']!,
-                                                style: typography.caption.regular.copyWith(
-                                                  color: colors.textSecondary,
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        ShrinkableButton(
-                                          onTap: () async {
-                                            AppFeedback.light();
-                                            if (isPlayingPreview.value) {
-                                              await ttsHandler.stop();
-                                            } else {
-                                              await ttsHandler.setSpeechRate(speechRate.value);
-                                              await ttsHandler.setVoiceGender(voiceGender.value);
-                                              await ttsHandler.speak(p['sample']!);
-                                            }
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: colors.primary.withAlpha(30),
-                                              borderRadius: AppRadius.radiusBadge,
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  isPlayingPreview.value ? Icons.stop_rounded : Icons.volume_up_rounded,
-                                                  size: 14,
-                                                  color: colors.primary,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  'Sample',
-                                                  style: typography.caption.bold.copyWith(
-                                                    color: colors.primary,
-                                                    fontSize: 10.5,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                   ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
+                                );
+                              }).toList(),
                         ),
                         const Divider(height: 24),
                         Row(
@@ -1084,7 +1273,9 @@ class SyllabotAiSettingsPage extends HookWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: typography.caption.bold.copyWith(
-                                      color: colors.textSecondary.withAlpha(140),
+                                      color: colors.textSecondary.withAlpha(
+                                        140,
+                                      ),
                                       fontSize: 10,
                                       letterSpacing: 0.8,
                                     ),
@@ -1123,115 +1314,126 @@ class SyllabotAiSettingsPage extends HookWidget {
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: [
-                                {
-                                  'id': 'Default',
-                                  'label': 'Default',
-                                  'tag': 'Studio Female',
-                                  'gender': VoiceGender.female,
-                                },
-                                {
-                                  'id': 'Bella',
-                                  'label': 'Bella',
-                                  'tag': 'Warm Female',
-                                  'gender': VoiceGender.female,
-                                },
-                                {
-                                  'id': 'Nicole',
-                                  'label': 'Nicole',
-                                  'tag': 'Crisp Tutor',
-                                  'gender': VoiceGender.female,
-                                },
-                                {
-                                  'id': 'Sarah',
-                                  'label': 'Sarah',
-                                  'tag': 'Articulate UK',
-                                  'gender': VoiceGender.female,
-                                },
-                                {
-                                  'id': 'Adam',
-                                  'label': 'Adam',
-                                  'tag': 'Mentor Male',
-                                  'gender': VoiceGender.male,
-                                },
-                                {
-                                  'id': 'Michael',
-                                  'label': 'Michael',
-                                  'tag': 'Academic Male',
-                                  'gender': VoiceGender.male,
-                                },
-                              ].map((voice) {
-                                final voiceId = voice['id']! as String;
-                                final label = voice['label']! as String;
-                                final tag = voice['tag']! as String;
-                                final vGender = voice['gender']! as VoiceGender;
-                                final isSelected =
-                                    selectedVoiceName.value == voiceId ||
-                                    (selectedVoiceName.value == null &&
-                                        voiceId == 'Bella');
+                              children:
+                                  [
+                                    {
+                                      'id': 'Default',
+                                      'label': 'Default',
+                                      'tag': 'Studio Female',
+                                      'gender': VoiceGender.female,
+                                    },
+                                    {
+                                      'id': 'Bella',
+                                      'label': 'Bella',
+                                      'tag': 'Warm Female',
+                                      'gender': VoiceGender.female,
+                                    },
+                                    {
+                                      'id': 'Nicole',
+                                      'label': 'Nicole',
+                                      'tag': 'Crisp Tutor',
+                                      'gender': VoiceGender.female,
+                                    },
+                                    {
+                                      'id': 'Sarah',
+                                      'label': 'Sarah',
+                                      'tag': 'Articulate UK',
+                                      'gender': VoiceGender.female,
+                                    },
+                                    {
+                                      'id': 'Adam',
+                                      'label': 'Adam',
+                                      'tag': 'Mentor Male',
+                                      'gender': VoiceGender.male,
+                                    },
+                                    {
+                                      'id': 'Michael',
+                                      'label': 'Michael',
+                                      'tag': 'Academic Male',
+                                      'gender': VoiceGender.male,
+                                    },
+                                  ].map((voice) {
+                                    final voiceId = voice['id']! as String;
+                                    final label = voice['label']! as String;
+                                    final tag = voice['tag']! as String;
+                                    final vGender =
+                                        voice['gender']! as VoiceGender;
+                                    final isSelected =
+                                        selectedVoiceName.value == voiceId ||
+                                        (selectedVoiceName.value == null &&
+                                            voiceId == 'Bella');
 
-                                return ShrinkableButton(
-                                  onTap: () async {
-                                    AppFeedback.selection();
-                                    selectedVoiceName.value = voiceId;
-                                    voiceGender.value = vGender;
-                                    await ttsHandler.setKokoroVoice(voiceId);
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: AppMotion.snappy,
-                                    width: 105,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? colors.primary.withAlpha(isDark ? 50 : 25)
-                                          : colors.surfaceSecondary,
-                                      borderRadius: AppRadius.radiusCard,
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? colors.primary
-                                            : colors.surfaceBorder.withAlpha(70),
-                                        width: isSelected ? 1.5 : 1,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              label,
-                                              style: typography.body.bold.copyWith(
-                                                color: isSelected
-                                                    ? colors.primary
-                                                    : colors.textPrimary,
-                                                fontSize: 12.5,
-                                              ),
-                                            ),
-                                            const Spacer(),
-                                            if (isSelected)
-                                              Icon(
-                                                Icons.check_circle_rounded,
-                                                size: 14,
-                                                color: colors.primary,
-                                              ),
-                                          ],
+                                    return ShrinkableButton(
+                                      onTap: () async {
+                                        AppFeedback.selection();
+                                        selectedVoiceName.value = voiceId;
+                                        voiceGender.value = vGender;
+                                        await ttsHandler.setKokoroVoice(
+                                          voiceId,
+                                        );
+                                      },
+                                      child: AnimatedContainer(
+                                        duration: AppMotion.snappy,
+                                        width: 105,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 10,
                                         ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          tag,
-                                          style: typography.caption.regular.copyWith(
-                                            color: colors.textSecondary,
-                                            fontSize: 10,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? colors.primary.withAlpha(
+                                                  isDark ? 50 : 25,
+                                                )
+                                              : colors.surfaceSecondary,
+                                          borderRadius: AppRadius.radiusCard,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? colors.primary
+                                                : colors.surfaceBorder
+                                                      .withAlpha(70),
+                                            width: isSelected ? 1.5 : 1,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  label,
+                                                  style: typography.body.bold
+                                                      .copyWith(
+                                                        color: isSelected
+                                                            ? colors.primary
+                                                            : colors
+                                                                  .textPrimary,
+                                                        fontSize: 12.5,
+                                                      ),
+                                                ),
+                                                const Spacer(),
+                                                if (isSelected)
+                                                  Icon(
+                                                    Icons.check_circle_rounded,
+                                                    size: 14,
+                                                    color: colors.primary,
+                                                  ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              tag,
+                                              style: typography.caption.regular
+                                                  .copyWith(
+                                                    color: colors.textSecondary,
+                                                    fontSize: 10,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
                             ),
                             const SizedBox(height: 12),
                             // Tiered Pipeline Status Card
@@ -1270,13 +1472,16 @@ class SyllabotAiSettingsPage extends HookWidget {
                             const SizedBox(height: 8),
                             // Offline Neural Model Resumable Download Status Card
                             ValueListenableBuilder<bool>(
-                              valueListenable: ttsHandler.isKokoroModelReadyNotifier,
+                              valueListenable:
+                                  ttsHandler.isKokoroModelReadyNotifier,
                               builder: (context, isReady, _) {
                                 return ValueListenableBuilder<double>(
-                                  valueListenable: ttsHandler.kokoroDownloadProgressNotifier,
+                                  valueListenable:
+                                      ttsHandler.kokoroDownloadProgressNotifier,
                                   builder: (context, progress, _) {
                                     return ValueListenableBuilder<String>(
-                                      valueListenable: ttsHandler.kokoroDownloadStatusNotifier,
+                                      valueListenable: ttsHandler
+                                          .kokoroDownloadStatusNotifier,
                                       builder: (context, statusText, _) {
                                         return Container(
                                           padding: const EdgeInsets.all(12),
@@ -1288,18 +1493,22 @@ class SyllabotAiSettingsPage extends HookWidget {
                                             border: Border.all(
                                               color: isReady
                                                   ? colors.success.withAlpha(80)
-                                                  : colors.surfaceBorder.withAlpha(70),
+                                                  : colors.surfaceBorder
+                                                        .withAlpha(70),
                                             ),
                                           ),
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Row(
                                                 children: [
                                                   Icon(
                                                     isReady
-                                                        ? Icons.check_circle_rounded
-                                                        : Icons.downloading_rounded,
+                                                        ? Icons
+                                                              .check_circle_rounded
+                                                        : Icons
+                                                              .downloading_rounded,
                                                     size: 16,
                                                     color: isReady
                                                         ? colors.success
@@ -1311,12 +1520,16 @@ class SyllabotAiSettingsPage extends HookWidget {
                                                       isReady
                                                           ? 'Offline Neural Voice Pack Ready'
                                                           : 'Offline Voice Pack Status',
-                                                      style: typography.body.bold.copyWith(
-                                                        fontSize: 12,
-                                                        color: isReady
-                                                            ? colors.success
-                                                            : colors.textPrimary,
-                                                      ),
+                                                      style: typography
+                                                          .body
+                                                          .bold
+                                                          .copyWith(
+                                                            fontSize: 12,
+                                                            color: isReady
+                                                                ? colors.success
+                                                                : colors
+                                                                      .textPrimary,
+                                                          ),
                                                     ),
                                                   ),
                                                   if (!isReady)
@@ -1324,24 +1537,32 @@ class SyllabotAiSettingsPage extends HookWidget {
                                                       onTap: () {
                                                         AppFeedback.light();
                                                         unawaited(
-                                                          ttsHandler.startKokoroModelDownload(),
+                                                          ttsHandler
+                                                              .startKokoroModelDownload(),
                                                         );
                                                       },
                                                       child: Container(
-                                                        padding: const EdgeInsets.symmetric(
-                                                          horizontal: 10,
-                                                          vertical: 4,
-                                                        ),
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 10,
+                                                              vertical: 4,
+                                                            ),
                                                         decoration: BoxDecoration(
                                                           color: colors.primary,
-                                                          borderRadius: AppRadius.radiusBadge,
+                                                          borderRadius:
+                                                              AppRadius
+                                                                  .radiusBadge,
                                                         ),
                                                         child: Text(
                                                           'Download / Resume',
-                                                          style: typography.caption.bold.copyWith(
-                                                            color: colors.surface,
-                                                            fontSize: 10,
-                                                          ),
+                                                          style: typography
+                                                              .caption
+                                                              .bold
+                                                              .copyWith(
+                                                                color: colors
+                                                                    .surface,
+                                                                fontSize: 10,
+                                                              ),
                                                         ),
                                                       ),
                                                     ),
@@ -1350,22 +1571,34 @@ class SyllabotAiSettingsPage extends HookWidget {
                                               const SizedBox(height: 6),
                                               Text(
                                                 statusText,
-                                                style: typography.caption.regular.copyWith(
-                                                  color: colors.textSecondary,
-                                                  fontSize: 10.5,
-                                                ),
+                                                style: typography
+                                                    .caption
+                                                    .regular
+                                                    .copyWith(
+                                                      color:
+                                                          colors.textSecondary,
+                                                      fontSize: 10.5,
+                                                    ),
                                               ),
-                                              if (!isReady && progress > 0 && progress < 1.0) ...[
+                                              if (!isReady &&
+                                                  progress > 0 &&
+                                                  progress < 1.0) ...[
                                                 const SizedBox(height: 8),
                                                 ClipRRect(
-                                                  borderRadius: AppRadius.radiusBadge,
+                                                  borderRadius:
+                                                      AppRadius.radiusBadge,
                                                   child: LinearProgressIndicator(
                                                     value: progress,
                                                     minHeight: 4,
-                                                    backgroundColor: colors.surfaceBorder.withAlpha(50),
-                                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                                      colors.primary,
-                                                    ),
+                                                    backgroundColor: colors
+                                                        .surfaceBorder
+                                                        .withAlpha(50),
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                          Color
+                                                        >(
+                                                          colors.primary,
+                                                        ),
                                                   ),
                                                 ),
                                               ],
@@ -1390,8 +1623,12 @@ class SyllabotAiSettingsPage extends HookWidget {
                             } else {
                               await ttsHandler.setSpeechRate(speechRate.value);
                               await ttsHandler.setVoicePitch(speechPitch.value);
-                              await ttsHandler.setVoiceGender(voiceGender.value);
-                              await ttsHandler.setVoiceName(selectedVoiceName.value);
+                              await ttsHandler.setVoiceGender(
+                                voiceGender.value,
+                              );
+                              await ttsHandler.setVoiceName(
+                                selectedVoiceName.value,
+                              );
                               await ttsHandler.speak(
                                 'Hello scholar! This is your custom neural voice mode preview for Syllabot AI.',
                               );
@@ -1399,14 +1636,19 @@ class SyllabotAiSettingsPage extends HookWidget {
                           },
                           child: AnimatedContainer(
                             duration: AppMotion.snappy,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
                               color: isPlayingPreview.value
                                   ? colors.error.withAlpha(30)
                                   : colors.primary.withAlpha(isDark ? 40 : 20),
                               borderRadius: AppRadius.radiusCard,
                               border: Border.all(
-                                color: isPlayingPreview.value ? colors.error : colors.primary.withAlpha(90),
+                                color: isPlayingPreview.value
+                                    ? colors.error
+                                    : colors.primary.withAlpha(90),
                                 width: 1.5,
                               ),
                             ),
@@ -1416,11 +1658,15 @@ class SyllabotAiSettingsPage extends HookWidget {
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: isPlayingPreview.value ? colors.error : colors.primary,
+                                    color: isPlayingPreview.value
+                                        ? colors.error
+                                        : colors.primary,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
-                                    isPlayingPreview.value ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                                    isPlayingPreview.value
+                                        ? Icons.stop_rounded
+                                        : Icons.play_arrow_rounded,
                                     color: colors.white,
                                     size: 22,
                                   ),
@@ -1428,22 +1674,28 @@ class SyllabotAiSettingsPage extends HookWidget {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        isPlayingPreview.value ? 'Speaking Sample...' : 'Test Selected Voice Mode',
+                                        isPlayingPreview.value
+                                            ? 'Speaking Sample...'
+                                            : 'Test Selected Voice Mode',
                                         style: typography.body.bold.copyWith(
-                                          color: isPlayingPreview.value ? colors.error : colors.primary,
+                                          color: isPlayingPreview.value
+                                              ? colors.error
+                                              : colors.primary,
                                           fontSize: 13.5,
                                         ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         'Click to preview human voice audio synthesis',
-                                        style: typography.caption.regular.copyWith(
-                                          color: colors.textSecondary,
-                                          fontSize: 11,
-                                        ),
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                              fontSize: 11,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -1661,7 +1913,8 @@ class _ActiveDownloadProgressBanner extends HookWidget {
       LocalLlmEngineClient.isGlobalDownloadActive
           ? ModelDownloadProgressState(
               modelId: LocalLlmEngineClient.activeDownloadingModelId ?? '',
-              modelName: LocalLlmEngineClient.activeDownloadingModelName ?? 'Model',
+              modelName:
+                  LocalLlmEngineClient.activeDownloadingModelName ?? 'Model',
               progress: LocalLlmEngineClient.activeDownloadProgress,
               isDownloading: true,
             )

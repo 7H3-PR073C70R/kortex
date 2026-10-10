@@ -780,6 +780,7 @@ class DailyRecallStatusBanner extends StatelessWidget {
                       child: Row(
                         children: [
                           Container(
+                            key: AppTourKeys.reviewQueueCountKey,
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
@@ -1224,7 +1225,7 @@ class _QuickActionCell extends StatelessWidget {
 }
 
 class _EmptyStudyDecksCard extends StatelessWidget {
-  const _EmptyStudyDecksCard({required this.l10n});
+  const _EmptyStudyDecksCard({required this.l10n, super.key});
   final AppLocalizations l10n;
 
   @override
@@ -1391,6 +1392,7 @@ class _MediumDashboardLayout extends StatelessWidget {
       children:
           <Widget>[
                 HeaderProfileBar(
+                  key: AppTourKeys.headerProfileKey,
                   analytics: feed.analyticsSummary,
                   isProfileUncalibrated: feed.isProfileUncalibratedFor(
                     targetTrack,
@@ -1412,7 +1414,9 @@ class _MediumDashboardLayout extends StatelessWidget {
                   child: Column(
                     children: [
                       if (feed.curatedCourses.isNotEmpty) ...[
-                        const ExamCountdownBanner(),
+                        ExamCountdownBanner(
+                          key: AppTourKeys.countdownKey,
+                        ),
                         const SizedBox(height: 20),
                       ],
                       if (heavyDebtDeck != null) ...[
@@ -1424,6 +1428,7 @@ class _MediumDashboardLayout extends StatelessWidget {
                 ),
                 if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
                   _NextBestActionCard(
+                    key: AppTourKeys.reviewQueueKey,
                     topDeck: feed.dueStudyDecks.firstWhere(
                       (d) => d.totalCards > 0,
                     ),
@@ -1438,15 +1443,21 @@ class _MediumDashboardLayout extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const QuickActionSpeedDial(),
+                          QuickActionSpeedDial(
+                            key: AppTourKeys.quickActionsKey,
+                          ),
                           const SizedBox(height: 20),
                           if (feed.dueStudyDecks.isNotEmpty)
                             FsrsReviewDeckCard(
+                              key: AppTourKeys.reviewQueueKey,
                               deck: feed.dueStudyDecks.first,
                               isHero: true,
                             )
                           else
-                            _EmptyStudyDecksCard(l10n: context.l10n),
+                            _EmptyStudyDecksCard(
+                              key: AppTourKeys.reviewQueueKey,
+                              l10n: context.l10n,
+                            ),
                           const SizedBox(height: 20),
                           if (feed.dueStudyDecks.length > 1) ...[
                             if (feed.dueStudyDecks.length - 1 == 1)
@@ -1553,6 +1564,7 @@ class _ExpandedDashboardLayout extends StatelessWidget {
               <Widget>[
                     // 1. Identity & Retention Anchor Header
                     HeaderProfileBar(
+                      key: AppTourKeys.headerProfileKey,
                       analytics: feed.analyticsSummary,
                       isProfileUncalibrated: feed.isProfileUncalibratedFor(
                         targetTrack,
@@ -1576,7 +1588,9 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                       child: Column(
                         children: [
                           if (feed.curatedCourses.isNotEmpty) ...[
-                            const ExamCountdownBanner(),
+                            ExamCountdownBanner(
+                              key: AppTourKeys.countdownKey,
+                            ),
                             const SizedBox(height: 20),
                           ],
                           if (heavyDebtDeck != null) ...[
@@ -1597,7 +1611,9 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children:
                                 [
-                                      const QuickActionSpeedDial(),
+                                      QuickActionSpeedDial(
+                                        key: AppTourKeys.quickActionsKey,
+                                      ),
                                       const SizedBox(height: 20),
 
                                       // 1-Tap Sprint Tile
@@ -1605,6 +1621,7 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                                         (d) => d.totalCards > 0,
                                       )) ...[
                                         _NextBestActionCard(
+                                          key: AppTourKeys.reviewQueueKey,
                                           topDeck: feed.dueStudyDecks
                                               .firstWhere(
                                                 (d) => d.totalCards > 0,
@@ -1616,6 +1633,7 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                                       // Hero FSRS Active Recall Card
                                       if (feed.dueStudyDecks.isNotEmpty) ...[
                                         FsrsReviewDeckCard(
+                                          key: AppTourKeys.reviewQueueKey,
                                           deck: feed.dueStudyDecks.first,
                                           isHero: true,
                                         ),
@@ -1629,6 +1647,7 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                                         ],
                                       ] else ...[
                                         _EmptyStudyDecksCard(
+                                          key: AppTourKeys.reviewQueueKey,
                                           l10n: context.l10n,
                                         ),
                                       ],
@@ -1768,6 +1787,7 @@ class _DesktopSpacedRepetitionGrid extends StatelessWidget {
 class _NextBestActionCard extends StatelessWidget {
   const _NextBestActionCard({
     required this.topDeck,
+    super.key,
   });
 
   final StudyDeckEntity topDeck;

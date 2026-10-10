@@ -44,6 +44,9 @@ class LocalPdfParserService {
     String filename = 'document.pdf',
   }) async {
     if (bytes.isEmpty) return '';
+    if (kIsWeb) {
+      return extractTextFromPdfBytes(bytes, filename: filename);
+    }
     return compute(
       _isolateExtractPdfText,
       _PdfExtractParams(bytes: bytes, filename: filename),

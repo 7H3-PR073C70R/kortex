@@ -163,6 +163,7 @@ class ExamCountdownBanner extends StatelessWidget {
                       child: Row(
                         children: [
                           Container(
+                            key: AppTourKeys.countdownBadgeKey,
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(

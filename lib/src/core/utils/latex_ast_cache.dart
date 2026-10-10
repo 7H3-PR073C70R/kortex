@@ -100,12 +100,15 @@ class LatexAstCache {
     clean = clean.replaceAll(r'\implies', r'\Longrightarrow');
     clean = clean.replaceAll(r'\iff', r'\Longleftrightarrow');
     clean = clean.replaceAll(r'\ointctrclockwise', r'\oint');
-    clean = clean.replaceAll(r'\to', r'\rightarrow');
+    clean = clean.replaceAll(RegExp(r'\\to(?![a-zA-Z])'), r'\rightarrow');
     clean = clean.replaceAll('-->', r'\rightarrow');
     clean = clean.replaceAll('<=>', r'\Leftrightarrow');
     clean = clean.replaceAll('<->', r'\leftrightarrow');
     clean = clean.replaceAll(r'\degree', r'^\circ');
     clean = clean.replaceAll('°', r'^\circ');
+    clean = clean.replaceAll(RegExp(r'\\le(?![a-zA-Z])'), r'\leq');
+    clean = clean.replaceAll(RegExp(r'\\ge(?![a-zA-Z])'), r'\geq');
+    clean = clean.replaceAll(r'$', '');
 
     // Number sets: \R, \N, \Z, \Q, \C without mathbb
     clean = clean.replaceAllMapped(
@@ -163,10 +166,23 @@ class LatexAstCache {
     var s = getOrCleanFormula(formula);
     if (s.isEmpty) return '';
 
+    // Remove \left and \right delimiters cleanly
+    s = s.replaceAll(RegExp(r'\\(?:left|right)\s*'), '');
+
     // Convert fractions: \frac{a}{b} -> (a) / (b)
     s = s.replaceAllMapped(
       RegExp(r'\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}'),
       (m) => '(${m.group(1)}) / (${m.group(2)})',
+    );
+
+    // Convert dot accents: \dot{q} -> q̇, \ddot{q} -> q̈
+    s = s.replaceAllMapped(
+      RegExp(r'\\dot\s*\{?([a-zA-Z0-9]+)\}?'),
+      (m) => '${m.group(1)}̇',
+    );
+    s = s.replaceAllMapped(
+      RegExp(r'\\ddot\s*\{?([a-zA-Z0-9]+)\}?'),
+      (m) => '${m.group(1)}̈',
     );
 
     // Unpack text tags: \text{...}, \mathrm{...}, \mathbf{...}, \mathbb{...}
@@ -175,46 +191,46 @@ class LatexAstCache {
       (m) => m.group(1) ?? '',
     );
 
-    // Convert standard math symbols and arrows
-    s = s.replaceAll(r'\times', '×');
-    s = s.replaceAll(r'\cdot', '·');
-    s = s.replaceAll(r'\div', '÷');
-    s = s.replaceAll(r'\pm', '±');
-    s = s.replaceAll(r'\mp', '∓');
-    s = s.replaceAll(r'\approx', '≈');
-    s = s.replaceAll(r'\neq', '≠');
-    s = s.replaceAll(r'\le', '≤');
-    s = s.replaceAll(r'\ge', '≥');
-    s = s.replaceAll(r'\infty', '∞');
-    s = s.replaceAll(r'\sqrt', '√');
-    s = s.replaceAll(r'\Longrightarrow', '⟹');
-    s = s.replaceAll(r'\implies', '⟹');
-    s = s.replaceAll(r'\rightarrow', '→');
-    s = s.replaceAll(r'\leftarrow', '←');
-    s = s.replaceAll(r'\leftrightarrow', '↔');
-    s = s.replaceAll(r'\rightleftharpoons', '⇌');
-    s = s.replaceAll(r'\angle', '∠');
-    s = s.replaceAll(r'\quad', '  ');
-    s = s.replaceAll(r'\qquad', '    ');
+    // Convert standard math symbols and arrows using word boundary checks (?![a-zA-Z])
+    s = s.replaceAll(RegExp(r'\\times(?![a-zA-Z])'), '×');
+    s = s.replaceAll(RegExp(r'\\cdot(?![a-zA-Z])'), '·');
+    s = s.replaceAll(RegExp(r'\\div(?![a-zA-Z])'), '÷');
+    s = s.replaceAll(RegExp(r'\\pm(?![a-zA-Z])'), '±');
+    s = s.replaceAll(RegExp(r'\\mp(?![a-zA-Z])'), '∓');
+    s = s.replaceAll(RegExp(r'\\approx(?![a-zA-Z])'), '≈');
+    s = s.replaceAll(RegExp(r'\\neq(?![a-zA-Z])'), '≠');
+    s = s.replaceAll(RegExp(r'\\le(?![a-zA-Z])|\\leq(?![a-zA-Z])'), '≤');
+    s = s.replaceAll(RegExp(r'\\ge(?![a-zA-Z])|\\geq(?![a-zA-Z])'), '≥');
+    s = s.replaceAll(RegExp(r'\\infty(?![a-zA-Z])'), '∞');
+    s = s.replaceAll(RegExp(r'\\sqrt(?![a-zA-Z])'), '√');
+    s = s.replaceAll(RegExp(r'\\Longrightarrow(?![a-zA-Z])'), '⟹');
+    s = s.replaceAll(RegExp(r'\\implies(?![a-zA-Z])'), '⟹');
+    s = s.replaceAll(RegExp(r'\\to(?![a-zA-Z])|\\rightarrow(?![a-zA-Z])'), '→');
+    s = s.replaceAll(RegExp(r'\\leftarrow(?![a-zA-Z])'), '←');
+    s = s.replaceAll(RegExp(r'\\leftrightarrow(?![a-zA-Z])'), '↔');
+    s = s.replaceAll(RegExp(r'\\rightleftharpoons(?![a-zA-Z])'), '⇌');
+    s = s.replaceAll(RegExp(r'\\angle(?![a-zA-Z])'), '∠');
+    s = s.replaceAll(RegExp(r'\\quad(?![a-zA-Z])'), '  ');
+    s = s.replaceAll(RegExp(r'\\qquad(?![a-zA-Z])'), '    ');
     s = s.replaceAll(r'^\circ', '°');
 
     // Greek letters
-    s = s.replaceAll(r'\alpha', 'α');
-    s = s.replaceAll(r'\beta', 'β');
-    s = s.replaceAll(r'\gamma', 'γ');
-    s = s.replaceAll(r'\theta', 'θ');
-    s = s.replaceAll(r'\pi', 'π');
-    s = s.replaceAll(r'\lambda', 'λ');
-    s = s.replaceAll(r'\mu', 'μ');
-    s = s.replaceAll(r'\sigma', 'σ');
-    s = s.replaceAll(r'\omega', 'ω');
-    s = s.replaceAll(r'\Delta', 'Δ');
-    s = s.replaceAll(r'\Omega', 'Ω');
-    s = s.replaceAll(r'\Sigma', 'Σ');
-    s = s.replaceAll(r'\partial', '∂');
-    s = s.replaceAll(r'\sum', '∑');
-    s = s.replaceAll(r'\int', '∫');
-    s = s.replaceAll(r'\oint', '∮');
+    s = s.replaceAll(RegExp(r'\\alpha(?![a-zA-Z])'), 'α');
+    s = s.replaceAll(RegExp(r'\\beta(?![a-zA-Z])'), 'β');
+    s = s.replaceAll(RegExp(r'\\gamma(?![a-zA-Z])'), 'γ');
+    s = s.replaceAll(RegExp(r'\\theta(?![a-zA-Z])'), 'θ');
+    s = s.replaceAll(RegExp(r'\\pi(?![a-zA-Z])'), 'π');
+    s = s.replaceAll(RegExp(r'\\lambda(?![a-zA-Z])'), 'λ');
+    s = s.replaceAll(RegExp(r'\\mu(?![a-zA-Z])'), 'μ');
+    s = s.replaceAll(RegExp(r'\\sigma(?![a-zA-Z])'), 'σ');
+    s = s.replaceAll(RegExp(r'\\omega(?![a-zA-Z])'), 'ω');
+    s = s.replaceAll(RegExp(r'\\Delta(?![a-zA-Z])'), 'Δ');
+    s = s.replaceAll(RegExp(r'\\Omega(?![a-zA-Z])'), 'Ω');
+    s = s.replaceAll(RegExp(r'\\Sigma(?![a-zA-Z])'), 'Σ');
+    s = s.replaceAll(RegExp(r'\\partial(?![a-zA-Z])'), '∂');
+    s = s.replaceAll(RegExp(r'\\sum(?![a-zA-Z])'), '∑');
+    s = s.replaceAll(RegExp(r'\\int(?![a-zA-Z])'), '∫');
+    s = s.replaceAll(RegExp(r'\\oint(?![a-zA-Z])'), '∮');
 
     // Remove remaining stray LaTeX commands and braces
     s = s.replaceAll(RegExp(r'\\[a-zA-Z]+'), '');

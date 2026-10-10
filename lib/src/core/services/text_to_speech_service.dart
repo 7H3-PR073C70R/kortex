@@ -414,6 +414,41 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
           'name': _customPlatformVoice!,
           'locale': _config.language,
         });
+      } else if (kIsWeb) {
+        try {
+          final rawVoices = await _flutterTts.getVoices;
+          if (rawVoices is List && rawVoices.isNotEmpty) {
+            final voices = rawVoices.whereType<Map<dynamic, dynamic>>().toList();
+            final isFemale = _gender == VoiceGender.female;
+            final preferredKeywords = isFemale
+                ? ['ava', 'natural', 'aria', 'jenny', 'samantha', 'google us english', 'enhanced', 'premium']
+                : ['andrew', 'guy', 'natural', 'daniel', 'google us english', 'enhanced', 'premium'];
+
+            Map<dynamic, dynamic>? bestVoice;
+            for (final keyword in preferredKeywords) {
+              bestVoice = voices.cast<Map<dynamic, dynamic>?>().firstWhere(
+                (v) => (v?['name']?.toString().toLowerCase() ?? '').contains(keyword) &&
+                       (v?['locale']?.toString().toLowerCase() ?? '').startsWith('en'),
+                orElse: () => null,
+              );
+              if (bestVoice != null) break;
+            }
+
+            bestVoice ??= voices.cast<Map<dynamic, dynamic>?>().firstWhere(
+              (v) => (v?['locale']?.toString().toLowerCase() ?? '').startsWith('en'),
+              orElse: () => null,
+            );
+
+            if (bestVoice != null && bestVoice['name'] != null) {
+              await _flutterTts.setVoice({
+                'name': bestVoice['name'].toString(),
+                'locale': bestVoice['locale']?.toString() ?? _config.language,
+              });
+            }
+          }
+        } on Object catch (e) {
+          debugPrint('[TTS Web] Best voice selection error: $e');
+        }
       }
     } on Object catch (_) {}
   }
@@ -944,31 +979,64 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   }) async {
     if (sessionId != _activeSessionId) return false;
 
-    final tempDir = await getTemporaryDirectory();
-    final file = File(
-      '${tempDir.path}/kortex_tts_${sessionId}_${DateTime.now().microsecondsSinceEpoch}.$extension',
-    );
-    await file.writeAsBytes(bytes);
-
-    if (sessionId != _activeSessionId) {
-      unawaited(file.delete().catchError((_) => file));
-      return false;
-    }
-
     final player = _getOrCreateAudioPlayer();
     if (player == null) return false;
 
     _currentChunkPlaybackCompleter = Completer<void>();
+
+    if (kIsWeb) {
+      try {
+        final mimeType = extension == 'mp3' ? 'audio/mpeg' : 'audio/wav';
+        await player.play(BytesSource(bytes, mimeType: mimeType));
+        if (_currentChunkPlaybackCompleter != null &&
+            !_currentChunkPlaybackCompleter!.isCompleted) {
+          await _currentChunkPlaybackCompleter!.future;
+        }
+        return true;
+      } on Object catch (e) {
+        debugPrint('[TTS Web] BytesSource playback error: $e');
+        if (_currentChunkPlaybackCompleter != null &&
+            !_currentChunkPlaybackCompleter!.isCompleted) {
+          _currentChunkPlaybackCompleter!.complete();
+        }
+        return false;
+      }
+    }
+
     try {
-      await player.play(DeviceFileSource(file.path));
-      await _currentChunkPlaybackCompleter!.future;
-      return true;
-    } finally {
-      unawaited(file.delete().catchError((_) => file));
+      final tempDir = await getTemporaryDirectory();
+      final file = File(
+        '${tempDir.path}/kortex_tts_${sessionId}_${DateTime.now().microsecondsSinceEpoch}.$extension',
+      );
+      await file.writeAsBytes(bytes);
+
+      if (sessionId != _activeSessionId) {
+        unawaited(file.delete().catchError((_) => file));
+        return false;
+      }
+
+      try {
+        await player.play(DeviceFileSource(file.path));
+        if (_currentChunkPlaybackCompleter != null &&
+            !_currentChunkPlaybackCompleter!.isCompleted) {
+          await _currentChunkPlaybackCompleter!.future;
+        }
+        return true;
+      } finally {
+        unawaited(file.delete().catchError((_) => file));
+      }
+    } on Object catch (e) {
+      debugPrint('[TTS] _playBytes error: $e');
+      if (_currentChunkPlaybackCompleter != null &&
+          !_currentChunkPlaybackCompleter!.isCompleted) {
+        _currentChunkPlaybackCompleter!.complete();
+      }
+      return false;
     }
   }
 
   Future<bool> _checkInternetConnection() async {
+    if (kIsWeb) return true;
     try {
       final results = await _connectivity.checkConnectivity();
       return results.any(
@@ -978,7 +1046,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
             c == ConnectivityResult.ethernet,
       );
     } on Object catch (_) {
-      return false;
+      return true;
     }
   }
 
