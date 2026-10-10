@@ -7,6 +7,7 @@ import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.d
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/pdf_figure_extractor.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/ingestion_cancellation_token.dart';
 import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
@@ -115,8 +116,17 @@ class LocalPdfParserService {
     Uint8List bytes, {
     String filename = 'document.pdf',
     ExtractionReport? report,
+    IngestionCancellationToken? cancellationToken,
   }) {
     if (bytes.isEmpty) return '';
+
+    cancellationToken?.throwIfCancelled();
+
+    const maxFileSizeBytes = 50 * 1024 * 1024;
+    if (bytes.length > maxFileSizeBytes) {
+      report?.recordWarning('PDF file size ${bytes.length} bytes exceeds 50MB limit');
+      throw const FileSizeExceededException();
+    }
 
     // Fast check for PDF encryption dictionary
     if (_hasPdfEncryption(bytes)) {
@@ -165,6 +175,7 @@ class LocalPdfParserService {
       final extractor = PdfTextExtractor(document);
 
       for (var i = 0; i < pageCount; i++) {
+        cancellationToken?.throwIfCancelled();
         var pageText = '';
         try {
           final textLines = extractor.extractTextLines(startPageIndex: i);

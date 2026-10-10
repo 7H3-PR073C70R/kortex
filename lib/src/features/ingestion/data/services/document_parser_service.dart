@@ -15,10 +15,14 @@ import 'package:kortex/src/features/ingestion/data/services/synthesis/flashcard_
 import 'package:kortex/src/features/ingestion/data/services/synthesis/schema_serializer.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_ir.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/ingestion_cancellation_token.dart';
 import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 
 class DocumentParserService {
   const DocumentParserService();
+
+  /// Maximum file size budget (50 MB) for offline parsing and extraction.
+  static const int maxFileSizeBytes = 50 * 1024 * 1024;
 
   /// Extracts structured text from file bytes (PDF, DOCX, EPUB, HTML, Markdown, text, etc.).
   String extractTextFromBytes(
@@ -26,7 +30,15 @@ class DocumentParserService {
     required String fileType,
     required String filename,
     ExtractionReport? report,
+    IngestionCancellationToken? cancellationToken,
   }) {
+    cancellationToken?.throwIfCancelled();
+
+    if (bytes.length > maxFileSizeBytes) {
+      report?.recordWarning('File size ${bytes.length} bytes exceeds 50MB limit');
+      throw const FileSizeExceededException();
+    }
+
     final ext = fileType.replaceAll('.', '').toLowerCase();
 
     const supportedExtensions = {
@@ -55,6 +67,7 @@ class DocumentParserService {
           bytes,
           filename: filename,
           report: report,
+          cancellationToken: cancellationToken,
         );
         if (pdfText.trim().isNotEmpty) {
           return pdfText;
@@ -596,7 +609,10 @@ class DocumentParserService {
     List<String> imageUrls = const [],
     ExtractionReport? report,
     Clock? clock,
+    IngestionCancellationToken? cancellationToken,
   }) {
+    cancellationToken?.throwIfCancelled();
+
     final cleanFullText = LocalPdfParserService.repairDetachedInitialCapitals(
       fullText.trim(),
     );
@@ -630,6 +646,7 @@ class DocumentParserService {
     final candidates = <PedagogicalCandidateCard>[];
 
     for (var i = 0; i < cards.length; i++) {
+      cancellationToken?.throwIfCancelled();
       final card = cards[i];
       final assets = List<CardAsset>.from(card.assets);
 
@@ -684,6 +701,8 @@ class DocumentParserService {
       );
     }
 
+    cancellationToken?.throwIfCancelled();
+
     final serializer = SchemaSerializer(clock: clock);
     return serializer.serializeDeck(
       deckId: 'deck_$documentId',
@@ -705,6 +724,7 @@ class DocumentParserService {
     List<String> imageUrls = const [],
     ExtractionReport? report,
     Clock? clock,
+    IngestionCancellationToken? cancellationToken,
   }) {
     final deck = synthesizeDeckFromDocument(
       documentId: documentId,
@@ -713,6 +733,7 @@ class DocumentParserService {
       imageUrls: imageUrls,
       report: report,
       clock: clock,
+      cancellationToken: cancellationToken,
     );
     return deck.toExtractionModels();
   }

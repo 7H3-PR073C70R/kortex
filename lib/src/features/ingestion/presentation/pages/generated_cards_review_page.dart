@@ -17,11 +17,13 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/data/models/generated_deck_preview_model.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
+import 'package:kortex/src/features/ingestion/presentation/widgets/extraction_report_banner.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/generated_card_preview_tile.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
@@ -39,6 +41,7 @@ class GeneratedCardsReviewPage extends StatelessWidget {
     required this.subject,
     required this.initialCards,
     required this.rawSnippets,
+    this.report,
     this.courseId,
     this.courseCode,
     super.key,
@@ -49,6 +52,7 @@ class GeneratedCardsReviewPage extends StatelessWidget {
   final String subject;
   final List<GeneratedCardPreviewItem> initialCards;
   final List<OcrExtractionEntity> rawSnippets;
+  final ExtractionReport? report;
   final String? courseId;
   final String? courseCode;
 
@@ -62,6 +66,7 @@ class GeneratedCardsReviewPage extends StatelessWidget {
         subject: subject,
         initialCards: initialCards,
         rawSnippets: rawSnippets,
+        report: report,
         courseId: courseId,
         courseCode: courseCode,
       ),
@@ -76,6 +81,7 @@ class _GeneratedCardsReviewView extends HookWidget {
     required this.subject,
     required this.initialCards,
     required this.rawSnippets,
+    this.report,
     this.courseId,
     this.courseCode,
   });
@@ -85,6 +91,7 @@ class _GeneratedCardsReviewView extends HookWidget {
   final String subject;
   final List<GeneratedCardPreviewItem> initialCards;
   final List<OcrExtractionEntity> rawSnippets;
+  final ExtractionReport? report;
   final String? courseId;
   final String? courseCode;
 
@@ -545,6 +552,13 @@ class _GeneratedCardsReviewView extends HookWidget {
                         ),
                       ),
                     ),
+                    if (report != null)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: ExtractionReportBanner(report: report!),
+                        ),
+                      ),
 
                     // Cards List or Empty State
                     if (cards.value.isEmpty)

@@ -75,3 +75,25 @@ class DocumentExtractionException implements Exception {
   @override
   String toString() => 'DocumentExtractionException: $message';
 }
+
+/// Thrown when document processing is cancelled via cancellation token.
+class IngestionCancelledException implements Exception {
+  const IngestionCancelledException([
+    this.message = 'Ingestion task was cancelled by user.',
+  ]);
+
+  final String message;
+
+  @override
+  String toString() => 'IngestionCancelledException: $message';
+}
+
+/// Thrown when document extraction exceeds execution or memory budget.
+class IngestionBudgetException implements Exception {
+  const IngestionBudgetException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'IngestionBudgetException: $message';
+}

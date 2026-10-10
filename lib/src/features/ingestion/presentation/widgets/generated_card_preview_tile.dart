@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
@@ -31,10 +32,12 @@ class GeneratedCardPreviewTile extends HookWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final isFlipped = useState<bool>(false);
+    final isFlipped = useState(false);
+    final isEditing = useState(false);
+
     final frontController = useTextEditingController(text: card.front);
     final backController = useTextEditingController(text: card.back);
-    final isEditing = useState<bool>(false);
+
     final hasImage = card.imageUrl != null && card.imageUrl!.trim().isNotEmpty;
     final hasLatex =
         (card.backLatex != null && card.backLatex!.trim().isNotEmpty) ||
@@ -45,6 +48,126 @@ class GeneratedCardPreviewTile extends HookWidget {
       backController.text = card.back;
       return null;
     }, [card.front, card.back]);
+
+    Widget contentChild;
+    if (isEditing.value) {
+      contentChild = Column(
+        key: const ValueKey('edit_view'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppTextField(
+            controller: frontController,
+            label: 'Front Prompt',
+          ),
+          const SizedBox(height: 12),
+          AppTextField(
+            controller: backController,
+            label: 'Back Answer / Explanation',
+            maxLines: 3,
+          ),
+        ],
+      );
+    } else if (isFlipped.value) {
+      contentChild = Column(
+        key: const ValueKey('back_view'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'ANSWER / EXPLANATION',
+            style: typography.caption.bold.copyWith(
+              color: colors.textSecondary.withAlpha(160),
+              fontSize: 10,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 8),
+          LatexRichViewer(
+            text: card.back,
+            style: typography.body.regular.copyWith(
+              color: colors.textPrimary,
+              height: 1.5,
+            ),
+          ),
+          if (card.backLatex != null &&
+              card.backLatex!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colors.primary.withAlpha(isDark ? 20 : 10),
+                borderRadius: AppRadius.radiusCard,
+                border: Border.all(
+                  color: colors.primary.withAlpha(isDark ? 40 : 20),
+                ),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Math.tex(
+                  card.backLatex!
+                      .replaceAll(r'$$', '')
+                      .replaceAll(r'$', '')
+                      .trim(),
+                  textStyle: typography.body.bold.copyWith(
+                    color: isDark
+                        ? colors.syllabotAccent
+                        : colors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+    } else {
+      contentChild = Column(
+        key: const ValueKey('front_view'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'PROMPT / CONCEPT',
+            style: typography.caption.bold.copyWith(
+              color: colors.textSecondary.withAlpha(160),
+              fontSize: 10,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 8),
+          LatexRichViewer(
+            text: card.front,
+            style: typography.body.bold.copyWith(
+              color: colors.textPrimary,
+              fontSize: 15,
+            ),
+          ),
+          if (card.imageUrl != null &&
+              card.imageUrl!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: AppRadius.radiusCard,
+              child: Container(
+                constraints: const BoxConstraints(
+                  maxHeight: 180,
+                ),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? colors.surfaceSecondary
+                      : colors.backgroundSecondary.withAlpha(120),
+                  borderRadius: AppRadius.radiusCard,
+                  border: Border.all(
+                    color: colors.primary.withAlpha(isDark ? 60 : 30),
+                  ),
+                ),
+                child: AppMultimodalImage(
+                  imageUrl: card.imageUrl!,
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
 
     return PlatformHoverBuilder(
       builder: (context, isHovered, child) {
@@ -185,64 +308,141 @@ class GeneratedCardPreviewTile extends HookWidget {
                             ],
                           ),
                         ),
+
+                      // Citation badge with tap-to-inspect crop
+                      if (card.effectiveCitation.isNotEmpty)
+                        InkWell(
+                          borderRadius: AppRadius.radiusMicro,
+                          onTap: () => _showCitationInspector(context, card),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(isDark ? 30 : 15),
+                              borderRadius: AppRadius.radiusMicro,
+                              border: Border.all(
+                                color: colors.primary.withAlpha(isDark ? 70 : 35),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.menu_book_rounded,
+                                  size: 10,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  card.effectiveCitation,
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 9,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                      // Low confidence / review recommended badge
+                      if (card.needsReview)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.warning.withAlpha(isDark ? 35 : 20),
+                            borderRadius: AppRadius.radiusMicro,
+                            border: Border.all(
+                              color: colors.warning.withAlpha(isDark ? 90 : 50),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                size: 10,
+                                color: colors.warning,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'REVIEW (${(card.confidenceScore * 100).toInt()}%)',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.warning,
+                                  fontSize: 9,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
 
                 const SizedBox(width: 8),
 
-                // Right — compact icon-only action buttons (never overflow)
+                // Right — Flip, Edit/Save, Delete compact buttons
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Flip Front/Back
-                    _ActionIconButton(
-                      tooltip: isFlipped.value
-                          ? 'Showing Back — tap to flip'
-                          : 'Showing Front — tap to flip',
-                      onTap: () => isFlipped.value = !isFlipped.value,
-                      icon: isFlipped.value
-                          ? Icons.flip_to_back_rounded
-                          : Icons.flip_to_front_rounded,
-                      backgroundColor: isFlipped.value
-                          ? colors.syllabotAccent.withAlpha(isDark ? 50 : 30)
-                          : colors.syllabotAccent.withAlpha(isDark ? 25 : 12),
-                      iconColor: colors.syllabotAccent,
-                      hasBorder: isFlipped.value,
-                      borderColor: colors.syllabotAccent.withAlpha(80),
-                    ),
+                    // Flip preview button (disabled during edit)
+                    if (!isEditing.value)
+                      _ActionIconButton(
+                        tooltip: isFlipped.value ? 'Show Prompt' : 'Flip to Answer',
+                        onTap: () => isFlipped.value = !isFlipped.value,
+                        icon: Icons.flip_to_back_rounded,
+                        backgroundColor: isDark
+                            ? colors.surfaceBorderHighlight.withAlpha(60)
+                            : colors.surfaceBorder.withAlpha(120),
+                        iconColor: isFlipped.value
+                            ? colors.primary
+                            : colors.textSecondary,
+                        hasBorder: isFlipped.value,
+                        borderColor: colors.primary,
+                      ),
+
                     const SizedBox(width: 6),
 
-                    // Edit / Done
+                    // Edit / Save toggle button
                     _ActionIconButton(
-                      tooltip:
-                          isEditing.value ? 'Save changes' : 'Edit this card',
+                      tooltip: isEditing.value ? 'Save Card' : 'Edit Card',
                       onTap: () {
                         if (isEditing.value) {
                           onChanged(
                             card.copyWith(
-                              front: frontController.text,
-                              back: backController.text,
+                              front: frontController.text.trim(),
+                              back: backController.text.trim(),
                             ),
                           );
+                          isEditing.value = false;
+                        } else {
+                          isEditing.value = true;
                         }
-                        isEditing.value = !isEditing.value;
                       },
                       icon: isEditing.value
                           ? Icons.check_rounded
                           : Icons.edit_outlined,
                       backgroundColor: isEditing.value
-                          ? colors.success.withAlpha(isDark ? 40 : 25)
-                          : colors.primary.withAlpha(isDark ? 30 : 15),
-                      iconColor:
-                          isEditing.value ? colors.success : colors.primary,
+                          ? colors.primary
+                          : (isDark
+                              ? colors.surfaceBorderHighlight.withAlpha(60)
+                              : colors.surfaceBorder.withAlpha(120)),
+                      iconColor: isEditing.value
+                          ? colors.white
+                          : colors.textSecondary,
                     ),
 
-                    // Delete (optional)
                     if (onDelete != null) ...[
                       const SizedBox(width: 6),
                       _ActionIconButton(
-                        tooltip: 'Delete card',
+                        tooltip: 'Delete Card',
                         onTap: onDelete,
                         icon: Icons.delete_outline_rounded,
                         backgroundColor:
@@ -279,129 +479,83 @@ class GeneratedCardPreviewTile extends HookWidget {
                   ],
                 );
               },
-              child: isEditing.value
-                  ? Column(
-                      key: const ValueKey('edit_view'),
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppTextField(
-                          controller: frontController,
-                          label: 'Front Prompt',
-                        ),
-                        const SizedBox(height: 12),
-                        AppTextField(
-                          controller: backController,
-                          label: 'Back Answer / Explanation',
-                          maxLines: 3,
-                        ),
-                      ],
-                    )
-                  : (isFlipped.value
-                      ? Column(
-                          key: const ValueKey('back_view'),
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'ANSWER / EXPLANATION',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.textSecondary.withAlpha(160),
-                                fontSize: 10,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            LatexRichViewer(
-                              text: card.back,
-                              style: typography.body.regular.copyWith(
-                                color: colors.textPrimary,
-                                height: 1.5,
-                              ),
-                            ),
-                            if (card.backLatex != null &&
-                                card.backLatex!.isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: colors.primary
-                                      .withAlpha(isDark ? 20 : 10),
-                                  borderRadius: AppRadius.radiusCard,
-                                  border: Border.all(
-                                    color: colors.primary
-                                        .withAlpha(isDark ? 40 : 20),
-                                  ),
-                                ),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Math.tex(
-                                    card.backLatex!
-                                        .replaceAll(r'$$', '')
-                                        .replaceAll(r'$', '')
-                                        .trim(),
-                                    textStyle: typography.body.bold.copyWith(
-                                      color: isDark
-                                          ? colors.syllabotAccent
-                                          : colors.primary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        )
-                      : Column(
-                          key: const ValueKey('front_view'),
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'PROMPT / CONCEPT',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.textSecondary.withAlpha(160),
-                                fontSize: 10,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            LatexRichViewer(
-                              text: card.front,
-                              style: typography.body.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 15,
-                              ),
-                            ),
-                            if (card.imageUrl != null &&
-                                card.imageUrl!.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              ClipRRect(
-                                borderRadius: AppRadius.radiusCard,
-                                child: Container(
-                                  constraints: const BoxConstraints(
-                                    maxHeight: 180,
-                                  ),
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? colors.surfaceSecondary
-                                        : colors.backgroundSecondary
-                                            .withAlpha(120),
-                                    borderRadius: AppRadius.radiusCard,
-                                    border: Border.all(
-                                      color: colors.primary
-                                          .withAlpha(isDark ? 60 : 30),
-                                    ),
-                                  ),
-                                  child: AppMultimodalImage(
-                                    imageUrl: card.imageUrl!,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        )),
+              child: contentChild,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showCitationInspector(BuildContext context, GeneratedCardPreviewItem card) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+    final source = card.source;
+
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusDialog),
+            backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            title: Row(
+              children: [
+                Icon(Icons.crop_free_rounded, color: colors.primary, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Source Provenance',
+                  style: typography.title3.bold.copyWith(fontSize: 16),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Citation: ${card.effectiveCitation}',
+                  style: typography.body.bold,
+                ),
+                const SizedBox(height: 8),
+                if (source != null) ...[
+                  Text('Document ID: ${source.docId}', style: typography.caption.regular),
+                  Text('Page: ${source.page}', style: typography.caption.regular),
+                  if (source.sectionPath.isNotEmpty)
+                    Text('Section: ${source.sectionPath.join(" > ")}', style: typography.caption.regular),
+                  if (source.bbox != null)
+                    Text(
+                      'Bounding Box: [${source.bbox!.left.toInt()}, ${source.bbox!.top.toInt()}, ${source.bbox!.right.toInt()}, ${source.bbox!.bottom.toInt()}]',
+                      style: typography.caption.regular,
+                    ),
+                ],
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? colors.surfacePrimary : colors.surfaceSecondary,
+                    borderRadius: AppRadius.radiusMicro,
+                    border: Border.all(color: colors.surfaceBorder.withAlpha(60)),
+                  ),
+                  child: Text(
+                    card.back,
+                    style: typography.caption.regular.copyWith(fontFamily: 'monospace'),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
