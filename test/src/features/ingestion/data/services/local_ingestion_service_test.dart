@@ -132,16 +132,17 @@ void main() {
     });
 
     test(
-      'returns empty string for unknown/unsupported file formats',
+      'throws UnsupportedFileTypeException for unknown/unsupported file formats',
       () async {
         final sampleBytes = Uint8List.fromList([1, 2, 3]);
 
-        final result = await ingestionService.ingestBytes(
-          bytes: sampleBytes,
-          extension: 'exe',
+        expect(
+          () => ingestionService.ingestBytes(
+            bytes: sampleBytes,
+            extension: 'exe',
+          ),
+          throwsA(isA<UnsupportedFileTypeException>()),
         );
-
-        expect(result, isEmpty);
       },
     );
 

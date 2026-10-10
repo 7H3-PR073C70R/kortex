@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
+import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 void main() {
@@ -125,13 +126,14 @@ Cellular respiration generates ATP in the mitochondria.
           isFalse,
         );
 
-        final cards = service.parsePdfBytesToFlashcards(
-          documentId: 'doc_glyph_soup',
-          bytes: Uint8List.fromList(utf8.encode(punctuationGlyphSoup)),
-          filename: 'corrupted.pdf',
+        expect(
+          () => service.parsePdfBytesToFlashcards(
+            documentId: 'doc_glyph_soup',
+            bytes: Uint8List.fromList(utf8.encode(punctuationGlyphSoup)),
+            filename: 'corrupted.pdf',
+          ),
+          throwsA(isA<CorruptDocumentException>()),
         );
-
-        expect(cards, isEmpty);
       },
     );
 

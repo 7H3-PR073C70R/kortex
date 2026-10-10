@@ -5,44 +5,178 @@ import 'package:archive/archive.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/offline_card_builder.dart';
+import 'package:kortex/src/features/ingestion/data/services/synthesis/flashcard_synthesizer.dart';
+import 'package:kortex/src/features/ingestion/data/services/synthesis/schema_serializer.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
+import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 
 class DocumentParserService {
   const DocumentParserService();
 
-  /// Extracts structured text from file bytes (PDF, text, Markdown, etc.).
+  /// Extracts structured text from file bytes (PDF, DOCX, EPUB, HTML, Markdown, text, etc.).
   String extractTextFromBytes(
     Uint8List bytes, {
     required String fileType,
     required String filename,
+    ExtractionReport? report,
   }) {
     final ext = fileType.replaceAll('.', '').toLowerCase();
+
+    const supportedExtensions = {
+      'pdf',
+      'docx',
+      'pptx',
+      'html',
+      'htm',
+      'epub',
+      'txt',
+      'md',
+      'markdown',
+      'tex',
+      'latex',
+    };
+
+    if (!supportedExtensions.contains(ext)) {
+      report?.recordWarning('Unsupported file extension: .$ext');
+      throw UnsupportedFileTypeException(ext);
+    }
 
     if (ext == 'pdf') {
       try {
         final pdfText = const LocalPdfParserService().extractTextFromPdfBytes(
           bytes,
           filename: filename,
+          report: report,
         );
         if (pdfText.trim().isNotEmpty) {
           return pdfText;
         }
+      } on EncryptedPdfException {
+        rethrow;
+      } on CorruptDocumentException {
+        rethrow;
+      } on ScannedDocumentException {
+        rethrow;
       } on Object catch (_) {}
       return extractRawPdfStreamText(bytes);
     }
 
-    // Fallback or text/markdown decoder
-    try {
-      final utf8Text = utf8.decode(bytes, allowMalformed: true).trim();
-      if (_hasReadableText(utf8Text) && isMeaningfulEducationalText(utf8Text)) {
-        return utf8Text;
+    if (ext == 'docx') {
+      try {
+        final archive = ZipDecoder().decodeBytes(bytes);
+        final docXml = archive.findFile('word/document.xml');
+        if (docXml == null) {
+          throw CorruptDocumentException(
+            filename,
+            'DOCX missing word/document.xml',
+          );
+        }
+        final xmlContent = utf8.decode(docXml.content as List<int>);
+        return xmlContent
+            .replaceAll(RegExp('</w:p>', caseSensitive: false), '\n\n')
+            .replaceAll(RegExp('<[^>]+>'), '')
+            .replaceAll(RegExp(r'[ \t]+'), ' ')
+            .trim();
+      } on CorruptDocumentException {
+        rethrow;
+      } on Object catch (e) {
+        report?.isCorrupt = true;
+        report?.recordDrop(rule: 'corrupted_docx_archive', sampleText: '$e');
+        throw CorruptDocumentException(filename, 'Malformed DOCX file: $e');
       }
-    } on Object catch (_) {}
+    }
 
-    return _extractPrintableAscii(bytes);
+    if (ext == 'epub') {
+      try {
+        final archive = ZipDecoder().decodeBytes(bytes);
+        final textBuffer = StringBuffer();
+        for (final file in archive.files) {
+          if (file.isFile &&
+              (file.name.endsWith('.html') ||
+                  file.name.endsWith('.xhtml') ||
+                  file.name.endsWith('.htm'))) {
+            final htmlContent = utf8.decode(
+              file.content as List<int>,
+              allowMalformed: true,
+            );
+            final cleanText = htmlContent
+                .replaceAll(
+                  RegExp('<(?:p|div|h[1-6]|li|br)[^>]*>', caseSensitive: false),
+                  '\n',
+                )
+                .replaceAll(RegExp('<[^>]+>'), '')
+                .replaceAll(RegExp(r'[ \t]+'), ' ')
+                .trim();
+            if (cleanText.isNotEmpty) {
+              textBuffer.writeln(cleanText);
+            }
+          }
+        }
+        final text = textBuffer.toString().trim();
+        if (text.isEmpty) {
+          throw CorruptDocumentException(
+            filename,
+            'EPUB archive contains no text chapters',
+          );
+        }
+        return text;
+      } on CorruptDocumentException {
+        rethrow;
+      } on Object catch (e) {
+        report?.isCorrupt = true;
+        report?.recordDrop(rule: 'corrupted_epub_archive', sampleText: '$e');
+        throw CorruptDocumentException(filename, 'Malformed EPUB file: $e');
+      }
+    }
+
+    if (ext == 'html' || ext == 'htm') {
+      try {
+        final html = utf8.decode(bytes, allowMalformed: true);
+        return html
+            .replaceAll(
+              RegExp(
+                '<style[^>]*>.*?</style>',
+                caseSensitive: false,
+                dotAll: true,
+              ),
+              '',
+            )
+            .replaceAll(
+              RegExp(
+                '<script[^>]*>.*?</script>',
+                caseSensitive: false,
+                dotAll: true,
+              ),
+              '',
+            )
+            .replaceAll(
+              RegExp('<(?:p|div|h[1-6]|li|br|tr)[^>]*>', caseSensitive: false),
+              '\n',
+            )
+            .replaceAll(RegExp('<[^>]+>'), '')
+            .replaceAll('&nbsp;', ' ')
+            .replaceAll('&amp;', '&')
+            .replaceAll('&lt;', '<')
+            .replaceAll('&gt;', '>')
+            .replaceAll('&quot;', '"')
+            .replaceAll(RegExp(r'[ \t]+'), ' ')
+            .trim();
+      } on Object catch (e) {
+        throw CorruptDocumentException(filename, 'Malformed HTML file: $e');
+      }
+    }
+
+    if ({'txt', 'md', 'markdown', 'tex', 'latex'}.contains(ext)) {
+      final text = utf8.decode(bytes, allowMalformed: true).trim();
+      return text;
+    }
+
+    throw UnsupportedFileTypeException(ext);
   }
 
   /// Low-level stream fallback for raw PDF text extraction.
-  String extractRawPdfStreamText(Uint8List bytes) => _extractTextFromPdfBytes(bytes);
+  String extractRawPdfStreamText(Uint8List bytes) =>
+      _extractTextFromPdfBytes(bytes);
 
   /// Extracts text from PDF stream objects and content blocks.
   String _extractTextFromPdfBytes(Uint8List bytes) {
@@ -231,16 +365,6 @@ class DocumentParserService {
       final text = m.group(1)?.trim() ?? '';
       if (text.length > 2 && _hasReadableText(text)) {
         buffer.writeln(text);
-      }
-    }
-    return buffer.toString();
-  }
-
-  String _extractPrintableAscii(Uint8List bytes) {
-    final buffer = StringBuffer();
-    for (final b in bytes) {
-      if ((b >= 32 && b <= 126) || b == 10) {
-        buffer.writeCharCode(b);
       }
     }
     return buffer.toString();
@@ -503,54 +627,182 @@ class DocumentParserService {
   }
 
   /// Synthesizes flashcards offline (no AI) from the extracted document text.
+  /// Unified pipeline synthesizing a complete, schema-validated [PedagogicalDeck]
+  /// directly from document text.
   ///
-  /// Cards are built deterministically by [OfflineCardBuilder]: every answer is
-  /// verbatim source text and every question is either `What is <term>?`, a
-  /// quoted source heading, or a cloze sentence. Returns an empty list when
-  /// the text yields no trustworthy card (callers must surface that to the
-  /// user instead of fabricating content).
+  /// Reconciles offline card extraction with pedagogical validation, source
+  /// provenance tracking, and multi-modal asset packaging.
+  PedagogicalDeck synthesizeDeckFromDocument({
+    required String documentId,
+    required String fullText,
+    required String filename,
+    String? deckTitle,
+    String? subject,
+    String? category,
+    List<String> imageUrls = const [],
+    ExtractionReport? report,
+    Clock? clock,
+  }) {
+    final cleanFullText = LocalPdfParserService.repairDetachedInitialCapitals(
+      fullText.trim(),
+    );
+    final cleanDeckTitle = deckTitle ??
+        filename.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
+    final inferredSubject = subject ?? _inferSubject(filename);
+    final effectiveCategory = category ?? 'Study';
+
+    if (cleanFullText.isEmpty) {
+      return PedagogicalDeck(
+        schemaVersion: SchemaSerializer.currentSchemaVersion,
+        deckId: 'deck_$documentId',
+        deckTitle: cleanDeckTitle,
+        subject: inferredSubject,
+        category: effectiveCategory,
+        totalCards: 0,
+        cards: const [],
+        generatedAt: (clock ?? const SystemUtcClock()).now().toUtc(),
+      );
+    }
+
+    final cards = const OfflineCardBuilder().buildCards(
+      cleanFullText,
+      report: report,
+    );
+    final usedImageUrls = <String>{};
+    final candidates = <PedagogicalCandidateCard>[];
+
+    for (var i = 0; i < cards.length; i++) {
+      final card = cards[i];
+      final assets = List<CardAsset>.from(card.assets);
+
+      final matchedImage = _matchRelevantImageUrl(
+        title: card.front,
+        content: card.back,
+        imageUrls: imageUrls,
+        usedImageUrls: usedImageUrls,
+      );
+      if (matchedImage != null) {
+        assets.add(
+          CardAsset(
+            id: 'img_${documentId}_$i',
+            type: CardAssetType.image,
+            content: matchedImage,
+          ),
+        );
+      }
+
+      final formula = _extractOrGenerateFormula(card.front, card.back);
+      if (formula != null &&
+          !assets.any((a) => a.type == CardAssetType.latexEquation)) {
+        assets.add(
+          CardAsset(
+            id: 'math_${documentId}_$i',
+            type: CardAssetType.latexEquation,
+            content: formula,
+          ),
+        );
+      }
+
+      final source = card.source ??
+          CardSource(
+            docId: documentId,
+            page: 1,
+            sectionPath: [card.heading ?? cleanDeckTitle],
+            blockId: 'block_$i',
+          );
+
+      candidates.add(
+        PedagogicalCandidateCard(
+          front: card.front,
+          back: card.back,
+          type: card.type.toCognitiveType(),
+          sourceTopic: source.sectionPath.join(' > '),
+          source: source,
+          assets: assets,
+          backLatex: formula,
+          imageUrl: matchedImage,
+          confidenceScore: card.confidence,
+        ),
+      );
+    }
+
+    final serializer = SchemaSerializer(clock: clock);
+    return serializer.serializeDeck(
+      deckId: 'deck_$documentId',
+      deckTitle: cleanDeckTitle,
+      subject: inferredSubject,
+      category: effectiveCategory,
+      candidateCards: candidates,
+    );
+  }
+
+  /// Synthesizes flashcards offline (no AI) from the extracted document text.
+  ///
+  /// Routes through the unified [synthesizeDeckFromDocument] pipeline and emits
+  /// validated [OcrExtractionModel]s for persistence.
   List<OcrExtractionModel> synthesizeSnippetsFromDocument({
     required String documentId,
     required String fullText,
     required String filename,
     List<String> imageUrls = const [],
+    ExtractionReport? report,
+    Clock? clock,
   }) {
-    final cleanFullText = LocalPdfParserService.repairDetachedInitialCapitals(
-      fullText.trim(),
+    final deck = synthesizeDeckFromDocument(
+      documentId: documentId,
+      fullText: fullText,
+      filename: filename,
+      imageUrls: imageUrls,
+      report: report,
+      clock: clock,
     );
-    if (cleanFullText.isEmpty) {
-      return [];
+    return deck.toExtractionModels();
+  }
+
+  static String _inferSubject(String filename) {
+    final lower = filename.toLowerCase();
+    if (lower.contains('bio')) return 'Biology';
+    if (lower.contains('chem')) return 'Chemistry';
+    if (lower.contains('phys') || lower.contains('quantum')) return 'Physics';
+    if (lower.contains('flutter') ||
+        lower.contains('dart') ||
+        lower.contains('cpp') ||
+        lower.contains('jls') ||
+        lower.contains('comput')) {
+      return 'Computer Science';
     }
-
-    final cards = const OfflineCardBuilder().buildCards(cleanFullText);
-    final usedImageUrls = <String>{};
-
-    return [
-      for (final m in cards.toExtractionModels(documentId))
-        OcrExtractionModel(
-          id: m.id,
-          documentId: m.documentId,
-          topic: m.topic,
-          rawText: m.rawText,
-          confidenceScore: m.confidenceScore,
-          latexContent: _extractOrGenerateFormula(m.topic, m.rawText),
-          imageUrl: _matchRelevantImageUrl(
-            title: m.topic,
-            content: m.rawText,
-            imageUrls: imageUrls,
-            usedImageUrls: usedImageUrls,
-          ),
-        ),
-    ];
+    if (lower.contains('contract') ||
+        lower.contains('agreement') ||
+        lower.contains('engagement')) {
+      return 'Law';
+    }
+    if (lower.contains('finance') ||
+        lower.contains('portfolio') ||
+        lower.contains('invoice')) {
+      return 'Finance';
+    }
+    return 'General';
   }
 
   static const _commonStopWords = {
-    'what', 'which', 'where', 'when', 'who', 'how', 'why', 'with', 'from',
-    'that', 'this', 'these', 'those', 'about', 'into', 'over', 'after',
-    'the', 'and', 'for', 'are', 'is', 'was', 'were', 'has', 'have', 'had',
-    'been', 'being', 'does', 'did', 'done', 'will', 'would', 'shall', 'should',
-    'may', 'might', 'must', 'can', 'could', 'section', 'chapter', 'part',
-    'step', 'rule', 'unit', 'module', 'concept', 'notes', 'review', 'overview',
+    // Pronouns & Determiners (4+ letters)
+    'that', 'this', 'these', 'those', 'what', 'which', 'where', 'when',
+    'they', 'them', 'their', 'theirs', 'themselves', 'yourself', 'yourselves',
+
+    // Prepositions & Connectors (4+ letters)
+    'about', 'above', 'across', 'after', 'against', 'along', 'among',
+    'around', 'before', 'behind', 'below', 'beneath', 'beside', 'between',
+    'beyond', 'during', 'except', 'from', 'inside', 'into', 'onto', 'outside',
+    'over', 'through', 'toward', 'under', 'until', 'upon', 'with', 'within',
+    'without', 'because', 'although', 'while', 'since',
+
+    // Verbs & Modals (4+ letters)
+    'were', 'been', 'being', 'have', 'does', 'done', 'will', 'would',
+    'shall', 'should', 'might', 'must', 'could', 'also', 'just',
+
+    // Domain Structural Words
+    'section', 'chapter', 'part', 'step', 'rule', 'unit',
+    'module', 'concept', 'notes', 'review', 'overview',
   };
 
   /// Matches an image URL to a card section ONLY if there is an explicit figure reference
@@ -664,15 +916,15 @@ class DocumentParserService {
     if (isCodeSyntaxLine(clean) &&
         (clean.length <= 15 ||
             clean.runes
-                    .where(
-                      (r) =>
-                          (r >= 65 && r <= 90) ||
-                          (r >= 97 && r <= 122) ||
-                          (r >= 48 && r <= 57),
-                    )
-                    .length /
-                clean.length >=
-            0.40)) {
+                        .where(
+                          (r) =>
+                              (r >= 65 && r <= 90) ||
+                              (r >= 97 && r <= 122) ||
+                              (r >= 48 && r <= 57),
+                        )
+                        .length /
+                    clean.length >=
+                0.40)) {
       return true;
     }
 
@@ -838,7 +1090,9 @@ class DocumentParserService {
     }
 
     // Dart/Flutter constructor / widget instantiation pattern: `child: Container(...)` or `body: Center(...)`
-    if (RegExp(r'^[a-zA-Z0-9_]+\s*:\s*[A-Z][a-zA-Z0-9_]*\s*\(').hasMatch(trimmed) ||
+    if (RegExp(
+          r'^[a-zA-Z0-9_]+\s*:\s*[A-Z][a-zA-Z0-9_]*\s*\(',
+        ).hasMatch(trimmed) ||
         RegExp(r'^[A-Z][a-zA-Z0-9_]*\s*\(').hasMatch(trimmed)) {
       return true;
     }

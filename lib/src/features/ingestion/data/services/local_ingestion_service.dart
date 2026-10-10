@@ -1,34 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_image_ocr_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pptx_parser_service.dart';
+import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 
-/// Custom exceptions for local document ingestion
-class FileSizeExceededException implements Exception {
-  const FileSizeExceededException([
-    this.message = 'File exceeds maximum 50MB limit',
-  ]);
-  final String message;
-  @override
-  String toString() => 'FileSizeExceededException: $message';
-}
-
-class UnsupportedFileTypeException implements Exception {
-  const UnsupportedFileTypeException(this.extension);
-  final String extension;
-  @override
-  String toString() =>
-      'UnsupportedFileTypeException: File type ".$extension" is not supported';
-}
-
-class DocumentExtractionException implements Exception {
-  const DocumentExtractionException(this.message);
-  final String message;
-  @override
-  String toString() => 'DocumentExtractionException: $message';
-}
+export 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 
 /// Central client-side text extraction service for Kortexify.
 ///
@@ -40,13 +19,16 @@ class LocalIngestionService {
     LocalPdfParserService? pdfParser,
     LocalPptxParserService? pptxParser,
     LocalImageOcrService? imageOcr,
+    DocumentParserService? documentParser,
   }) : _pdfParser = pdfParser ?? const LocalPdfParserService(),
        _pptxParser = pptxParser ?? const LocalPptxParserService(),
-       _imageOcr = imageOcr ?? LocalImageOcrService();
+       _imageOcr = imageOcr ?? LocalImageOcrService(),
+       _documentParser = documentParser ?? const DocumentParserService();
 
   final LocalPdfParserService _pdfParser;
   final LocalPptxParserService _pptxParser;
   final LocalImageOcrService _imageOcr;
+  final DocumentParserService _documentParser;
 
   /// Maximum file size limit for local ingestion: 50MB
   static const int maxFileSizeInBytes = 50 * 1024 * 1024;
@@ -94,10 +76,25 @@ class LocalIngestionService {
     try {
       switch (ext) {
         case 'pdf':
-          rawExtractedText = await _pdfParser.extractText(bytes);
+          rawExtractedText = await _pdfParser.extractText(
+            bytes,
+            filename: filePath ?? 'document.pdf',
+          );
 
         case 'pptx':
           rawExtractedText = await _pptxParser.extractText(bytes);
+
+        case 'docx':
+        case 'epub':
+        case 'html':
+        case 'htm':
+        case 'tex':
+        case 'latex':
+          rawExtractedText = _documentParser.extractTextFromBytes(
+            bytes,
+            fileType: ext,
+            filename: filePath ?? 'document.$ext',
+          );
 
         case 'png':
         case 'jpg':
@@ -119,10 +116,16 @@ class LocalIngestionService {
           rawExtractedText = utf8.decode(bytes, allowMalformed: true);
 
         default:
-          return '';
+          throw UnsupportedFileTypeException(ext);
       }
     } catch (e) {
-      if (e is FileSizeExceededException) rethrow;
+      if (e is FileSizeExceededException ||
+          e is UnsupportedFileTypeException ||
+          e is EncryptedPdfException ||
+          e is CorruptDocumentException ||
+          e is ScannedDocumentException) {
+        rethrow;
+      }
       throw DocumentExtractionException('Extraction failed for .$ext: $e');
     }
 
@@ -143,18 +146,60 @@ class LocalIngestionService {
     // 2. Normalize carriage returns
     cleaned = cleaned.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
 
-    // 3. Remove repeating separator lines or underline clutter
-    cleaned = cleaned.replaceAll(RegExp('[-_=~*]{4,}'), '');
-
-    // 4. Strip excessive blank lines (more than 2 consecutive newlines)
-    cleaned = cleaned.replaceAll(RegExp(r'\n{3,}'), '\n\n');
-
-    // 5. Clean trailing and leading spaces per line
+    // 3. Code & math-safe line processing
     final lines = cleaned.split('\n');
     final processedLines = <String>[];
+    var inCode = false;
+    var inMath = false;
+    String? codeFence;
 
     for (final line in lines) {
       final trimmed = line.trim();
+
+      // Check code fences
+      if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+        final fence = trimmed.substring(0, 3);
+        if (!inCode) {
+          inCode = true;
+          codeFence = fence;
+        } else if (fence == codeFence) {
+          inCode = false;
+          codeFence = null;
+        }
+        processedLines.add(line);
+        continue;
+      }
+      if (inCode) {
+        processedLines.add(line);
+        continue;
+      }
+
+      // Check math delimiters
+      if (trimmed.startsWith(r'$$') || trimmed.startsWith(r'\[')) {
+        if (!inMath) {
+          inMath = true;
+          if (trimmed.length > 2 && (trimmed.endsWith(r'$$') || trimmed.endsWith(r'\]'))) {
+            inMath = false;
+          }
+        } else {
+          inMath = false;
+        }
+        processedLines.add(line);
+        continue;
+      }
+      if (trimmed.startsWith(r'\begin{')) {
+        inMath = true;
+        processedLines.add(line);
+        continue;
+      }
+      if (inMath) {
+        if (trimmed.endsWith(r'$$') || trimmed.endsWith(r'\]') || trimmed.startsWith(r'\end{')) {
+          inMath = false;
+        }
+        processedLines.add(line);
+        continue;
+      }
+
       // Filter out isolated footer page numbers like "Page 1 of 12" or single standalone numbers
       if (RegExp(
         r'^(page\s+\d+(\s+of\s+\d+)?|\d+)$',
@@ -162,6 +207,12 @@ class LocalIngestionService {
       ).hasMatch(trimmed)) {
         continue;
       }
+
+      // Remove separator lines outside code
+      if (RegExp(r'^[-_=~*]{4,}$').hasMatch(trimmed)) {
+        continue;
+      }
+
       processedLines.add(trimmed);
     }
 

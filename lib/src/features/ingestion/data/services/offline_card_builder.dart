@@ -1,9 +1,32 @@
 import 'dart:math' as math;
 
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
+import 'package:kortex/src/features/ingestion/data/services/synthesis/flashcard_synthesizer.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/pedagogical_card_schema.dart';
 
 /// The kind of card produced by [OfflineCardBuilder].
 enum OfflineCardType { qa, glossary, definition, formula, list, code, cloze }
+
+/// Maps [OfflineCardType] to canonical [CognitiveQuestionType].
+extension OfflineCardTypeMapping on OfflineCardType {
+  CognitiveQuestionType toCognitiveType() {
+    switch (this) {
+      case OfflineCardType.definition:
+      case OfflineCardType.glossary:
+      case OfflineCardType.cloze:
+        return CognitiveQuestionType.definition;
+      case OfflineCardType.qa:
+        return CognitiveQuestionType.mechanism;
+      case OfflineCardType.formula:
+        return CognitiveQuestionType.math;
+      case OfflineCardType.code:
+        return CognitiveQuestionType.code;
+      case OfflineCardType.list:
+        return CognitiveQuestionType.yieldResult;
+    }
+  }
+}
 
 /// A card built offline together with the type that produced it.
 class OfflineCard {
@@ -12,12 +35,18 @@ class OfflineCard {
     required this.front,
     required this.back,
     required this.confidence,
+    this.heading,
+    this.source,
+    this.assets = const [],
   });
 
   final OfflineCardType type;
   final String front;
   final String back;
   final double confidence;
+  final String? heading;
+  final CardSource? source;
+  final List<CardAsset> assets;
 }
 
 /// Deterministic, source-faithful flashcard builder used when the AI server
@@ -36,14 +65,13 @@ class OfflineCardBuilder {
   final int? maxCards;
   final int? maxClozePerSection;
 
-  static const _minClozeWords = 8;
-  static const _maxClozeWords = 35;
+  static const _minClozeWords = 5;
+  static const _maxClozeWords = 40;
   static const _maxDefinitionBackChars = 320;
 
   /// Builds cards from [fullText]. Returns an empty list when nothing in the
-  /// text can be turned into a trustworthy card.
-  List<OfflineCard> buildCards(String fullText) {
-    final blocks = _parseBlocks(fullText);
+  List<OfflineCard> buildCards(String fullText, {ExtractionReport? report}) {
+    final blocks = _parseBlocks(fullText, report: report);
     if (blocks.isEmpty) return const [];
 
     final docContext = _extractDocumentContext(fullText);
@@ -123,6 +151,7 @@ class OfflineCardBuilder {
               sentences[s],
               termFrequency,
               clozeCandidates.length,
+              heading: heading,
             );
             if (cloze == null) continue;
             if (heading != null && maxClozePerSection != null) {
@@ -135,8 +164,7 @@ class OfflineCardBuilder {
       }
     }
     flushList();
-
-    return _assemble(structured, clozeCandidates);
+    return _assemble(structured, clozeCandidates, report: report);
   }
 
   // ---------------------------------------------------------------------------
@@ -145,8 +173,9 @@ class OfflineCardBuilder {
 
   List<OfflineCard> _assemble(
     List<OfflineCard> structured,
-    List<_ClozeCandidate> clozes,
-  ) {
+    List<_ClozeCandidate> clozes, {
+    ExtractionReport? report,
+  }) {
     final seen = <String>{};
     final result = <OfflineCard>[];
 
@@ -155,8 +184,20 @@ class OfflineCardBuilder {
 
     for (final card in structured) {
       if (maxCards != null && result.length >= maxCards!) break;
-      if (_isMeaningfulCard(card) && seen.add(norm(card.front))) {
-        result.add(card);
+      if (_isMeaningfulCard(card)) {
+        if (seen.add(norm(card.front))) {
+          result.add(card);
+        } else {
+          report?.recordDrop(
+            rule: 'duplicate_card_front',
+            sampleText: card.front,
+          );
+        }
+      } else {
+        report?.recordDrop(
+          rule: 'meaningless_card_rejected',
+          sampleText: '${card.front} -> ${card.back}',
+        );
       }
     }
 
@@ -168,8 +209,20 @@ class OfflineCardBuilder {
     if (room > 0 && sortedClozes.isNotEmpty) {
       for (final c in sortedClozes) {
         if (maxCards != null && result.length >= maxCards!) break;
-        if (_isMeaningfulCard(c.card) && seen.add(norm(c.card.front))) {
-          result.add(c.card);
+        if (_isMeaningfulCard(c.card)) {
+          if (seen.add(norm(c.card.front))) {
+            result.add(c.card);
+          } else {
+            report?.recordDrop(
+              rule: 'duplicate_card_front',
+              sampleText: c.card.front,
+            );
+          }
+        } else {
+          report?.recordDrop(
+            rule: 'meaningless_card_rejected',
+            sampleText: '${c.card.front} -> ${c.card.back}',
+          );
         }
       }
     }
@@ -312,9 +365,9 @@ class OfflineCardBuilder {
     'number',
   };
 
-  List<_Block> _parseBlocks(String text) {
+  List<_Block> _parseBlocks(String text, {ExtractionReport? report}) {
     final rawLines = text.replaceAll('\r\n', '\n').split('\n');
-    final lines = _dropNoise(rawLines);
+    final lines = _dropNoise(rawLines, report: report);
 
     final blocks = <_Block>[];
     final paragraph = <String>[];
@@ -363,7 +416,7 @@ class OfflineCardBuilder {
           break;
         }
         final currentText = buf.toString().trim();
-        final unfinished = !RegExp(r'[.!?:"”)]$').hasMatch(currentText);
+        final unfinished = _danglingLineEndRe.hasMatch(currentText);
         if (!unfinished && !RegExp('^[a-z]').hasMatch(next)) break;
         buf.write(' ${_cleanInline(next)}');
         last++;
@@ -398,17 +451,63 @@ class OfflineCardBuilder {
         continue;
       }
 
-      if (line.startsWith('```')) {
+      if (line.startsWith('```') || line.startsWith('~~~')) {
         flushParagraph();
-        final code = <String>[line];
+        final fence = line.startsWith('```') ? '```' : '~~~';
+        final code = <String>[lines[i]];
         i++;
-        while (i < lines.length && !lines[i].trim().startsWith('```')) {
-          code.add(lines[i].trimRight());
+        while (i < lines.length && !lines[i].trim().startsWith(fence)) {
+          code.add(lines[i]);
           i++;
         }
-        if (i < lines.length) code.add(lines[i].trim());
-        i++;
+        if (i < lines.length) {
+          code.add(lines[i]);
+          i++;
+        }
         blocks.add(_Block(_BlockKind.code, code.join('\n')));
+        previousBlank = true;
+        continue;
+      }
+
+      if (line.startsWith(r'$$') || line.startsWith(r'\[') || line.startsWith(r'\begin{')) {
+        String? lead;
+        if (paragraph.isNotEmpty) {
+          lead = paragraph.removeLast();
+          flushParagraph();
+        } else if (blocks.isNotEmpty && blocks.last.kind == _BlockKind.heading) {
+          lead = blocks.last.text;
+        } else {
+          flushParagraph();
+        }
+
+        final mathLines = <String>[lines[i]];
+        final isSingleLine = (line.startsWith(r'$$') && line.length > 2 && line.endsWith(r'$$')) ||
+            (line.startsWith(r'\[') && line.length > 2 && line.endsWith(r'\]'));
+        if (!isSingleLine) {
+          final isBegin = line.startsWith(r'\begin{');
+          i++;
+          while (i < lines.length) {
+            final curLine = lines[i];
+            final curTrim = curLine.trim();
+            mathLines.add(curLine);
+            i++;
+            if (isBegin) {
+              if (curTrim.startsWith(r'\end{')) break;
+            } else {
+              if (curTrim.endsWith(r'$$') || curTrim.endsWith(r'\]')) break;
+            }
+          }
+        } else {
+          i++;
+        }
+
+        blocks.add(
+          _Block(
+            _BlockKind.formula,
+            mathLines.join('\n'),
+            term: lead?.replaceFirst(RegExp(r'\s*:\s*$'), ''),
+          ),
+        );
         previousBlank = true;
         continue;
       }
@@ -435,7 +534,7 @@ class OfflineCardBuilder {
           blocks.add(
             _Block(
               _BlockKind.formula,
-              line,
+              lines[i],
               term: lead.replaceFirst(RegExp(r'\s*:\s*$'), ''),
             ),
           );
@@ -457,7 +556,7 @@ class OfflineCardBuilder {
       }
 
       // Check if line is an introductory header for a bullet/glossary list (ends with ':')
-      if (line.endsWith(':') && i + 1 < lines.length) {
+      if (line.endsWith(':') && _wordCount(line) <= 15 && i + 1 < lines.length) {
         final nextLine = lines.sublist(i + 1).firstWhere(
           (l) => l.trim().isNotEmpty,
           orElse: () => '',
@@ -517,11 +616,72 @@ class OfflineCardBuilder {
 
   /// Removes page numbers, separators, table-of-contents runs and lines that
   /// repeat across the document (running headers / footers).
-  List<String> _dropNoise(List<String> rawLines) {
+  List<String> _dropNoise(List<String> rawLines, {ExtractionReport? report}) {
+    // 1. Mark which lines belong to protected regions (code blocks and math blocks)
+    final isProtected = List<bool>.filled(rawLines.length, false);
+    var inCode = false;
+    var inMath = false;
+    String? codeFence;
+
+    for (var idx = 0; idx < rawLines.length; idx++) {
+      final line = rawLines[idx];
+      final trimmed = line.trim();
+
+      // Check code fences (``` or ~~~)
+      if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+        final fence = trimmed.substring(0, 3);
+        if (!inCode) {
+          inCode = true;
+          codeFence = fence;
+          isProtected[idx] = true;
+        } else if (fence == codeFence) {
+          inCode = false;
+          codeFence = null;
+          isProtected[idx] = true;
+        } else {
+          isProtected[idx] = inCode;
+        }
+        continue;
+      }
+      if (inCode) {
+        isProtected[idx] = true;
+        continue;
+      }
+
+      // Check display math delimiters
+      if (trimmed.startsWith(r'$$') || trimmed.startsWith(r'\[')) {
+        if (!inMath) {
+          inMath = true;
+          isProtected[idx] = true;
+          if (trimmed.length > 2 && (trimmed.endsWith(r'$$') || trimmed.endsWith(r'\]'))) {
+            inMath = false;
+          }
+        } else {
+          inMath = false;
+          isProtected[idx] = true;
+        }
+        continue;
+      }
+      if (trimmed.startsWith(r'\begin{')) {
+        inMath = true;
+        isProtected[idx] = true;
+        continue;
+      }
+      if (inMath) {
+        isProtected[idx] = true;
+        if (trimmed.endsWith(r'$$') || trimmed.endsWith(r'\]') || trimmed.startsWith(r'\end{')) {
+          inMath = false;
+        }
+        continue;
+      }
+    }
+
     final trimmed = rawLines.map((l) => l.trim()).toList();
 
     final counts = <String, int>{};
-    for (final l in trimmed) {
+    for (var idx = 0; idx < trimmed.length; idx++) {
+      if (isProtected[idx]) continue; // Code and math never count as repeating headers/footers
+      final l = trimmed[idx];
       if (l.isEmpty || l.length > 80) continue;
       counts.update(l.toLowerCase(), (v) => v + 1, ifAbsent: () => 1);
     }
@@ -550,9 +710,10 @@ class OfflineCardBuilder {
 
     var i = 0;
     while (i < trimmed.length) {
-      if (isTocLine(trimmed[i])) {
+      if (!isProtected[i] && isTocLine(trimmed[i])) {
         var j = i;
         while (j < trimmed.length &&
+            !isProtected[j] &&
             (isTocLine(trimmed[j]) || trimmed[j].isEmpty)) {
           j++;
         }
@@ -570,6 +731,11 @@ class OfflineCardBuilder {
 
     final out = <String>[];
     for (var k = 0; k < rawLines.length; k++) {
+      if (isProtected[k]) {
+        // Preserves protected code and math regions byte-for-byte with exact indentation
+        out.add(rawLines[k]);
+        continue;
+      }
       final l = trimmed[k];
       final cnt = counts[l.toLowerCase()] ?? 0;
       final isRepeatingHeader = isLong &&
@@ -579,9 +745,17 @@ class OfflineCardBuilder {
           !_bulletRe.hasMatch(l) &&
           !_orderedRe.hasMatch(l);
 
-      if (drop[k] ||
-          (_pageNoiseRe.hasMatch(l) && l.isNotEmpty) ||
-          isRepeatingHeader) {
+      if (drop[k]) {
+        report?.recordDrop(
+          rule: 'table_of_contents_run',
+          sampleText: rawLines[k],
+        );
+        out.add('');
+      } else if (_pageNoiseRe.hasMatch(l) && l.isNotEmpty) {
+        report?.recordDrop(rule: 'page_noise', sampleText: rawLines[k]);
+        out.add('');
+      } else if (isRepeatingHeader) {
+        report?.recordDrop(rule: 'repeating_header', sampleText: rawLines[k]);
         out.add('');
       } else {
         out.add(rawLines[k]);
@@ -900,28 +1074,13 @@ class OfflineCardBuilder {
         front = 'What does $term require?';
       } else if (lowerBody.contains('development process') || lowerBody.contains('process relying on')) {
         front = 'What is the core process of $term?';
-      } else if (lowerBody.contains('compatible with both android and ios') || lowerBody.contains('cross-platform')) {
-        front = 'How is $term achieved across Android and iOS?';
-      } else if (lowerBody.contains('allow users to customize') || lowerBody.contains('customize the look')) {
-        front = 'What capability does $term provide?';
-      } else if (lowerBody.contains('integrate with other') || lowerBody.contains('third-party')) {
-        front = 'What is the goal of $term?';
-      } else if (lowerBody.contains('work offline')) {
-        front = 'What does $term allow?';
-      } else if (lowerBody.contains('add support for different languages') || lowerBody.contains('multi-language')) {
-        front = 'What is the purpose of $term?';
-      } else if (lowerBody.contains('reusable and maintainable') && lowerBody.contains('widgets')) {
-        front = 'What is the objective of $term in Flutter?';
-      } else if (lowerBody.contains('collaborate with the design team')) {
-        front = 'What is the focus of $term?';
-      } else if (lowerBody.contains('write unit tests') || lowerBody.contains('perform debugging')) {
-        front = 'What is the role of $term?';
-      } else if (lowerBody.contains('code reviews')) {
-        front = 'What is the purpose of $term?';
-      } else if (lowerBody.contains('documentation for the')) {
-        front = 'What is the goal of $term?';
-      } else if (lowerBody.contains('backend engineers') || lowerBody.contains('collaborate')) {
-        front = 'What is the focus of $term?';
+      } else if (RegExp(
+            r'^(?:implement|add|allow|build|develop|create|integrate|support|work|track|collaborate|write|maintain)\b',
+            caseSensitive: false,
+          ).hasMatch(sanitizedBody) ||
+          lowerBody.contains('allow users') ||
+          lowerBody.contains('integrate with other')) {
+        front = 'What does "$term" involve?';
       } else {
         front = 'What is $term?';
       }
@@ -941,7 +1100,7 @@ class OfflineCardBuilder {
 
   OfflineCard? _formulaCard(_Block block, String? heading, String docContext) {
     final formulaText = block.text.trim();
-    final term = block.term ?? heading ?? 'this reaction';
+    final term = block.term ?? heading ?? (formulaText.contains(r'\') || formulaText.contains('=') ? 'this formula' : 'this reaction');
     final front = formulaText.contains(r'\') || formulaText.contains('=')
         ? 'What is the formula for $term?'
         : 'What is the chemical equation for $term?';
@@ -965,16 +1124,22 @@ class OfflineCardBuilder {
 
     final firstLine = code.split('\n').first.trim();
     var lang = '';
-    if (firstLine.startsWith('```')) {
+    if (firstLine.startsWith('```') || firstLine.startsWith('~~~')) {
       lang = firstLine.substring(3).trim();
     }
     if (lang.isEmpty) {
-      if (docContext == 'Flutter' || code.contains('Widget') || code.contains('setState')) {
+      if (code.contains('Widget') || code.contains('setState') || code.contains('BuildContext')) {
         lang = 'dart';
-      } else if (docContext == 'Java' || code.contains('public class') || code.contains('System.out')) {
+      } else if (code.contains('public class') || code.contains('System.out') || code.contains('public static void main')) {
         lang = 'java';
-      } else {
-        lang = 'dart';
+      } else if (code.contains('def ') || code.contains('import asyncio') || code.contains('elif ')) {
+        lang = 'python';
+      } else if (code.contains('fn ') || code.contains('let mut ') || code.contains('impl ')) {
+        lang = 'rust';
+      } else if (code.contains('package main') || code.contains('func ')) {
+        lang = 'go';
+      } else if (code.contains('#include') || code.contains('std::') || code.contains('template <')) {
+        lang = 'cpp';
       }
     }
 
@@ -1233,26 +1398,11 @@ class OfflineCardBuilder {
   }
 
   bool _isBannedBoilerplate(String lower) {
-    return lower.contains('copyright') ||
-        lower.contains('all rights reserved') ||
-        lower.contains('oracle america') ||
-        lower.contains('contractor') ||
-        lower.contains('the company') ||
-        lower.contains('welcome to') ||
-        lower.contains('dear ') ||
-        lower.contains('street') ||
-        lower.contains('lagos') ||
-        lower.contains('oyebode') ||
-        lower.contains('remuneration') ||
-        lower.contains('salary') ||
-        lower.contains('allowance') ||
-        lower.contains('in witness whereof') ||
-        lower.contains('severability') ||
-        lower.contains('governing law') ||
-        lower.contains('indemnif') ||
-        lower.contains('confidentiality') ||
-        lower.contains('terms of appointment') ||
-        lower.contains('acceptance of the terms');
+    final trimmed = lower.trim();
+    return RegExp(
+      r'^\s*(?:_{3,}|-{3,}|={3,}|copyright\b|all\s+rights\s+reserved\b|dear\s+[a-z]+|welcome\s+to\b|in\s+witness\s+whereof\b|signed\s+by\b)',
+      caseSensitive: false,
+    ).hasMatch(trimmed);
   }
 
   OfflineCard? _listCard(String? heading, List<_Block> items) {
@@ -1365,17 +1515,11 @@ class OfflineCardBuilder {
 
   _DefinitionResult? _definitionCard(List<String> sentences, int index) {
     final sentence = sentences[index];
-    final lowerSentence = sentence.toLowerCase();
-    if (lowerSentence.contains('copyright') ||
-        lowerSentence.contains('all rights reserved') ||
-        lowerSentence.contains('oracle america') ||
-        lowerSentence.contains('contractor') ||
-        lowerSentence.contains('the company') ||
-        lowerSentence.contains('challenge is') ||
-        lowerSentence.contains('welcome to') ||
-        lowerSentence.contains('street') ||
-        lowerSentence.contains('lagos') ||
-        lowerSentence.contains('dear ')) {
+    final trimmed = sentence.trim();
+    if (RegExp(
+      r'^\s*(?:copyright\b|all\s+rights\s+reserved\b|dear\s+[a-z]+|welcome\s+to\b)',
+      caseSensitive: false,
+    ).hasMatch(trimmed)) {
       return null;
     }
 
@@ -1544,30 +1688,6 @@ class OfflineCardBuilder {
     'neither',
     'however',
     'therefore',
-    'parties',
-    'party',
-    'appointment',
-    'agreement',
-    'contract',
-    'contractor',
-    'clause',
-    'schedule',
-    'herein',
-    'hereunder',
-    'undersigned',
-    'signed',
-    'sign',
-    'date',
-    'month',
-    'year',
-    'days',
-    'letter',
-    'shall',
-    'terms',
-    'challenge',
-    'requirements',
-    'requirement',
-    'estimate',
     'experience',
     'ideas',
     'factors',
@@ -1593,8 +1713,9 @@ class OfflineCardBuilder {
   _ClozeCandidate? _clozeCandidate(
     String sentence,
     Map<String, int> freq,
-    int order,
-  ) {
+    int order, {
+    String? heading,
+  }) {
     final words = _wordCount(sentence);
     if (words < _minClozeWords || words > _maxClozeWords) return null;
     if (!RegExp('^[A-Z]').hasMatch(sentence)) return null;
@@ -1619,52 +1740,10 @@ class OfflineCardBuilder {
     // Reject cloze cards starting with pronouns ("It occurs in the _____")
     if (_badSubjectStarts.contains(firstWord)) return null;
 
-    final lower = sentence.toLowerCase();
-    if (lower.contains('welcome to') ||
-        lower.contains('dear ') ||
-        lower.contains('copyright') ||
-        lower.contains('all rights reserved') ||
-        lower.contains('oracle america') ||
-        lower.contains('contractor') ||
-        lower.contains('street') ||
-        lower.contains('lagos') ||
-        lower.contains('oyebode') ||
-        lower.contains('hereunder') ||
-        lower.contains('herein') ||
-        lower.contains('hereof') ||
-        lower.contains('challenge is to') ||
-        lower.contains('dispute') ||
-        lower.contains('jurisdiction') ||
-        lower.contains('court') ||
-        lower.contains('undersigned') ||
-        lower.contains('acceptance of the terms') ||
-        lower.contains('terms of appointment') ||
-        lower.contains('in witness whereof') ||
-        lower.contains('severability') ||
-        lower.contains('governing law') ||
-        lower.contains('indemnif') ||
-        lower.contains('confidentiality') ||
-        lower.contains('agreement') ||
-        lower.contains('employment') ||
-        lower.contains('remuneration') ||
-        lower.contains('salary') ||
-        lower.contains('allowance') ||
-        lower.contains('signed') ||
-        lower.contains('sign and return') ||
-        lower.contains('line manager') ||
-        lower.contains('engagement') ||
-        lower.contains('letter') ||
-        lower.contains('nigeria') ||
-        lower.contains('regulation') ||
-        lower.contains('terms and conditions') ||
-        lower.contains('clause') ||
-        lower.contains('schedule') ||
-        lower.contains('republic') ||
-        lower.contains('public knowledge') ||
-        lower.contains('fee') ||
-        lower.contains('monthly') ||
-        lower.contains('n850') ||
-        lower.contains('charges')) {
+    if (RegExp(
+      r'^\s*(?:copyright\b|all\s+rights\s+reserved\b|dear\s+[a-z]+|welcome\s+to\b|in\s+witness\s+whereof\b|signed\s+by\b)',
+      caseSensitive: false,
+    ).hasMatch(trimmed)) {
       return null;
     }
 
@@ -1702,10 +1781,19 @@ class OfflineCardBuilder {
     );
     if (blank == sentence) return null;
 
+    final cleanHeading = heading
+        ?.replaceFirst(RegExp(r'^(?:#+|\d+(?:\.\d+)*\.?)\s*'), '')
+        .trim();
+    final contextualFront = (cleanHeading != null &&
+            cleanHeading.isNotEmpty &&
+            !sentence.toLowerCase().contains(cleanHeading.toLowerCase()))
+        ? 'In "$cleanHeading", complete: $blank'
+        : blank;
+
     return _ClozeCandidate(
       card: OfflineCard(
         type: OfflineCardType.cloze,
-        front: blank,
+        front: contextualFront,
         back: '$best\n\n$sentence',
         confidence: 0.75,
       ),
@@ -1719,22 +1807,11 @@ class OfflineCardBuilder {
     final frontLower = card.front.toLowerCase();
     final backLower = card.back.toLowerCase();
 
-    if (frontLower.contains('welcome') ||
-        frontLower.contains('dear ') ||
-        frontLower.contains('copyright') ||
-        frontLower.contains('rights reserved') ||
-        frontLower.contains('all rights reserved') ||
-        frontLower.contains('status') ||
-        frontLower.contains('version') ||
-        frontLower.contains('specification') ||
-        frontLower.contains('take-home')) {
+    if (RegExp(r'\b(?:welcome\s+to|dear\s+[a-z]+|copyright|all\s+rights\s+reserved)\b', caseSensitive: false).hasMatch(frontLower)) {
       return false;
     }
 
-    if (backLower.contains('copyright ©') ||
-        backLower.contains('all rights reserved') ||
-        backLower.contains('take-home challenge') ||
-        backLower.contains('we write further')) {
+    if (RegExp(r'\b(?:copyright\s+(?:©|\(c\))?\s*\d{4}|all\s+rights\s+reserved)\b', caseSensitive: false).hasMatch(backLower)) {
       return false;
     }
 
@@ -1758,7 +1835,9 @@ class OfflineCardBuilder {
       return false;
     }
 
-    if (card.front.length < 5 || card.back.length < 10) return false;
+    if (card.front.length < 5) return false;
+    if (card.type != OfflineCardType.formula && card.back.length < 10) return false;
+    if (card.type == OfflineCardType.formula && card.back.length < 3) return false;
 
     return true;
   }

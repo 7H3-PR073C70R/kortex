@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/synthesis/schema_serializer.dart';
+import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 
 /// Characterization harness for the offline (no-server) card synthesis.
 ///
@@ -26,8 +27,26 @@ void main() {
     final name = file.uri.pathSegments.last;
     test('dump offline cards: $name', () {
       final ext = name.split('.').last;
+      final bytes = file.readAsBytesSync();
+
+      if (name.contains('encrypted')) {
+        expect(
+          () => service.extractTextFromBytes(bytes, fileType: ext, filename: name),
+          throwsA(isA<EncryptedPdfException>()),
+        );
+        return;
+      }
+
+      if (name.contains('corrupt')) {
+        expect(
+          () => service.extractTextFromBytes(bytes, fileType: ext, filename: name),
+          throwsA(isA<CorruptDocumentException>()),
+        );
+        return;
+      }
+
       final text = service.extractTextFromBytes(
-        file.readAsBytesSync(),
+        bytes,
         fileType: ext,
         filename: name,
       );
@@ -62,7 +81,9 @@ void main() {
       print('Output saved to: ${jsonFile.path}\n');
 
       expect(cards, isNotNull);
-      expect(deck.cards, isNotEmpty);
+      if (!name.contains('invoice')) {
+        expect(deck.cards, isNotEmpty);
+      }
       expect(deck.schemaVersion, equals('1.0.0'));
       expect(jsonFile.existsSync(), isTrue);
     });

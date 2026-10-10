@@ -1,5 +1,6 @@
 import 'package:kortex/src/features/ingestion/data/services/synthesis/document_ast_extractor.dart';
 import 'package:kortex/src/features/ingestion/data/services/synthesis/transition_parser_engine.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/pedagogical_card_schema.dart';
 
 /// The pedagogical classification of the generated flashcard.
 enum CognitiveQuestionType {
@@ -22,6 +23,8 @@ class PedagogicalCandidateCard {
     required this.back,
     required this.type,
     required this.sourceTopic,
+    this.source,
+    this.assets = const [],
     this.frontLatex,
     this.backLatex,
     this.imageUrl,
@@ -32,6 +35,8 @@ class PedagogicalCandidateCard {
   final String back;
   final CognitiveQuestionType type;
   final String sourceTopic;
+  final CardSource? source;
+  final List<CardAsset> assets;
   final String? frontLatex;
   final String? backLatex;
   final String? imageUrl;

@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
+import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 class _PdfExtractParams {
@@ -76,15 +79,57 @@ class LocalPdfParserService {
   String extractTextFromPdfBytes(
     Uint8List bytes, {
     String filename = 'document.pdf',
+    ExtractionReport? report,
   }) {
     if (bytes.isEmpty) return '';
 
-    try {
-      final document = PdfDocument(inputBytes: bytes);
-      final extractor = PdfTextExtractor(document);
-      final pageTexts = <String>[];
+    // Fast check for PDF encryption dictionary
+    if (_hasPdfEncryption(bytes)) {
+      report?.isEncrypted = true;
+      report?.recordWarning('PDF contains /Encrypt dictionary');
+      throw EncryptedPdfException(filename);
+    }
 
-      for (var i = 0; i < document.pages.count; i++) {
+    // Validate minimal PDF header
+    final probeLen = bytes.length < 1024 ? bytes.length : 1024;
+    final probeStr = String.fromCharCodes(bytes.sublist(0, probeLen));
+    if (!probeStr.contains('%PDF')) {
+      report?.isCorrupt = true;
+      report?.recordDrop(
+        rule: 'invalid_pdf_header',
+        sampleText: probeStr.substring(0, math.min(probeStr.length, 50)),
+      );
+      throw CorruptDocumentException(filename, 'File lacks valid %PDF header.');
+    }
+
+    PdfDocument? document;
+    try {
+      document = PdfDocument(inputBytes: bytes);
+    } on Object catch (e) {
+      final err = e.toString().toLowerCase();
+      if (err.contains('password') || err.contains('encrypt') || _hasPdfEncryption(bytes)) {
+        report?.isEncrypted = true;
+        report?.recordWarning('PDF is encrypted: $e');
+        throw EncryptedPdfException(filename);
+      }
+
+      final fallbackText = _documentParserService.extractRawPdfStreamText(bytes);
+      final sanitizedFallback = sanitizeExtractedText(fallbackText, report: report);
+      if (sanitizedFallback.trim().isEmpty) {
+        report?.isCorrupt = true;
+        report?.recordDrop(rule: 'unrecoverable_pdf_syntax', sampleText: '$e');
+        throw CorruptDocumentException(filename, 'Unrecoverable PDF syntax: $e');
+      }
+      return sanitizedFallback;
+    }
+
+    final pageTexts = <String>[];
+    var pageCount = 0;
+    try {
+      pageCount = document.pages.count;
+      final extractor = PdfTextExtractor(document);
+
+      for (var i = 0; i < pageCount; i++) {
         var pageText = '';
         try {
           final textLines = extractor.extractTextLines(startPageIndex: i);
@@ -108,8 +153,12 @@ class LocalPdfParserService {
         final lower = pageText.toLowerCase().trim();
 
         // Skip non-educational front-matter and back-matter pages
-        // (Table of Contents, Acknowledgments, References, Bibliography, Index, Copyright)
         if (_isNonEducationalPage(lower, pageText)) {
+          report?.recordDrop(
+            page: i + 1,
+            rule: 'non_educational_page',
+            sampleText: pageText,
+          );
           continue;
         }
 
@@ -117,30 +166,65 @@ class LocalPdfParserService {
           pageTexts.add(pageText);
         }
       }
-
+    } finally {
       document.dispose();
-
-      if (pageTexts.isNotEmpty) {
-        final sanitized = sanitizeExtractedPages(pageTexts);
-        if (sanitized.isNotEmpty) {
-          return sanitized;
-        }
-      }
-    } on Object {
-      // Fallback to byte stream extraction if PDF structure is non-standard
     }
 
-    final fallbackText = _documentParserService.extractRawPdfStreamText(
-      bytes,
-    );
+    if (pageTexts.isNotEmpty) {
+      final sanitized = sanitizeExtractedPages(pageTexts, report: report);
+      if (sanitized.isNotEmpty) {
+        return sanitized;
+      }
+    }
 
-    return sanitizeExtractedText(fallbackText);
+    final fallbackText = _documentParserService.extractRawPdfStreamText(bytes);
+    final sanitizedFallback = sanitizeExtractedText(fallbackText, report: report);
+    if (sanitizedFallback.isNotEmpty) {
+      return sanitizedFallback;
+    }
+
+    // If PDF has pages but zero extractable text streams across all extraction attempts
+    if (pageCount > 0) {
+      report?.isScanned = true;
+      report?.recordWarning('Document has $pageCount page(s) but zero text streams.');
+      throw ScannedDocumentException(
+        filename,
+        'Document has $pageCount page(s) with zero extractable text streams (scanned or image-only).',
+      );
+    }
+
+    return '';
+  }
+
+  static bool _hasPdfEncryption(Uint8List bytes) {
+    if (bytes.isEmpty) return false;
+    final target = [47, 69, 110, 99, 114, 121, 112, 116]; // '/Encrypt'
+    var matchIdx = 0;
+    for (var i = 0; i < bytes.length; i++) {
+      if (bytes[i] == target[matchIdx]) {
+        matchIdx++;
+        if (matchIdx == target.length) {
+          if (i + 1 >= bytes.length ||
+              bytes[i + 1] <= 32 ||
+              bytes[i + 1] == 47 ||
+              bytes[i + 1] == 60) {
+            return true;
+          }
+        }
+      } else {
+        matchIdx = bytes[i] == target[0] ? 1 : 0;
+      }
+    }
+    return false;
   }
 
   /// Dynamically sanitizes extracted pages by computing line occurrence frequency
   /// across pages to automatically identify and eliminate repeating headers,
   /// footers, watermarks, and marginalia without hardcoded rules.
-  static String sanitizeExtractedPages(List<String> pages) {
+  static String sanitizeExtractedPages(
+    List<String> pages, {
+    ExtractionReport? report,
+  }) {
     if (pages.isEmpty) return '';
 
     // 1. Compute line frequency across all pages to detect dynamic repeating headers/footers
@@ -148,15 +232,51 @@ class LocalPdfParserService {
     final pageLinesList = <List<String>>[];
 
     for (final page in pages) {
-      final lines = page
-          .split('\n')
-          .map((l) => l.trim())
-          .where((l) => l.isNotEmpty)
-          .toList();
+      final lines = page.split('\n');
       final seenOnThisPage = <String>{};
+      var inCode = false;
+      var inMath = false;
+      String? codeFence;
 
-      for (final line in lines) {
-        final normalized = _normalizeLineForFrequency(line);
+      for (final raw in lines) {
+        final trimmed = raw.trim();
+        if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+          final fence = trimmed.substring(0, 3);
+          if (!inCode) {
+            inCode = true;
+            codeFence = fence;
+          } else if (fence == codeFence) {
+            inCode = false;
+            codeFence = null;
+          }
+          continue;
+        }
+        if (inCode) continue;
+
+        if (trimmed.startsWith(r'$$') || trimmed.startsWith(r'\[')) {
+          if (!inMath) {
+            inMath = true;
+            if (trimmed.length > 2 && (trimmed.endsWith(r'$$') || trimmed.endsWith(r'\]'))) {
+              inMath = false;
+            }
+          } else {
+            inMath = false;
+          }
+          continue;
+        }
+        if (trimmed.startsWith(r'\begin{')) {
+          inMath = true;
+          continue;
+        }
+        if (inMath) {
+          if (trimmed.endsWith(r'$$') || trimmed.endsWith(r'\]') || trimmed.startsWith(r'\end{')) {
+            inMath = false;
+          }
+          continue;
+        }
+
+        if (trimmed.isEmpty) continue;
+        final normalized = _normalizeLineForFrequency(trimmed);
         final wordCount = normalized
             .split(RegExp(r'\s+'))
             .where((w) => w.isNotEmpty)
@@ -186,17 +306,82 @@ class LocalPdfParserService {
     for (final page in pages) {
       final lines = page.split('\n');
       final cleanLines = <String>[];
+      var inCode = false;
+      var inMath = false;
+      String? codeFence;
+
       for (final raw in lines) {
         final trimmed = raw.trim();
         if (trimmed.isEmpty) {
           cleanLines.add('');
           continue;
         }
-        final normalized = _normalizeLineForFrequency(trimmed);
-        if (repeatingMarginalia.contains(normalized) ||
-            isMetadataOrRendererArtifact(trimmed) ||
-            isCorruptedBinaryNoise(trimmed)) {
+
+        // Code fences and interior lines are preserved byte-for-byte
+        if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+          final fence = trimmed.substring(0, 3);
+          if (!inCode) {
+            inCode = true;
+            codeFence = fence;
+          } else if (fence == codeFence) {
+            inCode = false;
+            codeFence = null;
+          }
+          cleanLines.add(raw);
           continue;
+        }
+        if (inCode) {
+          cleanLines.add(raw);
+          continue;
+        }
+
+        // Math blocks and interior lines are preserved byte-for-byte
+        if (trimmed.startsWith(r'$$') || trimmed.startsWith(r'\[')) {
+          if (!inMath) {
+            inMath = true;
+            if (trimmed.length > 2 && (trimmed.endsWith(r'$$') || trimmed.endsWith(r'\]'))) {
+              inMath = false;
+            }
+          } else {
+            inMath = false;
+          }
+          cleanLines.add(raw);
+          continue;
+        }
+        if (trimmed.startsWith(r'\begin{')) {
+          inMath = true;
+          cleanLines.add(raw);
+          continue;
+        }
+        if (inMath) {
+          if (trimmed.endsWith(r'$$') || trimmed.endsWith(r'\]') || trimmed.startsWith(r'\end{')) {
+            inMath = false;
+          }
+          cleanLines.add(raw);
+          continue;
+        }
+
+        if (report != null) {
+          report.totalLinesProcessed++;
+        }
+        final normalized = _normalizeLineForFrequency(trimmed);
+        if (repeatingMarginalia.contains(normalized)) {
+          report?.recordDrop(rule: 'repeating_marginalia', sampleText: raw);
+          continue;
+        }
+        if (isMetadataOrRendererArtifact(trimmed)) {
+          report?.recordDrop(
+            rule: 'renderer_or_page_number_artifact',
+            sampleText: raw,
+          );
+          continue;
+        }
+        if (isCorruptedBinaryNoise(trimmed)) {
+          report?.recordDrop(rule: 'corrupted_binary_noise', sampleText: raw);
+          continue;
+        }
+        if (report != null) {
+          report.totalLinesRetained++;
         }
         cleanLines.add(trimmed);
       }
@@ -214,9 +399,12 @@ class LocalPdfParserService {
   static String repairDetachedInitialCapitals(String text) => text;
 
   /// Sanitizes raw single-block extracted text into coherent paragraphs.
-  static String sanitizeExtractedText(String rawText) {
+  static String sanitizeExtractedText(
+    String rawText, {
+    ExtractionReport? report,
+  }) {
     if (rawText.isEmpty) return '';
-    return sanitizeExtractedPages([rawText]);
+    return sanitizeExtractedPages([rawText], report: report);
   }
 
   static String _normalizeLineForFrequency(String line) {
@@ -510,7 +698,8 @@ class LocalPdfParserService {
       }
     }
 
-    if (lower.contains('oracle america') && lower.contains('copyright')) {
+    if (RegExp(r'\bcopyright\s+(?:©|\(c\))?\s*\d{4}\b', caseSensitive: false).hasMatch(lower) &&
+        (lower.contains('all rights reserved') || lower.contains('printed in'))) {
       return true;
     }
 

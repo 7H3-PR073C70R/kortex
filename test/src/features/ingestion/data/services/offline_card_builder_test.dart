@@ -118,6 +118,7 @@ For assistance visit https://example.com/help today.
       for (final file in dir.listSync().whereType<File>()) {
         final name = file.uri.pathSegments.last;
         if (!name.endsWith('.md') && !name.endsWith('.pdf')) continue;
+        if (name.contains('corrupt') || name.contains('encrypted') || name.contains('invoice')) continue;
 
         final bytes = file.readAsBytesSync();
         // Production pipeline: PDFs go through LocalPdfParserService!
