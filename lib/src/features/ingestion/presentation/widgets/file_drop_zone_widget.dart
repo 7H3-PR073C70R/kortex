@@ -539,7 +539,7 @@ class FileDropZoneWidget extends HookWidget {
         label: !kIsWeb &&
                 (defaultTargetPlatform == TargetPlatform.android ||
                     defaultTargetPlatform == TargetPlatform.iOS)
-            ? 'Tap to upload PDF, PPTX, or image files.'
+            ? 'Tap to upload PDF, PPTX, DoCX, EPUB, TXT, HTML, MD or image files.'
             : l10n.dragAndDropHint,
         button: true,
         child: GestureDetector(
@@ -598,7 +598,7 @@ class FileDropZoneWidget extends HookWidget {
                     !kIsWeb &&
                             (defaultTargetPlatform == TargetPlatform.android ||
                                 defaultTargetPlatform == TargetPlatform.iOS)
-                        ? 'Tap to upload PDF, PPTX, or image files.'
+                        ? 'Tap to upload PDF, PPTX, DoCX, EPUB, TXT, HTML, MD or image files.'
                         : l10n.dragAndDropHint,
                     textAlign: TextAlign.center,
                     style: typography.title3.bold.copyWith(

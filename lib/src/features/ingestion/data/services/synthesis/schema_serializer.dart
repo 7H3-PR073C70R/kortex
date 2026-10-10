@@ -29,7 +29,7 @@ class SchemaSerializer {
   );
 
   static final _terminalPunctuationRegex = RegExp(
-    r'(?:[\.\?!;:}\])"]|```|\$|\))\s*$',
+    r'(?:[\.\?!;:}\])"]|```|\$|\)|\|)\s*$',
   );
 
   /// Strict quality validation pipeline.
@@ -49,9 +49,10 @@ class SchemaSerializer {
       return false;
     }
 
-    // 2. Truncation check on card back (bypassed for code and math)
+    // 2. Truncation check on card back (bypassed for code, math, and structured tables)
     if (card.type != CognitiveQuestionType.code &&
         card.type != CognitiveQuestionType.math &&
+        card.type != CognitiveQuestionType.yieldResult &&
         _isTruncated(back)) {
       return false;
     }

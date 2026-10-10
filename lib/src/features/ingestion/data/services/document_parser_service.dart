@@ -601,7 +601,10 @@ class DocumentParserService {
       fullText.trim(),
     );
     final cleanDeckTitle = deckTitle ??
-        filename.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
+        OfflineCardBuilder.extractDeckTitle(
+          fullText: cleanFullText,
+          filename: filename,
+        );
     final inferredSubject = subject ?? _inferSubject(filename);
     final effectiveCategory = category ?? 'Study';
 
@@ -621,6 +624,7 @@ class DocumentParserService {
     final cards = const OfflineCardBuilder().buildCards(
       cleanFullText,
       report: report,
+      metadata: {'title': cleanDeckTitle},
     );
     final usedImageUrls = <String>{};
     final candidates = <PedagogicalCandidateCard>[];

@@ -44,6 +44,10 @@ class FilePickerService {
       'jpeg',
       'txt',
       'docx',
+      'html',
+      'md',
+      'epub',
+      'txt'
     ],
   }) async {
     try {

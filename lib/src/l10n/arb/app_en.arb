@@ -2231,7 +2231,7 @@
     "@ingestionTitle": {
         "description": "Title of the ingestion and OCR feature hub"
     },
-    "dragAndDropHint": "Drag & drop PDF, PPTX, or image files here",
+    "dragAndDropHint": "Drag & drop PDF, PPTX, DoCX, EPUB, TXT, HTML, MD or image files here",
     "@dragAndDropHint": {
         "description": "Instruction for drop zone widget"
     },

@@ -377,7 +377,7 @@ void main() {
       );
 
       client
-        ..forceStartRound(match.duelId, 0)
+        ..forceStartRound(match.duelId)
         ..concludeRound(match.duelId, 0);
 
       final summaryMatch = await client.streamDuel(match.duelId).first;

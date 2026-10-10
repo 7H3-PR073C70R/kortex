@@ -1,0 +1,25 @@
+\documentclass[twocolumn]{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\title{Quantum Electrodynamics of Bound States in Strong Coulomb Fields}
+\author{J. R. Oppenheimer \and H. A. Bethe}
+\begin{document}
+\maketitle
+\begin{abstract}
+We calculate radiative corrections to electron binding energies in high-Z hydrogenic ions.
+\end{abstract}
+\section{Introduction and Field Equations}
+The Dirac Hamiltonian in an external potential is:
+\begin{equation}
+H_D = \boldsymbol{\alpha}\cdot(\mathbf{p} - e\mathbf{A}) + \beta m + e A_0
+\end{equation}
+\section{Vacuum Polarization}
+The conserved polarization tensor satisfies:
+\begin{equation}
+q_\mu \Pi^{\mu\nu}(q) = 0
+\end{equation}
+\begin{figure}[h]
+\centering
+\caption{One-loop vacuum polarization and electron self-energy Feynman graphs.}
+\end{figure}
+\end{document}
