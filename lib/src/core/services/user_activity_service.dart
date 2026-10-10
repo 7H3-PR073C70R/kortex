@@ -141,6 +141,7 @@ class UserActivityServiceImpl implements UserActivityService {
       StreamController<AnalyticsSummaryModel>.broadcast();
   final StreamController<XpEarnedEvent> _xpEarnedStreamController =
       StreamController<XpEarnedEvent>.broadcast();
+  Timer? _syncDebounceTimer;
 
   static const String _sessionsKey = '__kortex_study_sessions';
   static const String _streakCurrentKey = '__kortex_streak_current';
@@ -271,12 +272,21 @@ class UserActivityServiceImpl implements UserActivityService {
     }
     _notifyAnalyticsUpdated();
 
-    // 4. Fire-and-forget sync to backend so leaderboard stays correct for all users.
-    //    syncUserProgress updates profiles.xp_points atomically, which triggers
-    //    the Supabase leaderboard sync trigger automatically.
-    unawaited(_syncProgressToBackend(xpDelta: xpEarned));
+    // 4. Debounced sync to backend so leaderboard stays correct without hammering the network.
+    _scheduleProgressSync(xpDelta: xpEarned);
 
     return event;
+  }
+
+  void _scheduleProgressSync({int xpDelta = 0}) {
+    if (xpDelta > 0) {
+      final currentPending = _getPendingXpDelta();
+      unawaited(_setPendingXpDelta(currentPending + xpDelta));
+    }
+    _syncDebounceTimer?.cancel();
+    _syncDebounceTimer = Timer(const Duration(seconds: 4), () {
+      unawaited(_syncProgressToBackend());
+    });
   }
 
   @override
@@ -286,11 +296,8 @@ class UserActivityServiceImpl implements UserActivityService {
   /// If offline, retains pending delta in storage and retries on reconnect.
   Future<void> _syncProgressToBackend({int xpDelta = 0}) async {
     try {
-      final previousPending = _getPendingXpDelta();
-      final totalDelta = previousPending + xpDelta;
-      if (totalDelta > 0) {
-        await _setPendingXpDelta(totalDelta);
-      }
+      final totalDelta = _getPendingXpDelta() + xpDelta;
+      if (totalDelta <= 0) return;
 
       final communityRepo = locator.isRegistered<CommunityRepository>()
           ? locator<CommunityRepository>()

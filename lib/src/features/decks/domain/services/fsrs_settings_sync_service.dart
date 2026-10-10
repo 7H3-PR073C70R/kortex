@@ -52,9 +52,14 @@ class FsrsSettingsSyncService {
     return const FsrsUserSettings();
   }
 
+  static bool _hasRestoredThisSession = false;
+
   /// Restores user notification preferences and desired retention from Supabase
   /// if local storage is missing or default.
   Future<FsrsUserSettings?> restoreFromRemote() async {
+    if (_hasRestoredThisSession) return null;
+    _hasRestoredThisSession = true;
+
     try {
       final dio = _effectiveDio;
       if (dio == null) return null;
