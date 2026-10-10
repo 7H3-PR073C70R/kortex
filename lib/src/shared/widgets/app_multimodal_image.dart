@@ -41,6 +41,7 @@ class AppMultimodalImage extends StatelessWidget {
     final clean = imageUrl.trim();
     if (clean.startsWith('http://') ||
         clean.startsWith('https://') ||
+        clean.startsWith('blob:') ||
         clean.startsWith('data:image') ||
         clean.startsWith('assets/') ||
         clean.startsWith('file://') ||

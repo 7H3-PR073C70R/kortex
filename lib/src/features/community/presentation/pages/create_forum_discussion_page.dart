@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -32,6 +33,7 @@ import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -672,28 +674,31 @@ class CreateForumDiscussionPage extends HookWidget {
 
       showPublishingLoaderDialog();
 
-      // Server-side R2 upload for local image & voice note files
+      // Server-side R2 upload for local image & voice note files (Web + Mobile)
       var finalMediaUrls = <String>[];
-      if (attachedImages.value.isNotEmpty &&
-          locator.isRegistered<MediaUploadService>()) {
-        final uploadService = locator<MediaUploadService>();
-        for (final imgPath in attachedImages.value) {
-          if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
-            finalMediaUrls.add(imgPath);
-          } else if (File(imgPath).existsSync()) {
-            try {
-              final r2Url = await uploadService.uploadMedia(
-                file: File(imgPath),
-                mediaType: ForumMediaType.image,
-              );
-              finalMediaUrls.add(r2Url);
-            } on Object catch (_) {
+      if (attachedImages.value.isNotEmpty) {
+        if (locator.isRegistered<MediaUploadService>()) {
+          final uploadService = locator<MediaUploadService>();
+          for (final imgPath in attachedImages.value) {
+            if (imgPath.startsWith('http://') ||
+                imgPath.startsWith('https://')) {
               finalMediaUrls.add(imgPath);
+            } else {
+              try {
+                final r2Url = await uploadService.uploadMedia(
+                  pathOrUrl: imgPath,
+                  file: kIsWeb ? null : File(imgPath),
+                  mediaType: ForumMediaType.image,
+                );
+                finalMediaUrls.add(r2Url);
+              } on Object catch (_) {
+                finalMediaUrls.add(imgPath);
+              }
             }
           }
+        } else {
+          finalMediaUrls = List<String>.from(attachedImages.value);
         }
-      } else {
-        finalMediaUrls = attachedImages.value;
       }
 
       var finalVoiceNoteUrl = recordedVoiceNoteUrl.value;
@@ -702,15 +707,14 @@ class CreateForumDiscussionPage extends HookWidget {
           !finalVoiceNoteUrl.startsWith('https://') &&
           locator.isRegistered<MediaUploadService>()) {
         final uploadService = locator<MediaUploadService>();
-        if (File(finalVoiceNoteUrl).existsSync()) {
-          try {
-            final r2Url = await uploadService.uploadMedia(
-              file: File(finalVoiceNoteUrl),
-              mediaType: ForumMediaType.voice,
-            );
-            finalVoiceNoteUrl = r2Url;
-          } on Object catch (_) {}
-        }
+        try {
+          final r2Url = await uploadService.uploadMedia(
+            pathOrUrl: finalVoiceNoteUrl,
+            file: kIsWeb ? null : File(finalVoiceNoteUrl),
+            mediaType: ForumMediaType.voice,
+          );
+          finalVoiceNoteUrl = r2Url;
+        } on Object catch (_) {}
       }
 
       if (onSubmit != null) {
@@ -1702,25 +1706,13 @@ class CreateForumDiscussionPage extends HookWidget {
                               final path = attachedImages.value[idx];
                               return Stack(
                                 children: [
-                                  ClipRRect(
+                                  AppMultimodalImage(
+                                    imageUrl: path,
+                                    width: 84,
+                                    height: 84,
+                                    fit: BoxFit.cover,
                                     borderRadius: BorderRadius.circular(12),
-                                    child: Image.file(
-                                      File(path),
-                                      width: 84,
-                                      height: 84,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              Container(
-                                                width: 84,
-                                                height: 84,
-                                                color: colors.surfaceSecondary,
-                                                child: Icon(
-                                                  Icons.image_rounded,
-                                                  color: colors.textSecondary,
-                                                ),
-                                              ),
-                                    ),
+                                    enableZoomOnTap: false,
                                   ),
                                   Positioned(
                                     top: 4,

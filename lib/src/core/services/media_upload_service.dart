@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb, visibleForTesting;
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -24,15 +25,61 @@ class MediaUploadService {
   /// Uploads a media file (Image or Voice Note) to Cloudflare R2
   /// via the secure `/upload-forum-media` server endpoint.
   Future<String> uploadMedia({
-    required File file,
     required ForumMediaType mediaType,
+    File? file,
+    Uint8List? bytes,
+    String? pathOrUrl,
+    String? fileName,
     void Function(int sent, int total)? onProgress,
   }) async {
-    if (!file.existsSync()) {
-      throw Exception('File does not exist: ${file.path}');
+    var mediaBytes = bytes;
+    var originalFileName = fileName ?? '';
+
+    if (mediaBytes == null) {
+      final targetPath = pathOrUrl ?? file?.path;
+      if (targetPath != null && targetPath.isNotEmpty) {
+        if (originalFileName.isEmpty) {
+          originalFileName = targetPath.split('/').last.split(r'\').last;
+        }
+
+        if (targetPath.startsWith('blob:') ||
+            targetPath.startsWith('http://') ||
+            targetPath.startsWith('https://')) {
+          try {
+            final res = await _dio.get<List<int>>(
+              targetPath,
+              options: Options(responseType: ResponseType.bytes),
+            );
+            if (res.data != null) {
+              mediaBytes = Uint8List.fromList(res.data!);
+            }
+          } on Object catch (e) {
+            debugPrint(
+              'MediaUploadService: Failed to fetch bytes from $targetPath: $e',
+            );
+          }
+        } else if (!kIsWeb && file != null && file.existsSync()) {
+          mediaBytes = await file.readAsBytes();
+        } else if (!kIsWeb && File(targetPath).existsSync()) {
+          mediaBytes = await File(targetPath).readAsBytes();
+        }
+      } else if (!kIsWeb && file != null && file.existsSync()) {
+        if (originalFileName.isEmpty) {
+          originalFileName = file.path.split('/').last.split(r'\').last;
+        }
+        mediaBytes = await file.readAsBytes();
+      }
     }
 
-    final originalFileName = file.path.split(Platform.pathSeparator).last;
+    if (mediaBytes == null || mediaBytes.isEmpty) {
+      throw Exception('No media bytes available to upload');
+    }
+
+    if (originalFileName.isEmpty) {
+      originalFileName =
+          mediaType == ForumMediaType.image ? 'upload.webp' : 'upload.m4a';
+    }
+
     final extension = originalFileName.contains('.')
         ? originalFileName.split('.').last.toLowerCase()
         : (mediaType == ForumMediaType.image ? 'webp' : 'm4a');
@@ -50,7 +97,6 @@ class MediaUploadService {
           : (extension == 'mp3' ? 'audio/mpeg' : 'audio/m4a');
     }
 
-    final bytes = await file.readAsBytes();
     final userStorage = locator.isRegistered<UserStorageService>()
         ? locator<UserStorageService>()
         : null;
@@ -67,7 +113,7 @@ class MediaUploadService {
 
     final response = await _dio.post<Map<String, dynamic>>(
       url,
-      data: Stream.fromIterable([bytes]),
+      data: Stream.fromIterable([mediaBytes]),
       options: Options(
         headers: reqHeaders,
       ),
@@ -76,7 +122,8 @@ class MediaUploadService {
 
     if (response.statusCode == 200 && response.data != null) {
       final resData = response.data!;
-      final returnedUrl = resData['url'] as String? ?? resData['proxyUrl'] as String?;
+      final returnedUrl =
+          resData['url'] as String? ?? resData['proxyUrl'] as String?;
       if (returnedUrl != null && returnedUrl.isNotEmpty) {
         return returnedUrl;
       }

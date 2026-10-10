@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -45,6 +46,7 @@ import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -3185,14 +3187,13 @@ class ForumThreadDetailPage extends HookWidget {
                                   final path = replyImages.value[idx];
                                   return Stack(
                                     children: [
-                                      ClipRRect(
+                                      AppMultimodalImage(
+                                        imageUrl: path,
+                                        width: 52,
+                                        height: 52,
+                                        fit: BoxFit.cover,
                                         borderRadius: BorderRadius.circular(8),
-                                        child: Image.file(
-                                          File(path),
-                                          width: 52,
-                                          height: 52,
-                                          fit: BoxFit.cover,
-                                        ),
+                                        enableZoomOnTap: false,
                                       ),
                                       Positioned(
                                         top: 2,
@@ -3515,43 +3516,45 @@ class ForumThreadDetailPage extends HookWidget {
                                           isSubmitting.value = true;
 
                                           var finalReplyImages = <String>[];
-                                          if (replyImages.value.isNotEmpty &&
-                                              locator
-                                                  .isRegistered<
-                                                    MediaUploadService
-                                                  >()) {
-                                            final uploadService =
-                                                locator<MediaUploadService>();
-                                            for (final imgPath
-                                                in replyImages.value) {
-                                              if (imgPath.startsWith(
-                                                    'http://',
-                                                  ) ||
-                                                  imgPath.startsWith(
-                                                    'https://',
-                                                  )) {
-                                                finalReplyImages.add(imgPath);
-                                              } else if (File(
-                                                imgPath,
-                                              ).existsSync()) {
-                                                try {
-                                                  final r2Url =
-                                                      await uploadService
-                                                          .uploadMedia(
-                                                            file: File(imgPath),
-                                                            mediaType:
-                                                                ForumMediaType
-                                                                    .image,
-                                                          );
-                                                  finalReplyImages.add(r2Url);
-                                                } on Object catch (_) {
+                                          if (replyImages.value.isNotEmpty) {
+                                            if (locator
+                                                .isRegistered<
+                                                  MediaUploadService
+                                                >()) {
+                                              final uploadService =
+                                                  locator<MediaUploadService>();
+                                              for (final imgPath
+                                                  in replyImages.value) {
+                                                if (imgPath.startsWith(
+                                                      'http://',
+                                                    ) ||
+                                                    imgPath.startsWith(
+                                                      'https://',
+                                                    )) {
                                                   finalReplyImages.add(imgPath);
+                                                } else {
+                                                  try {
+                                                    final r2Url =
+                                                        await uploadService
+                                                            .uploadMedia(
+                                                              pathOrUrl: imgPath,
+                                                              file: kIsWeb
+                                                                  ? null
+                                                                  : File(imgPath),
+                                                              mediaType:
+                                                                  ForumMediaType
+                                                                      .image,
+                                                            );
+                                                    finalReplyImages.add(r2Url);
+                                                  } on Object catch (_) {
+                                                    finalReplyImages.add(imgPath);
+                                                  }
                                                 }
                                               }
+                                            } else {
+                                              finalReplyImages =
+                                                  replyImages.value;
                                             }
-                                          } else {
-                                            finalReplyImages =
-                                                replyImages.value;
                                           }
 
                                           var finalReplyVoiceNoteUrl =
@@ -3567,21 +3570,21 @@ class ForumThreadDetailPage extends HookWidget {
                                                   >()) {
                                             final uploadService =
                                                 locator<MediaUploadService>();
-                                            if (File(
-                                              finalReplyVoiceNoteUrl,
-                                            ).existsSync()) {
-                                              try {
-                                                final r2Url = await uploadService
-                                                    .uploadMedia(
-                                                      file: File(
+                                            try {
+                                              final r2Url = await uploadService
+                                                  .uploadMedia(
+                                                    pathOrUrl:
                                                         finalReplyVoiceNoteUrl,
-                                                      ),
-                                                      mediaType:
-                                                          ForumMediaType.voice,
-                                                    );
-                                                finalReplyVoiceNoteUrl = r2Url;
-                                              } on Object catch (_) {}
-                                            }
+                                                    file: kIsWeb
+                                                        ? null
+                                                        : File(
+                                                          finalReplyVoiceNoteUrl,
+                                                        ),
+                                                    mediaType:
+                                                        ForumMediaType.voice,
+                                                  );
+                                              finalReplyVoiceNoteUrl = r2Url;
+                                            } on Object catch (_) {}
                                           }
 
                                           final res = await repo

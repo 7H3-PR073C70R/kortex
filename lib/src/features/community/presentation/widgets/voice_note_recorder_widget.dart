@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -205,7 +206,7 @@ class VoiceNoteRecorderWidget extends HookWidget {
 
       final recordedPath = await recordingService.stopRecording();
 
-      if (recordedPath == null || !File(recordedPath).existsSync()) {
+      if (recordedPath == null || (!kIsWeb && !File(recordedPath).existsSync())) {
         debugPrint('VoiceNoteRecorder: No audio captured or empty file');
         if (context.mounted) {
           context.showSnackBar(

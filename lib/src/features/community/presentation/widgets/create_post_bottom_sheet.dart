@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -589,15 +590,14 @@ class CreatePostBottomSheet extends HookWidget {
                             !finalVoiceNoteUrl.startsWith('https://') &&
                             locator.isRegistered<MediaUploadService>()) {
                           final uploadService = locator<MediaUploadService>();
-                          if (File(finalVoiceNoteUrl).existsSync()) {
-                            try {
-                              final r2Url = await uploadService.uploadMedia(
-                                file: File(finalVoiceNoteUrl),
-                                mediaType: ForumMediaType.voice,
-                              );
-                              finalVoiceNoteUrl = r2Url;
-                            } on Object catch (_) {}
-                          }
+                          try {
+                            final r2Url = await uploadService.uploadMedia(
+                              pathOrUrl: finalVoiceNoteUrl,
+                              file: kIsWeb ? null : File(finalVoiceNoteUrl),
+                              mediaType: ForumMediaType.voice,
+                            );
+                            finalVoiceNoteUrl = r2Url;
+                          } on Object catch (_) {}
                         }
 
                         if (finalVoiceNoteUrl != null &&
