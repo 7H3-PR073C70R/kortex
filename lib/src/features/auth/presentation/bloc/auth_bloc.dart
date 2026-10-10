@@ -76,6 +76,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         add(AuthStatusChanged(status));
       }
     });
+
+    add(const AuthCheckRequested());
   }
 
   final LoginWithEmailUseCase _loginWithEmailUseCase;

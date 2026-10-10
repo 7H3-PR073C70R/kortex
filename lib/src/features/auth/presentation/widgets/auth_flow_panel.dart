@@ -9,6 +9,7 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/social_auth_service.dart';
+import 'package:kortex/src/core/utils/error_message_handler.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
@@ -46,9 +47,9 @@ Future<void> authGoogleSignIn(BuildContext context) async {
     }
   } on Object catch (e) {
     if (context.mounted) {
-      final message = e is SocialAuthException
-          ? e.message
-          : 'Google Sign-In failed: $e';
+      final raw = e is SocialAuthException ? e.message : '$e';
+      final message = Exception(raw).errorMessage ??
+          'Google Sign-In is unavailable. Please try again or sign in with email.';
       context.showSnackBar(
         message: message,
         type: SnackBarType.error,
@@ -72,9 +73,9 @@ Future<void> authAppleSignIn(BuildContext context) async {
     }
   } on Object catch (e) {
     if (context.mounted) {
-      final message = e is SocialAuthException
-          ? e.message
-          : 'Apple Sign-In failed: $e';
+      final raw = e is SocialAuthException ? e.message : '$e';
+      final message = Exception(raw).errorMessage ??
+          'Apple Sign-In is unavailable. Please try again or sign in with email.';
       context.showSnackBar(
         message: message,
         type: SnackBarType.error,

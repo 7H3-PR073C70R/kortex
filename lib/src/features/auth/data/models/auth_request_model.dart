@@ -56,6 +56,16 @@ abstract class SocialAuthRequestModel with _$SocialAuthRequestModel {
     String? rawNonce,
   }) = _SocialAuthRequestModel;
 
+  const SocialAuthRequestModel._();
+
+  Map<String, dynamic> toJson() => {
+        'provider': provider,
+        'id_token': idToken,
+        if (accessToken != null && accessToken!.isNotEmpty)
+          'access_token': accessToken,
+        if (rawNonce != null && rawNonce!.isNotEmpty) 'nonce': rawNonce,
+      };
+
   factory SocialAuthRequestModel.fromJson(Map<String, dynamic> json) =>
       _$SocialAuthRequestModelFromJson(json);
 }

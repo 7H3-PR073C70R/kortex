@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
@@ -42,6 +43,67 @@ extension SyllabotStreamExtension on Dio {
     required ExecutionEngineType engine,
     List<Map<String, String>> contextHistory = const [],
   }) async* {
+    if (kIsWeb) {
+      final response = await post<String>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.syllabotStream}',
+        data: {
+          'prompt': prompt,
+          'sessionId': sessionId,
+          'socraticMode': socraticMode.nameString,
+          'contextHistory': contextHistory,
+        },
+        options: Options(
+          headers: {
+            'Accept': 'text/event-stream',
+          },
+          responseType: ResponseType.plain,
+          receiveTimeout: const Duration(minutes: 5),
+        ),
+      );
+
+      final rawBody = response.data ?? '';
+      if (rawBody.isEmpty) return;
+
+      final lines = rawBody.split('\n');
+      for (final line in lines) {
+        final trimmed = line.trim();
+        if (trimmed.startsWith('data:')) {
+          final jsonStr = trimmed.substring(5).trim();
+          try {
+            final decoded = jsonDecode(jsonStr);
+            if (decoded is Map<String, dynamic>) {
+              if (decoded.containsKey('error')) {
+                final rawMsg =
+                    decoded['message']?.toString() ??
+                    decoded['error']?.toString() ??
+                    'AI provider error';
+                final cleanedMsg = _cleanErrorMessage(rawMsg);
+                throw Exception(cleanedMsg);
+              }
+              if (decoded.containsKey('text')) {
+                yield decoded['text'] as String;
+              }
+            }
+          } on FormatException {
+            if (jsonStr.contains('"text"')) {
+              final textMatch = RegExp(
+                r'"text"\s*:\s*"((?:[^"\\]|\\.)*)"',
+              ).firstMatch(jsonStr);
+              if (textMatch != null) {
+                final text = textMatch
+                    .group(1)!
+                    .replaceAll(r'\n', '\n')
+                    .replaceAll(r'\"', '"')
+                    .replaceAll(r'\\', r'\');
+                yield text;
+              }
+            }
+          }
+        }
+      }
+      return;
+    }
+
     final response = await post<ResponseBody>(
       '${AppApiEndpoint.baseUri}${AppApiEndpoint.syllabotStream}',
       data: {

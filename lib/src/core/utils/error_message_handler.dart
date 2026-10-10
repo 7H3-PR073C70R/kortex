@@ -127,6 +127,20 @@ extension ErrorHandler on Exception {
       return 'An unexpected error occurred. Please try again in a few moments';
     }
 
+    // Browser network, CORS, XMLHttpRequest, and client connection errors
+    if (lower.contains('xmlhttprequest') ||
+        lower.contains('cors') ||
+        lower.contains('cross-origin') ||
+        lower.contains('simple request') ||
+        lower.contains('onerror callback') ||
+        lower.contains('network layer') ||
+        lower.contains('http/cors') ||
+        lower.contains('failed to fetch') ||
+        lower.contains('clientexception') ||
+        lower.contains('progress_event')) {
+      return 'Unable to connect to Syllabot AI. Please check your internet connection or try again in a few moments.';
+    }
+
     // HTML error pages from proxies / CDN / CloudFront / Cloudflare
     if (lower.contains('<!doctype') ||
         lower.contains('<html') ||

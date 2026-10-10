@@ -83,14 +83,17 @@ class SocialAuthService {
           final googleProvider = GoogleAuthProvider();
           final userCredential = await _auth!.signInWithPopup(googleProvider);
           final user = userCredential.user;
-          if (user == null) return null;
-          final idToken = await user.getIdToken() ?? '';
-          return SocialAuthResult(
-            provider: 'google',
-            idToken: idToken,
-            email: user.email,
-            displayName: user.displayName,
-          );
+          if (user != null) {
+            final idToken = await user.getIdToken() ?? '';
+            if (idToken.isNotEmpty) {
+              return SocialAuthResult(
+                provider: 'google',
+                idToken: idToken,
+                email: user.email,
+                displayName: user.displayName,
+              );
+            }
+          }
         } on FirebaseAuthException catch (e) {
           if (e.code == 'popup-closed-by-user' ||
               e.code == 'cancelled-popup-request' ||
@@ -99,19 +102,14 @@ class SocialAuthService {
             developer.log('Google sign-in popup closed by user.');
             return null;
           }
-          throw SocialAuthException(
-            e.message ?? 'Google Sign-In failed (${e.code}).',
-          );
+          developer.log('Firebase Auth web popup unavailable ($e), falling back to GoogleSignIn...');
         } on Object catch (e) {
           if (e.toString().contains('closed') ||
               e.toString().contains('canceled') ||
               e.toString().contains('cancelled')) {
             return null;
           }
-          developer.log('Google web sign-in error: $e');
-          throw const SocialAuthException(
-            'Google Sign-In failed. Please try again.',
-          );
+          developer.log('Google web sign-in error: $e. Falling back to GoogleSignIn...');
         }
       }
 
@@ -201,14 +199,17 @@ class SocialAuthService {
           final appleProvider = OAuthProvider('apple.com');
           final userCredential = await _auth!.signInWithPopup(appleProvider);
           final user = userCredential.user;
-          if (user == null) return null;
-          final idToken = await user.getIdToken() ?? '';
-          return SocialAuthResult(
-            provider: 'apple',
-            idToken: idToken,
-            email: user.email,
-            displayName: user.displayName,
-          );
+          if (user != null) {
+            final idToken = await user.getIdToken() ?? '';
+            if (idToken.isNotEmpty) {
+              return SocialAuthResult(
+                provider: 'apple',
+                idToken: idToken,
+                email: user.email,
+                displayName: user.displayName,
+              );
+            }
+          }
         } on FirebaseAuthException catch (e) {
           if (e.code == 'popup-closed-by-user' ||
               e.code == 'cancelled-popup-request' ||
@@ -217,17 +218,14 @@ class SocialAuthService {
             developer.log('Apple sign-in popup closed by user.');
             return null;
           }
-          throw SocialAuthException(
-            e.message ?? 'Apple Sign-In failed (${e.code}).',
-          );
+          developer.log('Firebase Auth Apple popup unavailable ($e), falling back...');
         } on Object catch (e) {
           if (e.toString().contains('closed') ||
               e.toString().contains('canceled') ||
               e.toString().contains('cancelled')) {
             return null;
           }
-          developer.log('Apple web sign-in error: $e');
-          throw SocialAuthException('Apple Sign-In failed: $e');
+          developer.log('Apple web sign-in error: $e. Falling back...');
         }
       }
 

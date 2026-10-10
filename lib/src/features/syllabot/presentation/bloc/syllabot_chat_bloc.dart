@@ -4,6 +4,7 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/error_message_handler.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -282,8 +283,9 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     Emitter<SyllabotChatState> emit,
   ) {
     final rawError = event.message.trim();
-    final displayError = rawError.isNotEmpty
-        ? rawError
+    final cleaned = Exception(rawError).errorMessage ?? rawError;
+    final displayError = cleaned.isNotEmpty
+        ? cleaned
         : (state.streamingText.isNotEmpty
               ? state.streamingText
               : 'Failed to complete Syllabot response. Tap retry to reconnect.');

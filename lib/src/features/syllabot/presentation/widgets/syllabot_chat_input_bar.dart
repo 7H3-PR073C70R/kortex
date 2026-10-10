@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
@@ -831,6 +832,13 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                         builder: (context, isHovered, child) {
                           return ShrinkableButton(
                             onTap: () {
+                              if (kIsWeb) {
+                                context.showSnackBar(
+                                  message:
+                                      'On-Device AI is available on Kortex Mobile apps (Android & iOS).',
+                                );
+                                return;
+                              }
                               unawaited(HapticFeedback.lightImpact());
                               final nextEngine =
                                   widget.engineType ==

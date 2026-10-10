@@ -13,6 +13,7 @@ import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dar
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 
 /// AutoRouter guard directing users based on their active authentication
@@ -36,8 +37,8 @@ class AuthRouteGuard extends AutoRouteGuard {
     final hasSession = _userStorageService.hasActiveSession();
     final status = _authBloc.state.sessionStatus;
 
-    // 1. If not authenticated at all (no active session or unauthenticated in state)
-    if (!hasSession || status == AuthSessionStatus.unauthenticated) {
+    // 1. If not authenticated at all (no active session in storage)
+    if (!hasSession) {
       if (currentRouteName == AuthRoute.name ||
           currentRouteName == OnboardingRoute.name ||
           currentRouteName == ForgotPasswordRoute.name ||
@@ -164,8 +165,19 @@ class AuthRouteGuard extends AutoRouteGuard {
         }
       case AuthSessionStatus.unauthenticated:
         // Token exists in storage but AuthBloc is still initializing.
-        // Allow the route determined by Splash screen without premature redirection.
-        resolver.next();
+        if (_authBloc.state.status == AuthStatus.initial) {
+          _authBloc.add(const AuthCheckRequested());
+        }
+        final cachedProfile = _userStorageService.getCachedUserProfile();
+        final isCalibrated = cachedProfile?.isOnboarded ?? false;
+        if ((currentRouteName == AuthRoute.name ||
+                currentRouteName == OnboardingRoute.name) &&
+            isCalibrated) {
+          resolver.next(false);
+          unawaited(router.replace(const MainRoute()));
+        } else {
+          resolver.next();
+        }
     }
   }
 }

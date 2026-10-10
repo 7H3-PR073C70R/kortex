@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1052,8 +1053,9 @@ class _SyllabotChatView extends HookWidget {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 // 1-Tap Switch to On-Device AI
-                                if (state.engineType ==
-                                    ExecutionEngineType.cloudRemote)
+                                if (!kIsWeb &&
+                                    state.engineType ==
+                                        ExecutionEngineType.cloudRemote)
                                   PlatformHoverBuilder(
                                     builder: (context, isHovered, child) {
                                       return ShrinkableButton(

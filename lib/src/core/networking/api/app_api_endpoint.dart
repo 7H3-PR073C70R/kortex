@@ -26,7 +26,7 @@ class AppApiEndpoint {
   // Auth & Identity Endpoints
   static const String login = '/auth/v1/token?grant_type=password';
   static const String register = '/auth/v1/signup';
-  static const String socialAuth = '/auth/v1/token';
+  static const String socialAuth = '/auth/v1/token?grant_type=id_token';
   static const String resetPassword = '/auth/v1/recover';
   static const String refreshToken = '/auth/v1/token?grant_type=refresh_token';
   static const String magicLink = '/auth/v1/magiclink';
