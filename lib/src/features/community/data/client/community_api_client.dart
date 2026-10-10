@@ -209,6 +209,11 @@ abstract class CommunityApiClient {
     @Body() Map<String, dynamic> body,
   );
 
+  @POST(AppApiEndpoint.cleanupStaleStudyPodsAndRoomsRpc)
+  Future<HttpResponse<dynamic>> cleanupStaleStudyPodsAndRooms(
+    @Body() Map<String, dynamic> body,
+  );
+
   @GET(AppApiEndpoint.studyCommunities)
   Future<HttpResponse<dynamic>> fetchCourseCommunityStats(
     @Queries() Map<String, dynamic> query,

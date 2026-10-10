@@ -171,7 +171,7 @@ abstract class CommunityRemoteDataSource {
 
   Future<Map<String, dynamic>> cloneSharedDeck(String sharedDeckId);
 
-  Future<bool> rateSharedDeck({
+  Future<double> rateSharedDeck({
     required String sharedDeckId,
     required double rating,
   });

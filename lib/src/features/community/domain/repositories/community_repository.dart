@@ -207,8 +207,8 @@ abstract class CommunityRepository {
   /// Clones a community shared deck into user's private decks and flashcards.
   Future<Either<Failure, DeckEntity>> cloneSharedDeck(String sharedDeckId);
 
-  /// Rates a community shared deck.
-  Future<Either<Failure, bool>> rateSharedDeck({
+  /// Rates a community shared deck. Returns the recalculated average rating.
+  Future<Either<Failure, double>> rateSharedDeck({
     required String sharedDeckId,
     required double rating,
   });

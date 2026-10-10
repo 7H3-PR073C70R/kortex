@@ -14,6 +14,7 @@ class StudyCircleModel {
     this.isLive = false,
     this.activeParticipantsCount = 1,
     this.currentFocusTopic,
+    this.createdAt,
   });
 
   final String id;
@@ -28,6 +29,7 @@ class StudyCircleModel {
   final bool isLive;
   final int activeParticipantsCount;
   final String? currentFocusTopic;
+  final DateTime? createdAt;
 
   factory StudyCircleModel.fromJson(Map<String, dynamic> json) {
     final rawMembers = json['study_circle_members'] as List<dynamic>? ?? [];
@@ -55,6 +57,9 @@ class StudyCircleModel {
       activeParticipantsCount:
           (json['active_participants_count'] as num?)?.toInt() ?? 1,
       currentFocusTopic: json['current_focus_topic'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : null,
     );
   }
 
@@ -71,6 +76,7 @@ class StudyCircleModel {
       'is_live': isLive,
       'active_participants_count': activeParticipantsCount,
       'current_focus_topic': currentFocusTopic,
+      'created_at': createdAt?.toIso8601String(),
       'study_circle_members': members.map((m) => m.toJson()).toList(),
     };
   }

@@ -16,6 +16,7 @@ class StudyRoomModel {
     this.ambientSoundTrack = 'lofi',
     this.activeGoal,
     this.isSilentFocus = true,
+    this.createdAt,
   });
 
   final String id;
@@ -32,6 +33,7 @@ class StudyRoomModel {
   final String ambientSoundTrack;
   final String? activeGoal;
   final bool isSilentFocus;
+  final DateTime? createdAt;
 
   factory StudyRoomModel.fromJson(Map<String, dynamic> json) {
     return StudyRoomModel(
@@ -53,6 +55,9 @@ class StudyRoomModel {
       ambientSoundTrack: json['ambient_sound_track'] as String? ?? 'lofi',
       activeGoal: json['active_goal'] as String?,
       isSilentFocus: json['is_silent_focus'] as bool? ?? true,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : null,
     );
   }
 
@@ -72,6 +77,7 @@ class StudyRoomModel {
       'ambient_sound_track': ambientSoundTrack,
       'active_goal': activeGoal,
       'is_silent_focus': isSilentFocus,
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 

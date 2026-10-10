@@ -758,7 +758,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<Either<Failure, bool>> rateSharedDeck({
+  Future<Either<Failure, double>> rateSharedDeck({
     required String sharedDeckId,
     required double rating,
   }) {

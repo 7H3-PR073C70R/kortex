@@ -124,6 +124,8 @@ class AppApiEndpoint {
       '/rest/v1/rpc/nudge_study_circle_rpc';
   static const String recordPodFocusMinutesRpc =
       '/rest/v1/rpc/record_pod_focus_minutes_rpc';
+  static const String cleanupStaleStudyPodsAndRoomsRpc =
+      '/rest/v1/rpc/cleanup_stale_study_pods_and_rooms';
   static const String notifications = '/rest/v1/notifications';
   static const String studyCommunities = '/rest/v1/study_communities';
   static const String forumPostSubscriptions =

@@ -84,9 +84,9 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
     );
     res.fold(
       (failure) => emit(state.copyWith(errorMessage: failure.message)),
-      (success) {
+      (newRating) {
         final updated = state.sharedDecks.map((d) {
-          if (d.id == deckId) return d.copyWith(rating: rating);
+          if (d.id == deckId) return d.copyWith(rating: newRating);
           return d;
         }).toList();
         emit(state.copyWith(sharedDecks: updated));

@@ -272,10 +272,10 @@ class MockCommunityRepository implements CommunityRepository {
       const Right([]);
 
   @override
-  Future<Either<Failure, bool>> rateSharedDeck({
+  Future<Either<Failure, double>> rateSharedDeck({
     required String sharedDeckId,
     required double rating,
-  }) async => const Right(true);
+  }) async => Right(rating);
 
   @override
   Future<Either<Failure, bool>> toggleBookmarkSharedDeck(

@@ -89,6 +89,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   @override
   Future<List<StudyRoomModel>> fetchStudyRooms({String? category}) async {
     try {
+      unawaited(_client.cleanupStaleStudyPodsAndRooms({}));
+    } on Object catch (_) {}
+
+    try {
       final params = <String, dynamic>{
         'select': '*',
         'order': 'created_at.desc',
@@ -99,13 +103,20 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
 
       final res = await _client.fetchStudyRooms(params);
       final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+      final now = DateTime.now();
       final rooms = rawList
           .map((e) => StudyRoomModel.fromJson(e as Map<String, dynamic>))
-          .where((r) => !_isAutoProvisionedHashRoom(r))
+          .where((r) {
+            if (_isAutoProvisionedHashRoom(r)) return false;
+            final isOfficial = r.title.contains('Official Silent Focus Hub') ||
+                r.title.contains('General Peer Focus Hub');
+            if (isOfficial) return true;
+            if (r.activeParticipantsCount <= 0) return false;
+            if (r.createdAt != null && now.difference(r.createdAt!).inHours >= 12) return false;
+            return true;
+          })
           .toList();
-      if (rooms.isNotEmpty) {
-        _persistRoomsLocally(rooms);
-      }
+      _persistRoomsLocally(rooms);
       return rooms;
     } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
@@ -1468,6 +1479,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
 
   @override
   Future<List<StudyCircleModel>> fetchStudyCircles({String? track}) async {
+    try {
+      unawaited(_client.cleanupStaleStudyPodsAndRooms({}));
+    } on Object catch (_) {}
+
     final params = <String, dynamic>{
       'select': '*,study_circle_members(*)',
       'order': 'created_at.desc',
@@ -1479,12 +1494,17 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     try {
       final res = await _client.fetchStudyCircles(params);
       final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+      final now = DateTime.now();
       final circles = rawList
           .map((e) => StudyCircleModel.fromJson(e as Map<String, dynamic>))
+          .where((c) {
+            final ageInDays = c.createdAt != null ? now.difference(c.createdAt!).inDays : 0;
+            if (ageInDays >= 30) return false;
+            if (ageInDays >= 7 && c.memberCount <= 1 && c.totalMinutesCompleted == 0) return false;
+            return true;
+          })
           .toList();
-      if (circles.isNotEmpty) {
-        _persistCirclesLocally(circles);
-      }
+      _persistCirclesLocally(circles);
       return circles;
     } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
@@ -1761,7 +1781,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
-  Future<bool> rateSharedDeck({
+  Future<double> rateSharedDeck({
     required String sharedDeckId,
     required double rating,
   }) async {
@@ -1772,9 +1792,11 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       });
       if (res.data is Map<String, dynamic>) {
         final data = res.data as Map<String, dynamic>;
-        return data['success'] as bool? ?? true;
+        if (data['rating'] != null) {
+          return (data['rating'] as num).toDouble();
+        }
       }
-      return true;
+      return rating;
     } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
         unawaited(
@@ -1785,7 +1807,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           ),
         );
       }
-      return false;
+      return rating;
     }
   }
 

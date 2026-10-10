@@ -85,11 +85,8 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
 
     final rawTrack = event.track ?? state.selectedTrack;
     final effectiveTrack = rawTrack == 'All' ? null : rawTrack;
-    final effectiveCategory = event.category ?? effectiveTrack;
 
-    final roomsRes = await _repository.fetchStudyRooms(
-      category: effectiveCategory,
-    );
+    final roomsRes = await _repository.fetchStudyRooms();
     final forumRes = await _repository.fetchForumPosts(
       track: effectiveTrack,
       questionsOnly: state.questionsOnly,
@@ -98,9 +95,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
           ? state.forumSearchQuery
           : null,
     );
-    final circlesRes = await _repository.fetchStudyCircles(
-      track: effectiveTrack,
-    );
+    final circlesRes = await _repository.fetchStudyCircles();
     final decksRes = await _repository.fetchSharedDecks();
     final leaderboardRes = await _repository.fetchLeaderboards(
       track: effectiveTrack,
@@ -172,7 +167,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     // Subscribe to live study circles / pod pulse stream
     await _studyCirclesSubscription?.cancel();
     _studyCirclesSubscription = _repository
-        .watchStudyCircles(track: effectiveTrack)
+        .watchStudyCircles()
         .listen((circles) {
           if (!isClosed) {
             add(StudyCirclesUpdatedEvent(circles));

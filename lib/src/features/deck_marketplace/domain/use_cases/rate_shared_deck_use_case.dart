@@ -7,7 +7,7 @@ class RateSharedDeckUseCase {
 
   final CommunityRepository _repository;
 
-  Future<Either<Failure, bool>> call({
+  Future<Either<Failure, double>> call({
     required String sharedDeckId,
     required double rating,
   }) {

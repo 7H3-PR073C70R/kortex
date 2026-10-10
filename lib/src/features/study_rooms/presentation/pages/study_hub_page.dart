@@ -629,13 +629,19 @@ class _LiveRoomsTab extends StatefulWidget {
 
 class _LiveRoomsTabState extends State<_LiveRoomsTab> {
   late String _selectedFilter;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _selectedFilter = (widget.targetTrack != null && widget.targetTrack!.trim().isNotEmpty)
-        ? widget.targetTrack!.trim()
-        : 'All';
+    _selectedFilter = 'All';
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -653,12 +659,31 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
     final userTrack = widget.targetTrack?.trim();
 
     final filteredRooms = widget.state.studyRooms.where((room) {
-      if (_selectedFilter == 'All') return true;
-      final filter = _selectedFilter.toLowerCase();
-      final title = room.title.toLowerCase();
-      final subject = room.subject.toLowerCase();
-      final category = room.category.toLowerCase();
-      return title.contains(filter) || subject.contains(filter) || category.contains(filter);
+      if (_selectedFilter != 'All') {
+        final filter = _selectedFilter.toLowerCase();
+        final title = room.title.toLowerCase();
+        final subject = room.subject.toLowerCase();
+        final category = room.category.toLowerCase();
+        if (!title.contains(filter) && !subject.contains(filter) && !category.contains(filter)) {
+          return false;
+        }
+      }
+
+      if (_searchQuery.trim().isNotEmpty) {
+        final q = _searchQuery.trim().toLowerCase();
+        final title = room.title.toLowerCase();
+        final subject = room.subject.toLowerCase();
+        final category = room.category.toLowerCase();
+        final goal = (room.activeGoal ?? '').toLowerCase();
+        final ambient = room.ambientSoundTrack.toLowerCase();
+        return title.contains(q) ||
+            subject.contains(q) ||
+            category.contains(q) ||
+            goal.contains(q) ||
+            ambient.contains(q);
+      }
+
+      return true;
     }).toList();
 
     return RefreshIndicator(
@@ -710,13 +735,69 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
                 ),
               ),
 
-              // Track Filter Chips Bar (Clean 2-Chip Toggle: My Track vs All Tracks)
+              // Search Bar
               SliverToBoxAdapter(
                 child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                      borderRadius: AppRadius.radiusBadge,
+                      border: Border.all(
+                        color: colors.surfaceBorder.withAlpha(isDark ? 50 : 35),
+                      ),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (val) {
+                        setState(() {
+                          _searchQuery = val;
+                        });
+                      },
+                      style: typography.caption.medium.copyWith(color: colors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Search live focus rooms, topics, goals...',
+                        hintStyle: typography.caption.regular.copyWith(color: colors.textSecondary),
+                        prefixIcon: Icon(Icons.search_rounded, size: 18, color: colors.textSecondary),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.close_rounded, size: 16),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {
+                                    _searchQuery = '';
+                                  });
+                                },
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Multi-Track Filter Chips Bar
+              SliverToBoxAdapter(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                   child: Row(
                     children: [
+                      _buildFilterChip(
+                        label: '🌐 All Tracks',
+                        isSelected: _selectedFilter == 'All',
+                        onTap: () {
+                          unawaited(HapticFeedback.selectionClick());
+                          setState(() {
+                            _selectedFilter = 'All';
+                          });
+                        },
+                      ),
                       if (userTrack != null && userTrack.isNotEmpty) ...[
+                        const SizedBox(width: 6),
                         _buildFilterChip(
                           label: '🎯 My Track ($userTrack)',
                           isSelected: _selectedFilter.toLowerCase() == userTrack.toLowerCase(),
@@ -727,17 +808,54 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
                             });
                           },
                         ),
-                        const SizedBox(width: 8),
                       ],
+                      const SizedBox(width: 6),
                       _buildFilterChip(
-                        label: '🌐 All Tracks',
-                        isSelected: _selectedFilter == 'All',
-                        onTap: () {
-                          unawaited(HapticFeedback.selectionClick());
-                          setState(() {
-                            _selectedFilter = 'All';
-                          });
-                        },
+                        label: '📚 WAEC',
+                        isSelected: _selectedFilter == 'WAEC',
+                        onTap: () => setState(() => _selectedFilter = 'WAEC'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: '🇳🇬 JAMB',
+                        isSelected: _selectedFilter == 'JAMB',
+                        onTap: () => setState(() => _selectedFilter = 'JAMB'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: '🇳🇬 NECO',
+                        isSelected: _selectedFilter == 'NECO',
+                        onTap: () => setState(() => _selectedFilter = 'NECO'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: '🇳🇬 JUPEB',
+                        isSelected: _selectedFilter == 'JUPEB',
+                        onTap: () => setState(() => _selectedFilter = 'JUPEB'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: '🎓 SAT',
+                        isSelected: _selectedFilter == 'SAT',
+                        onTap: () => setState(() => _selectedFilter = 'SAT'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: '🧬 STEM',
+                        isSelected: _selectedFilter == 'STEM',
+                        onTap: () => setState(() => _selectedFilter = 'STEM'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: '🏛️ University',
+                        isSelected: _selectedFilter == 'University',
+                        onTap: () => setState(() => _selectedFilter = 'University'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildFilterChip(
+                        label: '📖 General',
+                        isSelected: _selectedFilter == 'General',
+                        onTap: () => setState(() => _selectedFilter = 'General'),
                       ),
                     ],
                   ),
@@ -1007,16 +1125,32 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
   }
 }
 
-class _StudyCirclesTab extends StatelessWidget {
+class _StudyCirclesTab extends StatefulWidget {
   const _StudyCirclesTab({
     required this.state,
     required this.targetTrack,
     this.hasSelectedDeck = false,
+    super.key,
   });
 
   final CommunityState state;
   final String? targetTrack;
   final bool hasSelectedDeck;
+
+  @override
+  State<_StudyCirclesTab> createState() => _StudyCirclesTabState();
+}
+
+class _StudyCirclesTabState extends State<_StudyCirclesTab> {
+  String _selectedFilter = 'All';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1026,8 +1160,29 @@ class _StudyCirclesTab extends StatelessWidget {
     final isDark = context.isDarkMode;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isDesktop = screenWidth >= 1024;
-    final isGrid = !hasSelectedDeck && (screenWidth >= _kHubGridBreakpoint);
+    final isGrid = !widget.hasSelectedDeck && (screenWidth >= _kHubGridBreakpoint);
     final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
+    final userTrack = widget.targetTrack?.trim();
+
+    final filteredCircles = widget.state.studyCircles.where((circle) {
+      if (_selectedFilter != 'All') {
+        final filter = _selectedFilter.toLowerCase();
+        final track = circle.track.toLowerCase();
+        final name = circle.name.toLowerCase();
+        if (!track.contains(filter) && !name.contains(filter)) {
+          return false;
+        }
+      }
+
+      if (_searchQuery.trim().isNotEmpty) {
+        final q = _searchQuery.trim().toLowerCase();
+        final name = circle.name.toLowerCase();
+        final track = circle.track.toLowerCase();
+        return name.contains(q) || track.contains(q);
+      }
+
+      return true;
+    }).toList();
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -1037,7 +1192,7 @@ class _StudyCirclesTab extends StatelessWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: hasSelectedDeck ? 520 : (isDesktop ? 1400 : 860),
+            maxWidth: widget.hasSelectedDeck ? 520 : (isDesktop ? 1400 : 860),
           ),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -1113,7 +1268,7 @@ class _StudyCirclesTab extends StatelessWidget {
               // Study Circles Section Header
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                   child: Row(
                     children: [
                       Icon(
@@ -1130,7 +1285,7 @@ class _StudyCirclesTab extends StatelessWidget {
                       ),
                       const Spacer(),
                       Text(
-                        '${state.studyCircles.length} ${state.studyCircles.length == 1 ? 'Pod' : 'Pods'}',
+                        '${filteredCircles.length} ${filteredCircles.length == 1 ? 'Pod' : 'Pods'}',
                         style: typography.caption.medium.copyWith(
                           color: colors.textSecondary,
                         ),
@@ -1140,7 +1295,134 @@ class _StudyCirclesTab extends StatelessWidget {
                 ),
               ),
 
-              if (state.studyCircles.isEmpty)
+              // Search Bar
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                      borderRadius: AppRadius.radiusBadge,
+                      border: Border.all(
+                        color: colors.surfaceBorder.withAlpha(isDark ? 50 : 35),
+                      ),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (val) {
+                        setState(() {
+                          _searchQuery = val;
+                        });
+                      },
+                      style: typography.caption.medium.copyWith(color: colors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Search study pods, tracks, goals...',
+                        hintStyle: typography.caption.regular.copyWith(color: colors.textSecondary),
+                        prefixIcon: Icon(Icons.search_rounded, size: 18, color: colors.textSecondary),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.close_rounded, size: 16),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {
+                                    _searchQuery = '';
+                                  });
+                                },
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Multi-Track Filter Chips Bar
+              SliverToBoxAdapter(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  child: Row(
+                    children: [
+                      _buildPodFilterChip(
+                        label: '🌐 All Tracks',
+                        isSelected: _selectedFilter == 'All',
+                        onTap: () {
+                          unawaited(HapticFeedback.selectionClick());
+                          setState(() {
+                            _selectedFilter = 'All';
+                          });
+                        },
+                      ),
+                      if (userTrack != null && userTrack.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        _buildPodFilterChip(
+                          label: '🎯 My Track ($userTrack)',
+                          isSelected: _selectedFilter.toLowerCase() == userTrack.toLowerCase(),
+                          onTap: () {
+                            unawaited(HapticFeedback.selectionClick());
+                            setState(() {
+                              _selectedFilter = userTrack;
+                            });
+                          },
+                        ),
+                      ],
+                      const SizedBox(width: 6),
+                      _buildPodFilterChip(
+                        label: '📚 WAEC',
+                        isSelected: _selectedFilter == 'WAEC',
+                        onTap: () => setState(() => _selectedFilter = 'WAEC'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildPodFilterChip(
+                        label: '🇳🇬 JAMB',
+                        isSelected: _selectedFilter == 'JAMB',
+                        onTap: () => setState(() => _selectedFilter = 'JAMB'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildPodFilterChip(
+                        label: '🇳🇬 NECO',
+                        isSelected: _selectedFilter == 'NECO',
+                        onTap: () => setState(() => _selectedFilter = 'NECO'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildPodFilterChip(
+                        label: '🇳🇬 JUPEB',
+                        isSelected: _selectedFilter == 'JUPEB',
+                        onTap: () => setState(() => _selectedFilter = 'JUPEB'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildPodFilterChip(
+                        label: '🎓 SAT',
+                        isSelected: _selectedFilter == 'SAT',
+                        onTap: () => setState(() => _selectedFilter = 'SAT'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildPodFilterChip(
+                        label: '🧬 STEM',
+                        isSelected: _selectedFilter == 'STEM',
+                        onTap: () => setState(() => _selectedFilter = 'STEM'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildPodFilterChip(
+                        label: '🏛️ University',
+                        isSelected: _selectedFilter == 'University',
+                        onTap: () => setState(() => _selectedFilter = 'University'),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildPodFilterChip(
+                        label: '📖 General',
+                        isSelected: _selectedFilter == 'General',
+                        onTap: () => setState(() => _selectedFilter = 'General'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              if (filteredCircles.isEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -1157,7 +1439,9 @@ class _StudyCirclesTab extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            'No study circles available yet.',
+                            _selectedFilter == 'All' && _searchQuery.isEmpty
+                                ? 'No study circles available yet.'
+                                : 'No study pods match your search/filter.',
                             style: typography.caption.regular.copyWith(
                               color: colors.textSecondary,
                             ),
@@ -1180,7 +1464,7 @@ class _StudyCirclesTab extends StatelessWidget {
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        final circle = state.studyCircles[index];
+                        final circle = filteredCircles[index];
                         return StudyCircleCard(
                           circle: circle,
                           margin: EdgeInsets.zero,
@@ -1205,7 +1489,7 @@ class _StudyCirclesTab extends StatelessWidget {
                               curve: Curves.easeOutCubic,
                             );
                       },
-                      childCount: state.studyCircles.length,
+                      childCount: filteredCircles.length,
                     ),
                   ),
                 )
@@ -1216,7 +1500,7 @@ class _StudyCirclesTab extends StatelessWidget {
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        final circle = state.studyCircles[index];
+                        final circle = filteredCircles[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: StudyCircleCard(
@@ -1243,11 +1527,50 @@ class _StudyCirclesTab extends StatelessWidget {
                               curve: Curves.easeOutCubic,
                             );
                       },
-                      childCount: state.studyCircles.length,
+                      childCount: filteredCircles.length,
                     ),
                   ),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPodFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: AppMotion.snappy,
+        curve: AppMotion.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colors.primary.withAlpha(isDark ? 60 : 35)
+              : colors.surfacePrimary,
+          borderRadius: AppRadius.radiusBadge,
+          border: Border.all(
+            color: isSelected
+                ? colors.primary
+                : colors.surfaceBorder.withAlpha(isDark ? 50 : 35),
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Text(
+          label,
+          style: typography.caption.medium.copyWith(
+            color: isSelected ? colors.primary : colors.textSecondary,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 12,
           ),
         ),
       ),

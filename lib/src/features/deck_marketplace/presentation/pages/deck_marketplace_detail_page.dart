@@ -79,6 +79,12 @@ class DeckMarketplaceDetailPage extends HookWidget {
 
     Future<void> handleRate(int rating) async {
       if (isOwner) return;
+      if (!isAlreadyCloned) {
+        context.showSnackBar(
+          message: 'Please clone this deck to your library before rating it.',
+        );
+        return;
+      }
       userRating.value = rating;
       try {
         final useCase = locator<RateSharedDeckUseCase>();
@@ -94,12 +100,13 @@ class DeckMarketplaceDetailPage extends HookWidget {
               type: SnackBarType.error,
             );
           },
-          (success) {
+          (newRating) {
+            currentRating.value = newRating;
             if (locator.isRegistered<CommunityHubBloc>()) {
               locator<CommunityHubBloc>().add(
                 RateSharedDeckEvent(
                   sharedDeckId: deck.id,
-                  rating: rating.toDouble(),
+                  rating: newRating,
                 ),
               );
             }
@@ -461,6 +468,7 @@ class DeckMarketplaceDetailPage extends HookWidget {
                     deck: deck,
                     isDark: isDark,
                     isOwner: isOwner,
+                    isAlreadyCloned: isAlreadyCloned,
                     currentRating: currentRating.value,
                     userRating: userRating.value,
                     onRate: handleRate,
@@ -481,6 +489,7 @@ class _CompactDetailLayout extends StatelessWidget {
     required this.deck,
     required this.isDark,
     required this.isOwner,
+    required this.isAlreadyCloned,
     required this.currentRating,
     required this.userRating,
     required this.onRate,
@@ -491,6 +500,7 @@ class _CompactDetailLayout extends StatelessWidget {
   final SharedDeckEntity deck;
   final bool isDark;
   final bool isOwner;
+  final bool isAlreadyCloned;
   final double currentRating;
   final int? userRating;
   final ValueChanged<int> onRate;
@@ -509,6 +519,7 @@ class _CompactDetailLayout extends StatelessWidget {
         _DeckRatingSection(
           deck: deck,
           isOwner: isOwner,
+          isAlreadyCloned: isAlreadyCloned,
           currentRating: currentRating,
           userRating: userRating,
           onRate: onRate,
@@ -578,6 +589,7 @@ class _WideDetailLayout extends StatelessWidget {
               _DeckRatingSection(
                 deck: deck,
                 isOwner: isOwner,
+                isAlreadyCloned: isAlreadyCloned,
                 currentRating: currentRating,
                 userRating: userRating,
                 onRate: onRate,
@@ -615,6 +627,7 @@ class _DeckRatingSection extends StatelessWidget {
   const _DeckRatingSection({
     required this.deck,
     required this.isOwner,
+    required this.isAlreadyCloned,
     required this.currentRating,
     required this.userRating,
     required this.onRate,
@@ -622,6 +635,7 @@ class _DeckRatingSection extends StatelessWidget {
 
   final SharedDeckEntity deck;
   final bool isOwner;
+  final bool isAlreadyCloned;
   final double currentRating;
   final int? userRating;
   final ValueChanged<int> onRate;
@@ -670,6 +684,83 @@ class _DeckRatingSection extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (!isAlreadyCloned) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark
+              ? colors.surfaceSecondary.withAlpha(120)
+              : colors.surfaceSecondary.withAlpha(80),
+          borderRadius: AppRadius.radiusCard,
+          border: Border.all(
+            color: colors.surfaceBorder.withAlpha(isDark ? 50 : 30),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.lock_outline_rounded,
+                      size: 16,
+                      color: colors.textSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Rate this Deck',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  '${currentRating.toStringAsFixed(1)} ★ average',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.warning,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Clone this deck to your library before leaving a rating.',
+              style: typography.caption.regular.copyWith(
+                color: colors.textSecondary,
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (index) {
+                final starValue = index + 1;
+                final isFilled = starValue <= currentRating.round();
+
+                return IconButton(
+                  onPressed: () => onRate(starValue),
+                  iconSize: 26,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Clone deck to rate',
+                  icon: Icon(
+                    isFilled ? Icons.star_rounded : Icons.star_border_rounded,
+                    color: colors.warning.withAlpha(80),
+                  ),
+                );
+              }),
             ),
           ],
         ),
