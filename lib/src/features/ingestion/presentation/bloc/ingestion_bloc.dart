@@ -13,6 +13,7 @@ import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
@@ -67,6 +68,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     on<DeleteUserDocumentEvent>(_onDeleteUserDocument);
     on<ResetIngestionStateEvent>(_onResetIngestionState);
     on<ProcessCameraImageEvent>(_onProcessCameraImage);
+    on<ProcessCameraImagesEvent>(_onProcessCameraImages);
     on<FetchLmsCoursesEvent>(_onFetchLmsCourses);
     on<ImportLmsCourseEvent>(_onImportLmsCourse);
     on<CheckPendingIngestionJobEvent>(_onCheckPendingIngestionJob);
@@ -749,29 +751,11 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         emit(
           state.copyWith(
             snippets: snippets,
-            status: ProcessingStatus.generatingCards,
+            status: ProcessingStatus.completed,
             stageMessage:
-                'Generating flashcards for ${courseCode ?? "course"}...',
+                'Extracted ${snippets.length} cards for ${courseCode ?? "course"}. Review cards below.',
           ),
         );
-
-        final cleanDeckTitle = docFilename.replaceAll(
-          RegExp(r'\.[a-zA-Z0-9]+$'),
-          '',
-        );
-        if (!isClosed) {
-          add(
-            GenerateFlashcardsFromSnippetsEvent(
-              documentId:
-                  documentId ?? 'doc_${DateTime.now().millisecondsSinceEpoch}',
-              deckTitle: cleanDeckTitle,
-              subject: courseTitle ?? courseCode ?? 'General',
-              snippets: snippets,
-              courseId: courseId,
-              courseCode: courseCode,
-            ),
-          );
-        }
       },
     );
   }
@@ -1060,6 +1044,93 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
               'Extracted ${snippets.length} cards from camera capture',
           snippets: snippets,
         ),
+      ),
+    );
+  }
+
+  Future<void> _onProcessCameraImages(
+    ProcessCameraImagesEvent event,
+    Emitter<IngestionState> emit,
+  ) async {
+    if (event.images.isEmpty) return;
+
+    final docId = 'cam_${DateTime.now().millisecondsSinceEpoch}';
+    final firstImage = event.images.first;
+    final totalBytes = event.images.fold<int>(0, (sum, img) => sum + img.bytes.length);
+
+    emit(
+      state.copyWith(
+        status: ProcessingStatus.parsingOcr,
+        stageMessage: event.images.length > 1
+            ? 'Extracting text from ${event.images.length} captured photos...'
+            : 'Extracting text from camera capture...',
+        currentDocument: DocumentUploadEntity(
+          id: docId,
+          userId: 'local_user',
+          filename: event.images.length > 1
+              ? 'Scanned_Doc_${DateTime.now().millisecondsSinceEpoch}.jpg'
+              : firstImage.name,
+          fileType: 'jpg',
+          fileSizeBytes: totalBytes,
+          storagePath: firstImage.path ?? '',
+          contentHash: 'cam_${totalBytes}_$docId',
+          status: ProcessingStatus.parsingOcr,
+          createdAt: DateTime.now(),
+        ),
+      ),
+    );
+
+    final useCase =
+        _processCameraOcr ??
+        (locator.isRegistered<ProcessLocalCameraOcrUseCase>()
+            ? locator<ProcessLocalCameraOcrUseCase>()
+            : null);
+
+    if (useCase == null) {
+      emit(
+        state.copyWith(
+          status: ProcessingStatus.failed,
+          errorMessage: 'Camera OCR processing engine unavailable on this device.',
+        ),
+      );
+      return;
+    }
+
+    final allSnippets = <OcrExtractionEntity>[];
+
+    for (var i = 0; i < event.images.length; i++) {
+      final img = event.images[i];
+      final result = await useCase(
+        imageBytes: img.bytes,
+        documentId: '${docId}_p${i + 1}',
+        imagePath: img.path,
+        isOnline: event.isOnline,
+      );
+
+      result.fold(
+        (failure) {},
+        allSnippets.addAll,
+      );
+    }
+
+    if (allSnippets.isEmpty) {
+      emit(
+        state.copyWith(
+          status: ProcessingStatus.failed,
+          errorMessage:
+              'No legible text could be recognized in the captured photo(s). '
+              'Please ensure the document is clear, well-lit, and properly oriented.',
+        ),
+      );
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: ProcessingStatus.completed,
+        stageMessage:
+            'Extracted ${allSnippets.length} cards from ${event.images.length} photo(s)',
+        snippets: allSnippets,
       ),
     );
   }

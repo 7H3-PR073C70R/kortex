@@ -260,56 +260,71 @@ serve(async (req) => {
       tags: string[];
     }> = [];
 
-    const textForSynthesis =
-      parsedDoc.fullText.trim().length > 0 && !parsedDoc.fullText.startsWith("[Scanned")
-        ? (parsedDoc.fullText.length > 45000
-            ? parsedDoc.fullText.slice(0, 45000)
-            : parsedDoc.fullText)
-        : "";
-
-    if (textForSynthesis.length > 0) {
-      try {
-        console.log(
-          `[parse-stem-ocr] Synthesizing unified deck for "${cleanDeckTitle}" (${textForSynthesis.length} chars, ${parsedDoc.images.length} images) with Luna...`
-        );
-        const cards = await luna.generateFlashcardsFromSemanticMapping({
-          content: textForSynthesis,
-          topic: cleanDeckTitle,
-          courseCode,
-          availableImages: parsedDoc.images,
-          cardCountHint: Math.min(30, Math.max(12, Math.round(textForSynthesis.length / 350))),
-        });
-
-        for (const c of cards) {
-          generatedCards.push({
-            id: crypto.randomUUID(),
-            front: c.front,
-            back: c.back,
-            back_latex: c.latex_content,
-            explanation: c.explanation || c.hints,
-            image_url: c.image_url,
-            tags: c.tags || [cleanDeckTitle, courseCode],
-          });
+    // Group document sections into logical chunks (~30,000 characters per chunk)
+    // to process the entire document regardless of page count (e.g. 1500 pages)
+    const sectionChunks: Array<{ title: string; content: string }> = [];
+    if (parsedDoc.sections.length > 0) {
+      let currentTitle = parsedDoc.sections[0].title || cleanDeckTitle;
+      let currentText = "";
+      for (const sec of parsedDoc.sections) {
+        if (currentText.length + sec.text.length > 30000 && currentText.length > 0) {
+          sectionChunks.push({ title: currentTitle, content: currentText });
+          currentTitle = sec.title || cleanDeckTitle;
+          currentText = sec.text;
+        } else {
+          currentText = currentText ? `${currentText}\n\n${sec.text}` : sec.text;
         }
-        console.log(`[parse-stem-ocr] Unified Luna synthesis produced ${generatedCards.length} high-yield cards.`);
-      } catch (lunaErr) {
-        console.error(`[parse-stem-ocr] Unified Luna generation error:`, lunaErr);
+      }
+      if (currentText.trim().length > 0) {
+        sectionChunks.push({ title: currentTitle, content: currentText });
+      }
+    } else if (parsedDoc.fullText.trim().length > 0 && !parsedDoc.fullText.startsWith("[Scanned")) {
+      const fullStr = parsedDoc.fullText.trim();
+      for (let offset = 0; offset < fullStr.length; offset += 30000) {
+        sectionChunks.push({
+          title: `${cleanDeckTitle} (Part ${Math.floor(offset / 30000) + 1})`,
+          content: fullStr.slice(offset, offset + 30000),
+        });
       }
     }
 
-    if (generatedCards.length === 0 && parsedDoc.sections.length > 0) {
-      console.log(`[parse-stem-ocr] Synthesizing across key sections without blowing rate limits...`);
-      const topSections = parsedDoc.sections.slice(0, 3);
-      for (const section of topSections) {
+    if (sectionChunks.length > 0) {
+      console.log(`[parse-stem-ocr] Found ${sectionChunks.length} section chunks across document "${cleanDeckTitle}"...`);
+      const MAX_CHUNKS = 15;
+      let chunksToProcess: Array<{ title: string; content: string }>;
+
+      if (sectionChunks.length <= MAX_CHUNKS) {
+        chunksToProcess = sectionChunks;
+      } else {
+        const step = sectionChunks.length / MAX_CHUNKS;
+        chunksToProcess = [];
+        for (let i = 0; i < MAX_CHUNKS; i++) {
+          const idx = Math.floor(i * step);
+          chunksToProcess.push(sectionChunks[idx]);
+        }
+      }
+
+      const seenPrompts = new Set<string>();
+
+      for (let i = 0; i < chunksToProcess.length; i++) {
+        if (generatedCards.length >= 150) break; // High-yield upper limit to prevent memory bloat/duplicate flood
+
+        const chunk = chunksToProcess[i];
         try {
-          const secCards = await luna.generateFlashcardsFromSemanticMapping({
-            content: section.text,
-            topic: section.title,
+          const targetCards = Math.max(5, Math.min(12, Math.round(chunk.content.length / 600)));
+          const cards = await luna.generateFlashcardsFromSemanticMapping({
+            content: chunk.content,
+            topic: chunk.title,
             courseCode,
             availableImages: parsedDoc.images,
-            cardCountHint: 6,
+            cardCountHint: targetCards,
           });
-          for (const c of secCards) {
+
+          for (const c of cards) {
+            const normPrompt = c.front.toLowerCase().replace(/[^a-z0-9]/g, "");
+            if (normPrompt.length > 5 && seenPrompts.has(normPrompt)) continue;
+            if (normPrompt.length > 5) seenPrompts.add(normPrompt);
+
             generatedCards.push({
               id: crypto.randomUUID(),
               front: c.front,
@@ -317,14 +332,16 @@ serve(async (req) => {
               back_latex: c.latex_content,
               explanation: c.explanation || c.hints,
               image_url: c.image_url,
-              tags: c.tags || [section.title || cleanDeckTitle, courseCode],
+              tags: c.tags || [chunk.title, cleanDeckTitle, courseCode].filter(Boolean),
             });
+
+            if (generatedCards.length >= 150) break;
           }
-          if (generatedCards.length >= 15) break;
-        } catch (secErr) {
-          console.error(`[parse-stem-ocr] Section "${section.title}" Luna error:`, secErr);
+        } catch (lunaErr) {
+          console.error(`[parse-stem-ocr] Chunk ${i + 1} Luna error:`, lunaErr);
         }
       }
+      console.log(`[parse-stem-ocr] Multi-chunk synthesis produced ${generatedCards.length} high-yield cards spanning full document.`);
     }
 
     if (generatedCards.length === 0 && parsedDoc.sections.length > 0) {
@@ -381,157 +398,7 @@ serve(async (req) => {
       }
     }
 
-    // Ultimate Safety Net: If generatedCards is STILL empty, build fallback study cards from deckTitle and filename
-    if (generatedCards.length === 0) {
-      const summaryText = parsedDoc.fullText.trim().length > 0
-        ? parsedDoc.fullText.trim().slice(0, 500)
-        : `Study material for ${cleanDeckTitle}`;
-
-      generatedCards.push({
-        id: crypto.randomUUID(),
-        front: `What are the primary study topics and objectives covered in ${cleanDeckTitle}?`,
-        back: summaryText,
-        back_latex: null,
-        explanation: `Key study guide for ${cleanDeckTitle}`,
-        image_url: parsedDoc.images[0]?.url ?? null,
-        tags: [cleanDeckTitle, courseCode].filter(Boolean),
-      });
-    }
-
-    await broadcastProgress(broadcastChannel, documentId, {
-      status: "syncingDb",
-      progress: 0.90,
-      stageMessage: `Persisting ${generatedCards.length} flashcards to library...`,
-    });
-
-    const deckId = crypto.randomUUID();
     const nowIso = new Date().toISOString();
-
-    let canonicalDeckId: string | null = null;
-    if (contentHash) {
-      const { data: canonicalDoc } = await supabase
-        .from("canonical_documents")
-        .select("id")
-        .eq("content_hash", contentHash)
-        .maybeSingle();
-
-      if (canonicalDoc?.id) {
-        const canonicalDocId = canonicalDoc.id;
-
-        const { data: existingCanonicalDeck } = await supabase
-          .from("canonical_decks")
-          .select("id")
-          .eq("canonical_document_id", canonicalDocId)
-          .maybeSingle();
-
-        if (existingCanonicalDeck?.id) {
-          canonicalDeckId = existingCanonicalDeck.id;
-        } else {
-          canonicalDeckId = crypto.randomUUID();
-          await supabase.from("canonical_decks").insert({
-            id: canonicalDeckId,
-            canonical_document_id: canonicalDocId,
-            default_title: cleanDeckTitle,
-            subject: courseTitle || courseCode,
-            total_cards: generatedCards.length,
-            created_at: nowIso,
-          });
-
-          const canonicalCardsInserts = generatedCards.map((c, idx) => ({
-            id: crypto.randomUUID(),
-            canonical_deck_id: canonicalDeckId,
-            order_index: idx,
-            front: c.front,
-            back: c.back,
-            front_latex: c.front_latex || null,
-            back_latex: c.back_latex || null,
-            explanation: c.explanation || null,
-            image_url: c.image_url || null,
-            source_topic: c.tags?.[0] || "General",
-            tags: c.tags || [],
-            created_at: nowIso,
-          }));
-
-          if (canonicalCardsInserts.length > 0) {
-            await supabase.from("canonical_cards").insert(canonicalCardsInserts);
-          }
-        }
-
-        await supabase
-          .from("canonical_documents")
-          .update({
-            processing_status: "completed",
-            updated_at: nowIso,
-          })
-          .eq("id", canonicalDocId);
-
-        try {
-          const canonicalChannel = supabase.channel(`canonical_synthesis:${canonicalDocId}`);
-          await canonicalChannel.send({
-            type: "broadcast",
-            event: "synthesis_completed",
-            payload: {
-              canonicalDocId,
-              deckId,
-              totalCards: generatedCards.length,
-              timestamp: nowIso,
-            },
-          });
-          await supabase.removeChannel(canonicalChannel);
-        } catch (_) {}
-      }
-    }
-
-    const deckRecord = {
-      id: deckId,
-      user_id: userId,
-      canonical_deck_id: canonicalDeckId,
-      title: cleanDeckTitle,
-      subject: courseTitle || courseCode,
-      category: "Academic",
-      total_cards: generatedCards.length,
-      due_cards: generatedCards.length,
-      mastery_rate: 0.0,
-      retention_rate: 0.0,
-      estimated_minutes: Math.max(5, Math.ceil(generatedCards.length * 1.5)),
-      course_id: courseId || null,
-      course_code: courseCode || null,
-      created_at: nowIso,
-      updated_at: nowIso,
-    };
-
-    const { error: deckInsertErr } = await supabase
-      .from("decks")
-      .insert(deckRecord);
-
-    if (deckInsertErr) {
-      console.warn("[parse-stem-ocr] Deck insert notice:", deckInsertErr.message);
-    }
-
-    const flashcardInserts = generatedCards.map((c, idx) => ({
-      id: c.id,
-      deck_id: deckId,
-      front: c.front,
-      back: c.back,
-      back_latex: c.back_latex || null,
-      explanation: c.explanation || null,
-      image_url: c.image_url || null,
-      state: "new",
-      difficulty: "medium",
-      next_due_date: nowIso,
-      created_at: nowIso,
-      updated_at: nowIso,
-    }));
-
-    if (flashcardInserts.length > 0) {
-      const { error: cardsInsertErr } = await supabase
-        .from("flashcards")
-        .insert(flashcardInserts);
-
-      if (cardsInsertErr) {
-        console.warn("[parse-stem-ocr] Flashcards insert notice:", cardsInsertErr.message);
-      }
-    }
 
     const snippetInserts = generatedCards.map((c) => ({
       id: c.id,
@@ -544,9 +411,11 @@ serve(async (req) => {
       created_at: nowIso,
     }));
 
-    try {
-      await supabase.from("extracted_snippets").insert(snippetInserts);
-    } catch (_) {}
+    if (snippetInserts.length > 0) {
+      try {
+        await supabase.from("extracted_snippets").insert(snippetInserts);
+      } catch (_) {}
+    }
 
     await supabase
       .from("documents")
@@ -559,8 +428,7 @@ serve(async (req) => {
     await broadcastProgress(broadcastChannel, documentId, {
       status: "completed",
       progress: 1.0,
-      stageMessage: `✨ Deck ready with ${generatedCards.length} cards!`,
-      deckId,
+      stageMessage: `✨ Extracted ${generatedCards.length} cards from document!`,
     });
 
     const responseSnippets = generatedCards.map((c) => ({
@@ -577,9 +445,6 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         document_id: documentId,
-        deck_id: deckId,
-        deck: deckRecord,
-        cards: flashcardInserts,
         snippets: responseSnippets,
         model: luna.modelName,
         images_count: parsedDoc.images.length,

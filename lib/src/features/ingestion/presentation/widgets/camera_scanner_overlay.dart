@@ -15,12 +15,12 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class CameraScannerOverlay extends HookWidget {
   const CameraScannerOverlay({
-    required this.onImageCaptured,
+    required this.onImagesCaptured,
     required this.onClose,
     super.key,
   });
 
-  final void Function(String filename, Uint8List bytes) onImageCaptured;
+  final void Function(List<PickedDocument> images) onImagesCaptured;
   final VoidCallback onClose;
 
   @override
@@ -33,21 +33,29 @@ class CameraScannerOverlay extends HookWidget {
       duration: const Duration(milliseconds: 2000),
     );
 
+    final capturedPhotos = useState<List<PickedDocument>>([]);
+    final isCapturing = useState<bool>(false);
+
     useEffect(() {
       unawaited(laserController.repeat(reverse: true));
       return null;
     }, [laserController]);
 
-    Future<void> handleCapture() async {
-      unawaited(HapticFeedback.heavyImpact());
-      try {
-        final service = locator.isRegistered<FilePickerService>()
-            ? locator<FilePickerService>()
-            : FilePickerService();
-        final photo = await service.captureCameraPhoto();
+    FilePickerService getService() {
+      return locator.isRegistered<FilePickerService>()
+          ? locator<FilePickerService>()
+          : FilePickerService();
+    }
 
+    Future<void> handleCapture() async {
+      if (isCapturing.value) return;
+      isCapturing.value = true;
+      unawaited(HapticFeedback.heavyImpact());
+
+      try {
+        final photo = await getService().captureCameraPhoto();
         if (photo != null && photo.bytes.isNotEmpty) {
-          onImageCaptured(photo.name, photo.bytes);
+          capturedPhotos.value = [...capturedPhotos.value, photo];
         }
       } on Object {
         if (context.mounted) {
@@ -56,34 +64,79 @@ class CameraScannerOverlay extends HookWidget {
             type: SnackBarType.error,
           );
         }
+      } finally {
+        isCapturing.value = false;
+      }
+    }
+
+    Future<void> handleGalleryPick() async {
+      if (isCapturing.value) return;
+      isCapturing.value = true;
+      unawaited(HapticFeedback.lightImpact());
+
+      try {
+        final photos = await getService().pickMultipleImagesFromGallery();
+        if (photos.isNotEmpty) {
+          capturedPhotos.value = [...capturedPhotos.value, ...photos];
+        }
+      } on Object {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: l10n.invalidFileFormatError,
+            type: SnackBarType.error,
+          );
+        }
+      } finally {
+        isCapturing.value = false;
+      }
+    }
+
+    void handleRemovePhoto(int index) {
+      final updated = List<PickedDocument>.from(capturedPhotos.value);
+      if (index >= 0 && index < updated.length) {
+        updated.removeAt(index);
+        capturedPhotos.value = updated;
+      }
+    }
+
+    void handleDone() {
+      if (capturedPhotos.value.isNotEmpty) {
+        onImagesCaptured(capturedPhotos.value);
       }
     }
 
     return Scaffold(
-      backgroundColor: colors.black,
+      backgroundColor: colors.black.withAlpha(235),
       body: Stack(
         children: [
-          // Simulated Camera Preview Area
+          // Clear See-Through Camera Viewfinder Target Area
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 580),
               child: AspectRatio(
                 aspectRatio: 3 / 4,
                 child: Container(
-                  margin: const EdgeInsets.all(24),
+                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppRadius.panel),
                     border: Border.all(
-                      color: colors.primary.withAlpha(200),
+                      color: colors.primary.withAlpha(220),
                       width: 2,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.primary.withAlpha(40),
+                        blurRadius: 24,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(AppRadius.panel - 2),
                     child: Stack(
                       children: [
-                        // Viewfinder Dark background
-                        Container(color: colors.black.withAlpha(150)),
+                        // Viewfinder Transparent Window
+                        Container(color: colors.transparent),
 
                         // Animated Laser Scan Line
                         AnimatedBuilder(
@@ -150,7 +203,7 @@ class CameraScannerOverlay extends HookWidget {
             ),
           ),
 
-          // Top Header: Close Button + Title
+          // Top Header: Close Button + Title + Page Count Badge
           SafeArea(
             child: Align(
               alignment: Alignment.topCenter,
@@ -171,7 +224,7 @@ class CameraScannerOverlay extends HookWidget {
                             decoration: BoxDecoration(
                               color: isHovered
                                   ? colors.white.withAlpha(30)
-                                  : context.colors.transparent,
+                                  : colors.transparent,
                               shape: BoxShape.circle,
                             ),
                             child: IconButton(
@@ -192,6 +245,24 @@ class CameraScannerOverlay extends HookWidget {
                           color: colors.white,
                         ),
                       ),
+                      const Spacer(),
+                      if (capturedPhotos.value.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            borderRadius: BorderRadius.circular(9999),
+                          ),
+                          child: Text(
+                            '${capturedPhotos.value.length} Page${capturedPhotos.value.length > 1 ? "s" : ""} Captured',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.white,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -199,69 +270,205 @@ class CameraScannerOverlay extends HookWidget {
             ),
           ),
 
-          // Bottom Controls: Instruction + Shutter Button
+          // Bottom Controls: Captured Thumbnail Reel + Action Buttons
           Positioned(
-            bottom: 40,
+            bottom: 24,
             left: 0,
             right: 0,
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 580),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Horizontal Thumbnail Preview Reel
+                    if (capturedPhotos.value.isNotEmpty) ...[
+                      SizedBox(
+                        height: 72,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          scrollDirection: Axis.horizontal,
+                          itemCount: capturedPhotos.value.length,
+                          separatorBuilder: (context, index) => const SizedBox(width: 10),
+                          itemBuilder: (context, index) {
+                            final doc = capturedPhotos.value[index];
+                            return Stack(
+                              children: [
+                                Container(
+                                  width: 60,
+                                  height: 72,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: colors.primary,
+                                      width: 2,
+                                    ),
+                                    image: DecorationImage(
+                                      image: MemoryImage(doc.bytes),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 2,
+                                  right: 2,
+                                  child: GestureDetector(
+                                    onTap: () => handleRemovePhoto(index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: BoxDecoration(
+                                        color: colors.black.withAlpha(200),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.close_rounded,
+                                        size: 14,
+                                        color: colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     Text(
-                      l10n.cameraCaptureHint,
+                      capturedPhotos.value.isEmpty
+                          ? l10n.cameraCaptureHint
+                          : 'Snap another page or tap Process to generate flashcards',
                       textAlign: TextAlign.center,
                       style: typography.footnote.medium.copyWith(
                         color: colors.white.withAlpha(200),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    PlatformHoverBuilder(
-                      builder: (context, isHovered, child) {
-                        return AnimatedScale(
-                          scale: isHovered ? 1.06 : 1.0,
-                          duration: AppMotion.snappy,
-                          curve: AppMotion.easeOutCubic,
-                          child: ShrinkableButton(
-                            onTap: handleCapture,
-                            child: Container(
-                              width: 72,
-                              height: 72,
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: colors.white,
-                                  width: 4,
-                                ),
-                                boxShadow: isHovered
-                                    ? [
-                                        BoxShadow(
-                                          color: colors.black.withAlpha(80),
-                                          blurRadius: 16,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: colors.primary,
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    Icons.camera_alt_rounded,
-                                    color: colors.white,
-                                    size: 30,
+                    const SizedBox(height: 20),
+
+                    // Controls Row: Gallery Import | Capture Shutter | Process Batch
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // Gallery Multi-Pick Button
+                          PlatformHoverBuilder(
+                            builder: (context, isHovered, child) {
+                              return AnimatedScale(
+                                scale: isHovered ? 1.08 : 1.0,
+                                duration: AppMotion.snappy,
+                                curve: AppMotion.easeOutCubic,
+                                child: InkWell(
+                                  onTap: handleGalleryPick,
+                                  borderRadius: BorderRadius.circular(AppRadius.card),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: colors.white.withAlpha(30),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: colors.white.withAlpha(60),
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.photo_library_outlined,
+                                      color: colors.white,
+                                      size: 24,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
+                              );
+                            },
                           ),
-                        );
-                      },
+
+                          // Central Camera Shutter Button
+                          PlatformHoverBuilder(
+                            builder: (context, isHovered, child) {
+                              return AnimatedScale(
+                                scale: isHovered ? 1.06 : 1.0,
+                                duration: AppMotion.snappy,
+                                curve: AppMotion.easeOutCubic,
+                                child: ShrinkableButton(
+                                  onTap: handleCapture,
+                                  child: Container(
+                                    width: 72,
+                                    height: 72,
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: colors.white,
+                                        width: 4,
+                                      ),
+                                      boxShadow: isHovered
+                                          ? [
+                                              BoxShadow(
+                                                color: colors.black.withAlpha(80),
+                                                blurRadius: 16,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: colors.primary,
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.camera_alt_rounded,
+                                          color: colors.white,
+                                          size: 30,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+
+                          // Process Batch / Done Button
+                          if (capturedPhotos.value.isNotEmpty)
+                            PlatformHoverBuilder(
+                              builder: (context, isHovered, child) {
+                                return AnimatedScale(
+                                  scale: isHovered ? 1.06 : 1.0,
+                                  duration: AppMotion.snappy,
+                                  curve: AppMotion.easeOutCubic,
+                                  child: FilledButton.icon(
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: colors.success,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.card,
+                                        ),
+                                      ),
+                                    ),
+                                    icon: const Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      'Process (${capturedPhotos.value.length})',
+                                      style: typography.footnote.bold,
+                                    ),
+                                    onPressed: handleDone,
+                                  ),
+                                );
+                              },
+                            )
+                          else
+                            const SizedBox(width: 48),
+                        ],
+                      ),
                     ),
                   ],
                 ),

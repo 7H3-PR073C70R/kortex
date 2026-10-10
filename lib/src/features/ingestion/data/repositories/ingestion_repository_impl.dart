@@ -210,20 +210,28 @@ class IngestionRepositoryImpl implements IngestionRepository {
 
       for (var i = 0; i < snippets.length; i++) {
         final snippet = snippets[i];
+        final cleanFront = snippet.topic.trim();
+        final cleanBack = snippet.rawText.trim();
+        if (cleanFront.isEmpty && cleanBack.isEmpty) {
+          continue;
+        }
+
         cards.add(
           FlashcardEntity(
             id: UuidUtils.generate(),
             deckId: deckId,
-            front: snippet.topic.isNotEmpty
-                ? snippet.topic
-                : 'Concept ${i + 1}',
-            back: snippet.rawText,
+            front: cleanFront.isNotEmpty ? cleanFront : 'Concept ${i + 1}',
+            back: cleanBack.isNotEmpty ? cleanBack : cleanFront,
             backLatex: snippet.latexContent,
             imageUrl: snippet.imageUrl,
             sourceTopic: snippet.topic,
             nextDueDate: DateTime.now().add(const Duration(days: 1)),
           ),
         );
+      }
+
+      if (cards.isEmpty) {
+        throw const FormatException('Cannot save an empty deck with 0 flashcards. Please add card content.');
       }
 
       final deckEntity = DeckEntity(

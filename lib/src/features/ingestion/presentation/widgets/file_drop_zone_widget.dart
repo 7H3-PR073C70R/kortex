@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:auto_route/auto_route.dart';
 import 'package:crypto/crypto.dart';
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -415,7 +416,6 @@ class FileDropZoneWidget extends HookWidget {
 
     final isHovering = useState<bool>(false);
     final isDragging = useState<bool>(false);
-    final isPickingFile = useState<bool>(false);
 
     Future<void> processPickedFileBytes(
       BuildContext context, {
@@ -488,9 +488,6 @@ class FileDropZoneWidget extends HookWidget {
     }
 
     Future<void> handlePickFile() async {
-      if (isPickingFile.value) return;
-      isPickingFile.value = true;
-      unawaited(HapticFeedback.lightImpact());
       try {
         final filePickerService = locator.isRegistered<FilePickerService>()
             ? locator<FilePickerService>()
@@ -513,8 +510,6 @@ class FileDropZoneWidget extends HookWidget {
             type: SnackBarType.error,
           );
         }
-      } finally {
-        isPickingFile.value = false;
       }
     }
 
@@ -697,7 +692,7 @@ class FileDropZoneWidget extends HookWidget {
                           );
                         },
                         child: ShrinkableButton(
-                          onTap: null,
+                          onTap: handlePickFile,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 18,
@@ -742,8 +737,11 @@ class FileDropZoneWidget extends HookWidget {
                         ),
                       ),
 
-                      // Camera Scanner Button
-                      if (onCameraScanTap != null)
+                      // Camera Scanner Button (Supported on iOS & Android only)
+                      if (!kIsWeb &&
+                          (defaultTargetPlatform == TargetPlatform.iOS ||
+                              defaultTargetPlatform == TargetPlatform.android) &&
+                          onCameraScanTap != null)
                         PlatformHoverBuilder(
                           builder: (context, isHovered, child) {
                             return AnimatedScale(

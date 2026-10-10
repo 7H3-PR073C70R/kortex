@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
@@ -148,6 +149,17 @@ final class ProcessCameraImageEvent extends IngestionEvent {
   final String filename;
   final Uint8List imageBytes;
   final String? imagePath;
+  final bool isOnline;
+}
+
+/// Process batch captured camera images directly via on-device ML Kit OCR.
+final class ProcessCameraImagesEvent extends IngestionEvent {
+  const ProcessCameraImagesEvent({
+    required this.images,
+    this.isOnline = true,
+  });
+
+  final List<PickedDocument> images;
   final bool isOnline;
 }
 

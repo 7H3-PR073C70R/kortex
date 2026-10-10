@@ -631,6 +631,10 @@ class DocumentParserService {
           confidenceScore: 0.98,
         ),
       );
+
+      if (snippets.length >= 150) {
+        break;
+      }
     }
 
     // Guaranteed Adaptive Synthesizer: If standard heuristics yield 0 cards,

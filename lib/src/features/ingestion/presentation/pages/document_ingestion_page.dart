@@ -80,14 +80,13 @@ class _DocumentIngestionView extends HookWidget {
 
     if (isScanningCamera.value) {
       return CameraScannerOverlay(
-        onImageCaptured: (filename, bytes) {
+        onImagesCaptured: (images) {
           isScanningCamera.value = false;
-          context.read<IngestionBloc>().add(
-            ProcessCameraImageEvent(
-              filename: filename,
-              imageBytes: bytes,
-            ),
-          );
+          if (images.isNotEmpty) {
+            context.read<IngestionBloc>().add(
+              ProcessCameraImagesEvent(images: images),
+            );
+          }
         },
         onClose: () => isScanningCamera.value = false,
       );

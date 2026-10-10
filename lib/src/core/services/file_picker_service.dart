@@ -27,7 +27,6 @@ class FilePickerService {
   static final FilePickerService _filePicker = FilePickerService._internal();
 
   final log = Logger();
-  bool _isPicking = false;
 
   /// Picks a document file (PDF, PPTX, image, TXT, etc.) and reads its raw bytes.
   Future<PickedDocument?> pickStudyDocument({
@@ -41,40 +40,49 @@ class FilePickerService {
       'docx',
     ],
   }) async {
-    if (_isPicking) return null;
-    _isPicking = true;
     try {
-      final file = await FilePicker.pickFile(
-        allowedExtensions: extensions,
-        type: FileType.custom,
-      );
+      var file = await FilePicker.pickFile();
+
+      if (file == null) {
+        final files = await FilePicker.pickFiles();
+        if (files.isNotEmpty) {
+          file = files.first;
+        }
+      }
 
       if (file != null) {
+        final ext = file.extension?.toLowerCase() ??
+            (file.name.contains('.')
+                ? file.name.split('.').last.toLowerCase()
+                : '');
+
+        if (extensions.isNotEmpty &&
+            ext.isNotEmpty &&
+            !extensions.contains(ext)) {
+          throw FormatException('Unsupported file type: .$ext');
+        }
+
         final bytes = await file.readAsBytes();
 
         if (bytes.isNotEmpty) {
-          final ext = file.extension?.toLowerCase() ??
-              (file.name.contains('.')
-                  ? file.name.split('.').last.toLowerCase()
-                  : 'pdf');
-
           return PickedDocument(
             name: file.name,
-            extension: ext,
+            extension: ext.isNotEmpty ? ext : 'pdf',
             bytes: bytes,
             path: file.path,
           );
         }
       }
       return null;
+    } on FormatException catch (e) {
+      log.w('FilePicker format error: $e');
+      rethrow;
     } on PlatformException catch (e) {
       log.e('FilePicker platform exception: $e');
       return null;
     } on Object catch (e) {
       log.e('FilePicker error: $e');
       return null;
-    } finally {
-      _isPicking = false;
     }
   }
 
@@ -130,6 +138,39 @@ class FilePickerService {
     } on Object catch (e) {
       log.e('Gallery pick error: $e');
       return null;
+    }
+  }
+
+  /// Picks multiple images from the device photo gallery.
+  Future<List<PickedDocument>> pickMultipleImagesFromGallery() async {
+    try {
+      final picker = ImagePicker();
+      final photos = await picker.pickMultiImage(
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 90,
+      );
+
+      final result = <PickedDocument>[];
+      for (final photo in photos) {
+        final bytes = await photo.readAsBytes();
+        final ext = photo.name.split('.').last.toLowerCase();
+        result.add(
+          PickedDocument(
+            name: photo.name,
+            extension: ext.isNotEmpty ? ext : 'jpg',
+            bytes: bytes,
+            path: photo.path,
+          ),
+        );
+      }
+      return result;
+    } on PlatformException catch (e) {
+      log.e('Multi-gallery pick platform exception: $e');
+      return [];
+    } on Object catch (e) {
+      log.e('Multi-gallery pick error: $e');
+      return [];
     }
   }
 
