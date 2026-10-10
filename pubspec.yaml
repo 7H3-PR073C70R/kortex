@@ -75,7 +75,7 @@ dependencies:
   timezone: ^0.9.4
   livekit_client: ^2.11.0
   sqflite: ^2.4.2+1
-  sqflite_common_ffi: ^2.4.0+3
+  sqflite_common_ffi: ^2.4.3
   path: ^1.9.1
   drift: ^2.34.4
   drift_flutter: ^0.3.1
