@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -8,7 +9,9 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
+import 'package:kortex/src/features/syllabot/data/data_sources/syllabot_remote_data_source.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 
 enum DeckExportFormat {
@@ -25,13 +28,31 @@ class SubscriptionGuard {
     UserStorageService? userStorageService,
     LocalStorageService? localStorageService,
     RevenueCatService? revenueCatService,
+    IngestionRemoteDataSource? ingestionRemoteDataSource,
+    SyllabotRemoteDataSource? syllabotRemoteDataSource,
   }) : _userStorage = userStorageService,
        _localStorage = localStorageService,
-       _revenueCat = revenueCatService ?? RevenueCatService.instance;
+       _revenueCat = revenueCatService ?? RevenueCatService.instance,
+       _ingestionRemoteDataSource = ingestionRemoteDataSource,
+       _syllabotRemoteDataSource = syllabotRemoteDataSource;
 
   final UserStorageService? _userStorage;
   final LocalStorageService? _localStorage;
   final RevenueCatService _revenueCat;
+  final IngestionRemoteDataSource? _ingestionRemoteDataSource;
+  final SyllabotRemoteDataSource? _syllabotRemoteDataSource;
+
+  IngestionRemoteDataSource? get _remoteDataSource =>
+      _ingestionRemoteDataSource ??
+      (locator.isRegistered<IngestionRemoteDataSource>()
+          ? locator<IngestionRemoteDataSource>()
+          : null);
+
+  SyllabotRemoteDataSource? get _effectiveSyllabotRemoteDataSource =>
+      _syllabotRemoteDataSource ??
+      (locator.isRegistered<SyllabotRemoteDataSource>()
+          ? locator<SyllabotRemoteDataSource>()
+          : null);
 
   UserStorageService get _effectiveUserStorage =>
       _userStorage ??
@@ -120,52 +141,81 @@ class SubscriptionGuard {
     return getTodayUploadCount() < freeDailyUploadLimit;
   }
 
-  /// Free users get 20 Syllabot Cloud AI queries per day. Pro is unlimited (MON-04).
+  /// Free users get 20 Syllabot Cloud AI queries per day (MON-04). Pro is unlimited.
   /// On-Device AI queries are unlimited for all users.
   static const int freeDailySyllabotLimit = 20;
 
-  int getTodaySyllabotQueryCount() {
+  int _cachedTodaySyllabotCount = 0;
+
+  /// Returns today's Syllabot query count from authoritative server tracking.
+  int getTodaySyllabotQueryCount() => _cachedTodaySyllabotCount;
+
+  /// Authoritatively queries Supabase Postgres DB / RPC for today's Syllabot quota and count.
+  Future<Map<String, dynamic>> fetchSyllabotQuota() async {
+    final ds = _effectiveSyllabotRemoteDataSource;
+    if (ds == null) {
+      return {
+        'is_pro': isPro,
+        'today_count': _cachedTodaySyllabotCount,
+        'limit': isPro ? null : freeDailySyllabotLimit,
+        'remaining': isPro
+            ? null
+            : (freeDailySyllabotLimit - _cachedTodaySyllabotCount)
+                .clamp(0, freeDailySyllabotLimit),
+        'can_use': canQuerySyllabot(),
+      };
+    }
+
     try {
-      final todayStr = DateTime.now().toIso8601String().substring(0, 10);
-      final lastDate = _effectiveLocalStorage.getPreference(
-        key: PrefKeys.lastSyllabotDate,
-      );
-      if (lastDate != todayStr) {
-        return 0;
+      final quota = await ds.getSyllabotQuota();
+      final todayCount = (quota['today_count'] as num?)?.toInt();
+      if (todayCount != null) {
+        _cachedTodaySyllabotCount = todayCount;
       }
-      final countStr = _effectiveLocalStorage.getPreference(
-        key: PrefKeys.dailySyllabotCount,
-      );
-      return int.tryParse(countStr ?? '0') ?? 0;
-    } on Object {
-      return 0;
+      return quota;
+    } on Object catch (_) {
+      return {
+        'is_pro': isPro,
+        'today_count': _cachedTodaySyllabotCount,
+        'limit': isPro ? null : freeDailySyllabotLimit,
+        'remaining': isPro
+            ? null
+            : (freeDailySyllabotLimit - _cachedTodaySyllabotCount)
+                .clamp(0, freeDailySyllabotLimit),
+        'can_use': canQuerySyllabot(),
+      };
     }
   }
 
+  /// Authoritatively records a Syllabot query usage in Postgres via RPC.
+  /// Does NOT use frontend local storage.
   Future<void> recordSyllabotQuery({
     ExecutionEngineType engineType = ExecutionEngineType.cloudRemote,
   }) async {
     if (engineType == ExecutionEngineType.localOnDevice) return;
-    try {
-      final todayStr = DateTime.now().toIso8601String().substring(0, 10);
-      final current = getTodaySyllabotQueryCount();
-      await _effectiveLocalStorage.savePreference(
-        key: PrefKeys.lastSyllabotDate,
-        data: todayStr,
-      );
-      await _effectiveLocalStorage.savePreference(
-        key: PrefKeys.dailySyllabotCount,
-        data: (current + 1).toString(),
-      );
-    } on Object catch (_) {}
+    _cachedTodaySyllabotCount++;
+    final ds = _effectiveSyllabotRemoteDataSource;
+    if (ds != null) {
+      try {
+        final result = await ds.recordSyllabotUsage();
+        final updatedCount = (result['today_count'] as num?)?.toInt();
+        if (updatedCount != null) {
+          _cachedTodaySyllabotCount = updatedCount;
+        }
+      } on Object catch (_) {}
+    }
   }
 
+  /// Validates whether the user can query Syllabot.
+  /// On-device local engine is 100% UNLIMITED for all users.
+  /// Pro is unlimited (monitored and counted server-side).
+  /// Free tier is gated by the daily server quota.
   bool canQuerySyllabot({
     ExecutionEngineType engineType = ExecutionEngineType.cloudRemote,
   }) {
     if (engineType == ExecutionEngineType.localOnDevice) return true;
     if (isPro) return true;
-    return getTodaySyllabotQueryCount() < freeDailySyllabotLimit;
+    return _cachedTodaySyllabotCount < freeDailySyllabotLimit;
   }
 
   /// Offline Entitlement Grace Period (MON-05): 7-day cache validation.
@@ -219,6 +269,94 @@ class SubscriptionGuard {
   /// Live voice pod microphone broadcasting in study rooms requires Pro.
   /// (Listening, text chat, and collaborative whiteboard remain free).
   bool canBroadcastRoomVoice() => isPro;
+
+  // --- Synthesis Mode Boundaries ---
+
+  /// Fast Local Synthesis is 100% on-device and completely UNLIMITED for all users (free & Pro).
+  /// There is NO CAP on Local Synthesis.
+  bool canUseLocalSynthesis() => true;
+
+  /// AI Smart Gen (cloud LLM) is a Pro-exclusive feature with a daily cap to prevent API abuse/cost overruns.
+  /// Free users have 0 daily AI Smart Gen (must upgrade to Pro).
+  /// Pro users have a daily quota of 30 uses per day.
+  static const int proDailyAiSmartLimit = 30;
+
+  int _cachedTodayAiSmartGenCount = 0;
+
+  /// Returns the cached count of AI Smart Gen requests made today.
+  int getTodayAiSmartGenCount() => _cachedTodayAiSmartGenCount;
+
+  /// Returns remaining AI Smart Gen quota for today. Free users have 0.
+  int getRemainingAiSmartGenCount() {
+    if (!isPro) return 0;
+    return (proDailyAiSmartLimit - _cachedTodayAiSmartGenCount)
+        .clamp(0, proDailyAiSmartLimit);
+  }
+
+  /// Authoritatively queries Supabase Postgres DB / RPC for today's AI Smart Gen quota.
+  Future<Map<String, dynamic>> fetchAiSmartGenQuota() async {
+    final ds = _remoteDataSource;
+    if (ds == null) {
+      return {
+        'is_pro': isPro,
+        'today_count': _cachedTodayAiSmartGenCount,
+        'limit': proDailyAiSmartLimit,
+        'remaining': getRemainingAiSmartGenCount(),
+        'can_use': canUseAiSmartGen(),
+      };
+    }
+
+    try {
+      final quota = await ds.getAiSmartGenQuota();
+      final todayCount = (quota['today_count'] as num?)?.toInt();
+      if (todayCount != null) {
+        _cachedTodayAiSmartGenCount = todayCount;
+      }
+      return quota;
+    } on Object catch (_) {
+      return {
+        'is_pro': isPro,
+        'today_count': _cachedTodayAiSmartGenCount,
+        'limit': proDailyAiSmartLimit,
+        'remaining': getRemainingAiSmartGenCount(),
+        'can_use': canUseAiSmartGen(),
+      };
+    }
+  }
+
+  /// Authoritatively records an AI Smart Gen synthesis usage in Postgres via RPC.
+  Future<void> recordAiSmartGenUsage() async {
+    _cachedTodayAiSmartGenCount++;
+    final ds = _remoteDataSource;
+    if (ds != null) {
+      try {
+        final result = await ds.recordAiSmartGenUsage();
+        final updatedCount = (result['today_count'] as num?)?.toInt();
+        if (updatedCount != null) {
+          _cachedTodayAiSmartGenCount = updatedCount;
+        }
+      } on Object catch (_) {}
+    }
+  }
+
+  /// Validates whether the user can execute AI Smart Gen.
+  /// Returns false if not Pro or if the daily cap has been reached.
+  bool canUseAiSmartGen() {
+    if (!isPro) return false;
+    return _cachedTodayAiSmartGenCount < proDailyAiSmartLimit;
+  }
+
+  /// Overall document synthesis validator.
+  /// Fast Local synthesis is UNLIMITED (no cap) for all users within file size limits.
+  /// AI Smart Gen requires Pro and is subject to the daily cap.
+  bool canSynthesizeDocument({
+    required int fileSizeBytes,
+    required bool isFastLocal,
+  }) {
+    if (!canUploadFileSize(fileSizeBytes)) return false;
+    if (isFastLocal) return true;
+    return canUseAiSmartGen();
+  }
 
   /// Helper to require Pro before executing a feature.
   /// If the user is already Pro, executes immediately.

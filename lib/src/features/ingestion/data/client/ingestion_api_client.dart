@@ -39,7 +39,18 @@ abstract class IngestionApiClient {
   Future<HttpResponse<dynamic>> fetchExtractedSnippets(
     @Queries() Map<String, dynamic> query,
   );
+
+  @POST(AppApiEndpoint.getAiSmartGenQuota)
+  Future<HttpResponse<dynamic>> getAiSmartGenQuota(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST(AppApiEndpoint.recordAiSmartGenUsage)
+  Future<HttpResponse<dynamic>> recordAiSmartGenUsage(
+    @Body() Map<String, dynamic> body,
+  );
 }
+
 
 /// Helper extension for binary file uploads to Storage bucket.
 extension IngestionStorageUpload on Dio {

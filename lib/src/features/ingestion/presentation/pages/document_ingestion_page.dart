@@ -17,6 +17,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
@@ -24,6 +25,7 @@ import 'package:kortex/src/features/ingestion/presentation/widgets/camera_scanne
 import 'package:kortex/src/features/ingestion/presentation/widgets/file_drop_zone_widget.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/synthesis_mode_toggle.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/upload_progress_card.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
@@ -75,6 +77,22 @@ class _DocumentIngestionView extends HookWidget {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+
+    final guard = useMemoized(
+      () => locator.isRegistered<SubscriptionGuard>()
+          ? locator<SubscriptionGuard>()
+          : SubscriptionGuard(),
+    );
+    final remainingQuota = useState<int>(guard.getRemainingAiSmartGenCount());
+
+    useEffect(() {
+      unawaited(
+        guard.fetchAiSmartGenQuota().then((_) {
+          remainingQuota.value = guard.getRemainingAiSmartGenCount();
+        }),
+      );
+      return null;
+    }, const []);
 
     final isScanningCamera = useState<bool>(false);
 
@@ -230,10 +248,43 @@ class _DocumentIngestionView extends HookWidget {
                                 // Synthesis mode toggle (Fast Local vs AI Smart)
                                 SynthesisModeToggle(
                                   currentMode: state.synthesisMode,
-                                  onModeSelected: (mode) {
-                                    context.read<IngestionBloc>().add(
-                                      SetSynthesisModeEvent(mode),
-                                    );
+                                  isPro: guard.isPro,
+                                  remainingAiSmartCount:
+                                      guard.isPro ? remainingQuota.value : null,
+                                  onModeSelected: (mode) async {
+                                    if (mode == SynthesisMode.aiSmart) {
+                                      if (!guard.isPro) {
+                                        final upgraded =
+                                            await guard.requirePro(
+                                              context,
+                                              featureName: 'AI Smart Gen',
+                                            );
+                                        if (!upgraded && !guard.isPro) {
+                                          return;
+                                        }
+                                        remainingQuota.value =
+                                            guard.getRemainingAiSmartGenCount();
+                                      }
+                                      // Authoritative database check
+                                      await guard.fetchAiSmartGenQuota();
+                                      remainingQuota.value =
+                                          guard.getRemainingAiSmartGenCount();
+
+                                      if (!guard.canUseAiSmartGen()) {
+                                        if (context.mounted) {
+                                          context.showSnackBar(
+                                            message:
+                                                'Daily AI Smart Gen cap reached (${SubscriptionGuard.proDailyAiSmartLimit}/${SubscriptionGuard.proDailyAiSmartLimit}). Switching to uncapped Fast Local synthesis.',
+                                          );
+                                        }
+                                        return;
+                                      }
+                                    }
+                                    if (context.mounted) {
+                                      context.read<IngestionBloc>().add(
+                                        SetSynthesisModeEvent(mode),
+                                      );
+                                    }
                                   },
                                 ),
                                 const SizedBox(height: 16),
@@ -248,17 +299,60 @@ class _DocumentIngestionView extends HookWidget {
                                         required filename,
                                         required fileType,
                                         required fileBytes,
-                                      }) {
-                                        context.read<IngestionBloc>().add(
-                                          PickAndUploadFileEvent(
-                                            filename: filename,
-                                            fileType: fileType,
-                                            fileBytes: fileBytes,
-                                            courseId: courseId,
-                                            courseCode: courseCode,
-                                            courseTitle: courseTitle,
-                                          ),
-                                        );
+                                      }) async {
+                                        var mode = state.synthesisMode;
+                                        if (mode == SynthesisMode.aiSmart) {
+                                          if (!guard.isPro) {
+                                            final upgraded =
+                                                await guard.requirePro(
+                                                  context,
+                                                  featureName: 'AI Smart Gen',
+                                                );
+                                            if (!upgraded && !guard.isPro) {
+                                              mode = SynthesisMode.fastLocal;
+                                              if (context.mounted) {
+                                                context
+                                                    .read<IngestionBloc>()
+                                                    .add(
+                                                      const SetSynthesisModeEvent(
+                                                        SynthesisMode.fastLocal,
+                                                      ),
+                                                    );
+                                              }
+                                            }
+                                          } else {
+                                            await guard.fetchAiSmartGenQuota();
+                                            if (!guard.canUseAiSmartGen()) {
+                                              mode = SynthesisMode.fastLocal;
+                                              if (context.mounted) {
+                                                context
+                                                    .read<IngestionBloc>()
+                                                    .add(
+                                                      const SetSynthesisModeEvent(
+                                                        SynthesisMode.fastLocal,
+                                                      ),
+                                                    );
+                                                context.showSnackBar(
+                                                  message:
+                                                      'Daily AI Smart Gen limit reached (${SubscriptionGuard.proDailyAiSmartLimit}/${SubscriptionGuard.proDailyAiSmartLimit}). Synthesizing with uncapped Fast Local mode.',
+                                                );
+                                              }
+                                            }
+                                          }
+                                        }
+
+                                        if (context.mounted) {
+                                          context.read<IngestionBloc>().add(
+                                            PickAndUploadFileEvent(
+                                              filename: filename,
+                                              fileType: fileType,
+                                              fileBytes: fileBytes,
+                                              courseId: courseId,
+                                              courseCode: courseCode,
+                                              courseTitle: courseTitle,
+                                            ),
+                                          );
+                                        }
                                       },
                                   onCameraScanTap: () =>
                                       isScanningCamera.value = true,

@@ -72,6 +72,8 @@ class AppApiEndpoint {
   static const String matchDocumentChunksRpc =
       '/rest/v1/rpc/match_document_chunks';
   static const String generateEmbeddings = '/functions/v1/generate-embeddings';
+  static const String getSyllabotQuota = '/rest/v1/rpc/get_syllabot_quota';
+  static const String recordSyllabotUsage = '/rest/v1/rpc/record_syllabot_usage';
 
   // Document Ingestion & STEM OCR Endpoints
   static const String storageBucket = '/storage/v1/object/study-documents';
@@ -85,6 +87,10 @@ class AppApiEndpoint {
       '/rest/v1/rpc/find_or_create_document_reference';
   static const String claimOrCreateDocumentPreflight =
       '/rest/v1/rpc/claim_or_create_document_preflight';
+  static const String getAiSmartGenQuota =
+      '/rest/v1/rpc/get_ai_smart_gen_quota';
+  static const String recordAiSmartGenUsage =
+      '/rest/v1/rpc/record_ai_smart_gen_usage';
 
   static String getCardAssetPublicUrl(String path) =>
       '$baseUri/storage/v1/object/public/card-assets/$path';

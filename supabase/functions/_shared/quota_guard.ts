@@ -12,15 +12,15 @@ export interface QuotaGuardResult {
 
 export const FREE_TIER_LIMITS = {
   document_ingestion: 3, // 3 Ingestions per 24 hours
-  syllabot_query: 30, // 30 Queries per 24 hours
+  syllabot_query: 20, // 20 Queries per 24 hours (MON-04)
 } as const;
 
 export const UPGRADE_URL = "https://kortexify.app/pay";
 
 /**
  * Hard Quota & Paywall Enforcement Middleware.
- * Enforces 3 document ingestions and 30 AI queries per 24h on free tier.
- * Bypasses caps for Pro tier and audits token usage to `usage_logs`.
+ * Enforces 3 document ingestions and 20 AI queries per 24h on free tier.
+ * Bypasses caps for Pro tier and authoritatively tracks usage and counts in `usage_logs`.
  */
 export async function checkAndEnforceQuota(
   supabaseClient: SupabaseClient,
@@ -48,24 +48,29 @@ export async function checkAndEnforceQuota(
   ).toISOString();
 
   if (tier === "pro") {
-    supabaseClient
-      .from("usage_logs")
-      .insert({
+    try {
+      await supabaseClient.from("usage_logs").insert({
         user_id: userId,
         action_type: actionType,
         token_count: tokenCount,
         tier: "pro",
         created_at: now.toISOString(),
-      })
-      .then(() => {})
-      .catch((err) => {
-        console.warn("[QuotaGuard] Failed to record pro usage log:", err);
       });
+    } catch (err) {
+      console.warn("[QuotaGuard] Failed to record pro usage log:", err);
+    }
+
+    const { count: proUsageCount } = await supabaseClient
+      .from("usage_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("action_type", actionType)
+      .gte("created_at", twentyFourHoursAgo);
 
     return {
       allowed: true,
       tier: "pro",
-      currentUsage: 0,
+      currentUsage: proUsageCount ?? 1,
       maxLimit: Infinity,
     };
   }

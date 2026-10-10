@@ -131,4 +131,22 @@ class SyllabotRemoteDataSourceImpl implements SyllabotRemoteDataSource {
       {'id': 'eq.$sessionId'},
     );
   }
+
+  @override
+  Future<Map<String, dynamic>> getSyllabotQuota() async {
+    final res = await _client.getSyllabotQuota({});
+    if (res.data is Map<String, dynamic>) {
+      return res.data as Map<String, dynamic>;
+    }
+    return <String, dynamic>{};
+  }
+
+  @override
+  Future<Map<String, dynamic>> recordSyllabotUsage({int tokenCount = 0}) async {
+    final res = await _client.recordSyllabotUsage({'p_token_count': tokenCount});
+    if (res.data is Map<String, dynamic>) {
+      return res.data as Map<String, dynamic>;
+    }
+    return <String, dynamic>{};
+  }
 }

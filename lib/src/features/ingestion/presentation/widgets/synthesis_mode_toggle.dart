@@ -12,17 +12,36 @@ class SynthesisModeToggle extends StatelessWidget {
   const SynthesisModeToggle({
     required this.currentMode,
     required this.onModeSelected,
+    this.isPro = false,
+    this.remainingAiSmartCount,
+    this.dailyAiSmartLimit = 30,
     super.key,
   });
 
   final SynthesisMode currentMode;
   final ValueChanged<SynthesisMode> onModeSelected;
+  final bool isPro;
+  final int? remainingAiSmartCount;
+  final int dailyAiSmartLimit;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+
+    String aiBadge;
+    var isAiCapped = false;
+    if (!isPro) {
+      aiBadge = l10n.aiSmartModeBadge; // 'PRO'
+    } else if (remainingAiSmartCount != null && remainingAiSmartCount! <= 0) {
+      aiBadge = '0/$dailyAiSmartLimit LEFT';
+      isAiCapped = true;
+    } else if (remainingAiSmartCount != null) {
+      aiBadge = '$remainingAiSmartCount/$dailyAiSmartLimit LEFT';
+    } else {
+      aiBadge = l10n.aiSmartModeBadge;
+    }
 
     return Container(
       padding: const EdgeInsets.all(6),
@@ -37,12 +56,12 @@ class SynthesisModeToggle extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Tier 1: Fast Local Extraction (Default & Free)
+          // Tier 1: Fast Local Extraction (Default & 100% Unlimited)
           Expanded(
             child: _ModeOptionCard(
               mode: SynthesisMode.fastLocal,
               title: l10n.fastLocalModeTitle,
-              badge: l10n.fastLocalModeBadge,
+              badge: 'FREE · UNLIMITED',
               icon: Icons.flash_on_rounded,
               isSelected: currentMode.isFastLocal,
               onTap: () => onModeSelected(SynthesisMode.fastLocal),
@@ -50,13 +69,16 @@ class SynthesisModeToggle extends StatelessWidget {
           ),
           const SizedBox(width: 8),
 
-          // Tier 2: AI Smart Synthesis (Pro / Deep Conceptual)
+          // Tier 2: AI Smart Synthesis (Pro / Capped Daily)
           Expanded(
             child: _ModeOptionCard(
               mode: SynthesisMode.aiSmart,
               title: l10n.aiSmartModeTitle,
-              badge: l10n.aiSmartModeBadge,
-              icon: Icons.auto_awesome_rounded,
+              badge: aiBadge,
+              badgeColor: isAiCapped ? colors.error : null,
+              icon: !isPro
+                  ? Icons.lock_outline_rounded
+                  : Icons.auto_awesome_rounded,
               isSelected: currentMode.isAiSmart,
               onTap: () => onModeSelected(SynthesisMode.aiSmart),
             ),
@@ -67,6 +89,7 @@ class SynthesisModeToggle extends StatelessWidget {
   }
 }
 
+
 class _ModeOptionCard extends StatelessWidget {
   const _ModeOptionCard({
     required this.mode,
@@ -75,6 +98,7 @@ class _ModeOptionCard extends StatelessWidget {
     required this.icon,
     required this.isSelected,
     required this.onTap,
+    this.badgeColor,
   });
 
   final SynthesisMode mode;
@@ -83,6 +107,7 @@ class _ModeOptionCard extends StatelessWidget {
   final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
+  final Color? badgeColor;
 
   @override
   Widget build(BuildContext context) {
@@ -142,16 +167,20 @@ class _ModeOptionCard extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? colors.primary
-                        : colors.textSecondary.withAlpha(30),
+                    color: badgeColor != null
+                        ? (isSelected ? badgeColor : badgeColor!.withAlpha(40))
+                        : (isSelected
+                            ? colors.primary
+                            : colors.textSecondary.withAlpha(30)),
                     borderRadius: BorderRadius.circular(AppRadius.badge),
                   ),
                   child: Text(
                     badge,
                     style: typography.caption.bold.copyWith(
                       fontSize: 9,
-                      color: isSelected ? colors.white : colors.textSecondary,
+                      color: badgeColor != null && !isSelected
+                          ? badgeColor
+                          : (isSelected ? colors.white : colors.textSecondary),
                     ),
                   ),
                 ),

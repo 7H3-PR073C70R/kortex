@@ -283,12 +283,19 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     Emitter<SyllabotChatState> emit,
   ) {
     final rawError = event.message.trim();
+    final isQuotaExceeded = rawError.contains('QUOTA_EXCEEDED') ||
+        rawError.contains('Payment Required') ||
+        rawError.contains('402') ||
+        rawError.contains('limit of 20') ||
+        rawError.contains('Daily Syllabot query limit');
     final cleaned = Exception(rawError).errorMessage ?? rawError;
-    final displayError = cleaned.isNotEmpty
-        ? cleaned
-        : (state.streamingText.isNotEmpty
-              ? state.streamingText
-              : 'Failed to complete Syllabot response. Tap retry to reconnect.');
+    final displayError = isQuotaExceeded
+        ? "You've reached your daily limit of 20 free Syllabot AI queries. Upgrade to Pro for unlimited queries, or switch to Fast On-Device AI."
+        : (cleaned.isNotEmpty
+            ? cleaned
+            : (state.streamingText.isNotEmpty
+                  ? state.streamingText
+                  : 'Failed to complete Syllabot response. Tap retry to reconnect.'));
 
     final errorMessage = ChatMessageEntity(
       id: UuidUtils.generate(),
@@ -298,7 +305,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       timestamp: DateTime.now(),
       engineType: state.engineType,
       isError: true,
-      onRetry: () => add(const RetryLastMessageEvent()),
+      onRetry: isQuotaExceeded ? null : () => add(const RetryLastMessageEvent()),
     );
 
     emit(

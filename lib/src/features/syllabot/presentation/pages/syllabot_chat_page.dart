@@ -156,7 +156,12 @@ class _SyllabotChatView extends HookWidget {
           }),
         );
 
-        // 2. Listen to global download progress stream across all screens
+        // 2. Fetch server-authoritative Syllabot quota for user
+        if (locator.isRegistered<SubscriptionGuard>()) {
+          unawaited(locator<SubscriptionGuard>().fetchSyllabotQuota());
+        }
+
+        // 3. Listen to global download progress stream across all screens
         final downloadSub = LocalLlmEngineClient.downloadProgressStream.listen((state) {
           if (context.mounted) {
             isDownloadingModel.value = state.isDownloading;

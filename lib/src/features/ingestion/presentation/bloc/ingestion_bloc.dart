@@ -28,6 +28,7 @@ import 'package:kortex/src/features/ingestion/domain/use_cases/upload_study_docu
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/features/ingestion/presentation/controllers/onboarding_stream_controller.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 
 class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
   IngestionBloc({
@@ -43,6 +44,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     DeepDocumentDedupService? dedupService,
     NotificationService? notificationService,
     LocalStorageService? localStorageService,
+    SubscriptionGuard? subscriptionGuard,
   }) : _upload = uploadUseCase,
        _processOcr = processOcrUseCase,
        _generateDeck = generateDeckUseCase,
@@ -55,6 +57,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
        _dedupService = dedupService ?? DeepDocumentDedupService(),
        _notificationService = notificationService,
        _localStorageService = localStorageService,
+       _subscriptionGuard = subscriptionGuard,
        super(const IngestionState()) {
     on<PickAndUploadFileEvent>(_onPickAndUploadFile);
     on<UploadProgressUpdatedEvent>(_onUploadProgressUpdated);
@@ -89,12 +92,19 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
   final DeepDocumentDedupService _dedupService;
   final NotificationService? _notificationService;
   final LocalStorageService? _localStorageService;
+  final SubscriptionGuard? _subscriptionGuard;
 
   LocalStorageService? get _storage =>
       _localStorageService ??
       (locator.isRegistered<LocalStorageService>()
           ? locator<LocalStorageService>()
           : null);
+
+  SubscriptionGuard get _effectiveSubscriptionGuard =>
+      _subscriptionGuard ??
+      (locator.isRegistered<SubscriptionGuard>()
+          ? locator<SubscriptionGuard>()
+          : SubscriptionGuard());
 
   OnboardingStreamController? get streamController => _streamController;
 
@@ -150,6 +160,13 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     SetSynthesisModeEvent event,
     Emitter<IngestionState> emit,
   ) {
+    if (event.mode == SynthesisMode.aiSmart) {
+      final guard = _effectiveSubscriptionGuard;
+      if (!guard.isPro || !guard.canUseAiSmartGen()) {
+        emit(state.copyWith(synthesisMode: SynthesisMode.fastLocal));
+        return;
+      }
+    }
     emit(state.copyWith(synthesisMode: event.mode));
   }
 
@@ -371,7 +388,18 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     Emitter<IngestionState> emit,
   ) async {
     final isDeduplicated = state.wasDeduplicated;
-    final isFastLocal = event.synthesisMode == SynthesisMode.fastLocal;
+    var effectiveMode = event.synthesisMode;
+
+    if (effectiveMode == SynthesisMode.aiSmart) {
+      final guard = _effectiveSubscriptionGuard;
+      if (!guard.isPro || !guard.canUseAiSmartGen()) {
+        effectiveMode = SynthesisMode.fastLocal;
+      } else {
+        unawaited(guard.recordAiSmartGenUsage());
+      }
+    }
+
+    final isFastLocal = effectiveMode == SynthesisMode.fastLocal;
 
     emit(
       state.copyWith(
@@ -450,7 +478,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         documentId: event.documentId,
         storagePath: event.storagePath,
         fileType: event.fileType,
-        synthesisMode: event.synthesisMode,
+        synthesisMode: effectiveMode,
       );
 
       ocrResult.fold(

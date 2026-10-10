@@ -22,6 +22,7 @@ import 'package:kortex/src/features/ingestion/domain/use_cases/upload_study_docu
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockUploadStudyDocumentUseCase extends Mock
@@ -41,6 +42,8 @@ class MockNotificationService extends Mock implements NotificationService {}
 
 class MockLocalStorageService extends Mock implements LocalStorageService {}
 
+class MockSubscriptionGuard extends Mock implements SubscriptionGuard {}
+
 void main() {
   late MockUploadStudyDocumentUseCase mockUpload;
   late MockProcessStemOcrUseCase mockProcessOcr;
@@ -49,6 +52,7 @@ void main() {
   late MockDecksRemoteDataSource mockDecksDataSource;
   late MockNotificationService mockNotificationService;
   late MockLocalStorageService mockLocalStorageService;
+  late MockSubscriptionGuard mockSubscriptionGuard;
   late IngestionBloc bloc;
 
   final testDoc = DocumentUploadEntity(
@@ -86,6 +90,7 @@ void main() {
       ),
     );
     registerFallbackValue(const <FlashcardModel>[]);
+    registerFallbackValue(SynthesisMode.fastLocal);
   });
 
   setUp(() {
@@ -121,6 +126,10 @@ void main() {
       ),
     ).thenAnswer((_) async {});
 
+    mockSubscriptionGuard = MockSubscriptionGuard();
+    when(() => mockSubscriptionGuard.isPro).thenReturn(true);
+    when(() => mockSubscriptionGuard.canUseAiSmartGen()).thenReturn(true);
+
     bloc = IngestionBloc(
       uploadUseCase: mockUpload,
       processOcrUseCase: mockProcessOcr,
@@ -129,6 +138,7 @@ void main() {
       decksRemoteDataSource: mockDecksDataSource,
       notificationService: mockNotificationService,
       localStorageService: mockLocalStorageService,
+      subscriptionGuard: mockSubscriptionGuard,
     );
   });
 
@@ -160,6 +170,7 @@ void main() {
             documentId: any(named: 'documentId'),
             storagePath: any(named: 'storagePath'),
             fileType: any(named: 'fileType'),
+            synthesisMode: any(named: 'synthesisMode'),
           ),
         ).thenAnswer((_) async => const Right([testSnippet]));
 
@@ -184,13 +195,13 @@ void main() {
         ),
         IngestionState(
           status: ProcessingStatus.parsingOcr,
-          stageMessage: 'Extracting document on server compute...',
+          stageMessage: 'Synthesizing fast local flashcards...',
           uploadProgress: 0.2,
           currentDocument: testDoc,
         ),
         IngestionState(
           status: ProcessingStatus.completed,
-          stageMessage: 'Luna synthesized 1 conceptual cards!',
+          stageMessage: 'Synthesized 1 high-yield study cards!',
           uploadProgress: 1,
           currentDocument: testDoc,
           snippets: const [testSnippet],
@@ -322,11 +333,11 @@ void main() {
       'updates synthesis mode on SetSynthesisModeEvent',
       build: () => bloc,
       act: (bloc) => bloc.add(
-        const SetSynthesisModeEvent(SynthesisMode.fastLocal),
+        const SetSynthesisModeEvent(SynthesisMode.aiSmart),
       ),
       expect: () => [
         const IngestionState(
-          synthesisMode: SynthesisMode.fastLocal,
+          synthesisMode: SynthesisMode.aiSmart,
         ),
       ],
     );
@@ -405,6 +416,7 @@ void main() {
             documentId: any(named: 'documentId'),
             storagePath: any(named: 'storagePath'),
             fileType: any(named: 'fileType'),
+            synthesisMode: any(named: 'synthesisMode'),
           ),
         ).thenAnswer((_) async => const Right([testSnippet]));
       },

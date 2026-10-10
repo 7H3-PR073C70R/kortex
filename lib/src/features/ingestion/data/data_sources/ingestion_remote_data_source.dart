@@ -55,4 +55,8 @@ abstract class IngestionRemoteDataSource {
     Uint8List fileBytes, {
     String? filename,
   });
+
+  /// Authoritative server-side DB checks for AI Smart Gen quota
+  Future<Map<String, dynamic>> getAiSmartGenQuota();
+  Future<Map<String, dynamic>> recordAiSmartGenUsage();
 }

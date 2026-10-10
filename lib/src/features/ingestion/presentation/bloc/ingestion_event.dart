@@ -54,7 +54,7 @@ final class TriggerOcrParsingEvent extends IngestionEvent {
     this.courseId,
     this.courseCode,
     this.courseTitle,
-    this.synthesisMode = SynthesisMode.aiSmart,
+    this.synthesisMode = SynthesisMode.fastLocal,
   });
 
   final String documentId;

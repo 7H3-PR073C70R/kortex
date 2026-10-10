@@ -138,6 +138,65 @@ serve(async (req) => {
       );
     }
 
+    // Authoritative Database Subscription & Quota Check:
+    // AI Smart Gen is exclusive to Pro users and capped at 30 requests per day.
+    // Local synthesis has zero cap and runs on-device.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("subscription_tier")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const isPro = profile?.subscription_tier === "pro";
+    if (!isPro) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "AI Smart Gen is exclusive to Kortex Pro subscribers. Please upgrade to Pro or switch to uncapped Fast Local synthesis.",
+          code: "PRO_REQUIRED",
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const startOfTodayUtc = new Date();
+    startOfTodayUtc.setUTCHours(0, 0, 0, 0);
+
+    const { count: todayUsageCount } = await supabase
+      .from("usage_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("action_type", "ai_smart_gen")
+      .gte("created_at", startOfTodayUtc.toISOString());
+
+    const PRO_DAILY_LIMIT = 30;
+    if ((todayUsageCount ?? 0) >= PRO_DAILY_LIMIT) {
+      return new Response(
+        JSON.stringify({
+          error: `Daily AI Smart Gen limit reached (${PRO_DAILY_LIMIT}/${PRO_DAILY_LIMIT}). Please switch to uncapped Fast Local synthesis.`,
+          code: "DAILY_LIMIT_REACHED",
+          todayCount: todayUsageCount,
+          limit: PRO_DAILY_LIMIT,
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Record usage in usage_logs
+    await supabase.from("usage_logs").insert({
+      user_id: userId,
+      action_type: "ai_smart_gen",
+      tier: "pro",
+      token_count: 1,
+    });
+
+
     const contentHash = documentRecord?.content_hash;
     const resolvedFilename = documentRecord?.filename || filename;
     const cleanDeckTitle =

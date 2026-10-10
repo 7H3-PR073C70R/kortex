@@ -32,6 +32,16 @@ abstract class SyllabotApiClient {
   Future<HttpResponse<dynamic>> deleteSession(
     @Queries() Map<String, dynamic> query,
   );
+
+  @POST(AppApiEndpoint.getSyllabotQuota)
+  Future<HttpResponse<dynamic>> getSyllabotQuota(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST(AppApiEndpoint.recordSyllabotUsage)
+  Future<HttpResponse<dynamic>> recordSyllabotUsage(
+    @Body() Map<String, dynamic> body,
+  );
 }
 
 /// Helper extension for SSE streaming from Syllabot edge functions.

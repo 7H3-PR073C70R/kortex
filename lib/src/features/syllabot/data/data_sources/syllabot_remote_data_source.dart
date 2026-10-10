@@ -28,4 +28,8 @@ abstract class SyllabotRemoteDataSource {
   Future<void> saveChatMessage(ChatMessageEntity message);
 
   Future<void> deleteSession({required String sessionId});
+
+  Future<Map<String, dynamic>> getSyllabotQuota();
+
+  Future<Map<String, dynamic>> recordSyllabotUsage({int tokenCount = 0});
 }

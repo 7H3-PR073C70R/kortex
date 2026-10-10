@@ -282,7 +282,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         // Storage Lock Handling: 409 Conflict or 400 KeyAlreadyExists indicates the file already exists in canonical storage.
         // This is a benign redundant upload from a concurrent user, proceed without failing.
         final resData = e.response?.data;
-        final isDuplicate = e.response?.statusCode == 409 ||
+        final isDuplicate =
+            e.response?.statusCode == 409 ||
             (e.response?.statusCode == 400 &&
                 resData is Map &&
                 (resData['code'] == 'KeyAlreadyExists' ||
@@ -500,7 +501,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     if (fileBytes != null && fileBytes.isNotEmpty) {
       try {
         final lowerExt = fileType.replaceAll('.', '').toLowerCase();
-        final isImage = ['png', 'jpg', 'jpeg', 'webp'].contains(lowerExt) ||
+        final isImage =
+            ['png', 'jpg', 'jpeg', 'webp'].contains(lowerExt) ||
             storagePath.toLowerCase().endsWith('.png') ||
             storagePath.toLowerCase().endsWith('.jpg') ||
             storagePath.toLowerCase().endsWith('.jpeg') ||
@@ -628,7 +630,9 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       );
 
       // Upload extracted diagrams to Cloudflare R2 concurrently (capped at 6)
-      final uploadTasks = extractedImages.take(6).toList().asMap().entries.map((entry) async {
+      final uploadTasks = extractedImages.take(6).toList().asMap().entries.map((
+        entry,
+      ) async {
         final i = entry.key;
         final img = entry.value;
         final filename = 'img_${i + 1}.${img.extension}';
@@ -647,7 +651,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
           } on Object catch (_) {}
         }
 
-        return r2Url ?? AppApiEndpoint.getDocumentImagePublicUrl(documentId, filename);
+        return r2Url ??
+            AppApiEndpoint.getDocumentImagePublicUrl(documentId, filename);
       });
       final uploadedImageUrls = await Future.wait(uploadTasks);
 
@@ -834,7 +839,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     void Function(double progress)? onProgress,
   }) async {
     final token = _userStorage?.getToken();
-    final url = '${AppApiEndpoint.baseUri}${AppApiEndpoint.transcribeAudioWhisper}';
+    final url =
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.transcribeAudioWhisper}';
 
     try {
       final formData = FormData.fromMap({
@@ -865,7 +871,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         if (data.containsKey('text') && data['text'] is String) {
           return data['text'] as String;
         }
-        if (data.containsKey('transcription') && data['transcription'] is String) {
+        if (data.containsKey('transcription') &&
+            data['transcription'] is String) {
           return data['transcription'] as String;
         }
       }
@@ -873,5 +880,57 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       unawaited(_crashlyticsService?.recordError(e, stackTrace));
     }
     return 'Audio lecture recorded ($filename). Summary and key lecture notes extracted for study card generation.';
+  }
+
+  @override
+  Future<Map<String, dynamic>> getAiSmartGenQuota() async {
+    try {
+      final res = await _client.getAiSmartGenQuota({});
+      final data = res.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+    } on Object catch (e, stack) {
+      unawaited(
+        _crashlyticsService?.recordError(
+          e,
+          stack,
+          reason: 'Failed to fetch AI Smart Gen quota',
+        ),
+      );
+    }
+    return {
+      'is_pro': false,
+      'today_count': 0,
+      'limit': 0,
+      'remaining': 0,
+      'can_use': false,
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> recordAiSmartGenUsage() async {
+    try {
+      final res = await _client.recordAiSmartGenUsage({});
+      final data = res.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+    } on Object catch (e, stack) {
+      unawaited(
+        _crashlyticsService?.recordError(
+          e,
+          stack,
+          reason: 'Failed to record AI Smart Gen usage',
+        ),
+      );
+    }
+    return {'success': false};
   }
 }
