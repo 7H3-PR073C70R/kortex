@@ -1,6 +1,9 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
-export type QuotaActionType = "document_ingestion" | "syllabot_query";
+export type QuotaActionType =
+  | "document_ingestion"
+  | "syllabot_query"
+  | "flashcard_generation";
 
 export interface QuotaGuardResult {
   allowed: boolean;
@@ -11,16 +14,17 @@ export interface QuotaGuardResult {
 }
 
 export const FREE_TIER_LIMITS = {
-  document_ingestion: 3, // 3 Ingestions per 24 hours
-  syllabot_query: 20, // 20 Queries per 24 hours (MON-04)
+  document_ingestion: 3, // 3 Ingestions per day
+  syllabot_query: 20, // 20 Queries per day (MON-04)
+  flashcard_generation: 10, // 10 Deck syntheses per day for free tier
 } as const;
 
 export const UPGRADE_URL = "https://kortexify.app/pay";
 
 /**
  * Hard Quota & Paywall Enforcement Middleware.
- * Enforces 3 document ingestions and 20 AI queries per 24h on free tier.
- * Bypasses caps for Pro tier and authoritatively tracks usage and counts in `usage_logs`.
+ * Synchronized with PostgreSQL UTC day boundaries (matching RPC functions).
+ * Tracks usage authoritatively in `public.usage_logs`.
  */
 export async function checkAndEnforceQuota(
   supabaseClient: SupabaseClient,
@@ -33,18 +37,23 @@ export async function checkAndEnforceQuota(
       "authorization, x-client-info, apikey, content-type",
   }
 ): Promise<QuotaGuardResult> {
-  const { data: profile, error: profileErr } = await supabaseClient
+  const { data: profile } = await supabaseClient
     .from("profiles")
-    .select("subscription_tier")
+    .select("subscription_tier, is_pro, pro_until")
     .eq("id", userId)
     .single();
 
-  const tier: "free" | "pro" =
-    profile?.subscription_tier === "pro" ? "pro" : "free";
+  const isProActive =
+    profile?.is_pro === true ||
+    profile?.subscription_tier === "pro" ||
+    (profile?.pro_until && new Date(profile.pro_until).getTime() > Date.now());
+
+  const tier: "free" | "pro" = isProActive ? "pro" : "free";
 
   const now = new Date();
-  const twentyFourHoursAgo = new Date(
-    now.getTime() - 24 * 60 * 60 * 1000
+  // Standardized UTC calendar day boundary (00:00:00 UTC) matching Postgres RPC date_trunc('day', now())
+  const startOfUtcDay = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0)
   ).toISOString();
 
   if (tier === "pro") {
@@ -65,7 +74,7 @@ export async function checkAndEnforceQuota(
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("action_type", actionType)
-      .gte("created_at", twentyFourHoursAgo);
+      .gte("created_at", startOfUtcDay);
 
     return {
       allowed: true,
@@ -77,27 +86,43 @@ export async function checkAndEnforceQuota(
 
   const maxLimit = FREE_TIER_LIMITS[actionType];
 
-  const { count: usageCount, error: countErr } = await supabaseClient
+  const { count: usageCount } = await supabaseClient
     .from("usage_logs")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
     .eq("action_type", actionType)
-    .gte("created_at", twentyFourHoursAgo);
+    .gte("created_at", startOfUtcDay);
 
   const currentCount = usageCount ?? 0;
 
   if (currentCount >= maxLimit) {
     console.warn(
-      `[QuotaGuard] User ${userId} exceeded 24h ${actionType} limit (${currentCount}/${maxLimit}).`
+      `[QuotaGuard] User ${userId} exceeded daily UTC ${actionType} limit (${currentCount}/${maxLimit}).`
+    );
+
+    const endOfUtcDay = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() + 1,
+        0,
+        0,
+        0
+      )
+    );
+    const resetSeconds = Math.max(
+      1,
+      Math.floor((endOfUtcDay.getTime() - now.getTime()) / 1000)
     );
 
     const errorPayload = {
       error: "QUOTA_EXCEEDED",
+      message: `Daily limit of ${maxLimit} ${actionType.replace("_", " ")} reached for free tier.`,
       upgrade_url: UPGRADE_URL,
       action: actionType,
       current_usage: currentCount,
       limit: maxLimit,
-      resets_in_hours: 24,
+      reset_seconds: resetSeconds,
     };
 
     const response = new Response(JSON.stringify(errorPayload), {
@@ -105,6 +130,7 @@ export async function checkAndEnforceQuota(
       headers: {
         ...corsHeaders,
         "Content-Type": "application/json",
+        "Retry-After": resetSeconds.toString(),
       },
     });
 

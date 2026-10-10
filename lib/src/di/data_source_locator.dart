@@ -132,5 +132,10 @@ void _initDataSource() {
       () => AppVersionRemoteDataSourceImpl(
         apiClient: locator<AppVersionApiClient>(),
       ),
+    )
+    ..registerLazySingleton<QuizDuelRemoteDataSource>(
+      () => QuizDuelRemoteDataSourceImpl(
+        dio: locator<Dio>(),
+      ),
     );
 }

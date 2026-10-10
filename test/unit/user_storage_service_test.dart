@@ -35,20 +35,20 @@ void main() {
     );
   });
 
-  test('saveToken writes strictly to secure storage and deletes any legacy local pref', () async {
+  test('saveToken writes to secure storage and syncs to local storage', () async {
     const dummyJwt = 'header.payload.signature';
     await userStorageService.saveToken(dummyJwt);
 
     verify(() => mockSecureStorage.write(key: '__token', value: dummyJwt)).called(1);
-    verify(() => mockLocalStorageService.deletePreference(key: '__token')).called(greaterThanOrEqualTo(1));
+    verify(() => mockLocalStorageService.savePreference(key: '__token', data: dummyJwt)).called(1);
   });
 
-  test('saveRefreshToken writes strictly to secure storage', () async {
+  test('saveRefreshToken writes to secure storage and syncs to local storage', () async {
     const dummyRefresh = 'sample_refresh_token_123';
     await userStorageService.saveRefreshToken(dummyRefresh);
 
     verify(() => mockSecureStorage.write(key: '__refresh_token', value: dummyRefresh)).called(1);
-    verify(() => mockLocalStorageService.deletePreference(key: '__refresh_token')).called(greaterThanOrEqualTo(1));
+    verify(() => mockLocalStorageService.savePreference(key: '__refresh_token', data: dummyRefresh)).called(1);
   });
 
   test('hasActiveSession returns true when refresh token is present', () async {

@@ -624,7 +624,7 @@ void main() {
 
       // Emit network online event
       connectivityController.add([ConnectivityResult.wifi]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 350));
 
       expect(upsertCalled, isTrue);
       expect(inMemoryStorage[AppSyncEngine.storageKey], isNull);

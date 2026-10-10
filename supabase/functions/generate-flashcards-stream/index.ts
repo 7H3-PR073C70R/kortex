@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
-import { enforceDailyQuota } from "../_shared/quota_limiter.ts";
+import { checkAndEnforceQuota } from "../_shared/quota_guard.ts";
 import { LunaClient } from "../_shared/luna_client.ts";
 
 const corsHeaders = {
@@ -70,15 +70,16 @@ serve(async (req: Request) => {
     const rawTopic = body.topic?.trim() || "Academic Foundations";
     const rawSourceText = body.sourceText?.trim();
 
-    const quotaCheck = await enforceDailyQuota(
+    const quotaCheck = await checkAndEnforceQuota(
+      authClient,
       userId,
-      "ai_question",
-      "free",
+      "flashcard_generation",
+      0,
       corsHeaders
     );
 
-    if (!quotaCheck.allowed && quotaCheck.errorResponse) {
-      return quotaCheck.errorResponse;
+    if (!quotaCheck.allowed && quotaCheck.response) {
+      return quotaCheck.response;
     }
 
     const requestedCount = body.count;

@@ -463,4 +463,5 @@ verify_jwt = false
 [functions.transcribe-voice-note]
 verify_jwt = false
 
-
+[functions.transcribe-audio-whisper]
+verify_jwt = true

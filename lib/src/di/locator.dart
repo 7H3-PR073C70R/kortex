@@ -185,6 +185,7 @@ import 'package:kortex/src/features/quiz/data/client/quiz_duel_websocket_client.
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_local_data_source.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source_impl.dart';
+import 'package:kortex/src/features/quiz/data/data_sources/quiz_duel_remote_data_source.dart';
 import 'package:kortex/src/features/quiz/data/repositories/past_questions_repository_impl.dart';
 import 'package:kortex/src/features/quiz/data/repositories/quiz_duel_repository_impl.dart';
 import 'package:kortex/src/features/quiz/data/repositories/quiz_repository_impl.dart';

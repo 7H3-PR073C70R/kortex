@@ -31,21 +31,56 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const authHeader = req.headers.get("Authorization");
 
-    let userId = "anon-guest";
-    if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
-      const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-      if (token === supabaseAnonKey || token === supabaseServiceKey) {
-        userId = "anon-guest";
-      } else {
-        const authClient = createClient(supabaseUrl, supabaseAnonKey);
-        const {
-          data: { user },
-        } = await authClient.auth.getUser(token).catch(() => ({ data: { user: null } }));
-        if (user) {
-          userId = user.id;
+    if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
+      return new Response(
+        JSON.stringify({
+          error: "Unauthorized",
+          message: "A valid user session is required to query Syllabot AI.",
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
-      }
+      );
     }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token || token === supabaseAnonKey) {
+      return new Response(
+        JSON.stringify({
+          error: "Unauthorized",
+          message: "Guest access not permitted. Please sign in to ask Syllabot.",
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const authClient = createClient(supabaseUrl, supabaseAnonKey);
+    const {
+      data: { user },
+      error: authErr,
+    } = await authClient.auth.getUser(token).catch(() => ({
+      data: { user: null },
+      error: new Error("Auth verification failed"),
+    }));
+
+    if (authErr || !user) {
+      return new Response(
+        JSON.stringify({
+          error: "Unauthorized",
+          message: "Session token is expired or invalid. Please re-authenticate.",
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const userId = user.id;
 
     const dbClient = createClient(
       supabaseUrl,
@@ -69,17 +104,15 @@ serve(async (req: Request) => {
       );
     }
 
-    if (userId !== "anon-guest") {
-      const quotaCheck = await checkAndEnforceQuota(
-        dbClient,
-        userId,
-        "syllabot_query",
-        0,
-        corsHeaders
-      );
-      if (!quotaCheck.allowed && quotaCheck.response) {
-        return quotaCheck.response;
-      }
+    const quotaCheck = await checkAndEnforceQuota(
+      dbClient,
+      userId,
+      "syllabot_query",
+      0,
+      corsHeaders
+    );
+    if (!quotaCheck.allowed && quotaCheck.response) {
+      return quotaCheck.response;
     }
 
     const routing = selectModelAndParams(messages, {

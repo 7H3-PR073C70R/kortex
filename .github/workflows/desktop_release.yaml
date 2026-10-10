@@ -71,10 +71,14 @@ jobs:
       - name: Generate Code via build_runner
         run: dart run build_runner build -d
 
+      - name: Run Endpoint Contract & Core Tests
+        run: |
+          flutter test test/src/core/networking/api/endpoint_contract_test.dart test/unit/sqlite_migration_test.dart test/unit/offline_data_sync_validation_test.dart test/unit/user_storage_service_test.dart test/unit/notification_and_deeplink_verification_test.dart
+
       - name: Build Native Windows Executable
         if: matrix.runner-os == 'windows-latest'
         run: |
-          flutter build windows --release --flavor production -t lib/main_production.dart
+          flutter build windows --release --flavor production -t lib/main_production.dart --dart-define-from-file=.env.production
 
       - name: Install Inno Setup for Windows Installer Generation
         if: matrix.runner-os == 'windows-latest'
@@ -85,17 +89,17 @@ jobs:
       - name: Build Native Linux Desktop Bundle
         if: matrix.os-name == 'Linux'
         run: |
-          flutter build linux --release --flavor production -t lib/main_production.dart
+          flutter build linux --release --flavor production -t lib/main_production.dart --dart-define-from-file=.env.production
 
       # - name: Build Native macOS Bundle
       #   if: matrix.runner-os == 'macos-latest'
       #   run: |
-      #     flutter build macos --release --flavor production -t lib/main_production.dart
+      #     flutter build macos --release --flavor production -t lib/main_production.dart --dart-define-from-file=.env.production
 
       - name: Build Flutter Web Bundle
         if: matrix.os-name == 'Web'
         run: |
-          flutter build web --release --target lib/main_production.dart --base-href "/workspace/"
+          flutter build web --release --target lib/main_production.dart --base-href "/workspace/" --dart-define-from-file=.env.production
           mkdir -p web_landing/workspace
           cp -r build/web/* web_landing/workspace/
 
@@ -115,7 +119,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_PUBLIC_DOMAIN: ${{ secrets.R2_PUBLIC_DOMAIN }}
-        run: python scripts/publish_release_packages.py
+        run: python scripts/publish_release_packages.py --skip-build
 
   deploy-web-landing:
     name: Deploy Updated Web Landing & Web App to Firebase Hosting

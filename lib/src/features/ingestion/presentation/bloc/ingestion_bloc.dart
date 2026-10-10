@@ -394,8 +394,6 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
       final guard = _effectiveSubscriptionGuard;
       if (!guard.isPro || !guard.canUseAiSmartGen()) {
         effectiveMode = SynthesisMode.fastLocal;
-      } else {
-        unawaited(guard.recordAiSmartGenUsage());
       }
     }
 
@@ -498,6 +496,9 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         },
         (snippets) {
           smoothProgressTicker.cancel();
+          if (effectiveMode == SynthesisMode.aiSmart && !isDeduplicated) {
+            unawaited(_effectiveSubscriptionGuard.recordAiSmartGenUsage());
+          }
           emit(
             state.copyWith(
               status: ProcessingStatus.completed,

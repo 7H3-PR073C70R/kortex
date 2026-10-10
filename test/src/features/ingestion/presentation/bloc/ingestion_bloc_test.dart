@@ -129,6 +129,7 @@ void main() {
     mockSubscriptionGuard = MockSubscriptionGuard();
     when(() => mockSubscriptionGuard.isPro).thenReturn(true);
     when(() => mockSubscriptionGuard.canUseAiSmartGen()).thenReturn(true);
+    when(() => mockSubscriptionGuard.recordAiSmartGenUsage()).thenAnswer((_) async {});
 
     bloc = IngestionBloc(
       uploadUseCase: mockUpload,

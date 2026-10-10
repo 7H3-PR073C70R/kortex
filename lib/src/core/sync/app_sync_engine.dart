@@ -80,6 +80,9 @@ class AppSyncEngine {
   
   final List<AppSyncPayload> _queue = [];
   bool _isSyncing = false;
+  bool _isFullSyncInProgress = false;
+  bool _hasPendingFullSync = false;
+  Timer? _connectivityDebounceTimer;
 
   final _syncStatusController = StreamController<SyncStatus>.broadcast();
   Stream<SyncStatus> get syncStatusStream => _syncStatusController.stream;
@@ -150,63 +153,91 @@ class AppSyncEngine {
         _syncStatusController.add(isOnline ? SyncStatus.online : SyncStatus.offline);
 
         if (isOnline) {
-          unawaited(syncAll());
+          _connectivityDebounceTimer?.cancel();
+          _connectivityDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+            unawaited(syncAll());
+          });
         }
       });
     } on Object catch (_) {}
   }
 
   /// Dispatches full synchronization across all domain stores and queues
-  /// when returning online.
+  /// when returning online. Guarantees strictly sequential execution to
+  /// prevent concurrent SQLite locks or race conditions.
   Future<void> syncAll() async {
-    await flush();
-
-    if (locator.isRegistered<CardSyncQueue>()) {
-      try {
-        await locator<CardSyncQueue>().flushPendingLogs();
-      } on Object catch (e) {
-        debugPrint('[AppSyncEngine] CardSyncQueue flush failed: $e');
-      }
+    if (_isFullSyncInProgress) {
+      _hasPendingFullSync = true;
+      return;
     }
 
-    if (locator.isRegistered<QuizRepository>()) {
-      try {
-        await locator<QuizRepository>().flushPendingQuizSubmissions();
-      } on Object catch (e) {
-        debugPrint('[AppSyncEngine] QuizRepository flush failed: $e');
-      }
-    }
+    _isFullSyncInProgress = true;
+    _syncStatusController.add(SyncStatus.syncing);
 
-    if (locator.isRegistered<UserActivityService>()) {
-      try {
-        await locator<UserActivityService>().syncPendingProgressToBackend();
-      } on Object catch (e) {
-        debugPrint('[AppSyncEngine] UserActivityService sync failed: $e');
-      }
-    }
+    try {
+      do {
+        _hasPendingFullSync = false;
 
-    if (locator.isRegistered<CommunityRepository>()) {
-      try {
-        await locator<CommunityRepository>().flushPendingForumActions();
-      } on Object catch (e) {
-        debugPrint('[AppSyncEngine] CommunityRepository flush failed: $e');
-      }
-    }
+        // 1. Flush AppSyncEngine CRDT payloads
+        await flush();
 
-    if (locator.isRegistered<PlannerRepository>()) {
-      try {
-        await locator<PlannerRepository>().getActiveExams();
-      } on Object catch (e) {
-        debugPrint('[AppSyncEngine] PlannerRepository sync failed: $e');
-      }
-    }
+        // 2. Flush CardSyncQueue FSRS review logs sequentially
+        if (locator.isRegistered<CardSyncQueue>()) {
+          try {
+            await locator<CardSyncQueue>().flushPendingLogs();
+          } on Object catch (e) {
+            debugPrint('[AppSyncEngine] CardSyncQueue flush failed: $e');
+          }
+        }
 
-    if (locator.isRegistered<DecksRemoteDataSource>()) {
-      try {
-        await locator<DecksRemoteDataSource>().getUserDecks();
-      } on Object catch (e) {
-        debugPrint('[AppSyncEngine] DecksRemoteDataSource sync failed: $e');
-      }
+        // 3. Flush QuizRepository pending submissions sequentially
+        if (locator.isRegistered<QuizRepository>()) {
+          try {
+            await locator<QuizRepository>().flushPendingQuizSubmissions();
+          } on Object catch (e) {
+            debugPrint('[AppSyncEngine] QuizRepository flush failed: $e');
+          }
+        }
+
+        // 4. Sync UserActivityService progress sequentially
+        if (locator.isRegistered<UserActivityService>()) {
+          try {
+            await locator<UserActivityService>().syncPendingProgressToBackend();
+          } on Object catch (e) {
+            debugPrint('[AppSyncEngine] UserActivityService sync failed: $e');
+          }
+        }
+
+        // 5. Flush CommunityRepository pending forum actions sequentially
+        if (locator.isRegistered<CommunityRepository>()) {
+          try {
+            await locator<CommunityRepository>().flushPendingForumActions();
+          } on Object catch (e) {
+            debugPrint('[AppSyncEngine] CommunityRepository flush failed: $e');
+          }
+        }
+
+        // 6. Refresh active planner exams
+        if (locator.isRegistered<PlannerRepository>()) {
+          try {
+            await locator<PlannerRepository>().getActiveExams();
+          } on Object catch (e) {
+            debugPrint('[AppSyncEngine] PlannerRepository sync failed: $e');
+          }
+        }
+
+        // 7. Refresh user decks
+        if (locator.isRegistered<DecksRemoteDataSource>()) {
+          try {
+            await locator<DecksRemoteDataSource>().getUserDecks();
+          } on Object catch (e) {
+            debugPrint('[AppSyncEngine] DecksRemoteDataSource sync failed: $e');
+          }
+        }
+      } while (_hasPendingFullSync);
+    } finally {
+      _isFullSyncInProgress = false;
+      _syncStatusController.add(_queue.isEmpty ? SyncStatus.online : SyncStatus.offline);
     }
   }
 
@@ -326,6 +357,7 @@ class AppSyncEngine {
   }
 
   Future<void> dispose() async {
+    _connectivityDebounceTimer?.cancel();
     await _connectivitySub?.cancel();
     await _syncStatusController.close();
     await _pendingCountController.close();

@@ -9,6 +9,7 @@ import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/quiz/data/client/quiz_duel_websocket_client.dart';
+import 'package:kortex/src/features/quiz/data/data_sources/quiz_duel_remote_data_source.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
@@ -20,16 +21,29 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
     required QuizDuelWebSocketClient client,
     PastQuestionsRepository? pastQuestionsRepository,
     DecksRepository? decksRepository,
+    QuizDuelRemoteDataSource? remoteDataSource,
     Dio? dio,
   })  : _client = client,
         _pastQuestionsRepository = pastQuestionsRepository,
         _decksRepository = decksRepository,
+        _remoteDataSource = remoteDataSource,
         _dio = dio;
 
   final QuizDuelWebSocketClient _client;
   final PastQuestionsRepository? _pastQuestionsRepository;
   final DecksRepository? _decksRepository;
+  final QuizDuelRemoteDataSource? _remoteDataSource;
   final Dio? _dio;
+
+  QuizDuelRemoteDataSource? get _effectiveRemoteDataSource =>
+      _remoteDataSource ??
+      (locator.isRegistered<QuizDuelRemoteDataSource>()
+          ? locator<QuizDuelRemoteDataSource>()
+          : (_dio != null
+              ? QuizDuelRemoteDataSourceImpl(dio: _dio)
+              : (locator.isRegistered<Dio>()
+                  ? QuizDuelRemoteDataSourceImpl(dio: locator<Dio>())
+                  : null)));
 
 
   @override
@@ -340,9 +354,8 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
     QuizDuelMatch match,
   ) async {
     try {
-      final dio = _dio ??
-          (locator.isRegistered<Dio>() ? locator<Dio>() : null);
-      if (dio == null) return const Right({});
+      final ds = _effectiveRemoteDataSource;
+      if (ds == null) return const Right({});
 
       final p1Id = match.player1.userId;
       final p2Id = match.player2?.userId;
@@ -361,53 +374,24 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
           ? match.forfeitUserId
           : null;
 
-      try {
-        final response = await dio.post<Map<String, dynamic>>(
-          '/rest/v1/rpc/fn_process_quiz_duel_outcome',
-          data: {
-            'p_duel_id': match.duelId,
-            'p_player1_id': validP1,
-            'p_player2_id': validP2,
-            'p_player1_score': match.player1.score,
-            'p_player2_score': match.player2?.score ?? 0,
-            'p_winner_id': validWinner,
-            'p_is_draw': match.isDraw,
-            'p_is_forfeit': match.forfeitUserId != null,
-            'p_forfeit_user_id': validForfeit,
-          },
-        );
+      final data = await ds.recordDuelOutcome(
+        duelId: match.duelId,
+        subject: match.subject,
+        examBoard: match.examBoard,
+        player1Id: validP1,
+        player2Id: validP2,
+        player1Score: match.player1.score,
+        player2Score: match.player2?.score ?? 0,
+        winnerId: validWinner,
+        isDraw: match.isDraw,
+        isForfeit: match.forfeitUserId != null,
+        forfeitUserId: validForfeit,
+        timeTakenSeconds: match.createdAt != null
+            ? DateTime.now().difference(match.createdAt!).inSeconds
+            : 0,
+      );
 
-        final data = response.data ?? <String, dynamic>{};
-        return Right(data);
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404 && validP1 != null) {
-          try {
-            await dio.post<dynamic>(
-              '/rest/v1/quiz_duels',
-              data: {
-                'duel_id': match.duelId,
-                'subject': match.subject,
-                'exam_board': match.examBoard,
-                'player1_id': validP1,
-                'player2_id': ?validP2,
-                'player1_score': match.player1.score,
-                'player2_score': match.player2?.score ?? 0,
-                'winner_user_id': ?validWinner,
-                'is_draw': match.isDraw,
-                'is_forfeit': match.forfeitUserId != null,
-                'forfeit_user_id': ?validForfeit,
-              },
-            );
-            return const Right(<String, dynamic>{'status': 'inserted_via_fallback'});
-          } on Object catch (_) {}
-        }
-        return Left(
-          ServerFailure(
-            message:
-                'RPC fn_process_quiz_duel_outcome not available (${e.response?.statusCode}): ${e.message}',
-          ),
-        );
-      }
+      return Right(data);
     } on Exception catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -419,22 +403,13 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
     int limit = 20,
   }) async {
     try {
-      final dio = _dio ??
-          (locator.isRegistered<Dio>() ? locator<Dio>() : null);
-      if (dio == null) return const Right([]);
+      final ds = _effectiveRemoteDataSource;
+      if (ds == null) return const Right([]);
 
-      final response = await dio.get<List<dynamic>>(
-        '/rest/v1/user_profiles',
-        queryParameters: {
-          'select': 'id,display_name,avatar_url,elo_rating,department,level',
-          'order': 'elo_rating.desc',
-          'limit': limit,
-        },
+      final list = await ds.getEloLeaderboard(
+        subject: subject,
+        limit: limit,
       );
-
-      final list = (response.data ?? [])
-          .whereType<Map<String, dynamic>>()
-          .toList();
       return Right(list);
     } on Exception catch (e) {
       return Left(ServerFailure(message: e.toString()));
@@ -475,31 +450,25 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
         createdAt: DateTime.now(),
       );
 
-      final dio = _dio ??
-          (locator.isRegistered<Dio>() ? locator<Dio>() : null);
-      if (dio != null) {
-        await dio.post<void>(
-          '/rest/v1/quiz_duels',
-          data: {
-            'duel_id': duelId,
-            'subject': subject,
-            'exam_board': examBoard,
-            'player1_id': userId,
-            'player2_id': targetUserId,
-            'player1_score': 0,
-            'player2_score': 0,
-            'questions_snapshot': questions
-                .map(
-                  (q) => {
-                    'id': q.id,
-                    'prompt': q.prompt,
-                    'options': q.options,
-                    'correctAnswer': q.correctAnswer,
-                    'explanation': q.explanation,
-                  },
-                )
-                .toList(),
-          },
+      final ds = _effectiveRemoteDataSource;
+      if (ds != null) {
+        await ds.createAsyncChallenge(
+          duelId: duelId,
+          subject: subject,
+          examBoard: examBoard,
+          player1Id: userId,
+          player2Id: targetUserId,
+          questions: questions
+              .map(
+                (q) => {
+                  'id': q.id,
+                  'prompt': q.prompt,
+                  'options': q.options,
+                  'correctAnswer': q.correctAnswer,
+                  'explanation': q.explanation,
+                },
+              )
+              .toList(),
         );
       }
 
@@ -514,22 +483,10 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
     String userId,
   ) async {
     try {
-      final dio = _dio ??
-          (locator.isRegistered<Dio>() ? locator<Dio>() : null);
-      if (dio == null) return const Right([]);
+      final ds = _effectiveRemoteDataSource;
+      if (ds == null) return const Right([]);
 
-      final response = await dio.get<List<dynamic>>(
-        '/rest/v1/quiz_duels',
-        queryParameters: {
-          'player2_id': 'eq.$userId',
-          'winner_user_id': 'is.null',
-          'is_draw': 'eq.false',
-          'order': 'created_at.desc',
-          'limit': 10,
-        },
-      );
-
-      final rawList = (response.data ?? []).whereType<Map<String, dynamic>>();
+      final rawList = await ds.getPendingAsyncChallenges(userId);
       final matches = <QuizDuelMatch>[];
 
       for (final row in rawList) {

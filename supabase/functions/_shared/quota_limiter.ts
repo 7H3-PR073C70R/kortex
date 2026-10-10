@@ -1,3 +1,9 @@
+/**
+ * @deprecated Deprecated in favor of `_shared/quota_guard.ts`.
+ * In-memory fallback maps cause distributed state desynchronization across edge isolates.
+ * Use `checkAndEnforceQuota` from `_shared/quota_guard.ts` which authoritative tracks
+ * quotas in `public.usage_logs` using PostgreSQL UTC calendar boundaries.
+ */
 export type ActionType = "ingestion" | "ai_question";
 export type UserTier = "free" | "pro" | "unlimited";
 
@@ -28,6 +34,7 @@ const DAILY_LIMITS: Record<UserTier, Record<ActionType, number>> = {
 const memoryQuotaStore = new Map<string, { count: number; resetAt: number }>();
 
 /**
+ * @deprecated Use `checkAndEnforceQuota` in `_shared/quota_guard.ts` instead.
  * Checks and increments the daily token and action usage for a user.
  * Enforces hard-caps:
  * - Free users: 3 document ingestions/day, 50 AI questions/day.

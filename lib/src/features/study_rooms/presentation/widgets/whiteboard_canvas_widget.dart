@@ -335,24 +335,26 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
                           _onPointerMove(event, constraints),
                       onPointerUp: (event) => _onPointerUp(event, constraints),
                       onPointerCancel: _onPointerCancel,
-                      child: CustomPaint(
-                        size: Size(constraints.maxWidth, constraints.maxHeight),
-                        painter: _WhiteboardCanvasPainter(
-                          strokes: widget.strokes,
-                          livePoints: _livePoints,
-                          liveColorHex:
-                              _selectedColorHex ?? colors.primary.toARGB32(),
-                          liveStrokeWidth:
-                              _activeTool == WhiteboardTool.highlighter
-                              ? 14.0
-                              : (_activeTool == WhiteboardTool.eraser
-                                    ? 20.0
-                                    : _strokeWidth),
-                          activeTool: _activeTool,
-                          isDark: isDark,
-                          showGrid: _showGrid,
-                          gridStyle: _gridStyle,
-                          colors: colors,
+                      child: RepaintBoundary(
+                        child: CustomPaint(
+                          size: Size(constraints.maxWidth, constraints.maxHeight),
+                          painter: _WhiteboardCanvasPainter(
+                            strokes: widget.strokes,
+                            livePoints: _livePoints,
+                            liveColorHex:
+                                _selectedColorHex ?? colors.primary.toARGB32(),
+                            liveStrokeWidth:
+                                _activeTool == WhiteboardTool.highlighter
+                                ? 14.0
+                                : (_activeTool == WhiteboardTool.eraser
+                                      ? 20.0
+                                      : _strokeWidth),
+                            activeTool: _activeTool,
+                            isDark: isDark,
+                            showGrid: _showGrid,
+                            gridStyle: _gridStyle,
+                            colors: colors,
+                          ),
                         ),
                       ),
                     );

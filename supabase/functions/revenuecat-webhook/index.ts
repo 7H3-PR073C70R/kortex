@@ -164,10 +164,18 @@ Deno.serve(async (req: Request) => {
     }
 
     if (targetTier !== null) {
+      const isPro = targetTier === "pro";
+      const proUntil =
+        isPro && event.expiration_at_ms
+          ? new Date(event.expiration_at_ms).toISOString()
+          : null;
+
       const { error: updateErr } = await supabase
         .from("profiles")
         .update({
           subscription_tier: targetTier,
+          is_pro: isPro,
+          pro_until: proUntil,
           updated_at: new Date().toISOString(),
         })
         .eq("id", userId);

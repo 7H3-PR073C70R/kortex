@@ -1216,31 +1216,33 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                       child: state.activeViewMode == RoomViewMode.deckStudy
                           ? InRoomDeckStudyWorkspace(roomState: state)
                           : state.activeViewMode == RoomViewMode.whiteboard
-                          ? WhiteboardCanvasWidget(
-                              strokes: state.whiteboardStrokes,
-                              canUndo: state.whiteboardStrokes.any(
-                                (s) => s.userId == widget.currentUserId,
-                              ),
-                              canRedo: state.whiteboardRedoStack.isNotEmpty,
-                              isDark: isDark,
-                              currentUserId: widget.currentUserId,
-                              currentUserName: widget.currentUserName,
-                              onStrokeDrawn: (stroke) {
-                                context
+                          ? RepaintBoundary(
+                              child: WhiteboardCanvasWidget(
+                                strokes: state.whiteboardStrokes,
+                                canUndo: state.whiteboardStrokes.any(
+                                  (s) => s.userId == widget.currentUserId,
+                                ),
+                                canRedo: state.whiteboardRedoStack.isNotEmpty,
+                                isDark: isDark,
+                                currentUserId: widget.currentUserId,
+                                currentUserName: widget.currentUserName,
+                                onStrokeDrawn: (stroke) {
+                                  context
+                                      .read<LiveRoomCubit>()
+                                      .addWhiteboardStroke(
+                                        stroke,
+                                      );
+                                },
+                                onUndo: () => context
                                     .read<LiveRoomCubit>()
-                                    .addWhiteboardStroke(
-                                      stroke,
-                                    );
-                              },
-                              onUndo: () => context
-                                  .read<LiveRoomCubit>()
-                                  .undoWhiteboardStroke(),
-                              onRedo: () => context
-                                  .read<LiveRoomCubit>()
-                                  .redoWhiteboardStroke(),
-                              onClear: () => context
-                                  .read<LiveRoomCubit>()
-                                  .clearWhiteboard(),
+                                    .undoWhiteboardStroke(),
+                                onRedo: () => context
+                                    .read<LiveRoomCubit>()
+                                    .redoWhiteboardStroke(),
+                                onClear: () => context
+                                    .read<LiveRoomCubit>()
+                                    .clearWhiteboard(),
+                              ),
                             )
                           : Column(
                               children: [

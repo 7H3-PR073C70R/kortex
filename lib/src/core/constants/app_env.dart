@@ -11,6 +11,8 @@ class AppEnv {
       'https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev';
 
   static String get apiBaseURL {
+    const defineVal = String.fromEnvironment('API_BASE_URL');
+    if (defineVal.isNotEmpty) return defineVal.trim();
     if (dotenv.isInitialized) {
       final val = dotenv.env['API_BASE_URL'];
       if (val != null && val.trim().isNotEmpty) return val.trim();
@@ -19,6 +21,10 @@ class AppEnv {
   }
 
   static String get apiKey {
+    const key = String.fromEnvironment('API_KEY');
+    const anon = String.fromEnvironment('SUPABASE_ANON_KEY');
+    final defineVal = key.isNotEmpty ? key : anon;
+    if (defineVal.isNotEmpty) return defineVal.trim();
     if (dotenv.isInitialized) {
       final val = dotenv.env['API_KEY'] ?? dotenv.env['SUPABASE_ANON_KEY'];
       if (val != null && val.trim().isNotEmpty) return val.trim();
@@ -27,6 +33,8 @@ class AppEnv {
   }
 
   static String get liveKitUrl {
+    const defineVal = String.fromEnvironment('LIVEKIT_URL');
+    if (defineVal.isNotEmpty) return defineVal.trim();
     if (dotenv.isInitialized) {
       final val = dotenv.env['LIVEKIT_URL'];
       if (val != null && val.trim().isNotEmpty) return val.trim();
@@ -34,16 +42,27 @@ class AppEnv {
     return _defaultLiveKitUrl;
   }
 
-  static String get revenueCatWebApiKey =>
-      dotenv.isInitialized ? (dotenv.env['REVENUECAT_WEB_API_KEY'] ?? '') : '';
-  static String get revenueCatGoogleApiKey => dotenv.isInitialized
-      ? (dotenv.env['REVENUECAT_GOOGLE_API_KEY'] ?? '')
-      : '';
-  static String get revenueCatAppleApiKey => dotenv.isInitialized
-      ? (dotenv.env['REVENUECAT_APPLE_API_KEY'] ?? '')
-      : '';
+  static String get revenueCatWebApiKey {
+    const defineVal = String.fromEnvironment('REVENUECAT_WEB_API_KEY');
+    if (defineVal.isNotEmpty) return defineVal.trim();
+    return dotenv.isInitialized ? (dotenv.env['REVENUECAT_WEB_API_KEY'] ?? '') : '';
+  }
+
+  static String get revenueCatGoogleApiKey {
+    const defineVal = String.fromEnvironment('REVENUECAT_GOOGLE_API_KEY');
+    if (defineVal.isNotEmpty) return defineVal.trim();
+    return dotenv.isInitialized ? (dotenv.env['REVENUECAT_GOOGLE_API_KEY'] ?? '') : '';
+  }
+
+  static String get revenueCatAppleApiKey {
+    const defineVal = String.fromEnvironment('REVENUECAT_APPLE_API_KEY');
+    if (defineVal.isNotEmpty) return defineVal.trim();
+    return dotenv.isInitialized ? (dotenv.env['REVENUECAT_APPLE_API_KEY'] ?? '') : '';
+  }
 
   static String get r2PublicDomain {
+    const defineVal = String.fromEnvironment('R2_PUBLIC_DOMAIN');
+    if (defineVal.isNotEmpty) return defineVal.trim();
     if (dotenv.isInitialized) {
       final val = dotenv.env['R2_PUBLIC_DOMAIN'];
       if (val != null && val.trim().isNotEmpty) return val.trim();

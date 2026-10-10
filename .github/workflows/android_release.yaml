@@ -52,6 +52,10 @@ jobs:
       - name: Generate Code via build_runner
         run: dart run build_runner build -d
 
+      - name: Run Endpoint Contract & Core Tests
+        run: |
+          flutter test test/src/core/networking/api/endpoint_contract_test.dart test/unit/sqlite_migration_test.dart test/unit/offline_data_sync_validation_test.dart test/unit/user_storage_service_test.dart test/unit/notification_and_deeplink_verification_test.dart
+
       - name: Decrypt and set up Android Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -71,7 +75,7 @@ jobs:
 
       - name: Build Production Android APK
         run: |
-          flutter build apk --release --flavor production -t lib/main_production.dart --android-skip-build-dependency-validation
+          flutter build apk --release --flavor production -t lib/main_production.dart --android-skip-build-dependency-validation --dart-define-from-file=.env.production
 
       - name: Upload APK Build Artifact
         uses: actions/upload-artifact@v4
@@ -79,11 +83,15 @@ jobs:
           name: android-production-apk
           path: build/app/outputs/flutter-apk/app-production-release.apk
 
-      - name: Upload APK to Firebase App Distribution
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
+      - name: Authenticate to Google Cloud / Firebase
+        uses: google-github-actions/auth@v2
         with:
-          appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
-          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KORTEX_STUDY_APP_2026 }}
-          groups: testers
-          file: build/app/outputs/flutter-apk/app-production-release.apk
-          releaseNotes: "Production Android Release ${{ github.ref_name || github.sha }}"
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KORTEX_STUDY_APP_2026 }}
+
+      - name: Upload APK to Firebase App Distribution
+        run: |
+          npx -y firebase-tools@latest appdistribution:distribute build/app/outputs/flutter-apk/app-production-release.apk \
+            --app "${{ secrets.FIREBASE_ANDROID_APP_ID }}" \
+            --groups "testers" \
+            --release-notes "Production Android Release ${{ github.ref_name || github.sha }}"
+

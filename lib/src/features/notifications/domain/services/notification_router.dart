@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
@@ -80,7 +80,10 @@ class NotificationRouter {
 
       // 8. Notifications screen
       if (clean == '/notifications' || clean == 'notifications') {
-        final navCtx = router.navigatorKey.currentContext;
+        BuildContext? navCtx;
+        try {
+          navCtx = router.navigatorKey.currentContext;
+        } on Object catch (_) {}
         if (navCtx != null) {
           await NotificationsPage.show(navCtx);
         } else {
