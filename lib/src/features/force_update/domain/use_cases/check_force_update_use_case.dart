@@ -86,6 +86,7 @@ class CheckForceUpdateUseCase {
   /// Unknown/web targets return 'web', which receives the safe fallback
   /// (`isForceUpdateActive = false`) from the data source.
   static String _resolvePlatform() {
+    if (kIsWeb) return 'web';
     if (Platform.isIOS) return 'ios';
     if (Platform.isAndroid) return 'android';
     if (Platform.isMacOS) return 'macos';

@@ -537,7 +537,9 @@ class FileDropZoneWidget extends HookWidget {
         }
       },
       child: Semantics(
-        label: Platform.isAndroid || Platform.isIOS
+        label: !kIsWeb &&
+                (defaultTargetPlatform == TargetPlatform.android ||
+                    defaultTargetPlatform == TargetPlatform.iOS)
             ? 'Tap to upload PDF, PPTX, or image files.'
             : l10n.dragAndDropHint,
         button: true,
@@ -594,7 +596,9 @@ class FileDropZoneWidget extends HookWidget {
 
                   // Title & Hint
                   Text(
-                    Platform.isAndroid || Platform.isIOS
+                    !kIsWeb &&
+                            (defaultTargetPlatform == TargetPlatform.android ||
+                                defaultTargetPlatform == TargetPlatform.iOS)
                         ? 'Tap to upload PDF, PPTX, or image files.'
                         : l10n.dragAndDropHint,
                     textAlign: TextAlign.center,
