@@ -46,3 +46,18 @@ $$;
 
 -- Execute cleanup immediately on migration
 SELECT public.cleanup_stale_study_pods_and_rooms();
+
+-- Schedule recurring pg_cron job to run cleanup every hour
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+        PERFORM cron.unschedule('cleanup-stale-study-pods-and-rooms')
+        WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'cleanup-stale-study-pods-and-rooms');
+
+        PERFORM cron.schedule(
+            'cleanup-stale-study-pods-and-rooms',
+            '0 * * * *',
+            'SELECT public.cleanup_stale_study_pods_and_rooms();'
+        );
+    END IF;
+END $$;

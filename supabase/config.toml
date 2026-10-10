@@ -439,6 +439,9 @@ verify_jwt = true
 [functions.cleanup-ai-sessions]
 verify_jwt = false
 
+[functions.cleanup-stale-study-pods]
+verify_jwt = false
+
 [functions.syllabot-stream]
 verify_jwt = false
 
