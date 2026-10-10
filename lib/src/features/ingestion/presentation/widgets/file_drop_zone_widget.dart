@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:crypto/crypto.dart';
 import 'package:desktop_drop/desktop_drop.dart';
