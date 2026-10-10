@@ -283,6 +283,16 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
   }
 
   @override
+  Future<Either<Failure, void>> forceAdvanceToNextRound(String duelId) async {
+    try {
+      _client.forceAdvanceToNextRound(duelId);
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> sendDuelEmote({
     required String duelId,
     required String userId,

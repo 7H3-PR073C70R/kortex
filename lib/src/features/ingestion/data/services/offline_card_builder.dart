@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
+import 'package:kortex/src/features/ingestion/data/services/formula_extraction_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/synthesis/flashcard_synthesizer.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/pedagogical_card_schema.dart';
@@ -541,6 +542,17 @@ class OfflineCardBuilder {
           previousBlank = false;
           i++;
           continue;
+        } else if (lead == null && FormulaExtractionService.isFormula(lines[i])) {
+          blocks.add(
+            _Block(
+              _BlockKind.formula,
+              lines[i],
+              term: currentSectionTitle,
+            ),
+          );
+          previousBlank = false;
+          i++;
+          continue;
         }
         if (lead != null) paragraph.add(lead);
       }
@@ -807,18 +819,9 @@ class OfflineCardBuilder {
     return _QaMatch(_cleanInline(q.group(1)!), answerBuf.toString(), last);
   }
 
-  static final _latexCommandRe = RegExp(
-    r'\\(?:frac|lim|sum|int|sqrt|prod|alpha|beta|gamma|theta|sigma|omega|partial)\b',
-  );
-  static final _equationRe = RegExp(
-    r'^[A-Za-z][A-Za-z0-9_()^]{0,14}\s*=\s*\S.*$',
-  );
-
   bool _isFormulaLine(String line) {
-    if (_latexCommandRe.hasMatch(line)) return true;
-    if (!_equationRe.hasMatch(line)) return false;
-    if (_wordCount(line) > 12 || _endsSentence(line)) return false;
-    return RegExp(r'[\^+*/\d]|\\').hasMatch(line.split('=').last);
+    if (FormulaExtractionService.isCodeAssignment(line)) return false;
+    return FormulaExtractionService.isFormula(line);
   }
 
   static final _bannedHeadingPattern = RegExp(

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:kortex/src/features/ingestion/data/services/formula_extraction_service.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_ir.dart';
 
 /// Deterministic parser transforming Markdown text into strongly-typed [DocumentIR]
@@ -8,7 +9,7 @@ class MarkdownIrParser {
   const MarkdownIrParser();
 
   static final _headingRegex = RegExp(r'^(#{1,6})\s+(\S.*)$');
-  static final _codeFenceRegex = RegExp(r'^(?:```|~~~)([a-zA-Z0-9_\-\+]*)\s*$');
+  static final _codeFenceRegex = RegExp(r'^(`{3,}|~{3,})([a-zA-Z0-9_\-\+#]*)\s*$');
   static final _displayMathStartRegex = RegExp(
     r'^(?:\$\$|\\\[|\\begin\{(?:equation|align|gather)\*?\})',
   );
@@ -24,12 +25,17 @@ class MarkdownIrParser {
     r'^(?:page\s+\d+(\s+of\s+\d+)?|\d+\s*/\s*\d+|[-–—\s]*\d+[-–—\s]*)$',
     caseSensitive: false,
   );
+  static final _currencyRegex = RegExp(
+    r'^\s*\$(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:\s*(?:million|billion|trillion|k|USD|EUR|GBP))?(?:\s*(?:to|-)\s*\$(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)?\s*$',
+    caseSensitive: false,
+  );
 
   /// Parses [markdown] into a strongly-typed [DocumentIR].
   DocumentIR parse({
     required String markdown,
     String filename = 'document.md',
     String? documentId,
+    String? basePath,
   }) {
     final docId =
         documentId ?? sha256.convert(utf8.encode(markdown)).toString();
@@ -68,14 +74,18 @@ class MarkdownIrParser {
       // 1. Code Blocks
       final codeFenceMatch = _codeFenceRegex.firstMatch(trimmed);
       if (codeFenceMatch != null) {
-        final fence = trimmed.substring(0, 3);
-        final language = codeFenceMatch.group(1)?.trim();
+        final fence = codeFenceMatch.group(1)!;
+        final fenceChar = fence[0];
+        final fenceLen = fence.length;
+        final language = codeFenceMatch.group(2)?.trim();
         final codeLines = <String>[];
         i++; // skip start fence
 
         while (i < lines.length) {
           final cur = lines[i];
-          if (cur.trim().startsWith(fence)) {
+          final curTrimmed = cur.trim();
+          if (curTrimmed.startsWith(fenceChar * fenceLen) &&
+              RegExp('^${RegExp.escape(fenceChar)}{$fenceLen,}\\s*\$').hasMatch(curTrimmed)) {
             i++; // skip end fence
             break;
           }
@@ -146,10 +156,11 @@ class MarkdownIrParser {
       final imageMatch = _imageRegex.firstMatch(trimmed);
       if (imageMatch != null) {
         final caption = imageMatch.group(1)?.trim();
-        final url = imageMatch.group(2)?.trim();
+        final rawUrl = imageMatch.group(2)?.trim();
+        final resolvedUrl = _resolveImageRef(rawUrl, basePath);
         blocks.add(
           FigureBlock(
-            imageRef: url,
+            imageRef: resolvedUrl,
             caption: caption?.isNotEmpty == true ? caption : null,
             label: _extractFigureLabel(caption),
             page: currentPage,
@@ -437,14 +448,32 @@ class MarkdownIrParser {
   }
 
   static bool _isStandaloneFormulaLine(String line) {
-    if (line.contains('→') || line.contains('->') || line.contains(r'\to')) {
-      return true;
+    final trimmed = line.trim();
+    if (_currencyRegex.hasMatch(trimmed)) return false;
+    if (RegExp(r'^\$\s*\d+').hasMatch(trimmed) &&
+        !trimmed.contains('=') &&
+        !trimmed.contains(r'\') &&
+        !trimmed.contains('^')) {
+      return false;
     }
-    if (RegExp(r'^[A-Za-z0-9_()]+\s*=\s*[A-Za-z0-9_()+\-*/^]+$').hasMatch(line) &&
-        (line.contains('^') || line.contains('+') || line.contains('*') || line.contains('/'))) {
-      return true;
+    if (FormulaExtractionService.isCodeAssignment(trimmed)) return false;
+    return FormulaExtractionService.isFormula(trimmed);
+  }
+
+  static String? _resolveImageRef(String? url, String? basePath) {
+    if (url == null || url.isEmpty) return null;
+    if (url.startsWith('http://') ||
+        url.startsWith('https://') ||
+        url.startsWith('data:') ||
+        url.startsWith('/') ||
+        basePath == null ||
+        basePath.isEmpty) {
+      return url;
     }
-    return false;
+
+    final normalizedBase = basePath.endsWith('/') ? basePath.substring(0, basePath.length - 1) : basePath;
+    final cleanUrl = url.startsWith('./') ? url.substring(2) : url;
+    return '$normalizedBase/$cleanUrl';
   }
 
   static List<String> _splitSentences(String text) {

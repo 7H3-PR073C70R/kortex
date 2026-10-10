@@ -133,5 +133,55 @@ void main() {
             )).called(1);
       },
     );
+
+    blocTest<QuizDuelCubit, QuizDuelState>(
+      'forceAdvanceToNextRound calls repository.forceAdvanceToNextRound',
+      build: () {
+        when(() => repository.forceAdvanceToNextRound(any()))
+            .thenAnswer((_) async => const Right(null));
+        return QuizDuelCubit(repository: repository);
+      },
+      seed: () => QuizDuelState(
+        status: QuizDuelStatus.roundSummary,
+        currentUserId: 'user_1',
+        match: testMatch.copyWith(status: QuizDuelStatus.roundSummary),
+      ),
+      act: (cubit) => cubit.forceAdvanceToNextRound(),
+      verify: (_) {
+        verify(() => repository.forceAdvanceToNextRound('test_duel_123')).called(1);
+      },
+    );
+
+    test('summary safety watchdog automatically fires forceAdvanceToNextRound if roundSummary persists', () async {
+      when(() => repository.forceAdvanceToNextRound(any()))
+          .thenAnswer((_) async => const Right(null));
+      when(() => repository.findOrCreateDuel(
+            subject: any(named: 'subject'),
+            examBoard: any(named: 'examBoard'),
+            userId: any(named: 'userId'),
+            displayName: any(named: 'displayName'),
+            avatarUrl: any(named: 'avatarUrl'),
+          )).thenAnswer((_) async => Right(testMatch));
+      when(() => repository.streamDuel(any())).thenAnswer(
+        (_) => Stream.value(
+          testMatch.copyWith(status: QuizDuelStatus.roundSummary),
+        ),
+      );
+
+      final cubit = QuizDuelCubit(repository: repository);
+      await cubit.startMatchmaking(
+        subject: 'Physics',
+        examBoard: 'WAEC',
+        userId: 'user_1',
+        displayName: 'Scholar One',
+        avatarUrl: '⚡',
+      );
+
+      // Verify watchdog fires after 2.8s
+      await Future<void>.delayed(const Duration(milliseconds: 2900));
+
+      verify(() => repository.forceAdvanceToNextRound('test_duel_123')).called(1);
+      await cubit.close();
+    });
   });
 }

@@ -3,10 +3,17 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
+import 'package:kortex/src/features/ingestion/data/services/formula_extraction_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/local_docx_parser_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/local_epub_parser_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/local_html_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/local_pptx_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/offline_card_builder.dart';
+import 'package:kortex/src/features/ingestion/data/services/pdf_figure_extractor.dart';
 import 'package:kortex/src/features/ingestion/data/services/synthesis/flashcard_synthesizer.dart';
 import 'package:kortex/src/features/ingestion/data/services/synthesis/schema_serializer.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/document_ir.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
 import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 
@@ -28,6 +35,7 @@ class DocumentParserService {
       'pptx',
       'html',
       'htm',
+      'xhtml',
       'epub',
       'txt',
       'md',
@@ -62,61 +70,20 @@ class DocumentParserService {
     }
 
     if (ext == 'docx') {
-      try {
-        final archive = ZipDecoder().decodeBytes(bytes);
-        final docXml = archive.findFile('word/document.xml');
-        if (docXml == null) {
-          throw CorruptDocumentException(
-            filename,
-            'DOCX missing word/document.xml',
-          );
-        }
-        final xmlContent = utf8.decode(docXml.content as List<int>);
-        return xmlContent
-            .replaceAll(RegExp('</w:p>', caseSensitive: false), '\n\n')
-            .replaceAll(RegExp('<[^>]+>'), '')
-            .replaceAll(RegExp(r'[ \t]+'), ' ')
-            .trim();
-      } on CorruptDocumentException {
-        rethrow;
-      } on Object catch (e) {
-        report?.isCorrupt = true;
-        report?.recordDrop(rule: 'corrupted_docx_archive', sampleText: '$e');
-        throw CorruptDocumentException(filename, 'Malformed DOCX file: $e');
-      }
+      return LocalDocxParserService.extractTextFromBytesSync(
+        bytes,
+        filename: filename,
+        report: report,
+      );
     }
 
-    if (ext == 'epub') {
+    if (ext == 'pptx') {
       try {
-        final archive = ZipDecoder().decodeBytes(bytes);
-        final textBuffer = StringBuffer();
-        for (final file in archive.files) {
-          if (file.isFile &&
-              (file.name.endsWith('.html') ||
-                  file.name.endsWith('.xhtml') ||
-                  file.name.endsWith('.htm'))) {
-            final htmlContent = utf8.decode(
-              file.content as List<int>,
-              allowMalformed: true,
-            );
-            final cleanText = htmlContent
-                .replaceAll(
-                  RegExp('<(?:p|div|h[1-6]|li|br)[^>]*>', caseSensitive: false),
-                  '\n',
-                )
-                .replaceAll(RegExp('<[^>]+>'), '')
-                .replaceAll(RegExp(r'[ \t]+'), ' ')
-                .trim();
-            if (cleanText.isNotEmpty) {
-              textBuffer.writeln(cleanText);
-            }
-          }
-        }
-        final text = textBuffer.toString().trim();
+        final text = LocalPptxParserService.extractTextFromBytesSync(bytes);
         if (text.isEmpty) {
           throw CorruptDocumentException(
             filename,
-            'EPUB archive contains no text chapters',
+            'PPTX presentation contains no slide text',
           );
         }
         return text;
@@ -124,46 +91,25 @@ class DocumentParserService {
         rethrow;
       } on Object catch (e) {
         report?.isCorrupt = true;
-        report?.recordDrop(rule: 'corrupted_epub_archive', sampleText: '$e');
-        throw CorruptDocumentException(filename, 'Malformed EPUB file: $e');
+        report?.recordDrop(rule: 'corrupted_pptx_archive', sampleText: '$e');
+        throw CorruptDocumentException(filename, 'Malformed PPTX file: $e');
       }
     }
 
-    if (ext == 'html' || ext == 'htm') {
-      try {
-        final html = utf8.decode(bytes, allowMalformed: true);
-        return html
-            .replaceAll(
-              RegExp(
-                '<style[^>]*>.*?</style>',
-                caseSensitive: false,
-                dotAll: true,
-              ),
-              '',
-            )
-            .replaceAll(
-              RegExp(
-                '<script[^>]*>.*?</script>',
-                caseSensitive: false,
-                dotAll: true,
-              ),
-              '',
-            )
-            .replaceAll(
-              RegExp('<(?:p|div|h[1-6]|li|br|tr)[^>]*>', caseSensitive: false),
-              '\n',
-            )
-            .replaceAll(RegExp('<[^>]+>'), '')
-            .replaceAll('&nbsp;', ' ')
-            .replaceAll('&amp;', '&')
-            .replaceAll('&lt;', '<')
-            .replaceAll('&gt;', '>')
-            .replaceAll('&quot;', '"')
-            .replaceAll(RegExp(r'[ \t]+'), ' ')
-            .trim();
-      } on Object catch (e) {
-        throw CorruptDocumentException(filename, 'Malformed HTML file: $e');
-      }
+    if (ext == 'epub') {
+      return LocalEpubParserService.extractTextFromBytesSync(
+        bytes,
+        filename: filename,
+        report: report,
+      );
+    }
+
+    if (ext == 'html' || ext == 'htm' || ext == 'xhtml') {
+      return LocalHtmlParserService.extractTextFromBytesSync(
+        bytes,
+        filename: filename,
+        report: report,
+      );
     }
 
     if ({'txt', 'md', 'markdown', 'tex', 'latex'}.contains(ext)) {
@@ -472,8 +418,16 @@ class DocumentParserService {
     return png;
   }
 
-  /// Extracts embedded image streams (PDF Image XObjects, Flate raster, JPEG) from PDF bytes.
+  /// Extracts embedded image streams and diagrams (PDF Image XObjects, Flate raster, JPEG) from PDF bytes.
   List<ExtractedImageAttachment> extractImagesFromPdfBytes(Uint8List bytes) {
+    try {
+      const extractor = PdfFigureExtractor();
+      final figures = extractor.extractFigures(bytes);
+      if (figures.isNotEmpty) {
+        return figures.map((f) => f.toAttachment()).toList();
+      }
+    } on Object catch (_) {}
+
     final images = <ExtractedImageAttachment>[];
 
     // 1. PDF Image XObject Parsing (FlateDecode & DCTDecode)
@@ -985,55 +939,18 @@ class DocumentParserService {
 
   String? _extractOrGenerateFormula(String title, String body) {
     final combined = '$title $body';
-
-    // 1. Explicit LaTeX environments or delimited formulas: $...$, $$...$$, \(...\), \[...\], \begin{...}...\end{...}
-    final explicitLatexMatch = RegExp(
-      r'(\$\$.+?\$\$|\$(?!\$).+?\$|\\\[.+?\\\]|\\\(.+?\\\)|\b\\begin\{[a-zA-Z]+\}[\s\S]+?\\end\{[a-zA-Z]+\})',
-      dotAll: true,
-    ).firstMatch(combined);
-    if (explicitLatexMatch != null) {
-      return explicitLatexMatch.group(0);
-    }
-
-    // 2. Structured mathematical commands in text (\frac{...}{...}, \int, \sum, \sqrt{...})
-    final mathCommandMatch = RegExp(
-      r'(\\(?:frac|int|sum|sqrt|prod|lim|alpha|beta|gamma|theta|sigma|omega|partial|mathbf|text)\b[\s\S]{3,120})',
-    ).firstMatch(combined);
-    if (mathCommandMatch != null) {
-      final matchStr = mathCommandMatch.group(0)!.trim();
-      if (!matchStr.startsWith(r'\(') &&
-          !matchStr.startsWith(r'$$') &&
-          !matchStr.startsWith(r'$')) {
-        return r'\(' + matchStr + r'\)';
+    final extracted = FormulaExtractionService.instance.extractFormula(combined);
+    if (extracted != null) {
+      final latex = extracted.latex;
+      if (latex.startsWith(r'$$') ||
+          latex.startsWith(r'\[') ||
+          latex.startsWith(r'\(') ||
+          latex.startsWith(r'$') ||
+          latex.startsWith(r'\begin{')) {
+        return latex;
       }
-      return matchStr;
+      return extracted.isDisplay ? '\$\$$latex\$\$' : r'\(' + latex + r'\)';
     }
-
-    // 3. Mathematical equations with algebraic relations: e.g. "E = mc^2", "a^2 + b^2 = c^2", "y = mx + b"
-    final equationMatch = RegExp(
-      r'(?:^|[\s:;,(])([a-zA-Z0-9_()^]{1,15}\s*=\s*[^.,;:\n\r]+)',
-      multiLine: true,
-    ).firstMatch(combined);
-    if (equationMatch != null) {
-      var eq = equationMatch.group(1)!.trim();
-      eq = eq.replaceAll(RegExp(r'^[.,;: ]+|[.,;: ]+$'), '').trim();
-      final hasMathOperator =
-          eq.contains('^') ||
-          eq.contains('+') ||
-          eq.contains('-') ||
-          eq.contains('*') ||
-          eq.contains('/') ||
-          eq.contains(r'\') ||
-          RegExp(r'\d').hasMatch(eq);
-      if (hasMathOperator &&
-          !eq.startsWith('http') &&
-          !eq.contains('import ') &&
-          !eq.contains('final ') &&
-          !eq.contains('const ')) {
-        return r'\(' + eq + r'\)';
-      }
-    }
-
     return null;
   }
 
@@ -1106,11 +1023,19 @@ class ExtractedImageAttachment {
     required this.bytes,
     required this.extension,
     required this.label,
+    this.page = 1,
+    this.caption,
+    this.bbox,
+    this.xObjectName,
   });
 
   final Uint8List bytes;
   final String extension;
   final String label;
+  final int page;
+  final String? caption;
+  final BoundingBox? bbox;
+  final String? xObjectName;
 }
 
 class _ByteRange {

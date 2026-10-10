@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
@@ -18,6 +19,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   final QuizDuelRepository _repository;
   StreamSubscription<QuizDuelMatch>? _duelSubscription;
   Timer? _countdownTimer;
+  Timer? _summarySafetyTimer;
   DateTime? _roundStartTime;
 
   /// Starts searching for a real-time peer, joining by room code, or AI study-buddy.
@@ -105,12 +107,16 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
                 previousStatus != QuizDuelStatus.finished;
 
             if (isMatchCountdown) {
+              _summarySafetyTimer?.cancel();
               _startLobbyCountdown(3);
             } else if (isNewRound) {
+              _summarySafetyTimer?.cancel();
               _startQuestionCountdown(match.durationPerQuestionSeconds);
             } else if (match.status == QuizDuelStatus.roundSummary) {
               _countdownTimer?.cancel();
+              _startSummaryWatchdog(match.duelId, match.currentQuestionIndex);
             } else if (isJustFinished) {
+              _summarySafetyTimer?.cancel();
               _countdownTimer?.cancel();
               unawaited(_repository.recordDuelOutcome(match));
               if (locator.isRegistered<UserActivityService>()) {
@@ -212,6 +218,23 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     });
   }
 
+  void _startSummaryWatchdog(String duelId, int questionIndex) {
+    _summarySafetyTimer?.cancel();
+    // Normal round summary lasts 1.8s. If UI remains stuck in roundSummary beyond 2.8s,
+    // the watchdog forces an advance so the user never gets stuck with 'Time Expired'.
+    _summarySafetyTimer = Timer(const Duration(milliseconds: 2800), () {
+      if (isClosed) return;
+      if (state.status == QuizDuelStatus.roundSummary &&
+          state.match?.duelId == duelId &&
+          state.match?.currentQuestionIndex == questionIndex) {
+        debugPrint(
+          '[QuizDuelCubit] Summary safety watchdog fired for duel $duelId (round $questionIndex). Forcing advance.',
+        );
+        unawaited(_repository.forceAdvanceToNextRound(duelId));
+      }
+    });
+  }
+
   /// Submits the local player's answer for the current active question.
   Future<void> submitAnswer(int optionIndex) async {
     if (state.match == null ||
@@ -252,9 +275,19 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     );
   }
 
+  /// Forcibly advances from round summary to the next round or finishes the duel match.
+  /// Acts as a manual or automated escape hatch when UI/match is stuck.
+  Future<void> forceAdvanceToNextRound() async {
+    final duelId = state.match?.duelId;
+    if (duelId == null || duelId.isEmpty) return;
+    _summarySafetyTimer?.cancel();
+    await _repository.forceAdvanceToNextRound(duelId);
+  }
+
   /// Exits the current match and frees resources.
   Future<void> leaveMatch() async {
     _countdownTimer?.cancel();
+    _summarySafetyTimer?.cancel();
     if (state.match != null) {
       await _repository.leaveDuel(
         duelId: state.match!.duelId,
@@ -388,6 +421,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   @override
   Future<void> close() {
     _countdownTimer?.cancel();
+    _summarySafetyTimer?.cancel();
     unawaited(_duelSubscription?.cancel());
     return super.close();
   }

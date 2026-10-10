@@ -1829,60 +1829,80 @@ class QuizDuelArenaPage extends HookWidget {
                                         currentQuestion.options[mySelection] ==
                                             currentQuestion.correctAnswer);
 
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isUserCorrect
-                                        ? colors.success.withAlpha(isDark ? 50 : 25)
-                                        : userHasSelected
-                                            ? colors.error.withAlpha(isDark ? 50 : 25)
-                                            : colors.warning.withAlpha(isDark ? 50 : 25),
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.micro,
+                                return GestureDetector(
+                                  onTap: () {
+                                    unawaited(
+                                      context
+                                          .read<QuizDuelCubit>()
+                                          .forceAdvanceToNextRound(),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
                                     ),
-                                    border: Border.all(
+                                    decoration: BoxDecoration(
                                       color: isUserCorrect
-                                          ? colors.success.withAlpha(120)
+                                          ? colors.success.withAlpha(isDark ? 50 : 25)
                                           : userHasSelected
-                                              ? colors.error.withAlpha(120)
-                                              : colors.warning.withAlpha(120),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        isUserCorrect
-                                            ? Icons.check_circle_rounded
-                                            : userHasSelected
-                                                ? Icons.cancel_rounded
-                                                : Icons.access_time_filled_rounded,
-                                        size: 16,
-                                        color: isUserCorrect
-                                            ? colors.success
-                                            : userHasSelected
-                                                ? colors.error
-                                                : colors.warning,
+                                              ? colors.error.withAlpha(isDark ? 50 : 25)
+                                              : colors.warning.withAlpha(isDark ? 50 : 25),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.micro,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        isUserCorrect
-                                            ? 'ROUND VERDICT • Correct Answer!'
+                                      border: Border.all(
+                                        color: isUserCorrect
+                                            ? colors.success.withAlpha(120)
                                             : userHasSelected
-                                                ? 'ROUND VERDICT • Incorrect Answer'
-                                                : 'ROUND VERDICT • Time Expired',
-                                        style: typography.caption.bold.copyWith(
+                                                ? colors.error.withAlpha(120)
+                                                : colors.warning.withAlpha(120),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          isUserCorrect
+                                              ? Icons.check_circle_rounded
+                                              : userHasSelected
+                                                  ? Icons.cancel_rounded
+                                                  : Icons.access_time_filled_rounded,
+                                          size: 16,
                                           color: isUserCorrect
                                               ? colors.success
                                               : userHasSelected
                                                   ? colors.error
                                                   : colors.warning,
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          isUserCorrect
+                                              ? 'ROUND VERDICT • Correct Answer!'
+                                              : userHasSelected
+                                                  ? 'ROUND VERDICT • Incorrect Answer'
+                                                  : 'ROUND VERDICT • Time Expired',
+                                          style: typography.caption.bold.copyWith(
+                                            color: isUserCorrect
+                                                ? colors.success
+                                                : userHasSelected
+                                                    ? colors.error
+                                                    : colors.warning,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Icon(
+                                          Icons.arrow_forward_ios_rounded,
+                                          size: 11,
+                                          color: (isUserCorrect
+                                                  ? colors.success
+                                                  : userHasSelected
+                                                      ? colors.error
+                                                      : colors.warning)
+                                              .withAlpha(150),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 );
                               },

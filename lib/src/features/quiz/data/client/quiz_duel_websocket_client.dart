@@ -410,7 +410,10 @@ class QuizDuelWebSocketClient {
                 );
 
                 Timer(const Duration(milliseconds: 3000), () {
-                  _startRound(syncedMatch.duelId, 0);
+                  if (_activeMatches[syncedMatch.duelId]?.status ==
+                      QuizDuelStatus.countdown) {
+                    _startRound(syncedMatch.duelId, 0);
+                  }
                 });
                 break;
               }
@@ -511,6 +514,14 @@ class QuizDuelWebSocketClient {
           } else if (type == 'conclude_round') {
             final questionIndex = data['questionIndex'] as int? ?? 0;
             concludeRound(duelId, questionIndex);
+          } else if (type == 'match_finished') {
+            final winnerUserId = data['winnerUserId'] as String?;
+            final isDraw = data['isDraw'] as bool? ?? false;
+            _applyMatchFinishedLocally(
+              duelId: duelId,
+              winnerUserId: winnerUserId,
+              isDraw: isDraw,
+            );
           } else if (type == 'send_emote') {
             final userId = data['userId'] as String?;
             final emote = data['emote'] as String?;
@@ -835,10 +846,14 @@ class QuizDuelWebSocketClient {
       return;
     }
 
-    if (current.status == QuizDuelStatus.inRound &&
-        current.currentQuestionIndex == questionIndex) {
+    if ((current.status == QuizDuelStatus.roundSummary &&
+            current.currentQuestionIndex >= questionIndex) ||
+        (current.status == QuizDuelStatus.inRound &&
+            current.currentQuestionIndex == questionIndex)) {
       return;
     }
+
+    _transitionTimers[duelId]?.cancel();
 
     final p1 = current.player1.resetForNewRound(
       questionIndex: questionIndex,
@@ -1068,10 +1083,9 @@ class QuizDuelWebSocketClient {
     final current = _activeMatches[duelId];
     if (current == null) return;
 
-    if (current.status == QuizDuelStatus.roundSummary &&
-        current.currentQuestionIndex == questionIndex) {
+    if (current.status == QuizDuelStatus.roundSummary) {
       if (!(_transitionTimers[duelId]?.isActive ?? false)) {
-        _scheduleRoundTransition(duelId, questionIndex);
+        _scheduleRoundTransition(duelId, current.currentQuestionIndex);
       }
       return;
     }
@@ -1100,6 +1114,7 @@ class QuizDuelWebSocketClient {
       );
     }
 
+    final activeIndex = current.currentQuestionIndex;
     final updated = current.copyWith(
       status: QuizDuelStatus.roundSummary,
       player1: p1,
@@ -1113,39 +1128,67 @@ class QuizDuelWebSocketClient {
         'type': 'conclude_round',
         'data': {
           'duelId': duelId,
-          'questionIndex': questionIndex,
+          'questionIndex': activeIndex,
         },
       },
     );
 
-    _scheduleRoundTransition(duelId, questionIndex);
+    _scheduleRoundTransition(duelId, activeIndex);
   }
 
   void _scheduleRoundTransition(String duelId, int questionIndex) {
-    if (_transitionTimers[duelId]?.isActive ?? false) {
-      return;
-    }
+    _transitionTimers[duelId]?.cancel();
     _transitionTimers[duelId] = Timer(const Duration(milliseconds: 1800), () {
-      final latest = _activeMatches[duelId];
-      if (latest == null) return;
+      try {
+        final latest = _activeMatches[duelId];
+        if (latest == null) return;
 
-      if (latest.status != QuizDuelStatus.roundSummary ||
-          latest.currentQuestionIndex != questionIndex) {
-        return;
-      }
+        if (latest.status != QuizDuelStatus.roundSummary) {
+          return;
+        }
 
-      final nextIdx = questionIndex + 1;
-      if (nextIdx < latest.questions.length) {
-        _startRound(duelId, nextIdx);
-      } else {
+        final currentIdx = latest.currentQuestionIndex;
+        final nextIdx = currentIdx + 1;
+        if (nextIdx < latest.questions.length) {
+          _startRound(duelId, nextIdx);
+        } else {
+          _finalizeMatch(duelId);
+        }
+      } on Object catch (e, stack) {
+        debugPrint(
+          '[QuizDuelWebSocketClient] Error during round transition: $e\n$stack',
+        );
         _finalizeMatch(duelId);
       }
     });
   }
 
-  void _finalizeMatch(String duelId) {
+  /// Forcibly advances from round summary to the next round or finishes the duel match.
+  /// Acts as an unblocking safety valve if timers or network sync stalled.
+  void forceAdvanceToNextRound(String duelId) {
+    _transitionTimers[duelId]?.cancel();
     final current = _activeMatches[duelId];
     if (current == null) return;
+
+    if (current.status == QuizDuelStatus.roundSummary) {
+      final nextIdx = current.currentQuestionIndex + 1;
+      if (nextIdx < current.questions.length) {
+        _startRound(duelId, nextIdx);
+      } else {
+        _finalizeMatch(duelId);
+      }
+    } else if (current.status == QuizDuelStatus.inRound) {
+      concludeRound(duelId, current.currentQuestionIndex);
+    }
+  }
+
+  void _finalizeMatch(String duelId) {
+    _transitionTimers[duelId]?.cancel();
+    _roundTimers[duelId]?.cancel();
+    _aiActionTimers[duelId]?.cancel();
+
+    final current = _activeMatches[duelId];
+    if (current == null || current.status == QuizDuelStatus.finished) return;
 
     final p1Score = current.player1.score;
     final p2Score = current.player2?.score ?? 0;
@@ -1164,6 +1207,40 @@ class QuizDuelWebSocketClient {
     final finished = current.copyWith(
       status: QuizDuelStatus.finished,
       winnerUserId: winnerId,
+      isDraw: isDraw,
+    );
+
+    _updateMatch(duelId, finished);
+    unawaited(_submitQuizResultsToBackend(finished));
+
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'match_finished',
+        'data': {
+          'duelId': duelId,
+          'winnerUserId': winnerId,
+          'isDraw': isDraw,
+        },
+      },
+    );
+  }
+
+  void _applyMatchFinishedLocally({
+    required String duelId,
+    String? winnerUserId,
+    bool isDraw = false,
+  }) {
+    _transitionTimers[duelId]?.cancel();
+    _roundTimers[duelId]?.cancel();
+    _aiActionTimers[duelId]?.cancel();
+
+    final current = _activeMatches[duelId];
+    if (current == null || current.status == QuizDuelStatus.finished) return;
+
+    final finished = current.copyWith(
+      status: QuizDuelStatus.finished,
+      winnerUserId: winnerUserId,
       isDraw: isDraw,
     );
 

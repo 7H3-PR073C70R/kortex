@@ -33,6 +33,9 @@ abstract class QuizDuelRepository {
     required int questionIndex,
   });
 
+  /// Forcibly advances from round summary to next round or finishes the duel match.
+  Future<Either<Failure, void>> forceAdvanceToNextRound(String duelId);
+
   /// Broadcasts a live reaction emote (🔥, ⚡, 🤯, 👏, 🎯).
   Future<Either<Failure, void>> sendDuelEmote({
     required String duelId,

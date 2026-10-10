@@ -214,5 +214,113 @@ $$
         expect(b2.provenance.sectionPath, equals(b1.provenance.sectionPath));
       }
     });
+
+    test('parses code blocks with specialized language tags (c#, c++, f#, obj-c)', () {
+      const csharpMarkdown = '''
+# C# Service
+
+```c#
+public class UserService {
+    public string Name { get; set; }
+}
+```
+
+```c++
+#include <iostream>
+int main() { return 0; }
+```
+
+```f#
+let square x = x * x
+```
+''';
+
+      final ir = parser.parse(markdown: csharpMarkdown);
+      final codeBlocks = ir.codeBlocks;
+      expect(codeBlocks.length, equals(3));
+      expect(codeBlocks[0].language, equals('c#'));
+      expect(codeBlocks[0].code, contains('public class UserService'));
+      expect(codeBlocks[1].language, equals('c++'));
+      expect(codeBlocks[1].code, contains('#include <iostream>'));
+      expect(codeBlocks[2].language, equals('f#'));
+      expect(codeBlocks[2].code, contains('let square x = x * x'));
+    });
+
+    test('supports variable-length fences (~~~~, ````) and nested fences', () {
+      const nestedMarkdown = '''
+# Markdown Tutorial
+
+````markdown
+Here is an example code block:
+```dart
+void main() => print("Hello");
+```
+````
+
+~~~~python
+def compute(x):
+    return x * 2
+~~~~
+''';
+
+      final ir = parser.parse(markdown: nestedMarkdown);
+      final codeBlocks = ir.codeBlocks;
+      expect(codeBlocks.length, equals(2));
+      expect(codeBlocks[0].language, equals('markdown'));
+      expect(codeBlocks[0].code, contains('```dart'));
+      expect(codeBlocks[0].code, contains('void main() => print("Hello");'));
+      expect(codeBlocks[1].language, equals('python'));
+      expect(codeBlocks[1].code, contains('def compute(x):'));
+    });
+
+    test('normalizes CRLF line endings without stray carriage returns', () {
+      const crlfMarkdown = '# Title\r\n\r\nParagraph line 1\r\nParagraph line 2\r\n\r\n```dart\r\nfinal x = 42;\r\n```\r\n';
+      final ir = parser.parse(markdown: crlfMarkdown);
+
+      expect(ir.headings.first.text, equals('Title'));
+      expect(ir.paragraphs.first.text, equals('Paragraph line 1 Paragraph line 2'));
+      expect(ir.codeBlocks.first.code, equals('final x = 42;'));
+      expect(ir.codeBlocks.first.code.contains('\r'), isFalse);
+    });
+
+    test('resolves relative image URLs against basePath', () {
+      const markdownImages = '''
+# Architecture
+
+![System Overview](./diagrams/system.png)
+![External Cloud](https://cdn.example.com/cloud.svg)
+''';
+
+      final ir = parser.parse(
+        markdown: markdownImages,
+        basePath: '/workspace/projects/kortex/docs',
+      );
+
+      final figures = ir.figures;
+      expect(figures.length, equals(2));
+      expect(figures[0].imageRef, equals('/workspace/projects/kortex/docs/diagrams/system.png'));
+      expect(figures[1].imageRef, equals('https://cdn.example.com/cloud.svg'));
+    });
+
+    test('distinguishes currency notation from mathematical formulas', () {
+      const currencyMarkdown = r'''
+# Pricing Plans
+
+Enterprise licenses cost $1,500 per month.
+
+The starter plan is $50 to $100 depending on usage.
+
+Total funding reached $20 million in Series A.
+''';
+
+      final ir = parser.parse(markdown: currencyMarkdown);
+
+      // Verify that no currency lines were misclassified as MathBlock
+      expect(ir.mathBlocks, isEmpty);
+      expect(ir.paragraphs.length, equals(3));
+      expect(ir.paragraphs[0].text, contains(r'Enterprise licenses cost $1,500 per month.'));
+      expect(ir.paragraphs[1].text, contains(r'The starter plan is $50 to $100 depending on usage.'));
+      expect(ir.paragraphs[2].text, contains(r'Total funding reached $20 million in Series A.'));
+    });
   });
 }

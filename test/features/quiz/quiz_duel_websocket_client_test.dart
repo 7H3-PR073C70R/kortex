@@ -330,12 +330,91 @@ void main() {
       expect(summaryMatch.status, equals(QuizDuelStatus.roundSummary));
       expect(summaryMatch.player1.selectedOptionIndex, equals(-1));
 
-      // Wait 1.9 seconds for transition timer to advance to question 1
-      await Future<void>.delayed(const Duration(milliseconds: 1900));
+      // Wait 2.1 seconds for transition timer (1.8s) to advance to question 1
+      await Future<void>.delayed(const Duration(milliseconds: 2100));
 
       final nextMatch = await client.streamDuel(match.duelId).first;
       expect(nextMatch.currentQuestionIndex, equals(1));
       expect(nextMatch.status, equals(QuizDuelStatus.inRound));
+    });
+
+    test('concludeRound on final question advances match to finished status without deadlock', () async {
+      final questions = QuizDuelWebSocketClient.getDefaultDuelQuestions('Physics', 'WAEC', count: 2);
+      final match = await client.findOrCreateDuel(
+        subject: 'Physics',
+        examBoard: 'WAEC',
+        userId: 'player1_id',
+        displayName: 'Scholar One',
+        avatarUrl: '⚡',
+        questionCount: 2,
+        customQuestions: questions,
+      );
+
+      client
+        ..forceStartRound(match.duelId, 1)
+        ..concludeRound(match.duelId, 1);
+
+      final summaryMatch = await client.streamDuel(match.duelId).first;
+      expect(summaryMatch.status, equals(QuizDuelStatus.roundSummary));
+
+      // Wait 2.1s for transition timer (1.8s) to advance past the final question
+      await Future<void>.delayed(const Duration(milliseconds: 2100));
+
+      final finishedMatch = await client.streamDuel(match.duelId).first;
+      expect(finishedMatch.status, equals(QuizDuelStatus.finished));
+    });
+
+    test('forceAdvanceToNextRound immediately unlocks roundSummary and advances to next round', () async {
+      final questions = QuizDuelWebSocketClient.getDefaultDuelQuestions('Physics', 'WAEC', count: 3);
+      final match = await client.findOrCreateDuel(
+        subject: 'Physics',
+        examBoard: 'WAEC',
+        userId: 'player1_id',
+        displayName: 'Scholar One',
+        avatarUrl: '⚡',
+        questionCount: 3,
+        customQuestions: questions,
+      );
+
+      client
+        ..forceStartRound(match.duelId, 0)
+        ..concludeRound(match.duelId, 0);
+
+      final summaryMatch = await client.streamDuel(match.duelId).first;
+      expect(summaryMatch.status, equals(QuizDuelStatus.roundSummary));
+
+      // Immediately force advance without waiting for 1.8s timer
+      client.forceAdvanceToNextRound(match.duelId);
+
+      final nextMatch = await client.streamDuel(match.duelId).first;
+      expect(nextMatch.currentQuestionIndex, equals(1));
+      expect(nextMatch.status, equals(QuizDuelStatus.inRound));
+    });
+
+    test('forceAdvanceToNextRound on final question immediately finalizes match', () async {
+      final questions = QuizDuelWebSocketClient.getDefaultDuelQuestions('Physics', 'WAEC', count: 2);
+      final match = await client.findOrCreateDuel(
+        subject: 'Physics',
+        examBoard: 'WAEC',
+        userId: 'player1_id',
+        displayName: 'Scholar One',
+        avatarUrl: '⚡',
+        questionCount: 2,
+        customQuestions: questions,
+      );
+
+      client
+        ..forceStartRound(match.duelId, 1)
+        ..concludeRound(match.duelId, 1);
+
+      final summaryMatch = await client.streamDuel(match.duelId).first;
+      expect(summaryMatch.status, equals(QuizDuelStatus.roundSummary));
+
+      // Immediately force advance
+      client.forceAdvanceToNextRound(match.duelId);
+
+      final finishedMatch = await client.streamDuel(match.duelId).first;
+      expect(finishedMatch.status, equals(QuizDuelStatus.finished));
     });
   });
 }

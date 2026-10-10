@@ -88,6 +88,7 @@ class LocalIngestionService {
         case 'epub':
         case 'html':
         case 'htm':
+        case 'xhtml':
         case 'tex':
         case 'latex':
           rawExtractedText = _documentParser.extractTextFromBytes(
