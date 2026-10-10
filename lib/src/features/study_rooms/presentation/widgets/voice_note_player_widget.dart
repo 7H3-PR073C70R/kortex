@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
@@ -196,15 +197,19 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
           : rawUrl;
 
       Source? source;
-      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+      if (rawUrl.startsWith('http://') ||
+          rawUrl.startsWith('https://') ||
+          rawUrl.startsWith('blob:')) {
         source = UrlSource(rawUrl);
-      } else if (cleanPath.isNotEmpty && File(cleanPath).existsSync()) {
+      } else if (!kIsWeb && cleanPath.isNotEmpty && File(cleanPath).existsSync()) {
         source = DeviceFileSource(cleanPath);
       } else if (rawUrl.startsWith('assets/') || rawUrl.startsWith('audio/')) {
         final path = rawUrl.startsWith('assets/')
             ? rawUrl.replaceFirst('assets/', '')
             : rawUrl;
         source = AssetSource(path);
+      } else if (kIsWeb && cleanPath.isNotEmpty) {
+        source = UrlSource(cleanPath);
       } else if (cleanPath.isNotEmpty) {
         source = DeviceFileSource(cleanPath);
       }

@@ -264,7 +264,9 @@ class MediaUploadService {
     String? postId,
   }) async {
     final cleanUrl = audioUrl.trim();
-    if (cleanUrl.isEmpty) return null;
+    if (cleanUrl.isEmpty || cleanUrl.startsWith('blob:')) {
+      return null;
+    }
 
     // 1. Check existing cache
     final cached = getCachedTranscript(
@@ -314,6 +316,7 @@ class MediaUploadService {
               'Authorization': 'Bearer $effectiveToken',
             'Content-Type': 'application/json',
           },
+          validateStatus: (status) => status != null && status < 500,
           sendTimeout: const Duration(seconds: 40),
           receiveTimeout: const Duration(seconds: 40),
         ),

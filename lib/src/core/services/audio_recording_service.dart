@@ -49,7 +49,7 @@ class AudioRecordingServiceImpl implements AudioRecordingService {
   @override
   Future<bool> hasPermission() async {
     try {
-      if (!kIsWeb && Platform.isMacOS) {
+      if (kIsWeb || Platform.isMacOS) {
         return await _recorder.hasPermission();
       }
 
@@ -87,10 +87,10 @@ class AudioRecordingServiceImpl implements AudioRecordingService {
       throw Exception('Microphone permission not granted for voice recording');
     }
 
-    String targetPath;
+    var targetPath = '';
     if (customPath != null && customPath.trim().isNotEmpty) {
       targetPath = customPath.trim();
-    } else {
+    } else if (!kIsWeb) {
       final tempDir = await getTemporaryDirectory();
       final voiceNotesDir = Directory(p.join(tempDir.path, 'voice_notes'));
       if (!voiceNotesDir.existsSync()) {
@@ -105,6 +105,7 @@ class AudioRecordingServiceImpl implements AudioRecordingService {
     _currentRecordingPath = targetPath;
 
     const config = RecordConfig(
+      encoder: kIsWeb ? AudioEncoder.opus : AudioEncoder.aacLc,
       numChannels: 1,
       autoGain: true,
       echoCancel: true,
@@ -138,6 +139,12 @@ class AudioRecordingServiceImpl implements AudioRecordingService {
       _currentRecordingPath = null;
 
       if (effectivePath != null && effectivePath.isNotEmpty) {
+        if (kIsWeb) {
+          debugPrint(
+            'AudioRecordingService: Captured web voice note blob URL: $effectivePath',
+          );
+          return effectivePath;
+        }
         final file = File(effectivePath);
         for (var i = 0; i < 6; i++) {
           if (file.existsSync() && file.lengthSync() > 0) {
@@ -166,15 +173,15 @@ class AudioRecordingServiceImpl implements AudioRecordingService {
 
       await _recorder.cancel();
 
-      if (_currentRecordingPath != null) {
+      if (!kIsWeb && _currentRecordingPath != null) {
         final file = File(_currentRecordingPath!);
         if (file.existsSync()) {
           try {
             await file.delete();
           } on Object catch (_) {}
         }
-        _currentRecordingPath = null;
       }
+      _currentRecordingPath = null;
     } on Object catch (e) {
       debugPrint('AudioRecordingService: Error cancelling recording: $e');
     }

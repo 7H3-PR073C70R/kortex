@@ -54,6 +54,7 @@ class AppBackButton extends StatelessWidget {
 
   /// Returns true if back button should be visible on the current screen layout.
   static bool shouldShow(BuildContext context, {bool forceShow = false}) {
+    if (kIsWeb) return false;
     if (forceShow) return true;
     return MediaQuery.sizeOf(context).width < desktopBreakpoint;
   }
