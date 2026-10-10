@@ -5,7 +5,6 @@ import 'package:archive/archive.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/offline_card_builder.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 class DocumentParserService {
   const DocumentParserService();
@@ -20,53 +19,15 @@ class DocumentParserService {
 
     if (ext == 'pdf') {
       try {
-        final document = PdfDocument(inputBytes: bytes);
-        final extractor = PdfTextExtractor(document);
-        final buffer = StringBuffer();
-
-        for (var i = 0; i < document.pages.count; i++) {
-          var pageText = '';
-          try {
-            final textLines = extractor.extractTextLines(startPageIndex: i);
-            if (textLines.isNotEmpty) {
-              final pageBuffer = StringBuffer();
-              for (final line in textLines) {
-                final text = line.text.trim();
-                if (text.isNotEmpty) {
-                  pageBuffer.writeln(text);
-                }
-              }
-              pageText = pageBuffer.toString();
-            }
-          } on Object catch (_) {}
-
-          if (pageText.trim().isEmpty) {
-            pageText = extractor.extractText(startPageIndex: i);
-          }
-
-          final lines = pageText.split('\n');
-          for (final line in lines) {
-            final trimmed = line.trim();
-            if (trimmed.isNotEmpty && isMeaningfulEducationalText(trimmed)) {
-              buffer.writeln(trimmed);
-            }
-          }
-          buffer.writeln(); // Page separation
+        final pdfText = const LocalPdfParserService().extractTextFromPdfBytes(
+          bytes,
+          filename: filename,
+        );
+        if (pdfText.trim().isNotEmpty) {
+          return pdfText;
         }
-        document.dispose();
-
-        final cleanExtracted = buffer.toString().trim();
-        if (cleanExtracted.isNotEmpty) {
-          return cleanExtracted;
-        }
-      } on Object catch (_) {
-        // Fallback to byte stream extraction if high-level text extraction fails
-      }
-
-      final pdfText = _extractTextFromPdfBytes(bytes);
-      if (pdfText.trim().isNotEmpty) {
-        return pdfText;
-      }
+      } on Object catch (_) {}
+      return extractRawPdfStreamText(bytes);
     }
 
     // Fallback or text/markdown decoder
@@ -79,6 +40,9 @@ class DocumentParserService {
 
     return _extractPrintableAscii(bytes);
   }
+
+  /// Low-level stream fallback for raw PDF text extraction.
+  String extractRawPdfStreamText(Uint8List bytes) => _extractTextFromPdfBytes(bytes);
 
   /// Extracts text from PDF stream objects and content blocks.
   String _extractTextFromPdfBytes(Uint8List bytes) {
@@ -716,12 +680,16 @@ class DocumentParserService {
     var symbolCount = 0;
     var controlCount = 0;
 
+    final unicodeLetter = RegExp(r'^\p{L}$', unicode: true);
+
     for (final rune in clean.runes) {
-      if ((rune >= 65 && rune <= 90) || (rune >= 97 && rune <= 122)) {
+      if ((rune >= 65 && rune <= 90) ||
+          (rune >= 97 && rune <= 122) ||
+          unicodeLetter.hasMatch(String.fromCharCode(rune))) {
         letterCount++;
       } else if (rune == 32 || rune == 10 || rune == 13 || rune == 9) {
         // whitespace
-      } else if (rune < 32 || rune == 127) {
+      } else if (rune < 32 || rune == 127 || (rune >= 128 && rune <= 159)) {
         controlCount++;
       } else {
         symbolCount++;
@@ -749,9 +717,12 @@ class DocumentParserService {
     if (words.isEmpty) return false;
 
     var validWordCount = 0;
-    final vowelRegex = RegExp('[aeiouyAEIOUY]');
+    final vowelRegex = RegExp(
+      '[aeiouyáéíóúàèìòùäëïöüâêîôûãõọẹAEIOUYÁÉÍÓÚÀÈÌÒÙÄËÏÖÜÂÊÎÔÛÃÕỌẸ]',
+    );
+    final letterRegex = RegExp(r'\p{L}', unicode: true);
     for (final word in words) {
-      final lettersInWord = word.replaceAll(RegExp('[^a-zA-Z]'), '').length;
+      final lettersInWord = letterRegex.allMatches(word).length;
       if (lettersInWord >= 2 && vowelRegex.hasMatch(word)) {
         validWordCount++;
       }

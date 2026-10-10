@@ -9,7 +9,7 @@ environment:
 
 dependencies:
   archive: ^4.0.9
-  auto_route: ^11.1.0
+  auto_route: 11.1.0
   bloc: ^9.2.1
   connectivity_plus: ^7.3.1
   crypto: ^3.0.6
@@ -93,7 +93,6 @@ dev_dependencies:
   drift_dev: ^2.34.0
   flutter_gen_runner: ^5.12.0
   flutter_launcher_icons: ^0.14.3
-  flutter_native_splash: ^2.4.7
   flutter_test:
     sdk: flutter
   freezed: ^3.2.5
@@ -120,6 +119,7 @@ flutter:
     - assets/icons/
     - assets/svgs/
     - assets/audio/
+    - assets/nlp/
 
 flutter_gen:
   output: lib/src/gen/

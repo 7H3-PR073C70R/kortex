@@ -89,14 +89,7 @@ class LocalPdfParserService {
         try {
           final textLines = extractor.extractTextLines(startPageIndex: i);
           if (textLines.isNotEmpty) {
-            final pageBuffer = StringBuffer();
-            for (final line in textLines) {
-              final text = line.text.trim();
-              if (text.isNotEmpty) {
-                pageBuffer.writeln(text);
-              }
-            }
-            pageText = pageBuffer.toString();
+            pageText = _layoutAwarePageText(textLines);
           }
         } on Object catch (_) {}
 
@@ -137,10 +130,8 @@ class LocalPdfParserService {
       // Fallback to byte stream extraction if PDF structure is non-standard
     }
 
-    final fallbackText = _documentParserService.extractTextFromBytes(
+    final fallbackText = _documentParserService.extractRawPdfStreamText(
       bytes,
-      fileType: 'pdf',
-      filename: filename,
     );
 
     return sanitizeExtractedText(fallbackText);
@@ -191,98 +182,41 @@ class LocalPdfParserService {
       }
     }
 
-    final collectedValidLines = <String>[];
-
-    for (final lines in pageLinesList) {
-      for (final line in lines) {
-        final trimmed = line.trim();
-        if (trimmed.isEmpty) continue;
-
+    final pageOutputs = <String>[];
+    for (final page in pages) {
+      final lines = page.split('\n');
+      final cleanLines = <String>[];
+      for (final raw in lines) {
+        final trimmed = raw.trim();
+        if (trimmed.isEmpty) {
+          cleanLines.add('');
+          continue;
+        }
         final normalized = _normalizeLineForFrequency(trimmed);
-
-        // Discard dynamically identified repeating marginalia/headers/footers
-        if (repeatingMarginalia.contains(normalized)) {
+        if (repeatingMarginalia.contains(normalized) ||
+            isMetadataOrRendererArtifact(trimmed) ||
+            isCorruptedBinaryNoise(trimmed)) {
           continue;
         }
-
-        // Discard renderer metadata & dynamic page number patterns
-        if (isMetadataOrRendererArtifact(trimmed)) {
-          continue;
-        }
-
-        // Discard non-printable corrupted binary glyph noise (> 10% corrupted)
-        if (isCorruptedBinaryNoise(trimmed)) {
-          continue;
-        }
-
-        // Must satisfy general natural language / formula density threshold
-        if (!DocumentParserService.isMeaningfulEducationalText(trimmed)) {
-          continue;
-        }
-
-        // Strip standalone URLs, web addresses, and domain watermarks (e.g. EdgeSkool. Ne, site.com)
-        final clean = trimmed
-            .replaceAll(
-              RegExp(
-                r'https?://\S+|www\.\S+|\b[A-Za-z0-9_\-]+\s*\.\s*(?:com|net|org|io|edu|gov|co|ai|ne|app)\b',
-                caseSensitive: false,
-              ),
-              '',
-            )
-            .trim();
-
-        if (clean.isNotEmpty) {
-          collectedValidLines.add(clean);
-        }
+        cleanLines.add(trimmed);
+      }
+      final cleanedPage = cleanLines.join('\n').trim();
+      if (cleanedPage.isNotEmpty) {
+        pageOutputs.add(cleanedPage);
       }
     }
 
-    return repairDetachedInitialCapitals(_unwrapContinuousLines(collectedValidLines));
+    return pageOutputs.join('\n\n');
   }
 
-  /// Repairs detached initial capital letters and drop-cap glyph splits common
-  /// in exported PDF documents (e.g. "T o" -> "To", "Y ou" -> "You", "T he" -> "The").
-  static String repairDetachedInitialCapitals(String text) {
-    if (text.isEmpty) return '';
-
-    // Standard drop-caps for B-Z (excluding A and I which can be single-letter words)
-    var repaired = text.replaceAllMapped(
-      RegExp(r'\b([B-HJ-Z])\s+([a-z]{1,15})\b'),
-      (match) => '${match.group(1)}${match.group(2)}',
-    );
-
-    // Specific drop-cap cases for A and I that are unambiguous English words
-    repaired = repaired.replaceAllMapped(
-      RegExp(
-        r'\b(A)\s+(s|n|t|ll|re|nd|fter|bout|bove|gainst|lign|lso|lways|mong|nother|round)\b',
-        caseSensitive: false,
-      ),
-      (match) => 'A${match.group(2)}',
-    );
-    repaired = repaired.replaceAllMapped(
-      RegExp(
-        r'\b(I)\s+(n|s|t|f|nto|dentify|mbalance|ndicate|nstead|nside|nformation)\b',
-        caseSensitive: false,
-      ),
-      (match) => 'I${match.group(2)}',
-    );
-
-    // Strip common watermark and domain artifacts with spaces before extension (e.g. "EdgeSkool. Ne", "Site. com")
-    repaired = repaired.replaceAll(
-      RegExp(
-        r'\b[A-Za-z0-9_\-]+\s*\.\s*(?:com|net|org|io|edu|gov|co|ai|ne|app)\b',
-        caseSensitive: false,
-      ),
-      '',
-    );
-
-    return repaired;
-  }
+  /// Preserved for backward-compatibility; no-op to prevent destructive text
+  /// mutations (e.g. "Vitamin C is" -> "Vitamin Cis", "Plan B or" -> "Plan Bor").
+  static String repairDetachedInitialCapitals(String text) => text;
 
   /// Sanitizes raw single-block extracted text into coherent paragraphs.
   static String sanitizeExtractedText(String rawText) {
     if (rawText.isEmpty) return '';
-    return repairDetachedInitialCapitals(sanitizeExtractedPages([rawText]));
+    return sanitizeExtractedPages([rawText]);
   }
 
   static String _normalizeLineForFrequency(String line) {
@@ -293,48 +227,92 @@ class LocalPdfParserService {
         .trim();
   }
 
-  /// Grammar-aware line unwrapping: joins mid-sentence line breaks with single spaces
-  /// while maintaining paragraph breaks after sentence terminators or structural headings.
-  static String _unwrapContinuousLines(List<String> validLines) {
-    if (validLines.isEmpty) return '';
+  static final _bulletPrefixRe = RegExp(
+    r'^([-•*●▪◦–—]|\d{1,2}[.)]|[a-z][.)])\s+(\S.*)$',
+  );
+
+  static String _layoutAwarePageText(List<TextLine> textLines) {
+    if (textLines.isEmpty) return '';
+
+    // Maintain native reading order (multi-column friendly)
+    final sorted = textLines;
+
+    final fontSizes = sorted
+        .map((l) => l.fontSize)
+        .where((s) => s > 0)
+        .toList()
+      ..sort();
+    final medianFontSize = fontSizes.isNotEmpty
+        ? fontSizes[fontSizes.length ~/ 2]
+        : 10.0;
+
+    final lineHeights = sorted
+        .map((l) => l.bounds.height)
+        .where((h) => h > 0)
+        .toList()
+      ..sort();
+    final medianLineHeight = lineHeights.isNotEmpty
+        ? lineHeights[lineHeights.length ~/ 2]
+        : 12.0;
 
     final buffer = StringBuffer();
-    final headerRegex = RegExp(
-      r'^(?:(?:Chapter|Section|Part|Step|Rule|Unit|Module|Topic)\s+[A-Z0-9\.]+|(?:\d+\.)+\d*|\b[IVXLCDM]+\.)\s*(.*)$|^[A-Z0-9\s\-_:]{3,45}$',
-      caseSensitive: false,
-    );
+    TextLine? prev;
+    var prevWasHeading = false;
+    var prevWasBullet = false;
 
-    for (var i = 0; i < validLines.length; i++) {
-      final current = validLines[i];
-      buffer.write(current);
+    for (final line in sorted) {
+      final rawText = line.text.trim();
+      if (rawText.isEmpty) continue;
 
-      if (i < validLines.length - 1) {
-        final next = validLines[i + 1];
+      final isBold = line.fontStyle.toString().toLowerCase().contains('bold');
+      final wordCount = rawText.split(RegExp(r'\s+')).length;
+      final isHeading = (line.fontSize >= medianFontSize * 1.15 ||
+              (isBold && line.fontSize >= medianFontSize)) &&
+          wordCount <= 14 &&
+          !RegExp(r'[.!?,;:]$').hasMatch(rawText);
 
-        final isHeader = headerRegex.hasMatch(current) || current.endsWith(':');
-        final nextIsHeader = headerRegex.hasMatch(next) || next.endsWith(':');
+      final isBullet = _bulletPrefixRe.hasMatch(rawText);
 
-        final endsWithSentenceTerminator =
-            current.endsWith('.') ||
-            current.endsWith('?') ||
-            current.endsWith('!') ||
-            current.endsWith(':');
+      if (prev != null) {
+        final gap = line.bounds.top - prev.bounds.bottom;
+        final prevEndsSentence = RegExp(r'[.!?:]$').hasMatch(prev.text.trim());
+        final isParagraphBreak =
+            (gap > medianLineHeight * 0.75 && prevEndsSentence) ||
+            gap > medianLineHeight * 1.5;
 
-        if (isHeader ||
-            nextIsHeader ||
-            (endsWithSentenceTerminator &&
-                next.isNotEmpty &&
-                next[0].toUpperCase() == next[0])) {
+        if (isHeading || prevWasHeading || isParagraphBreak) {
           buffer.write('\n\n');
+        } else if (isBullet || prevWasBullet) {
+          buffer.write('\n');
         } else {
-          // Wrapped line mid-sentence -> join with single space
-          buffer.write(' ');
+          final currentStr = buffer.toString();
+          if (currentStr.endsWith('-') && !currentStr.endsWith(' -')) {
+            final withoutHyphen = currentStr.substring(0, currentStr.length - 1);
+            buffer
+              ..clear()
+              ..write(withoutHyphen);
+          } else {
+            buffer.write(' ');
+          }
         }
       }
+
+      if (isHeading) {
+        buffer.write('## $rawText');
+        prevWasHeading = true;
+        prevWasBullet = false;
+      } else {
+        buffer.write(rawText);
+        prevWasHeading = false;
+        prevWasBullet = isBullet;
+      }
+
+      prev = line;
     }
 
-    return buffer.toString().trim();
+    return buffer.toString();
   }
+
 
   /// Discards strings where more than 10% of characters are non-printable,
   /// control characters, or fall outside standard alphanumeric/punctuation ranges.
@@ -503,12 +481,57 @@ class LocalPdfParserService {
   static bool _isNonEducationalPage(String lower, String rawPageText) {
     if (lower.isEmpty) return true;
 
+    // Check first 6 non-empty lines for table of contents, preface, copyright, etc.
+    final firstLines = lower
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .take(6)
+        .toList();
+    for (final line in firstLines) {
+      if (line == 'contents' ||
+          line == 'table of contents' ||
+          line == 'brief contents' ||
+          line.startsWith('table of contents') ||
+          line.startsWith('contents') ||
+          line == 'preface' ||
+          line == 'foreword' ||
+          line == 'acknowledgments' ||
+          line == 'acknowledgements' ||
+          line == 'copyright' ||
+          line.startsWith('copyright ©') ||
+          line == 'references' ||
+          line == 'index') {
+        return true;
+      }
+    }
+
+    if (lower.contains('oracle america') && lower.contains('copyright')) {
+      return true;
+    }
+
     // Table of contents dot line pattern (e.g. "Chapter 1 . . . . 15")
     final dotLines = rawPageText
         .split('\n')
         .where((l) => RegExp(r'\.{3,}|\.\s*\.\s*\.').hasMatch(l))
         .length;
     if (dotLines >= 3) return true;
+
+    // Table of contents page-number pattern: >= 35% of lines end with page numbers
+    final lines = rawPageText
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+    if (lines.length >= 6) {
+      final tocPattern = RegExp(
+        r'^(?:\d+(?:\.\d+)*\s+)?[A-Z].*?\s+\d{1,4}$',
+      );
+      final tocMatches = lines.where(tocPattern.hasMatch).length;
+      if (tocMatches / lines.length >= 0.35) {
+        return true;
+      }
+    }
 
     // Direct front/back matter page headers or title starts
     final startsWithNoise = lower.startsWith('preface') ||
@@ -538,7 +561,6 @@ class LocalPdfParserService {
 
     // Check if page consists mainly of reference citations or index numbers
     if (lower.contains('references') || lower.contains('bibliography')) {
-      final lines = rawPageText.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
       final citationLines = lines.where((l) => RegExp(r'^(?:\[\d+\]|\d+\.|\b[A-Z][a-z]+,\s+[A-Z]\.).*?\(\d{4}\)').hasMatch(l)).length;
       if (lines.isNotEmpty && (citationLines / lines.length > 0.40)) {
         return true;

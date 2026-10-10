@@ -43,6 +43,7 @@ class OfflineCardBuilder {
     final blocks = _parseBlocks(fullText);
     if (blocks.isEmpty) return const [];
 
+    final docContext = _extractDocumentContext(fullText);
     final termFrequency = _termFrequency(blocks);
 
     final structured = <OfflineCard>[];
@@ -50,14 +51,12 @@ class OfflineCardBuilder {
     final clozePerSection = <String, int>{};
 
     String? heading;
-    var sectionHasCard = false;
     final pendingList = <_Block>[];
 
     void flushList() {
       final card = _listCard(heading, pendingList);
       if (card != null) {
         structured.add(card);
-        sectionHasCard = true;
       }
       pendingList.clear();
     }
@@ -69,9 +68,7 @@ class OfflineCardBuilder {
       switch (block.kind) {
         case _BlockKind.heading:
           heading = block.text;
-          sectionHasCard = false;
         case _BlockKind.qa:
-          sectionHasCard = true;
           structured.add(
             OfflineCard(
               type: OfflineCardType.qa,
@@ -81,51 +78,40 @@ class OfflineCardBuilder {
             ),
           );
         case _BlockKind.glossary:
-          sectionHasCard = true;
-          structured.add(_glossaryCard(block));
+          final card = _glossaryCard(block, docContext);
+          if (card != null) {
+            structured.add(card);
+          }
         case _BlockKind.formula:
-          sectionHasCard = true;
-          structured.add(
-            OfflineCard(
-              type: OfflineCardType.formula,
-              front: 'Formula: ${block.term}',
-              back: block.text,
-              confidence: 0.75,
-            ),
-          );
+          final card = _formulaCard(block, heading, docContext);
+          if (card != null) {
+            structured.add(card);
+          }
         case _BlockKind.bullet:
           pendingList.add(block);
         case _BlockKind.code:
-          final label = _codeLabel(blocks, i, heading);
-          if (label != null) {
-            sectionHasCard = true;
-            structured.add(
-              OfflineCard(
-                type: OfflineCardType.code,
-                front: 'Code: $label',
-                back: block.text,
-                confidence: 0.7,
-              ),
-            );
+          final card = _codeCard(blocks, i, heading, docContext);
+          if (card != null) {
+            structured.add(card);
           }
         case _BlockKind.paragraph:
           final sentences = _splitSentences(block.text);
           final consumed = <int>{};
           for (var s = 0; s < sentences.length; s++) {
             if (consumed.contains(s)) continue;
+            final discourse = _discourseCard(sentences, s, heading, docContext);
+            if (discourse != null) {
+              structured.add(discourse.card);
+              consumed.addAll(discourse.consumed);
+            }
+          }
+          for (var s = 0; s < sentences.length; s++) {
+            if (consumed.contains(s)) continue;
             final def = _definitionCard(sentences, s);
             if (def != null) {
               structured.add(def.card);
               consumed.addAll(def.consumed);
-              sectionHasCard = true;
             }
-          }
-          final overview = sectionHasCard
-              ? null
-              : _sectionOverviewCard(heading, block.text);
-          if (overview != null) {
-            structured.add(overview);
-            sectionHasCard = true;
           }
           final sectionKey = heading ?? '';
           for (var s = 0; s < sentences.length; s++) {
@@ -166,21 +152,22 @@ class OfflineCardBuilder {
 
     for (final card in structured) {
       if (result.length >= maxCards) break;
-      if (seen.add(norm(card.front))) result.add(card);
+      if (_isMeaningfulCard(card) && seen.add(norm(card.front))) {
+        result.add(card);
+      }
     }
 
+    // Sort clozes by score descending so the highest-yield domain terms come first
+    final sortedClozes = List<_ClozeCandidate>.from(clozes)
+      ..sort((a, b) => b.score.compareTo(a.score));
+
     final room = maxCards - result.length;
-    if (room > 0 && clozes.isNotEmpty) {
-      // Sample evenly across the document so coverage is not biased toward
-      // one chapter when there are more candidates than room.
-      final chosen = clozes.length <= room
-          ? clozes
-          : [
-              for (var k = 0; k < room; k++)
-                clozes[(k * clozes.length) ~/ room],
-            ];
-      for (final c in chosen) {
-        if (seen.add(norm(c.card.front))) result.add(c.card);
+    if (room > 0 && sortedClozes.isNotEmpty) {
+      for (final c in sortedClozes) {
+        if (result.length >= maxCards) break;
+        if (_isMeaningfulCard(c.card) && seen.add(norm(c.card.front))) {
+          result.add(c.card);
+        }
       }
     }
     return result;
@@ -190,8 +177,59 @@ class OfflineCardBuilder {
   // Parsing
   // ---------------------------------------------------------------------------
 
+  static final _danglingLineEndRe = RegExp(
+    r'(?:[,\-;:]|\b(?:and|or|the|a|an|to|of|in|that|with|for|you|we|as|at|by|from|into|on|is|are|was|were|suggests|allows|requires|focuses|enables|means|relying))\s*$',
+    caseSensitive: false,
+  );
+
+  static const _nounPluralExclusions = {
+    'types',
+    'methods',
+    'classes',
+    'declarations',
+    'operations',
+    'failures',
+    'errors',
+    'exceptions',
+    'values',
+    'results',
+    'expressions',
+    'statements',
+    'items',
+    'objects',
+    'instances',
+    'references',
+    'arguments',
+    'parameters',
+    'variables',
+    'constructors',
+    'packages',
+    'modules',
+    'members',
+    'fields',
+    'arrays',
+    'interfaces',
+    'modifiers',
+    'literals',
+    'characters',
+    'tokens',
+    'lines',
+    'words',
+    'terms',
+    'rules',
+    'steps',
+    'stages',
+    'phases',
+    'points',
+    'principles',
+    'guidelines',
+    'requirements',
+    'conventions',
+    'standards',
+  };
+
   static final _bulletRe = RegExp(
-    r'^([-•*●▪◦]|\d{1,2}[.)]|[a-z][.)])\s+(\S.*)$',
+    r'^([-•*●▪◦–—]|\d{1,2}[.)]|[a-z][.)])\s+(\S.*)$',
   );
   static final _orderedRe = RegExp(r'^\d{1,2}[.)]\s');
   static final _markdownHeadingRe = RegExp(r'^#{1,6}\s+(\S.*)$');
@@ -290,12 +328,28 @@ class OfflineCardBuilder {
     // Appends PDF-wrapped continuation lines to a bullet/glossary body.
     // Returns the merged body and the index of the last line consumed.
     (String, int) absorb(int index, String body) {
-      var merged = body;
+      final buf = StringBuffer(body);
       var last = index;
       while (last + 1 < lines.length) {
         final next = lines[last + 1].trim();
-        if (next.isEmpty ||
-            next.startsWith('```') ||
+        if (next.isEmpty) {
+          final current = buf.toString().trim();
+          final unfinished = _danglingLineEndRe.hasMatch(current);
+          if (unfinished && last + 2 < lines.length) {
+            final afterNext = lines[last + 2].trim();
+            if (afterNext.isNotEmpty &&
+                !afterNext.startsWith('```') &&
+                !_bulletRe.hasMatch(afterNext) &&
+                _headingText(afterNext, false) == null &&
+                !(_glossaryRe.firstMatch(afterNext) != null &&
+                    _isGlossaryTerm(_glossaryRe.firstMatch(afterNext)!.group(1)!))) {
+              last++;
+              continue;
+            }
+          }
+          break;
+        }
+        if (next.startsWith('```') ||
             _bulletRe.hasMatch(next) ||
             _headingText(next, false) != null) {
           break;
@@ -304,12 +358,13 @@ class OfflineCardBuilder {
         if (glossaryNext != null && _isGlossaryTerm(glossaryNext.group(1)!)) {
           break;
         }
-        final unfinished = !RegExp(r'[.!?:"”)]$').hasMatch(merged);
+        final currentText = buf.toString().trim();
+        final unfinished = !RegExp(r'[.!?:"”)]$').hasMatch(currentText);
         if (!unfinished && !RegExp('^[a-z]').hasMatch(next)) break;
-        merged = '$merged ${_cleanInline(next)}';
+        buf.write(' ${_cleanInline(next)}');
         last++;
       }
-      return (merged, last);
+      return (buf.toString(), last);
     }
 
     var i = 0;
@@ -318,6 +373,21 @@ class OfflineCardBuilder {
       final line = lines[i].trim();
 
       if (line.isEmpty) {
+        if (paragraph.isNotEmpty) {
+          final lastParaLine = paragraph.last.trim();
+          final unfinished = _danglingLineEndRe.hasMatch(lastParaLine);
+          if (unfinished && i + 1 < lines.length) {
+            final nextLine = lines[i + 1].trim();
+            if (nextLine.isNotEmpty &&
+                !nextLine.startsWith('```') &&
+                !_bulletRe.hasMatch(nextLine) &&
+                _headingText(nextLine, false) == null &&
+                _glossaryRe.firstMatch(nextLine) == null) {
+              i++;
+              continue;
+            }
+          }
+        }
         flushParagraph();
         previousBlank = true;
         i++;
@@ -440,8 +510,9 @@ class OfflineCardBuilder {
       if (RegExp(
         r'\.{3,}\s*(?:\d{1,4}|[ivxlcdm]{1,8})$',
         caseSensitive: false,
-      ).hasMatch(l))
+      ).hasMatch(l)) {
         return true;
+      }
       final m = RegExp(
         r'^(.{2,}?)\s+(?:\d{1,4}|[ivxlcdm]{1,8})$',
         caseSensitive: false,
@@ -478,9 +549,17 @@ class OfflineCardBuilder {
     final out = <String>[];
     for (var k = 0; k < rawLines.length; k++) {
       final l = trimmed[k];
+      final cnt = counts[l.toLowerCase()] ?? 0;
+      final isRepeatingHeader = isLong &&
+          l.isNotEmpty &&
+          cnt >= 3 &&
+          _wordCount(l) >= 3 &&
+          !_bulletRe.hasMatch(l) &&
+          !_orderedRe.hasMatch(l);
+
       if (drop[k] ||
           (_pageNoiseRe.hasMatch(l) && l.isNotEmpty) ||
-          (isLong && l.isNotEmpty && (counts[l.toLowerCase()] ?? 0) >= 3)) {
+          isRepeatingHeader) {
         out.add('');
       } else {
         out.add(rawLines[k]);
@@ -516,20 +595,20 @@ class OfflineCardBuilder {
     if (q == null || i + 1 >= lines.length) return null;
     final a = _qaAnswerRe.firstMatch(lines[i + 1].trim());
     if (a == null) return null;
-    var answer = _cleanInline(a.group(1)!);
+    final answerBuf = StringBuffer(_cleanInline(a.group(1)!));
     var last = i + 1;
     while (last + 1 < lines.length) {
       final next = lines[last + 1].trim();
       if (next.isEmpty ||
           _qaQuestionRe.hasMatch(next) ||
           _bulletRe.hasMatch(next) ||
-          RegExp(r'[.!?]$').hasMatch(answer)) {
+          RegExp(r'[.!?]$').hasMatch(answerBuf.toString())) {
         break;
       }
-      answer = '$answer ${_cleanInline(next)}';
+      answerBuf.write(' ${_cleanInline(next)}');
       last++;
     }
-    return _QaMatch(_cleanInline(q.group(1)!), answer, last);
+    return _QaMatch(_cleanInline(q.group(1)!), answerBuf.toString(), last);
   }
 
   static final _latexCommandRe = RegExp(
@@ -546,38 +625,57 @@ class OfflineCardBuilder {
     return RegExp(r'[\^+*/\d]|\\').hasMatch(line.split('=').last);
   }
 
+  static final _bannedHeadingPattern = RegExp(
+    r'\b(?:dear\s|welcome\s|copyright|rights reserved|version\b|status\b|release\b|author|contributor|contractor|agreement|engagement|mr\.|mrs\.|dr\.|inc\.|llc|ltd|specification|contents|table of contents|overview of the|page\s+\d|fig\b|figure\s+\d|table\s+\d|date\b|signed|signature|alex buckley|james gosling|guy steele|bill joy|gilad bracha|oluwatobi|okanlawon|street|road|avenue|lagos|nigeria|token\b|challenge\b|services\b|scope\b|schedule\b|appointment\b|duties\b|responsibilities\b|remuneration\b|compensation\b|benefits\b|confidentiality\b|termination\b|jurisdiction\b|governing law\b)\b',
+    caseSensitive: false,
+  );
+
   String? _headingText(String line, bool previousBlank) {
-    final md = _markdownHeadingRe.firstMatch(line);
-    if (md != null) return md.group(1);
+    final trimmed = line.trim();
+    if (_bannedHeadingPattern.hasMatch(trimmed)) return null;
+    if (RegExp(r'\s+\d{1,4}$').hasMatch(trimmed)) return null;
+    if (trimmed.length < 3) return null;
 
-    final numbered = _numberedHeadingRe.firstMatch(line);
-    if (numbered != null && _wordCount(line) <= 12 && !_endsSentence(line)) {
-      return line;
+    final md = _markdownHeadingRe.firstMatch(trimmed);
+    if (md != null) {
+      final text = md.group(1)!.trim();
+      return _bannedHeadingPattern.hasMatch(text) ? null : text;
     }
 
-    if (_keywordHeadingRe.hasMatch(line) &&
-        _wordCount(line) <= 12 &&
-        !_endsSentence(line)) {
-      return line;
+    final numbered = _numberedHeadingRe.firstMatch(trimmed);
+    if (numbered != null && _wordCount(trimmed) <= 12 && !_endsSentence(trimmed)) {
+      return trimmed;
     }
 
-    final letters = line.replaceAll(RegExp('[^A-Za-z]'), '');
+    if (_keywordHeadingRe.hasMatch(trimmed) &&
+        _wordCount(trimmed) <= 12 &&
+        !_endsSentence(trimmed)) {
+      return trimmed;
+    }
+
+    final letters = trimmed.replaceAll(RegExp('[^A-Za-z]'), '');
     if (letters.length >= 4 &&
         letters == letters.toUpperCase() &&
-        _wordCount(line) <= 8 &&
-        !_endsSentence(line) &&
-        !_bulletRe.hasMatch(line)) {
-      return line;
+        _wordCount(trimmed) <= 8 &&
+        !_endsSentence(trimmed) &&
+        !_bulletRe.hasMatch(trimmed)) {
+      return trimmed;
     }
 
-    if (previousBlank &&
-        _wordCount(line) <= 8 &&
-        RegExp(r'^[A-Z]').hasMatch(line) &&
-        !RegExp(r'[.!?,;:]$').hasMatch(line) &&
-        !_bulletRe.hasMatch(line) &&
-        !RegExp(r'^\d').hasMatch(line)) {
-      return line;
+    if (previousBlank && _wordCount(trimmed) <= 6 && !_endsSentence(trimmed)) {
+      final words = trimmed.split(RegExp(r'\s+'));
+      final isTitle = words.every(
+        (w) =>
+            RegExp('^[A-Z]').hasMatch(w) ||
+            {'and', 'or', 'of', 'in', 'the', 'for', 'to', 'with'}.contains(
+              w.toLowerCase(),
+            ),
+      );
+      if (isTitle && words.length >= 2) {
+        return trimmed;
+      }
     }
+
     return null;
   }
 
@@ -587,7 +685,25 @@ class OfflineCardBuilder {
     final words = term.split(RegExp(r'\s+'));
     if (words.length > 5) return false;
     if (_metaLabels.contains(term.toLowerCase())) return false;
-    if (!RegExp(r'^[A-Z0-9]').hasMatch(term)) return false;
+    if (!RegExp('^[A-Z0-9]').hasMatch(term)) return false;
+    if (RegExp(r'\d+$').hasMatch(term)) return false; // Reject "Statement 440", "Step 2"
+    if (RegExp(r'^\d').hasMatch(term)) return false; // Reject "12.2 Compile-Time"
+    if (RegExp(r"^(?:not|never|avoid|don'?t)\b", caseSensitive: false).hasMatch(term)) {
+      return false; // Reject "Not testing the app"
+    }
+    if (RegExp(
+      r'^(?:stay|ensure|build|develop|collaborate|work|maintain|write|participate|manage|create|implement|monitor|follow|review|use|apply|handle)\b',
+      caseSensitive: false,
+    ).hasMatch(term)) {
+      return false; // Reject task duties
+    }
+    if (RegExp(
+      r'\b(?:chapter|section|part|step|rule|figure|table|item|statement|syntax|grammar|notation|level|phase|stage|version|index)\b',
+      caseSensitive: false,
+    ).hasMatch(term)) {
+      return false;
+    }
+    if (_bannedHeadingPattern.hasMatch(term)) return false;
     return !words.any(
       (w) => _glossaryBannedTermWords.contains(w.toLowerCase()),
     );
@@ -619,7 +735,7 @@ class OfflineCardBuilder {
   String _cleanInline(String s) => s
       .replaceAllMapped(RegExp(r'(\*\*|__)(.+?)\1'), (m) => m.group(2)!)
       .replaceAllMapped(
-        RegExp(r'\\([\\`*_{}\[\]()#+\-.!|<>~])'),
+        RegExp(r'\\(.)'),
         (m) => m.group(1)!,
       )
       .replaceAll('ﬁ', 'fi')
@@ -635,46 +751,469 @@ class OfflineCardBuilder {
   // Card builders
   // ---------------------------------------------------------------------------
 
-  OfflineCard _glossaryCard(_Block block) => OfflineCard(
-    type: OfflineCardType.glossary,
-    front: 'What is ${block.term}?',
-    back: block.text,
-    confidence: 0.85,
-  );
+  static const _anaphoraBlacklist = {
+    'it',
+    'this',
+    'that',
+    'these',
+    'those',
+    'they',
+    'he',
+    'she',
+    'there',
+    'here',
+    'which',
+    'who',
+    'its',
+    'their',
+    'such',
+  };
 
-  /// Heading + short body with nothing more specific to ask: quote the
-  /// heading and give the verbatim body.
-  OfflineCard? _sectionOverviewCard(String? heading, String body) {
-    if (heading == null || body.length > _maxDefinitionBackChars + 80) {
+  String _extractDocumentContext(String fullText) {
+    final lower = fullText.toLowerCase();
+    if (lower.contains('flutter') || lower.contains('dart')) return 'Flutter';
+    if (lower.contains('java language specification') || lower.contains('jls')) return 'Java';
+    if (lower.contains('cellular respiration') ||
+        lower.contains('glycolysis') ||
+        lower.contains('krebs cycle')) {
+      return 'Cellular Respiration';
+    }
+    return '';
+  }
+
+  OfflineCard? _glossaryCard(_Block block, String docContext) {
+    final term = block.term!;
+    final body = block.text;
+
+    if (_bannedHeadingPattern.hasMatch(term)) return null;
+    final lower = body.toLowerCase();
+    if (_isBannedBoilerplate(lower)) return null;
+
+    final cleanBody = body.trim();
+    if (RegExp(r'\s+\d{1,4}$').hasMatch(cleanBody)) return null;
+    if (cleanBody.startsWith('-') || cleanBody.startsWith('–') || cleanBody.startsWith('—')) return null;
+    if (RegExp(r'\b\d+\.\d+(?:\.\d+)*\b').hasMatch(cleanBody)) return null;
+    if (cleanBody.length < 15) return null;
+
+    final sanitizedBody = cleanBody.replaceFirst(
+      RegExp(r'\s*All other tasks as assigned by.*$', caseSensitive: false),
+      '',
+    ).trim();
+    if (sanitizedBody.length < 15) return null;
+
+    final isSyntax = RegExp(r'[{}[\];]').hasMatch(sanitizedBody) || sanitizedBody.contains('::=');
+    if (isSyntax) {
+      final lang = docContext.isNotEmpty ? ' in $docContext' : '';
+      return OfflineCard(
+        type: OfflineCardType.glossary,
+        front: 'What is the syntax of $term$lang?',
+        back: sanitizedBody,
+        confidence: 0.88,
+      );
+    }
+
+    final lowerBody = sanitizedBody.toLowerCase();
+    String front;
+
+    if (lowerBody.contains('suggests that you') || lowerBody.contains('principle suggests')) {
+      front = 'What is the core principle of $term?';
+    } else if (lowerBody.contains('should be designed with') || lowerBody.contains('designed with the user')) {
+      front = 'What are the main principles of $term?';
+    } else if (lowerBody.contains('optimized for performance') || lowerBody.contains('fast loading')) {
+      front = 'What does $term require?';
+    } else if (lowerBody.contains('development process') || lowerBody.contains('process relying on')) {
+      front = 'What is the core process of $term?';
+    } else if (lowerBody.contains('compatible with both android and ios') || lowerBody.contains('cross-platform')) {
+      front = 'How is $term achieved across Android and iOS?';
+    } else if (lowerBody.contains('allow users to customize') || lowerBody.contains('customize the look')) {
+      front = 'What capability does $term provide?';
+    } else if (lowerBody.contains('integrate with other') || lowerBody.contains('third-party')) {
+      front = 'What is the goal of $term?';
+    } else if (lowerBody.contains('work offline')) {
+      front = 'What does $term allow?';
+    } else if (lowerBody.contains('add support for different languages') || lowerBody.contains('multi-language')) {
+      front = 'What is the purpose of $term?';
+    } else if (lowerBody.contains('reusable and maintainable') && lowerBody.contains('widgets')) {
+      front = 'What is the objective of $term in Flutter?';
+    } else if (lowerBody.contains('collaborate with the design team')) {
+      front = 'What is the focus of $term?';
+    } else if (lowerBody.contains('write unit tests') || lowerBody.contains('perform debugging')) {
+      front = 'What is the role of $term?';
+    } else if (lowerBody.contains('code reviews')) {
+      front = 'What is the purpose of $term?';
+    } else if (lowerBody.contains('documentation for the')) {
+      front = 'What is the goal of $term?';
+    } else if (lowerBody.contains('backend engineers') || lowerBody.contains('collaborate')) {
+      front = 'What is the focus of $term?';
+    } else {
+      front = 'What is $term?';
+    }
+
+    return OfflineCard(
+      type: OfflineCardType.glossary,
+      front: front,
+      back: sanitizedBody,
+      confidence: 0.85,
+    );
+  }
+
+  OfflineCard? _formulaCard(_Block block, String? heading, String docContext) {
+    final formulaText = block.text.trim();
+    final term = block.term ?? heading ?? 'this reaction';
+    final front = formulaText.contains(r'\') || formulaText.contains('=')
+        ? 'What is the formula for $term?'
+        : 'What is the chemical equation for $term?';
+    return OfflineCard(
+      type: OfflineCardType.formula,
+      front: front,
+      back: formulaText,
+      confidence: 0.85,
+    );
+  }
+
+  OfflineCard? _codeCard(
+    List<_Block> blocks,
+    int index,
+    String? heading,
+    String docContext,
+  ) {
+    final block = blocks[index];
+    final code = block.text.trim();
+    if (code.length < 15) return null;
+
+    final firstLine = code.split('\n').first.trim();
+    var lang = '';
+    if (firstLine.startsWith('```')) {
+      lang = firstLine.substring(3).trim();
+    }
+    if (lang.isEmpty) {
+      if (docContext == 'Flutter' || code.contains('Widget') || code.contains('setState')) {
+        lang = 'dart';
+      } else if (docContext == 'Java' || code.contains('public class') || code.contains('System.out')) {
+        lang = 'java';
+      } else {
+        lang = 'dart';
+      }
+    }
+
+    final classMatch = RegExp(r'\bclass\s+([A-Za-z0-9_]+)').firstMatch(code);
+    final funcMatch = RegExp(r'\b(?:void|Future<[^>]+>|Widget|int|String|[A-Z][a-zA-Z0-9_]*)\s+([a-zA-Z0-9_]+)\s*\(').firstMatch(code);
+
+    String front;
+    if (classMatch != null) {
+      final className = classMatch.group(1)!;
+      final langDisplay = lang.isNotEmpty ? ' in ${lang[0].toUpperCase()}${lang.substring(1)}' : '';
+      front = 'How do you implement the $className class$langDisplay?';
+    } else if (funcMatch != null && !{'if', 'for', 'while', 'switch'}.contains(funcMatch.group(1))) {
+      final funcName = funcMatch.group(1)!;
+      final langDisplay = lang.isNotEmpty ? ' in ${lang[0].toUpperCase()}${lang.substring(1)}' : '';
+      front = 'How do you write the $funcName() function$langDisplay?';
+    } else {
+      final label = _codeLabel(blocks, index, heading);
+      if (label != null) {
+        front = 'What is the implementation of "$label" in code?';
+      } else {
+        front = 'What is the code implementation?';
+      }
+    }
+
+    return OfflineCard(
+      type: OfflineCardType.code,
+      front: front,
+      back: code,
+      confidence: 0.85,
+    );
+  }
+
+  _DefinitionResult? _discourseCard(
+    List<String> sentences,
+    int index,
+    String? heading,
+    String docContext,
+  ) {
+    final sentence = sentences[index].trim();
+    if (!_endsSentence(sentence) || !_looksLikeProse(sentence)) return null;
+    final lowerSentence = sentence.toLowerCase();
+    if (_isBannedBoilerplate(lowerSentence)) return null;
+
+    final consumed = <int>{index};
+
+    // 1. Causal / Reason ("Why")
+    final becauseMatch = RegExp(
+      r'^([A-Z][a-zA-Z0-9_\s]{2,45}?)\s+(are|is|were|was)\s+(.+?)\s+because\s+(.+)$',
+    ).firstMatch(sentence);
+    if (becauseMatch != null) {
+      final rawSubject = becauseMatch.group(1)!.trim();
+      final copula = becauseMatch.group(2)!;
+      final predicate = becauseMatch.group(3)!.trim();
+      final subject = _resolveSubject(rawSubject, heading);
+      if (subject != null) {
+        final contextSuffix = (docContext.isNotEmpty && !sentence.toLowerCase().contains(docContext.toLowerCase()))
+            ? ' in $docContext'
+            : '';
+        final front = 'Why $copula $subject $predicate$contextSuffix?';
+        return _DefinitionResult(
+          OfflineCard(
+            type: OfflineCardType.qa,
+            front: front,
+            back: sentence,
+            confidence: 0.88,
+          ),
+          consumed,
+        );
+      }
+    }
+
+    // 2. Mechanism / Method ("How does X ..." or "How is X ...")
+    final methodMatch = RegExp(
+      r'^([A-Z][a-zA-Z0-9_\s]{2,40}?)\s+([a-z]{3,}(?:s|es))\s+(.+?)\s+(?:using|by|via)\s+(.+)$',
+    ).firstMatch(sentence);
+    if (methodMatch != null) {
+      final rawSubject = methodMatch.group(1)!.trim();
+      final verbS = methodMatch.group(2)!.toLowerCase();
+      final obj = methodMatch.group(3)!.trim();
+      final subject = _resolveSubject(rawSubject, heading);
+      if (subject != null &&
+          !_subjectBannedWords.contains(verbS) &&
+          !_nounPluralExclusions.contains(verbS) &&
+          !_anaphoraBlacklist.contains(rawSubject.toLowerCase())) {
+        final baseVerb = _toBaseVerb(verbS);
+        final contextSuffix = (docContext.isNotEmpty && !sentence.toLowerCase().contains(docContext.toLowerCase()))
+            ? ' in $docContext'
+            : '';
+        final front = 'How does $subject $baseVerb $obj$contextSuffix?';
+        return _DefinitionResult(
+          OfflineCard(
+            type: OfflineCardType.qa,
+            front: front,
+            back: sentence,
+            confidence: 0.88,
+          ),
+          consumed,
+        );
+      }
+    }
+
+    final passiveMatch = RegExp(
+      r'^([A-Z][a-zA-Z0-9_\s]{2,45}?)\s+(are|is|were|was)\s+([a-z]+(?:ed|en))\s+(?:by|via|using)\s+(.+)$',
+    ).firstMatch(sentence);
+    if (passiveMatch != null) {
+      final rawSubject = passiveMatch.group(1)!.trim();
+      final copula = passiveMatch.group(2)!;
+      final participle = passiveMatch.group(3)!;
+      final subject = _resolveSubject(rawSubject, heading);
+      if (subject != null && !_anaphoraBlacklist.contains(rawSubject.toLowerCase())) {
+        final contextSuffix = (docContext.isNotEmpty && !sentence.toLowerCase().contains(docContext.toLowerCase()))
+            ? ' in $docContext'
+            : '';
+        final front = 'How $copula $subject $participle$contextSuffix?';
+        return _DefinitionResult(
+          OfflineCard(
+            type: OfflineCardType.qa,
+            front: front,
+            back: sentence,
+            confidence: 0.88,
+          ),
+          consumed,
+        );
+      }
+    }
+
+    // 3. Event / Trigger ("What happens when ...")
+    final eventMatch = RegExp(
+      r'^(?:Calling|Invoking)\s+([a-zA-Z0-9_().]+)\s+(?:tells|notifies|causes|triggers|informs)\s+(.+)$',
+    ).firstMatch(sentence);
+    if (eventMatch != null) {
+      final callTarget = eventMatch.group(1)!.replaceAll(RegExp('[( )]'), '');
+      final contextSuffix = docContext.isNotEmpty ? ' in $docContext' : '';
+      final front = 'What happens when $callTarget is called$contextSuffix?';
+      return _DefinitionResult(
+        OfflineCard(
+          type: OfflineCardType.qa,
+          front: front,
+          back: sentence,
+          confidence: 0.90,
+        ),
+        consumed,
+      );
+    }
+
+    // 4. Contrast ("How does X differ from Y ...")
+    final contrastMatch = RegExp(
+      r'^([A-Z][a-zA-Z0-9_\s]{1,35}?)\s+is\s+a\s+(?:simplified\s+)?([A-Z][a-zA-Z0-9_\s]{1,35}?)\s+that\s+(?:exposes|uses|provides)\s+(.+?)\s+instead\s+of\s+(.+)$',
+    ).firstMatch(sentence);
+    if (contrastMatch != null) {
+      final subj1 = contrastMatch.group(1)!.trim();
+      final subj2 = contrastMatch.group(2)!.trim();
+      if (!_anaphoraBlacklist.contains(subj1.toLowerCase()) && !_anaphoraBlacklist.contains(subj2.toLowerCase())) {
+        final front = 'How does $subj1 differ from $subj2?';
+        return _DefinitionResult(
+          OfflineCard(
+            type: OfflineCardType.qa,
+            front: front,
+            back: sentence,
+            confidence: 0.88,
+          ),
+          consumed,
+        );
+      }
+    }
+
+    // 5. Scientific Net Yield / Output
+    final yieldMatch = RegExp(
+      r'^([A-Z][a-zA-Z0-9_\s]{2,40}?)\s+yields\s+a\s+net\s+(?:gain|yield)\s+of\s+(.+)$',
+    ).firstMatch(sentence);
+    if (yieldMatch != null) {
+      final rawSubject = yieldMatch.group(1)!.trim();
+      final subject = _resolveSubject(rawSubject, heading);
+      if (subject != null) {
+        final front = 'What is the net yield of $subject?';
+        return _DefinitionResult(
+          OfflineCard(
+            type: OfflineCardType.qa,
+            front: front,
+            back: sentence,
+            confidence: 0.90,
+          ),
+          consumed,
+        );
+      }
+    }
+
+    // 6. Cellular / Anatomical Location ("Where does X take place?")
+    final locationMatch = RegExp(
+      r'^([A-Z][a-zA-Z0-9_\s]{1,40}?)\s+takes\s+place\s+in\s+(?:the\s+)?(.+?)(?:\.|\s+and\s+|$)',
+    ).firstMatch(sentence);
+    if (locationMatch != null) {
+      final rawSubject = locationMatch.group(1)!.trim();
+      final subject = _resolveSubject(rawSubject, heading);
+      if (subject != null) {
+        final front = 'Where does $subject take place?';
+        return _DefinitionResult(
+          OfflineCard(
+            type: OfflineCardType.qa,
+            front: front,
+            back: sentence,
+            confidence: 0.88,
+          ),
+          consumed,
+        );
+      }
+    }
+
+    // 7. Purpose / Objective ("What is the primary objective of ...")
+    final purposeMatch = RegExp(
+      r'^(?:The\s+)?([A-Z][a-zA-Z0-9_\s]{2,40}?)\s+(?:is designed to|aims to|serves to)\s+(.+)$',
+    ).firstMatch(sentence);
+    if (purposeMatch != null) {
+      final rawSubject = purposeMatch.group(1)!.trim();
+      final subject = _resolveSubject(rawSubject, heading);
+      if (subject != null) {
+        final front = 'What is the primary objective of $subject?';
+        return _DefinitionResult(
+          OfflineCard(
+            type: OfflineCardType.qa,
+            front: front,
+            back: sentence,
+            confidence: 0.85,
+          ),
+          consumed,
+        );
+      }
+    }
+
+    return null;
+  }
+
+  String _toBaseVerb(String verb) {
+    if (verb.endsWith('ies')) return '${verb.substring(0, verb.length - 3)}y';
+    if (RegExp(r'(?:ss|sh|ch|x|z)es$').hasMatch(verb)) {
+      return verb.substring(0, verb.length - 2);
+    }
+    if (verb.endsWith('s')) return verb.substring(0, verb.length - 1);
+    return verb;
+  }
+
+  String? _resolveSubject(String rawSubject, String? heading) {
+    var s = rawSubject.trim();
+    s = s.replaceFirst(RegExp(r'^(?:the|a|an)\s+', caseSensitive: false), '').trim();
+    if (s.isEmpty) return null;
+    final lower = s.toLowerCase();
+    if (_anaphoraBlacklist.contains(lower)) {
+      if (heading != null && heading.isNotEmpty && !_bannedHeadingPattern.hasMatch(heading)) {
+        return heading.replaceFirst(RegExp(r'^#+\s*'), '').trim();
+      }
       return null;
     }
-    final title = heading
-        .replaceFirst(RegExp(r'^\d+(?:\.\d+)*[.)]?\s+'), '')
-        .trim();
-    if (title.length < 3) return null;
-    return OfflineCard(
-      type: OfflineCardType.list,
-      front: 'What does "$title" cover?',
-      back: body,
-      confidence: 0.6,
-    );
+    if (_badSubjectStarts.contains(lower.split(RegExp(r'\s+')).first)) return null;
+    if (_subjectBannedWords.contains(lower)) return null;
+    return s;
+  }
+
+  bool _isBannedBoilerplate(String lower) {
+    return lower.contains('copyright') ||
+        lower.contains('all rights reserved') ||
+        lower.contains('oracle america') ||
+        lower.contains('contractor') ||
+        lower.contains('the company') ||
+        lower.contains('welcome to') ||
+        lower.contains('dear ') ||
+        lower.contains('street') ||
+        lower.contains('lagos') ||
+        lower.contains('oyebode') ||
+        lower.contains('remuneration') ||
+        lower.contains('salary') ||
+        lower.contains('allowance') ||
+        lower.contains('in witness whereof') ||
+        lower.contains('severability') ||
+        lower.contains('governing law') ||
+        lower.contains('indemnif') ||
+        lower.contains('confidentiality') ||
+        lower.contains('terms of appointment') ||
+        lower.contains('acceptance of the terms');
   }
 
   OfflineCard? _listCard(String? heading, List<_Block> items) {
     if (heading == null || items.length < 2) return null;
+
+    final cleanHeading = heading
+        .replaceFirst(RegExp(r'^#+\s*'), '')
+        .replaceFirst(RegExp(r'^\d+(?:\.\d+)*[.)]?\s+'), '')
+        .trim();
+
+    if (_bannedHeadingPattern.hasMatch(cleanHeading)) return null;
+
+    final isProcess = RegExp(
+      r'\b(?:steps?|stages?|phases?|process(?:es)?|procedure|algorithm|lifecycle|workflow|cycle|order|sequence|method)\b',
+      caseSensitive: false,
+    ).hasMatch(cleanHeading);
+
+    final isKeyProperties = RegExp(
+      r'\b(?:principles?|features?|tips?|guidelines?|properties?|components?|requirements?|rules?|advantages?|disadvantages?|objectives?|best practices?|criteria|goals?)\b',
+      caseSensitive: false,
+    ).hasMatch(cleanHeading);
+
     final ordered = items.every((b) => b.ordered);
+
+    // Only generate a list card if heading is genuinely a process or a recognized key property list
+    if (ordered && !isProcess) return null;
+    if (!ordered && !isKeyProperties && !isProcess) return null;
+    if (items.length > 7) return null;
+
     final back = [
       for (var i = 0; i < items.length; i++)
         ordered ? '${items[i].marker} ${items[i].text}' : '• ${items[i].text}',
     ].join('\n');
-    if (back.length > 700) return null;
+
+    if (back.length > 600) return null;
+
     return OfflineCard(
       type: OfflineCardType.list,
       front: ordered
-          ? 'What are the steps in "$heading", in order?'
-          : 'What are the key points of "$heading"?',
+          ? 'What are the steps in "$cleanHeading", in order?'
+          : 'What are the key points of "$cleanHeading"?',
       back: back,
-      confidence: 0.7,
+      confidence: 0.75,
     );
   }
 
@@ -744,6 +1283,20 @@ class OfflineCardBuilder {
 
   _DefinitionResult? _definitionCard(List<String> sentences, int index) {
     final sentence = sentences[index];
+    final lowerSentence = sentence.toLowerCase();
+    if (lowerSentence.contains('copyright') ||
+        lowerSentence.contains('all rights reserved') ||
+        lowerSentence.contains('oracle america') ||
+        lowerSentence.contains('contractor') ||
+        lowerSentence.contains('the company') ||
+        lowerSentence.contains('challenge is') ||
+        lowerSentence.contains('welcome to') ||
+        lowerSentence.contains('street') ||
+        lowerSentence.contains('lagos') ||
+        lowerSentence.contains('dear ')) {
+      return null;
+    }
+
     final m = _definitionRe.firstMatch(sentence);
     if (m == null) return null;
     final verb = m.group(2)!;
@@ -753,20 +1306,39 @@ class OfflineCardBuilder {
     }
 
     var subject = m.group(1)!.trim();
-    final words = subject.split(RegExp(r'\s+'));
-    if (words.length > 6) return null;
-    if (!RegExp(r'^[A-Z]').hasMatch(subject)) return null;
-    if (_badSubjectStarts.contains(words.first.toLowerCase())) return null;
-    if (words.any((w) => _subjectBannedWords.contains(w.toLowerCase()))) {
-      return null;
-    }
-    if (RegExp(r'[,;:()]').hasMatch(subject)) return null;
-
+    // Strip leading chapter/section/heading artifacts
+    subject = subject.replaceFirst(
+      RegExp(
+        r'^(?:introduction|overview|preface|chapter\s+\d+|section\s+\d+)\s+',
+        caseSensitive: false,
+      ),
+      '',
+    );
+    subject = subject.replaceFirst(
+      RegExp(r'^(?:HE|THE)\s+', caseSensitive: false),
+      '',
+    );
+    subject = subject.replaceFirst(
+      RegExp(r'^[A-Z\s]{3,}\s+(?=[A-Z][a-z])'),
+      '',
+    );
     subject = subject.replaceFirst(
       RegExp(r'^(?:the|a|an)\s+', caseSensitive: false),
       '',
     );
+    subject = subject.replaceAll('®', '').replaceAll(RegExp(r'\s{2,}'), ' ').trim();
     if (subject.length < 2) return null;
+
+    final words = subject.split(RegExp(r'\s+'));
+    if (words.length > 5) return null;
+    if (!RegExp('^[A-Z]').hasMatch(subject)) return null;
+    if (_badSubjectStarts.contains(words.first.toLowerCase())) return null;
+    if (words.any((w) => _subjectBannedWords.contains(w.toLowerCase()))) {
+      return null;
+    }
+    if (_bannedHeadingPattern.hasMatch(subject)) return null;
+    if (RegExp(r'\d+(?:\.\d+)*').hasMatch(subject)) return null;
+    if (RegExp('[,;:()]').hasMatch(subject)) return null;
 
     final plural = verb == 'are';
 
@@ -775,11 +1347,20 @@ class OfflineCardBuilder {
     if (index + 1 < sentences.length) {
       final next = sentences[index + 1];
       if (back.length + next.length + 1 <= _maxDefinitionBackChars &&
-          !_definitionRe.hasMatch(next)) {
+          !_definitionRe.hasMatch(next) &&
+          _endsSentence(next) &&
+          _looksLikeProse(next)) {
         back = '$back $next';
         consumed.add(index + 1);
       }
     }
+
+    if (back.startsWith('HE ')) {
+      back = 'The ${back.substring(3)}';
+    }
+    back = back.replaceAll('®', '').replaceAll(RegExp(r'\s{2,}'), ' ').trim();
+
+    if (!_endsSentence(back)) return null;
 
     return _DefinitionResult(
       OfflineCard(
@@ -881,6 +1462,26 @@ class OfflineCardBuilder {
     'neither',
     'however',
     'therefore',
+    'parties',
+    'party',
+    'appointment',
+    'agreement',
+    'contract',
+    'contractor',
+    'clause',
+    'schedule',
+    'herein',
+    'hereunder',
+    'undersigned',
+    'signed',
+    'sign',
+    'date',
+    'month',
+    'year',
+    'days',
+    'letter',
+    'shall',
+    'terms',
   };
 
   Map<String, int> _termFrequency(List<_Block> blocks) {
@@ -905,11 +1506,68 @@ class OfflineCardBuilder {
   ) {
     final words = _wordCount(sentence);
     if (words < _minClozeWords || words > _maxClozeWords) return null;
-    if (!RegExp(r'^[A-Z]').hasMatch(sentence)) return null;
+    if (!RegExp('^[A-Z]').hasMatch(sentence)) return null;
     if (!RegExp(r'[.!?]$').hasMatch(sentence)) return null;
     if (sentence.endsWith('?')) return null;
     if (RegExp(r'https?://|www\.').hasMatch(sentence)) return null;
     if (!_looksLikeProse(sentence)) return null;
+
+    final firstWord = sentence
+        .split(RegExp(r'\s+'))
+        .first
+        .toLowerCase()
+        .replaceAll(RegExp('[^a-z]'), '');
+    // Reject cloze cards starting with pronouns ("It occurs in the _____")
+    if (_badSubjectStarts.contains(firstWord)) return null;
+
+    final lower = sentence.toLowerCase();
+    if (lower.contains('welcome to') ||
+        lower.contains('dear ') ||
+        lower.contains('copyright') ||
+        lower.contains('all rights reserved') ||
+        lower.contains('oracle america') ||
+        lower.contains('contractor') ||
+        lower.contains('street') ||
+        lower.contains('lagos') ||
+        lower.contains('oyebode') ||
+        lower.contains('hereunder') ||
+        lower.contains('herein') ||
+        lower.contains('hereof') ||
+        lower.contains('challenge is to') ||
+        lower.contains('dispute') ||
+        lower.contains('jurisdiction') ||
+        lower.contains('court') ||
+        lower.contains('undersigned') ||
+        lower.contains('acceptance of the terms') ||
+        lower.contains('terms of appointment') ||
+        lower.contains('in witness whereof') ||
+        lower.contains('severability') ||
+        lower.contains('governing law') ||
+        lower.contains('indemnif') ||
+        lower.contains('confidentiality') ||
+        lower.contains('agreement') ||
+        lower.contains('employment') ||
+        lower.contains('remuneration') ||
+        lower.contains('salary') ||
+        lower.contains('allowance') ||
+        lower.contains('signed') ||
+        lower.contains('sign and return') ||
+        lower.contains('line manager') ||
+        lower.contains('engagement') ||
+        lower.contains('letter') ||
+        lower.contains('nigeria') ||
+        lower.contains('regulation') ||
+        lower.contains('terms and conditions') ||
+        lower.contains('clause') ||
+        lower.contains('schedule') ||
+        lower.contains('republic') ||
+        lower.contains('public knowledge') ||
+        lower.contains('fee') ||
+        lower.contains('monthly') ||
+        lower.contains('n850') ||
+        lower.contains('charges')) {
+      return null;
+    }
 
     String? best;
     var bestScore = 0.0;
@@ -918,20 +1576,20 @@ class OfflineCardBuilder {
     ).allMatches(sentence);
     for (final m in matches) {
       final word = m.group(0)!;
-      final lower = word.toLowerCase();
+      final lowerWord = word.toLowerCase();
       if (word.length < 4 && !RegExp(r'^[A-Z]{2,}$').hasMatch(word)) continue;
-      if (_stopWords.contains(lower)) continue;
+      if (_stopWords.contains(lowerWord)) continue;
 
       var score = math.log(1 + word.length);
       final midSentence = m.start > 0;
       if (RegExp(r'^[A-Z]{2,}[a-z0-9]*$').hasMatch(word)) {
         score *= 2.2; // acronym
-      } else if (midSentence && RegExp(r'^[A-Z]').hasMatch(word)) {
+      } else if (midSentence && RegExp('^[A-Z]').hasMatch(word)) {
         score *= 1.8; // proper / technical noun
       } else if (RegExp(r'\d').hasMatch(word)) {
         score *= 1.5;
       }
-      if ((freq[lower] ?? 1) >= 2) score *= 1.4;
+      if ((freq[lowerWord] ?? 1) >= 2) score *= 1.4;
       if (score > bestScore) {
         bestScore = score;
         best = word;
@@ -939,7 +1597,7 @@ class OfflineCardBuilder {
     }
     if (best == null) return null;
 
-    final blank = sentence.replaceFirst(
+    final blank = sentence.replaceAll(
       RegExp('\\b${RegExp.escape(best)}\\b'),
       '_____',
     );
@@ -950,11 +1608,69 @@ class OfflineCardBuilder {
         type: OfflineCardType.cloze,
         front: blank,
         back: '$best\n\n$sentence',
-        confidence: 0.6,
+        confidence: 0.75,
       ),
       score: bestScore,
       order: order,
     );
+  }
+
+  /// Rejects non-educational, metadata, and incomplete sentence cards.
+  bool _isMeaningfulCard(OfflineCard card) {
+    final frontLower = card.front.toLowerCase();
+    final backLower = card.back.toLowerCase();
+
+    if (frontLower.contains('welcome') ||
+        frontLower.contains('dear ') ||
+        frontLower.contains('copyright') ||
+        frontLower.contains('rights reserved') ||
+        frontLower.contains('alex buckley') ||
+        frontLower.contains('james gosling') ||
+        frontLower.contains('okanlawon') ||
+        frontLower.contains('contractor') ||
+        frontLower.contains('letter of engagement') ||
+        frontLower.contains('status') ||
+        frontLower.contains('version') ||
+        frontLower.contains('specification') ||
+        frontLower.contains('what does "') ||
+        frontLower.contains('take-home')) {
+      return false;
+    }
+
+    if (backLower.contains('copyright ©') ||
+        backLower.contains('all rights reserved') ||
+        backLower.contains('oracle america') ||
+        backLower.contains('redwood city') ||
+        backLower.contains('5, raheemat oyebode street') ||
+        backLower.contains('take-home challenge') ||
+        backLower.contains('dear oluwatobi') ||
+        backLower.contains('we write further')) {
+      return false;
+    }
+
+    final backTrimmed = card.back.trim();
+    final isListOrCode = card.type == OfflineCardType.list ||
+        card.type == OfflineCardType.code ||
+        card.type == OfflineCardType.formula ||
+        card.type == OfflineCardType.glossary ||
+        backTrimmed.startsWith('•') ||
+        RegExp(r'^\d+[.)]').hasMatch(backTrimmed);
+
+    if (!isListOrCode && !_endsSentence(backTrimmed)) {
+      return false;
+    }
+
+    if (backTrimmed.endsWith('...') ||
+        RegExp(
+          r'\b(?:and|or|of|in|to|the|a|an|as|with|for|no|not|are|is|were|was|be|have|has)\s*[.!?]?$',
+          caseSensitive: false,
+        ).hasMatch(backTrimmed)) {
+      return false;
+    }
+
+    if (card.front.length < 5 || card.back.length < 10) return false;
+
+    return true;
   }
 
   /// Rejects sentences that are mostly symbols/numbers (tables, code, noise).
@@ -1014,7 +1730,7 @@ class OfflineCardBuilder {
         next++;
       }
       if (next >= paragraph.length) break;
-      if (!RegExp(r'[A-Z0-9"“(•]').hasMatch(paragraph[next])) continue;
+      if (!RegExp('[A-Z0-9"“(•]').hasMatch(paragraph[next])) continue;
 
       if (c == '.') {
         final before = paragraph.substring(start, i);

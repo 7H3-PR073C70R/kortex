@@ -1,14 +1,18 @@
+// ignore_for_file: avoid_print, document_ignores
+
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/synthesis/schema_serializer.dart';
 
 /// Characterization harness for the offline (no-server) card synthesis.
 ///
-/// It dumps the cards produced for each fixture so quality can be reviewed
-/// and compared before/after the offline fallback rewrite.
+/// It outputs the real JSON solution conforming to PedagogicalDeckSchema
+/// ready to be synced directly to the database.
 void main() {
   const service = DocumentParserService();
+  const serializer = SchemaSerializer();
   final dir = Directory('test/fixtures/ingestion');
 
   final textFixtures = dir
@@ -32,16 +36,26 @@ void main() {
         fullText: text,
         filename: name,
       );
-      final out = StringBuffer('\n===== $name: ${cards.length} cards =====\n');
-      for (final c in cards.take(12)) {
-        out
-          ..writeln('Q: ${c.topic}')
-          ..writeln('A: ${c.rawText}')
-          ..writeln('---');
-      }
-      // ignore: avoid_print
-      print(out);
+
+      final cleanName = name.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
+      final deck = serializer.fromExtractionModels(
+        deckId: 'deck_${name.replaceAll(RegExp('[^a-zA-Z0-9]'), '_')}',
+        deckTitle: cleanName,
+        subject: name.toLowerCase().contains('bio')
+            ? 'Biology'
+            : (name.toLowerCase().contains('flutter')
+                ? 'Flutter'
+                : 'Computer Science'),
+        category: 'Study',
+        models: cards,
+      );
+
+      print('\n===== $name: ${deck.totalCards} cards (PedagogicalDeckSchema) =====\n');
+      print(deck.toPrettyJson());
+
       expect(cards, isNotNull);
+      expect(deck.cards, isNotEmpty);
+      expect(deck.schemaVersion, equals('1.0.0'));
     });
   }
 }
