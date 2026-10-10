@@ -11,6 +11,7 @@ import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/data/client/ingestion_api_client.dart';
+import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
 import 'package:kortex/src/features/ingestion/data/models/document_upload_model.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
@@ -495,17 +496,38 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     String? extractedText;
     if (fileBytes != null && fileBytes.isNotEmpty) {
       try {
-        if (isPdf) {
-          extractedText = await _pdfParserService.extractText(
-            fileBytes,
-            filename: filename,
-          );
-        } else {
-          extractedText = _parserService.extractTextFromBytes(
-            fileBytes,
-            fileType: fileType,
-            filename: filename,
-          );
+        final lowerExt = fileType.replaceAll('.', '').toLowerCase();
+        final isImage = ['png', 'jpg', 'jpeg', 'webp'].contains(lowerExt) ||
+            storagePath.toLowerCase().endsWith('.png') ||
+            storagePath.toLowerCase().endsWith('.jpg') ||
+            storagePath.toLowerCase().endsWith('.jpeg') ||
+            filename.toLowerCase().endsWith('.png') ||
+            filename.toLowerCase().endsWith('.jpg') ||
+            filename.toLowerCase().endsWith('.jpeg');
+
+        if (isImage) {
+          try {
+            const mlkitClient = LocalMlkitOcrClient();
+            final blocks = await mlkitClient.processImageBytes(fileBytes);
+            if (blocks.isNotEmpty) {
+              extractedText = blocks.map((b) => b.text).join('\n\n');
+            }
+          } on Object catch (_) {}
+        }
+
+        if (extractedText == null || extractedText.trim().isEmpty) {
+          if (isPdf) {
+            extractedText = await _pdfParserService.extractText(
+              fileBytes,
+              filename: filename,
+            );
+          } else {
+            extractedText = _parserService.extractTextFromBytes(
+              fileBytes,
+              fileType: fileType,
+              filename: filename,
+            );
+          }
         }
       } on Object catch (_) {}
     }

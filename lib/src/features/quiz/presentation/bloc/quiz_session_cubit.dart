@@ -925,13 +925,18 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
             final isPerfect = quizResult.scorePercent >= 100;
             final isHigh = quizResult.scorePercent >= 80;
             final bonus = isPerfect ? 100 : (isHigh ? 50 : 0);
+            final customBase =
+                state.assessmentMode == AssessmentMode.millionaireMode
+                    ? (state.isWalkedAway || state.isSoftFailed
+                        ? state.bankedTierPrizeXp
+                        : state.currentTierPrizeXp)
+                    : XpActivityCategory.quizCompletion.defaultBaseXp +
+                        (quizResult.correctAnswers * 15) +
+                        bonus;
             unawaited(
               locator<UserActivityService>().awardXp(
                 XpActivityCategory.quizCompletion,
-                customBaseAmount:
-                    XpActivityCategory.quizCompletion.defaultBaseXp +
-                    (quizResult.correctAnswers * 15) +
-                    bonus,
+                customBaseAmount: customBase,
                 sourceId: quizResult.quizTitle,
                 metadata: {
                   'quizTitle': quizResult.quizTitle,

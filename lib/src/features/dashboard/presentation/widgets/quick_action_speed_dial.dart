@@ -14,7 +14,6 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -154,136 +153,9 @@ class QuickActionSpeedDial extends StatelessWidget {
   }
 
   void _showUploadBottomSheet(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
-    final isDark = context.isDarkMode;
-
     unawaited(
-      AppAdaptiveSheet.showModal<void>(
-        context: context,
-        builder: (context) {
-          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
-          return Align(
-            alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: ClipRRect(
-                borderRadius: isDesktop
-                    ? BorderRadius.circular(AppRadius.dialog)
-                    : const BorderRadius.vertical(
-                        top: Radius.circular(AppRadius.dialog),
-                      ),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                  child: Container(
-                    padding: EdgeInsets.fromLTRB(
-                      24,
-                      isDesktop ? 24 : 16,
-                      24,
-                      32,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? colors.surfaceSecondary.withAlpha(240)
-                          : colors.surfacePrimary.withAlpha(245),
-                      borderRadius: isDesktop
-                          ? BorderRadius.circular(AppRadius.dialog)
-                          : const BorderRadius.vertical(
-                              top: Radius.circular(AppRadius.dialog),
-                            ),
-                      border: Border.all(
-                        color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
-                      ),
-                      boxShadow: isDesktop
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 28,
-                                offset: const Offset(0, 14),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!isDesktop) ...[
-                          // Handle
-                          Container(
-                            width: 36,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: colors.textMuted.withAlpha(100),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.micro,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                        ],
-
-                        Text(
-                          l10n.dashboardIngestTitle,
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          l10n.dashboardIngestSubtitle,
-                          textAlign: TextAlign.center,
-                          style: typography.footnote.regular.copyWith(
-                            color: colors.textSecondary,
-                            height: 1.35,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Upload options
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _UploadOptionCard(
-                                icon: Icons.picture_as_pdf_rounded,
-                                title: l10n.dashboardUploadPdf,
-                                subtitle: l10n.dashboardLectureSlides,
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  unawaited(
-                                    context.router.push(
-                                      DocumentIngestionRoute(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _UploadOptionCard(
-                                icon: Icons.camera_alt_rounded,
-                                title: l10n.dashboardScanNotes,
-                                subtitle: l10n.dashboardStemOcr,
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  unawaited(
-                                    context.router.push(
-                                      DocumentIngestionRoute(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+      context.router.push(
+        DocumentIngestionRoute(),
       ),
     );
   }
@@ -345,76 +217,6 @@ class _ActionItem extends StatelessWidget {
           );
         },
       ),
-    );
-  }
-}
-
-class _UploadOptionCard extends StatelessWidget {
-  const _UploadOptionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    return PlatformHoverBuilder(
-      builder: (context, isHovered, child) {
-        return ShrinkableButton(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: AppMotion.snappy,
-            curve: AppMotion.easeOutCubic,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? (isHovered
-                        ? colors.surfacePrimary.withAlpha(200)
-                        : colors.surfacePrimary.withAlpha(160))
-                  : (isHovered
-                        ? colors.surfaceSecondary.withAlpha(210)
-                        : colors.surfaceSecondary.withAlpha(160)),
-              borderRadius: BorderRadius.circular(AppRadius.panel),
-              border: Border.all(
-                color: isHovered
-                    ? colors.primary.withAlpha(isDark ? 110 : 80)
-                    : colors.surfaceBorder.withAlpha(isDark ? 50 : 30),
-              ),
-            ),
-            child: Column(
-              children: [
-                Icon(icon, size: 28, color: colors.primary),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  style: typography.caption.bold.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: typography.footnote.regular.copyWith(
-                    color: colors.textMuted,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

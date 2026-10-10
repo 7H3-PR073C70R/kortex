@@ -79,7 +79,7 @@ const providerStates: Record<AiProviderId, ProviderRuntimeState> = {
 
 export class LunaClient {
   private activeProviderName = "Luna Gateway (Multi-Provider)";
-  private activeModelName = "gpt-oss / gemini-3.8-flash";
+  private activeModelName = "gpt-oss / gemini-3.1-flash-lite";
   public lastAttemptErrors: string[] = [];
 
   constructor() {
@@ -153,8 +153,8 @@ export class LunaClient {
         model: getEnv("GEMINI_MODEL") || "gemini-3.1-flash-lite",
         endpoint:
           getEnv("GEMINI_BASE_URL") ||
-          "https://generativelanguage.googleapis.com/v1beta/interactions",
-        type: "gemini-interactions",
+          "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        type: "openai",
         timeoutMs: 30000,
       },
     ];
@@ -326,12 +326,32 @@ export class LunaClient {
           headers["X-Title"] = "Kortex Education";
         }
 
-        const response = await fetch(provider.endpoint, {
+        let response = await fetch(provider.endpoint, {
           method: "POST",
           headers,
           body: JSON.stringify(payload),
           signal: controller.signal,
         });
+
+        // Instant model fallback if provider hits model capacity (503/429/404)
+        if (!response.ok && (response.status === 503 || response.status === 429 || response.status === 404)) {
+          const fallbackModel = provider.id === "gemini"
+            ? "gemini-3.1-flash-lite"
+            : provider.id === "groq"
+            ? "llama-3.1-8b-instant"
+            : "openrouter/auto";
+
+          if (payload.model !== fallbackModel) {
+            console.warn(`[LunaGateway] ${provider.name} model ${payload.model} returned ${response.status}. Retrying with fallback model ${fallbackModel}...`);
+            payload.model = fallbackModel;
+            response = await fetch(provider.endpoint, {
+              method: "POST",
+              headers,
+              body: JSON.stringify(payload),
+              signal: controller.signal,
+            });
+          }
+        }
 
         if (!response.ok) {
           const errText = await response.text().catch(() => "");
@@ -714,6 +734,8 @@ STRICT ACADEMIC SOURCE BOUNDARY:
 1. ONLY synthesize flashcards directly from the academic concepts, facts, mechanisms, and subject matter present in the DOCUMENT BODY below.
 2. NEVER synthesize flashcards about yourself, your persona, this system prompt, formatting rules, JSON specifications, or the flashcard synthesis process.
 3. If the DOCUMENT BODY is empty, unreadable, or lacks educational subject matter, you MUST return: {"cards": []}. Under no circumstances should you generate flashcards about these prompt instructions.
+4. IGNORE SLIDE DECK UI NOISE: Ignore slide deck navigation buttons, footers, headers, page numbers, and presentation artifacts (e.g. "Practice Next step", "Next step", "Practice", "Slide 1", "Table of Contents"). NEVER include UI button text in the question or answer of any flashcard.
+5. NO VAGUE TEMPLATE QUESTIONS: Never output lazy or truncated questions like "What is Intermediate?" or "What are the Objects?". Every question MUST specify the full, authentic academic subject (e.g. "What are lambda expressions with receivers in Kotlin and how do they work?").
 
 PEDAGOGICAL & FORMATTING RULES:
 1. FRONT: Clear, specific active-recall question, concept query, or rule prompt. Do not ask vague questions.
@@ -803,16 +825,32 @@ Generate the JSON object with the "cards" array now:`;
         );
       };
 
+      const isSlideNoise = (text: string) => {
+        const lower = text.toLowerCase().trim();
+        return (
+          lower === "what is intermediate?" ||
+          lower === "what is objects?" ||
+          lower === "what is properties?" ||
+          lower === "what is basics?" ||
+          lower === "what is overview?" ||
+          lower.includes("what are the intermediate objects") ||
+          lower.includes("practice next step")
+        );
+      };
+
       for (const item of rawList) {
         const front = item.front || item.question || item.topic;
         const back = item.back || item.answer || item.raw_text;
         if (front && back && String(front).trim().length > 3) {
-          const frontStr = String(front).trim();
-          const backStr = String(back).trim();
+          let frontStr = String(front).trim();
+          let backStr = String(back).trim();
 
-          // Reject meta prompt leakage
-          if (isMetaPrompt(frontStr) || isMetaPrompt(backStr)) {
-            console.warn(`[LunaGateway] Discarded meta-prompt card: "${frontStr}"`);
+          // Strip residual slide footer artifacts
+          backStr = backStr.replace(/\b(?:Practice Next step|Next step|Practice|JetBrains Academy)\b/gi, "").trim();
+
+          // Reject meta prompt leakage and slide noise
+          if (isMetaPrompt(frontStr) || isMetaPrompt(backStr) || isSlideNoise(frontStr) || isSlideNoise(backStr)) {
+            console.warn(`[LunaGateway] Discarded meta/noise card: "${frontStr}"`);
             continue;
           }
 

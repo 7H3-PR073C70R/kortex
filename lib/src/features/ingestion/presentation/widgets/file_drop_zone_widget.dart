@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:crypto/crypto.dart';
 import 'package:desktop_drop/desktop_drop.dart';
@@ -536,7 +537,9 @@ class FileDropZoneWidget extends HookWidget {
         }
       },
       child: Semantics(
-        label: l10n.dragAndDropHint,
+        label: Platform.isAndroid || Platform.isIOS
+            ? 'Tap to upload PDF, PPTX, or image files.'
+            : l10n.dragAndDropHint,
         button: true,
         child: GestureDetector(
           onTap: handlePickFile,
@@ -591,7 +594,9 @@ class FileDropZoneWidget extends HookWidget {
 
                   // Title & Hint
                   Text(
-                    l10n.dragAndDropHint,
+                    Platform.isAndroid || Platform.isIOS
+                        ? 'Tap to upload PDF, PPTX, or image files.'
+                        : l10n.dragAndDropHint,
                     textAlign: TextAlign.center,
                     style: typography.title3.bold.copyWith(
                       color: colors.textPrimary,
@@ -740,7 +745,8 @@ class FileDropZoneWidget extends HookWidget {
                       // Camera Scanner Button (Supported on iOS & Android only)
                       if (!kIsWeb &&
                           (defaultTargetPlatform == TargetPlatform.iOS ||
-                              defaultTargetPlatform == TargetPlatform.android) &&
+                              defaultTargetPlatform ==
+                                  TargetPlatform.android) &&
                           onCameraScanTap != null)
                         PlatformHoverBuilder(
                           builder: (context, isHovered, child) {

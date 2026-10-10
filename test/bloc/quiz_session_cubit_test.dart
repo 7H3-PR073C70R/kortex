@@ -537,6 +537,11 @@ void main() {
           expect(cubit.state.currentIndex, 0);
         },
       );
+
+      test('millionaire max tier XP is capped at 500 XP', () {
+        expect(QuizSessionState.millionaireTiersXp.last, equals(500));
+        expect(QuizSessionState.millionaireTiersXp.length, equals(12));
+      });
     });
   });
 }

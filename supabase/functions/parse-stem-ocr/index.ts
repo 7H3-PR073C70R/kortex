@@ -201,7 +201,12 @@ serve(async (req) => {
       });
       parsedDoc.images = parsedFromFile.images;
       parsedDoc.isScannedOrImage = parsedFromFile.isScannedOrImage;
-      if (parsedFromFile.fullText && !parsedFromFile.fullText.startsWith("[Scanned") && parsedFromFile.fullText.length > (extractedText?.length ?? 0)) {
+      if (
+        parsedFromFile.fullText &&
+        !parsedFromFile.fullText.startsWith("[Scanned") &&
+        !parsedFromFile.fullText.startsWith("[Visual") &&
+        parsedFromFile.fullText.length > (extractedText?.length ?? 0)
+      ) {
         parsedDoc.fullText = parsedFromFile.fullText;
         parsedDoc.sections = parsedFromFile.sections;
       }
@@ -213,12 +218,12 @@ serve(async (req) => {
       parsedDoc.sections = parser.segmentIntoSections(parsedDoc.fullText, cleanDeckTitle);
     }
 
-    if (parsedDoc.sections.length === 0 && parsedDoc.fullText.trim().length > 0 && !parsedDoc.fullText.startsWith("[Scanned")) {
+    if (parsedDoc.sections.length === 0 && parsedDoc.fullText.trim().length > 0 && !parsedDoc.fullText.startsWith("[Scanned") && !parsedDoc.fullText.startsWith("[Visual")) {
       parsedDoc.sections = parser.segmentIntoSections(parsedDoc.fullText, cleanDeckTitle);
     }
 
     if (
-      parsedDoc.sections.length === 0 &&
+      (parsedDoc.sections.length === 0 || parsedDoc.fullText.startsWith("[Visual") || parsedDoc.fullText.startsWith("[Scanned")) &&
       parsedDoc.isScannedOrImage &&
       parsedDoc.images.length > 0
     ) {
@@ -260,14 +265,14 @@ serve(async (req) => {
       tags: string[];
     }> = [];
 
-    // Group document sections into logical chunks (~30,000 characters per chunk)
-    // to process the entire document regardless of page count (e.g. 1500 pages)
+    // Group document sections into logical chunks (~6,000 characters per chunk)
+    // to ensure fast AI response times (< 4 seconds per chunk) well within timeout limits
     const sectionChunks: Array<{ title: string; content: string }> = [];
     if (parsedDoc.sections.length > 0) {
       let currentTitle = parsedDoc.sections[0].title || cleanDeckTitle;
       let currentText = "";
       for (const sec of parsedDoc.sections) {
-        if (currentText.length + sec.text.length > 30000 && currentText.length > 0) {
+        if (currentText.length + sec.text.length > 6000 && currentText.length > 0) {
           sectionChunks.push({ title: currentTitle, content: currentText });
           currentTitle = sec.title || cleanDeckTitle;
           currentText = sec.text;
@@ -280,10 +285,10 @@ serve(async (req) => {
       }
     } else if (parsedDoc.fullText.trim().length > 0 && !parsedDoc.fullText.startsWith("[Scanned")) {
       const fullStr = parsedDoc.fullText.trim();
-      for (let offset = 0; offset < fullStr.length; offset += 30000) {
+      for (let offset = 0; offset < fullStr.length; offset += 6000) {
         sectionChunks.push({
-          title: `${cleanDeckTitle} (Part ${Math.floor(offset / 30000) + 1})`,
-          content: fullStr.slice(offset, offset + 30000),
+          title: `${cleanDeckTitle} (Part ${Math.floor(offset / 6000) + 1})`,
+          content: fullStr.slice(offset, offset + 6000),
         });
       }
     }
@@ -352,8 +357,20 @@ serve(async (req) => {
 
         const items = sec.text
           .split(/\n+/)
-          .map((p) => p.trim())
-          .filter((p) => p.length >= 10 && !p.startsWith("["));
+          .map((p) => p.replace(/\b(?:Practice Next step|Next step|Practice|JetBrains Academy)\b/gi, "").trim())
+          .filter((p) => {
+            const lower = p.toLowerCase();
+            return (
+              p.length >= 15 &&
+              !p.startsWith("[") &&
+              lower !== "intermediate" &&
+              lower !== "objects" &&
+              lower !== "properties" &&
+              lower !== "basics" &&
+              lower !== "overview" &&
+              !lower.includes("practice next step")
+            );
+          });
 
         if (items.length > 0 && !isDescriptorSection) {
           for (let pIdx = 0; pIdx < Math.min(25, items.length); pIdx++) {

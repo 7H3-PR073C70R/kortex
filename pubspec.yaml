@@ -84,6 +84,7 @@ dependencies:
   record: ^6.2.1
   flutter_animate: ^4.5.2
   desktop_drop: ^0.8.4
+  camera: ^0.12.0+2
 
 dev_dependencies:
   auto_route_generator: ^10.5.0

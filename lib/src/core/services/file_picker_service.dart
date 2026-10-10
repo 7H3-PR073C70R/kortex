@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:logger/logger.dart';
@@ -28,6 +29,11 @@ class FilePickerService {
 
   final log = Logger();
 
+  bool get _isMobile =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
+
   /// Picks a document file (PDF, PPTX, image, TXT, etc.) and reads its raw bytes.
   Future<PickedDocument?> pickStudyDocument({
     List<String> extensions = const [
@@ -55,6 +61,14 @@ class FilePickerService {
             (file.name.contains('.')
                 ? file.name.split('.').last.toLowerCase()
                 : '');
+
+        final isImageExt = ['png', 'jpg', 'jpeg', 'webp'].contains(ext);
+        if (isImageExt && !_isMobile) {
+          throw const FormatException(
+            'Image scanning and photo upload are only supported on Android and iOS devices. '
+            'Please upload a PDF, PPTX, TXT, or DOCX study document.',
+          );
+        }
 
         if (extensions.isNotEmpty &&
             ext.isNotEmpty &&
@@ -86,8 +100,10 @@ class FilePickerService {
     }
   }
 
-  /// Captures a photo using the device camera.
+  /// Captures a photo using the device camera (Mobile Android/iOS only).
   Future<PickedDocument?> captureCameraPhoto() async {
+    if (!_isMobile) return null;
+
     try {
       final picker = ImagePicker();
       final photo = await picker.pickImage(
@@ -119,6 +135,7 @@ class FilePickerService {
 
   /// Picks an image from the gallery.
   Future<PickedDocument?> pickImageFromGallery() async {
+    if (!_isMobile) return null;
     try {
       final photo = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (photo != null) {
@@ -143,6 +160,7 @@ class FilePickerService {
 
   /// Picks multiple images from the device photo gallery.
   Future<List<PickedDocument>> pickMultipleImagesFromGallery() async {
+    if (!_isMobile) return [];
     try {
       final picker = ImagePicker();
       final photos = await picker.pickMultiImage(

@@ -1103,7 +1103,27 @@ class DocumentParserService {
     }
 
     // 12. Short Concept / Subject Noun: "Mitosis", "Timeframes", "Cellular Respiration"
-    if (_isValidSubjectNoun(clean)) {
+    const genericNoiseNouns = {
+      'intermediate',
+      'advanced',
+      'beginner',
+      'basics',
+      'overview',
+      'introduction',
+      'summary',
+      'objects',
+      'properties',
+      'functions',
+      'methods',
+      'variables',
+      'types',
+      'practice',
+      'next step',
+      'contents',
+    };
+
+    final cleanLower = clean.toLowerCase();
+    if (_isValidSubjectNoun(clean) && !genericNoiseNouns.contains(cleanLower)) {
       final prefix =
           structuralPrefixMatch != null &&
               !clean.toLowerCase().contains(
@@ -1125,18 +1145,18 @@ class DocumentParserService {
     if (sentences.isNotEmpty) {
       final firstSentence = sentences.first.trim();
       final defInFirst = RegExp(
-        r"^([A-Z][a-zA-Z0-9\s']{2,40})\s+(?:is|are|refers to|represents)\s+(.+)$",
+        r"^([A-Z][a-zA-Z0-9\s']{2,40})\s+(?:is|are|refers to|represents|allows|enables)\s+(.+)$",
         caseSensitive: false,
       ).firstMatch(firstSentence);
       if (defInFirst != null) {
         final subject = defInFirst.group(1)!.trim();
-        if (_isValidSubjectNoun(subject)) {
+        if (_isValidSubjectNoun(subject) && !genericNoiseNouns.contains(subject.toLowerCase())) {
           return 'What is $subject and what does it represent?';
         }
       }
     }
 
-    if (_isValidSubjectNoun(clean)) {
+    if (_isValidSubjectNoun(clean) && !genericNoiseNouns.contains(cleanLower)) {
       return 'What are the key concepts and principles of $clean?';
     }
     return null;
@@ -1152,7 +1172,7 @@ class DocumentParserService {
     if (words.length < 3) return false;
 
     final lower = q.toLowerCase();
-    // Strictly prohibit broken automated template injections
+    // Strictly prohibit broken automated template injections & generic slide noise questions
     if (lower.contains('what is the?') ||
         lower.contains('what is a?') ||
         lower.contains('what is an?') ||
@@ -1161,7 +1181,18 @@ class DocumentParserService {
         lower.contains('what is key concept') ||
         lower.contains('what is confirmation.?') ||
         lower.contains('what is -') ||
-        lower.contains('what is .')) {
+        lower.contains('what is .') ||
+        lower == 'what is intermediate?' ||
+        lower == 'what is objects?' ||
+        lower == 'what is properties?' ||
+        lower == 'what is basics?' ||
+        lower == 'what is overview?' ||
+        lower == 'what is introduction?' ||
+        lower == 'what is summary?' ||
+        lower.contains('what are the intermediate objects') ||
+        lower.contains('what are the intermediate properties') ||
+        lower.contains('practice next step') ||
+        lower.contains('next step')) {
       return false;
     }
 
@@ -1313,6 +1344,36 @@ class DocumentParserService {
       'notes',
       'tip',
       'tips',
+      'intermediate',
+      'advanced',
+      'beginner',
+      'basics',
+      'basic',
+      'introduction',
+      'overview',
+      'summary',
+      'objects',
+      'properties',
+      'functions',
+      'methods',
+      'variables',
+      'types',
+      'practice',
+      'next',
+      'previous',
+      'back',
+      'home',
+      'next step',
+      'practice next step',
+      'contents',
+      'exercise',
+      'exercises',
+      'quiz',
+      'test',
+      'slide',
+      'slides',
+      'page',
+      'pages',
     };
 
     if (invalidTokens.contains(lower)) return false;
@@ -1345,23 +1406,54 @@ class DocumentParserService {
 
     const noiseKeywords = [
       'table of contents',
+      'table of content',
       'acknowledgment',
       'acknowledgement',
+      'acknowledgments',
+      'acknowledgements',
       'preface',
       'foreword',
       'dedication',
       'about the author',
       'about the contributors',
       'about the reviewers',
+      'about the editors',
       'copyright',
       'all rights reserved',
       'terms of service',
       'privacy policy',
       'license agreement',
+      'references',
+      'reference list',
+      'bibliography',
+      'works cited',
+      'literature cited',
+      'citations',
+      'subject index',
+      'author index',
+      'practice next step',
+      'next step',
+      'practice',
+      'intermediate',
+      'advanced',
+      'beginner',
+      'basics',
+      'overview',
+      'introduction',
+      'summary',
+      'contents',
+      'objects',
+      'properties',
     ];
 
     for (final k in noiseKeywords) {
-      if (lower.contains(k)) return true;
+      if (lower == k || lower.startsWith('$k ') || lower.startsWith('$k:') || lower.endsWith(' $k')) {
+        return true;
+      }
+    }
+
+    if (lower == 'index' || lower == 'references' || lower == 'bibliography' || lower == 'intermediate' || lower == 'objects' || lower == 'properties') {
+      return true;
     }
 
     return false;
@@ -1372,6 +1464,14 @@ class DocumentParserService {
     final clean = text.trim();
     if (clean.isEmpty) return true;
     final lower = clean.toLowerCase();
+
+    // Slide navigation & UI button artifacts
+    if (RegExp(
+      r'^(?:practice next step|next step|practice|previous|next|slide \d+(?: of \d+)?|page \d+(?: of \d+)?|jetbrains academy|click here|tap here)\b',
+      caseSensitive: false,
+    ).hasMatch(lower) || lower.contains('practice next step') || lower == 'next step') {
+      return true;
+    }
 
     // Check for web domains (e.g. .com, .net, .org, .io, .app)
     if (RegExp(
@@ -1433,8 +1533,17 @@ class DocumentParserService {
         )
         .trim();
 
-    // Strip URLs
+    // Strip URLs and slide deck UI button artifacts
     text = text.replaceAll(RegExp(r'https?://\S+|www\.\S+'), '');
+    text = text
+        .replaceAll(
+          RegExp(
+            r'\b(?:Practice Next step|Next step|Practice|Previous|Next|JetBrains Academy|Slide \d+(?: of \d+)?|Page \d+(?: of \d+)?)\b',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .trim();
 
     // Protect fenced code blocks from markdown symbol stripping and whitespace collapse
     final codeBlocks = <String>[];

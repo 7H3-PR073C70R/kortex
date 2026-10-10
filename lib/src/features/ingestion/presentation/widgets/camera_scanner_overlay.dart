@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -35,11 +36,51 @@ class CameraScannerOverlay extends HookWidget {
 
     final capturedPhotos = useState<List<PickedDocument>>([]);
     final isCapturing = useState<bool>(false);
+    final cameraControllerState = useState<CameraController?>(null);
+    final isCameraInitialized = useState<bool>(false);
 
     useEffect(() {
       unawaited(laserController.repeat(reverse: true));
       return null;
     }, [laserController]);
+
+    useEffect(() {
+      var isMounted = true;
+      CameraController? controller;
+
+      Future<void> initCamera() async {
+        try {
+          final cameras = await availableCameras();
+          if (cameras.isEmpty) return;
+
+          final backCamera = cameras.firstWhere(
+            (cam) => cam.lensDirection == CameraLensDirection.back,
+            orElse: () => cameras.first,
+          );
+
+          controller = CameraController(
+            backCamera,
+            ResolutionPreset.high,
+            enableAudio: false,
+          );
+
+          await controller!.initialize();
+          if (isMounted) {
+            cameraControllerState.value = controller;
+            isCameraInitialized.value = true;
+          }
+        } on Object catch (_) {
+          // Fallback to FilePickerService image_picker if live camera fails to initialize
+        }
+      }
+
+      unawaited(initCamera());
+
+      return () {
+        isMounted = false;
+        unawaited(controller?.dispose());
+      };
+    }, []);
 
     FilePickerService getService() {
       return locator.isRegistered<FilePickerService>()
@@ -53,7 +94,23 @@ class CameraScannerOverlay extends HookWidget {
       unawaited(HapticFeedback.heavyImpact());
 
       try {
-        final photo = await getService().captureCameraPhoto();
+        PickedDocument? photo;
+        final controller = cameraControllerState.value;
+
+        if (controller != null && controller.value.isInitialized) {
+          final xFile = await controller.takePicture();
+          final bytes = await xFile.readAsBytes();
+          final ext = xFile.name.split('.').last.toLowerCase();
+          photo = PickedDocument(
+            name: xFile.name,
+            extension: ext.isNotEmpty ? ext : 'jpg',
+            bytes: bytes,
+            path: xFile.path,
+          );
+        } else {
+          photo = await getService().captureCameraPhoto();
+        }
+
         if (photo != null && photo.bytes.isNotEmpty) {
           capturedPhotos.value = [...capturedPhotos.value, photo];
         }
@@ -106,9 +163,41 @@ class CameraScannerOverlay extends HookWidget {
     }
 
     return Scaffold(
-      backgroundColor: colors.black.withAlpha(235),
+      backgroundColor: colors.black,
       body: Stack(
         children: [
+          // Live Camera Stream Background
+          if (isCameraInitialized.value &&
+              cameraControllerState.value != null &&
+              cameraControllerState.value!.value.isInitialized)
+            Positioned.fill(
+              child: ClipRect(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width:
+                        cameraControllerState
+                            .value!
+                            .value
+                            .previewSize
+                            ?.height ??
+                        1,
+                    height:
+                        cameraControllerState.value!.value.previewSize?.width ??
+                        1,
+                    child: CameraPreview(cameraControllerState.value!),
+                  ),
+                ),
+              ),
+            ),
+
+          // Dark overlay tint
+          Positioned.fill(
+            child: Container(
+              color: colors.black.withAlpha(140),
+            ),
+          ),
+
           // Clear See-Through Camera Viewfinder Target Area
           Center(
             child: ConstrainedBox(

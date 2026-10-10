@@ -610,8 +610,36 @@ Contains study material, diagram, or formula sheet. Synthesize active-recall fla
       }
     }
 
-    return sections.length > 0
-      ? sections
+    const isNonEducationalSection = (t: string) => {
+      const lower = t.toLowerCase().trim();
+      return (
+        lower.startsWith("table of contents") ||
+        lower.startsWith("contents") ||
+        lower.startsWith("acknowledgment") ||
+        lower.startsWith("acknowledgement") ||
+        lower.startsWith("acknowledgements") ||
+        lower.startsWith("preface") ||
+        lower.startsWith("foreword") ||
+        lower.startsWith("dedication") ||
+        lower.startsWith("about the author") ||
+        lower.startsWith("copyright") ||
+        lower.startsWith("references") ||
+        lower.startsWith("reference list") ||
+        lower.startsWith("bibliography") ||
+        lower.startsWith("works cited") ||
+        lower.startsWith("literature cited") ||
+        lower.startsWith("index") ||
+        lower.startsWith("subject index") ||
+        lower === "references" ||
+        lower === "index" ||
+        lower === "bibliography"
+      );
+    };
+
+    const filteredSections = sections.filter((s) => !isNonEducationalSection(s.title));
+
+    return filteredSections.length > 0
+      ? filteredSections
       : [{ title: defaultTitle, text: fullText, index: 1 }];
   }
 

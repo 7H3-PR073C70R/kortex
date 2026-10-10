@@ -153,18 +153,18 @@ class QuizSessionState extends Equatable {
 
   // --- Millionaire Ladder Constants & Helpers ---
   static const List<int> millionaireTiersXp = [
+    10,
+    20,
+    35,
+    50,
+    75,
     100,
+    150,
     200,
-    300,
+    275,
+    350,
+    425,
     500,
-    1000,
-    2000,
-    4000,
-    8000,
-    16000,
-    32000,
-    64000,
-    125000,
   ];
 
   static const Set<int> safeCheckpointTiers = {4, 8};

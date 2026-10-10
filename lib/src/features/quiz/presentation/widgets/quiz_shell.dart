@@ -1134,7 +1134,7 @@ class QuizMillionaireNotice extends StatelessWidget {
           const SizedBox(width: 9),
           Expanded(
             child: Text(
-              '12 Questions · Fixed ladder from ₦5,000 to ₦10,000,000',
+              '12 Questions · Fixed ladder',
               style: typography.caption.bold.copyWith(
                 color: colors.warning,
                 fontSize: 11.5,

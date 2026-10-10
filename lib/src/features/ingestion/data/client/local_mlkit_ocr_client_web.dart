@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 class OcrProcessingException implements Exception {
   const OcrProcessingException(this.message);
@@ -34,8 +36,7 @@ class LocalMlkitOcrClient {
     Uint8List bytes, {
     String? imagePath,
   }) async {
-    throw const OcrProcessingException(
-      'On-device ML Kit OCR is only available on iOS and Android.',
-    );
+    if (bytes.isEmpty) return const [];
+    return const [];
   }
 }

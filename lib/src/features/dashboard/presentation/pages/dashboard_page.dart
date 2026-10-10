@@ -46,7 +46,6 @@ import 'package:kortex/src/features/study_rooms/domain/entities/study_circle_ent
 import 'package:kortex/src/features/study_rooms/presentation/widgets/create_study_circle_sheet.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/study_circle_detail_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
@@ -1020,147 +1019,8 @@ class _QuickActionsGrid extends StatelessWidget {
   }
 
   void _showUploadSheet(BuildContext context) {
-    // Delegates to QuickActionSpeedDial's upload sheet logic via same modal dialog
-    final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
-    final isDark = context.isDarkMode;
     unawaited(
-      AppAdaptiveSheet.showModal<void>(
-        context: context,
-        builder: (context) {
-          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
-          return Align(
-            alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: ClipRRect(
-                borderRadius: isDesktop
-                    ? BorderRadius.circular(AppRadius.dialog)
-                    : const BorderRadius.vertical(
-                        top: Radius.circular(AppRadius.dialog),
-                      ),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                  child: Container(
-                    padding: EdgeInsets.fromLTRB(
-                      24,
-                      isDesktop ? 24 : 16,
-                      24,
-                      32,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? colors.surfaceSecondary.withAlpha(240)
-                          : colors.surfacePrimary.withAlpha(245),
-                      borderRadius: isDesktop
-                          ? BorderRadius.circular(AppRadius.dialog)
-                          : const BorderRadius.vertical(
-                              top: Radius.circular(AppRadius.dialog),
-                            ),
-                      border: Border.all(
-                        color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
-                      ),
-                      boxShadow: isDesktop
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 28,
-                                offset: const Offset(0, 14),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!isDesktop) ...[
-                          Container(
-                            width: 36,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: colors.textMuted.withAlpha(100),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.micro,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                        ],
-                        Text(
-                          l10n.dashboardIngestTitle,
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          l10n.dashboardIngestSubtitle,
-                          textAlign: TextAlign.center,
-                          style: typography.footnote.regular.copyWith(
-                            color: colors.textSecondary,
-                            height: 1.35,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        ShrinkableButton(
-                          onTap: () {
-                            Navigator.pop(context);
-                            unawaited(
-                              context.router.push(DocumentIngestionRoute()),
-                            );
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              borderRadius: AppRadius.radiusCard,
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              l10n.dashboardUploadNotes,
-                              style: typography.callout.bold.copyWith(
-                                color: colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        ShrinkableButton(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: colors.surfacePrimary.withAlpha(
-                                isDark ? 180 : 230,
-                              ),
-                              borderRadius: AppRadius.radiusCard,
-                              border: Border.all(
-                                color: colors.surfaceBorder.withAlpha(
-                                  isDark ? 50 : 30,
-                                ),
-                              ),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              l10n.cancelAction,
-                              style: typography.callout.medium.copyWith(
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+      context.router.push(DocumentIngestionRoute()),
     );
   }
 }

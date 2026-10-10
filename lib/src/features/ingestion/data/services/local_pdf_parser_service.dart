@@ -114,29 +114,9 @@ class LocalPdfParserService {
 
         final lower = pageText.toLowerCase().trim();
 
-        // Skip standard front-matter pages (Table of Contents, Dedication, Copyright)
-        if ((lower.contains('table of contents') ||
-                lower.contains('contents')) &&
-            (lower.contains('...') ||
-                lower.contains('. . .') ||
-                lower.contains('preface'))) {
-          continue;
-        }
-        if (lower.startsWith('preface') ||
-            lower.startsWith('acknowledgment') ||
-            lower.startsWith('acknowledgement') ||
-            lower.startsWith('about the author') ||
-            lower.startsWith('table of contents') ||
-            lower.startsWith('copyright ©') ||
-            lower.startsWith('all rights reserved')) {
-          continue;
-        }
-
-        final dotLines = pageText
-            .split('\n')
-            .where((l) => RegExp(r'\.{3,}|\.\s*\.\s*\.').hasMatch(l))
-            .length;
-        if (dotLines >= 3) {
+        // Skip non-educational front-matter and back-matter pages
+        // (Table of Contents, Acknowledgments, References, Bibliography, Index, Copyright)
+        if (_isNonEducationalPage(lower, pageText)) {
           continue;
         }
 
@@ -516,5 +496,55 @@ class LocalPdfParserService {
       filename: filename,
       imageUrls: imageUrls,
     );
+  }
+
+  /// Identifies front-matter (Table of Contents, Copyright, Acknowledgments, Prefaces)
+  /// and back-matter (References, Bibliography, Index, Citations) pages to bypass.
+  static bool _isNonEducationalPage(String lower, String rawPageText) {
+    if (lower.isEmpty) return true;
+
+    // Table of contents dot line pattern (e.g. "Chapter 1 . . . . 15")
+    final dotLines = rawPageText
+        .split('\n')
+        .where((l) => RegExp(r'\.{3,}|\.\s*\.\s*\.').hasMatch(l))
+        .length;
+    if (dotLines >= 3) return true;
+
+    // Direct front/back matter page headers or title starts
+    final startsWithNoise = lower.startsWith('preface') ||
+        lower.startsWith('foreword') ||
+        lower.startsWith('acknowledgment') ||
+        lower.startsWith('acknowledgement') ||
+        lower.startsWith('acknowledgements') ||
+        lower.startsWith('acknowledgments') ||
+        lower.startsWith('dedication') ||
+        lower.startsWith('about the author') ||
+        lower.startsWith('about the contributors') ||
+        lower.startsWith('table of contents') ||
+        lower.startsWith('contents') ||
+        lower.startsWith('copyright ©') ||
+        lower.startsWith('copyright') ||
+        lower.startsWith('all rights reserved') ||
+        lower.startsWith('references') ||
+        lower.startsWith('reference list') ||
+        lower.startsWith('bibliography') ||
+        lower.startsWith('works cited') ||
+        lower.startsWith('literature cited') ||
+        lower.startsWith('index') ||
+        lower.startsWith('subject index') ||
+        lower.startsWith('author index');
+
+    if (startsWithNoise) return true;
+
+    // Check if page consists mainly of reference citations or index numbers
+    if (lower.contains('references') || lower.contains('bibliography')) {
+      final lines = rawPageText.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+      final citationLines = lines.where((l) => RegExp(r'^(?:\[\d+\]|\d+\.|\b[A-Z][a-z]+,\s+[A-Z]\.).*?\(\d{4}\)').hasMatch(l)).length;
+      if (lines.isNotEmpty && (citationLines / lines.length > 0.40)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }
