@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -113,90 +114,93 @@ class SocialAuthBar extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        if (!kIsWeb) ...[
+          const SizedBox(width: 12),
 
-        // Apple ID Sign In
-        Expanded(
-          child: Semantics(
-            button: true,
-            label: l10n.authSocialAppleSemantics,
-            hint: l10n.authSocialAppleHint,
-            child: PlatformHoverBuilder(
-              isEnabled: !isLoading,
-              builder: (context, isHovered, child) {
-                return ShrinkableButton(
-                  onTap: isLoading
-                      ? null
-                      : () {
-                          unawaited(HapticFeedback.lightImpact());
-                          onApplePressed();
-                        },
-                  child: ClipRRect(
-                    borderRadius: AppRadius.radiusPanel,
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: AnimatedContainer(
-                        duration: AppMotion.snappy,
-                        curve: AppMotion.easeOutCubic,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          borderRadius: AppRadius.radiusPanel,
-                          color: isHovered
-                              ? (isDark
-                                    ? colors.surfaceSecondary.withAlpha(220)
-                                    : colors.surfacePrimary)
-                              : (isDark
-                                    ? colors.surfaceSecondary.withAlpha(180)
-                                    : colors.surfacePrimary.withAlpha(200)),
-                          border: Border.all(
+          // Apple ID Sign In
+          Expanded(
+            child: Semantics(
+              button: true,
+              label: l10n.authSocialAppleSemantics,
+              hint: l10n.authSocialAppleHint,
+              child: PlatformHoverBuilder(
+                isEnabled: !isLoading,
+                builder: (context, isHovered, child) {
+                  return ShrinkableButton(
+                    onTap: isLoading
+                        ? null
+                        : () {
+                            unawaited(HapticFeedback.lightImpact());
+                            onApplePressed();
+                          },
+                    child: ClipRRect(
+                      borderRadius: AppRadius.radiusPanel,
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: AnimatedContainer(
+                          duration: AppMotion.snappy,
+                          curve: AppMotion.easeOutCubic,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            borderRadius: AppRadius.radiusPanel,
                             color: isHovered
-                                ? colors.textPrimary.withAlpha(
-                                    isDark ? 100 : 70,
-                                  )
+                                ? (isDark
+                                      ? colors.surfaceSecondary.withAlpha(220)
+                                      : colors.surfacePrimary)
                                 : (isDark
-                                      ? colors.surfaceBorderHighlight.withAlpha(
-                                          90,
-                                        )
-                                      : colors.surfaceBorder.withAlpha(140)),
-                            width: isHovered ? 1.4 : 1.2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.black.withAlpha(
-                                isDark
-                                    ? (isHovered ? 80 : 60)
-                                    : (isHovered ? 25 : 15),
+                                      ? colors.surfaceSecondary.withAlpha(180)
+                                      : colors.surfacePrimary.withAlpha(200)),
+                            border: Border.all(
+                              color: isHovered
+                                  ? colors.textPrimary.withAlpha(
+                                      isDark ? 100 : 70,
+                                    )
+                                  : (isDark
+                                        ? colors.surfaceBorderHighlight
+                                            .withAlpha(
+                                              90,
+                                            )
+                                        : colors.surfaceBorder.withAlpha(140)),
+                              width: isHovered ? 1.4 : 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.black.withAlpha(
+                                  isDark
+                                      ? (isHovered ? 80 : 60)
+                                      : (isHovered ? 25 : 15),
+                                ),
+                                blurRadius: isHovered ? 14 : 10,
+                                offset: Offset(0, isHovered ? 4 : 3),
                               ),
-                              blurRadius: isHovered ? 14 : 10,
-                              offset: Offset(0, isHovered ? 4 : 3),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.apple,
-                              size: 20,
-                              color: colors.textPrimary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              l10n.authSocialAppleLabel,
-                              style: typography.subhead.bold.copyWith(
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.apple,
+                                size: 20,
                                 color: colors.textPrimary,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Text(
+                                l10n.authSocialAppleLabel,
+                                style: typography.subhead.bold.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
