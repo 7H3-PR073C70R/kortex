@@ -24,11 +24,11 @@ BEGIN
     )
     SELECT COUNT(*) INTO v_deleted_rooms FROM deleted_r;
 
-    -- 2. Delete inactive/empty study pods created more than 7 days ago with <= 1 member or 0 focus minutes
+    -- 2. Delete inactive/empty study pods created more than 7 days ago with <= 1 member and 0 focus minutes
     WITH deleted_p AS (
         DELETE FROM public.study_circles
         WHERE (
-            (member_count <= 1 AND created_at < (now() - INTERVAL '7 days'))
+            (member_count <= 1 AND total_minutes_completed = 0 AND created_at < (now() - INTERVAL '7 days'))
             OR (created_at < (now() - INTERVAL '30 days'))
         )
         RETURNING id
@@ -43,6 +43,8 @@ BEGIN
     );
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION public.cleanup_stale_study_pods_and_rooms() TO authenticated, anon, service_role;
 
 -- Execute cleanup immediately on migration
 SELECT public.cleanup_stale_study_pods_and_rooms();
