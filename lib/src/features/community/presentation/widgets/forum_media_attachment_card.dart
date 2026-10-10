@@ -36,6 +36,7 @@ String extractAttachmentFileName(
             lower.startsWith('temp_') ||
             lower.startsWith('file_picker') ||
             lower.startsWith('picker_') ||
+            lower.startsWith('photo-') ||
             lower.startsWith('img_') && lower.length > 20 ||
             RegExp(r'^[0-9a-fA-F\-]{16,}$').hasMatch(baseName) ||
             RegExp(
@@ -302,7 +303,7 @@ class ForumPostMediaPreview extends StatelessWidget {
         caption ??
         (hasMultiple
             ? '${extractAttachmentFileName(firstUrl)} • ${mediaUrls.length} images'
-            : extractAttachmentFileName(firstUrl));
+            : '');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

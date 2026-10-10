@@ -47,6 +47,9 @@ class AppMultimodalImage extends StatelessWidget {
         clean.startsWith('/')) {
       return clean;
     }
+    if (clean.startsWith('photo-')) {
+      return 'https://images.unsplash.com/$clean?w=800&auto=format&fit=crop&q=80';
+    }
     if (clean.startsWith('documents/')) {
       return '${AppApiEndpoint.r2PublicDomain}/$clean';
     }
