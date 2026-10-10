@@ -127,7 +127,7 @@ E = mc^2
       expect(derivativeSnippet.latexContent, contains(r'\frac{df}{dx}'));
 
       final energySnippet = snippets.firstWhere(
-        (s) => s.topic.toLowerCase().contains('mass energy') || s.rawText.contains('Einstein'),
+        (s) => s.topic.contains('Einstein'),
       );
       expect(energySnippet.latexContent, isNotNull);
       expect(energySnippet.latexContent, contains('E = mc^2'));

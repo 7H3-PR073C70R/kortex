@@ -32,6 +32,9 @@ extension RepositoryExtension<T> on Future<T> {
               'Please check your internet connection and try again',
         ),
       );
+    } on NoReadableTextException catch (e) {
+      onFailure?.call();
+      return Left(NoReadableTextFailure(message: e.message));
     } on ServerException catch (e, s) {
       onFailure?.call();
       debugPrint(e.toString());

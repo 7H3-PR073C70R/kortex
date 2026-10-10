@@ -48,3 +48,15 @@ class NoQuizQuestionsFailure extends Failure {
   @override
   List<Object> get props => [subject, ?message];
 }
+
+class NoReadableTextFailure extends Failure {
+  const NoReadableTextFailure({
+    String? message,
+    int? statusCode,
+  }) : super(
+         message ??
+             "Couldn't read this document offline. "
+                 'Try again when you are online.',
+         statusCode,
+       );
+}

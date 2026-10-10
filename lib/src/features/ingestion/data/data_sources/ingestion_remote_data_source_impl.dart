@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -482,10 +483,12 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
               fileType: fileType,
               filename: filename,
             );
-      return _parserService.synthesizeSnippetsFromDocument(
-        documentId: documentId,
-        fullText: text,
-        filename: filename,
+      return _requireCards(
+        _parserService.synthesizeSnippetsFromDocument(
+          documentId: documentId,
+          fullText: text,
+          filename: filename,
+        ),
       );
     }
 
@@ -654,22 +657,29 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         filename: filename,
         imageUrls: uploadedImageUrls,
       );
-      return snippets;
+      return _requireCards(snippets);
     }
 
     if (extractedText != null && extractedText.trim().isNotEmpty) {
-      return _parserService.synthesizeSnippetsFromDocument(
-        documentId: documentId,
-        fullText: extractedText,
-        filename: filename,
+      return _requireCards(
+        _parserService.synthesizeSnippetsFromDocument(
+          documentId: documentId,
+          fullText: extractedText,
+          filename: filename,
+        ),
       );
     }
 
-    return _parserService.synthesizeSnippetsFromDocument(
-      documentId: documentId,
-      fullText: 'Study material for $filename',
-      filename: filename,
-    );
+    throw const NoReadableTextException();
+  }
+
+  /// Never fabricate content: if the offline builder found nothing
+  /// trustworthy, surface a typed failure instead of placeholder cards.
+  static List<OcrExtractionModel> _requireCards(
+    List<OcrExtractionModel> cards,
+  ) {
+    if (cards.isEmpty) throw const NoReadableTextException();
+    return cards;
   }
 
   static bool _isPromptJargonOrMock(dynamic rawItem) {
