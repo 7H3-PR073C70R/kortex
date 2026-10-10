@@ -552,7 +552,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
 
         final res = await _client
             .triggerParseStemOcr(payload)
-            .timeout(const Duration(hours: 5));
+            .timeout(const Duration(minutes: 45));
 
         final result = res.data is Map<String, dynamic>
             ? (res.data as Map<String, dynamic>)
