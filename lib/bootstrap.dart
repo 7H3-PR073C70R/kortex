@@ -14,6 +14,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/text_to_speech_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/url_strategy/url_strategy.dart';
 import 'package:kortex/src/di/locator.dart';
 
 class AppBlocObserver extends BlocObserver {
@@ -37,6 +38,7 @@ Future<void> bootstrap({
   required Environment environment,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy();
 
   // Load environment variables before initializing services
   try {
