@@ -236,28 +236,50 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
       final flashcardModels = <FlashcardModel>[];
       final seenQuestions = <String>{};
 
-      // 1. Scan entire chat and collect strictly AI assistant responses (exclude user prompts)
-      final aiResponses = messages
-          .where((m) => m.sender == MessageSender.syllabot)
-          .map((m) => m.text.trim())
-          .where((t) => t.isNotEmpty)
-          .toList();
+      // 1. Construct complete, structured dialogue transcript including BOTH Student prompts and AI responses
+      final fullTranscriptBuffer = StringBuffer();
+      final aiResponses = <String>[];
+      final qaPairs = <Map<String, String>>[];
 
-      final aiTranscript = aiResponses.join('\n\n---\n\n');
+      String? lastUserPrompt;
 
-      // 2. Pure Backend AI Synthesis: Route cumulative AI explanations strictly through Backend Cloud AI (never on-device Flutter LLaMA)
-      if (aiTranscript.isNotEmpty) {
+      for (final m in messages) {
+        final text = m.text.trim();
+        if (text.isEmpty) continue;
+
+        if (m.sender == MessageSender.syllabot) {
+          aiResponses.add(text);
+          fullTranscriptBuffer.writeln('[Syllabot (AI Tutor)]:\n$text\n');
+          if (lastUserPrompt != null && lastUserPrompt.isNotEmpty) {
+            qaPairs.add({'user': lastUserPrompt, 'ai': text});
+          }
+        } else {
+          lastUserPrompt = text;
+          fullTranscriptBuffer.writeln('[Student]:\n$text\n');
+        }
+      }
+
+      final fullTranscript = fullTranscriptBuffer.toString().trim();
+
+      // Dynamically scale target card count based on total messages & transcript depth (range: 15 to 50 cards)
+      final targetCount = (messages.length * 2.5).round().clamp(15, 50);
+
+      // 2. Pure Backend AI Synthesis: Route complete conversation history through Backend Cloud AI
+      if (fullTranscript.isNotEmpty) {
         try {
           final router = _studyEngineRouter ?? StudyEngineRouter();
           final studyPack = await router.generateCloudStudyPack(
             topic: deckTitle,
-            count: 12,
+            count: targetCount,
             sourceText:
-                'Cumulative AI Educational Explanations across Entire Conversation:\n\n'
-                '$aiTranscript\n\n'
-                'Instructions: Analyze the WHOLE response history from the AI tutor in the entire chat above. '
-                'Synthesize comprehensive flashcards covering key definitions, rules, formulas, classifications, and examples from EACH discussion turn. '
-                'Formulate distinct, standalone questions and detailed answers without restricting cards to only the initial prompt.',
+                'Full Interactive Study Dialogue (Student Questions + AI Tutor Responses):\n\n'
+                '$fullTranscript\n\n'
+                'CRITICAL FLASHCARD SYNTHESIS INSTRUCTIONS:\n'
+                '1. Analyze the ENTIRE conversation history above from the initial student query to the final exchange.\n'
+                '2. Identify ALL distinct topics, questions, techniques, strategies, definitions, formulas, and concepts discussed across the ENTIRE conversation.\n'
+                '3. Generate at least $targetCount comprehensive active-recall flashcards covering EVERY phase of the discussion.\n'
+                '4. Ensure no key insight, step, strategy, or question from ANY message is left out.\n'
+                '5. Formulate clear, self-contained questions on the "front" (e.g. "What is the 5-Minute Rule for pre-work stress?") and clear, actionable explanations on the "back".',
           );
 
           if (studyPack.cards.isNotEmpty) {
@@ -300,39 +322,56 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
             }
           }
         } on Object catch (_) {
-          // Fall back to semantic AI response extraction
+          // Fall back to multi-turn semantic extraction
         }
       }
 
-      // 3. In-depth Multi-Turn Semantic AI Extraction across the ENTIRE conversation
-      // Iterates through every AI response turn so flashcards reflect the cumulative dialogue
-      if (cards.length < 15 && aiResponses.isNotEmpty) {
-        final perResponseTarget = ((20 - cards.length) / aiResponses.length)
-            .ceil()
-            .clamp(2, 6);
+      // 3. Fallback: Multi-Turn Semantic Extraction across ALL messages & Q&A pairs
+      if (cards.length < targetCount && (aiResponses.isNotEmpty || qaPairs.isNotEmpty)) {
+        // 3a. Direct Student Question -> AI Response Pair extraction
+        for (final pair in qaPairs) {
+          if (cards.length >= 50) break;
+          final qText = pair['user']!;
+          final aText = pair['ai']!;
 
+          if (qText.length < 10 || qText.toLowerCase().startsWith('well') || qText.toLowerCase().startsWith('oh thank')) {
+            continue;
+          }
+
+          final question = qText.endsWith('?') ? qText : '$qText?';
+          final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+          if (!seenQuestions.contains(normQ)) {
+            seenQuestions.add(normQ);
+            final cardId = UuidUtils.generate();
+            final card = FlashcardEntity(
+              id: cardId,
+              deckId: deckId,
+              front: question,
+              back: aText.length > 800 ? '${aText.substring(0, 800)}...' : aText,
+              sourceTopic: deckTitle,
+              nextDueDate: DateTime.now().add(const Duration(days: 1)),
+            );
+            cards.add(card);
+            flashcardModels.add(FlashcardModel.fromEntity(card));
+          }
+        }
+
+        // 3b. Bullet points with bold concepts: - **Concept**: Explanation
         for (final resp in aiResponses) {
-          var responseCardsAdded = 0;
+          if (cards.length >= 50) break;
 
-          // 3a. Bullet points with bold concepts: - **Concept**: Explanation
           final bulletRegex = RegExp(
             r'^\s*[-*•]\s+\*\*([^*:\n]{2,60})\*\*\s*[:\-–]?\s*(.+)$',
             multiLine: true,
           );
           for (final match in bulletRegex.allMatches(resp)) {
-            if (cards.length >= 20 || responseCardsAdded >= perResponseTarget) {
-              break;
-            }
+            if (cards.length >= 50) break;
             final concept = match.group(1)!.trim();
             final detail = match.group(2)!.trim();
             if (detail.length < 15) continue;
 
-            final question =
-                'What is the definition and grammatical/academic role of "$concept"?';
-            final normQ = question.toLowerCase().replaceAll(
-              RegExp('[^a-z0-9]'),
-              '',
-            );
+            final question = 'What is the definition and core application of "$concept"?';
+            final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
             if (!seenQuestions.contains(normQ)) {
               seenQuestions.add(normQ);
               final cardId = UuidUtils.generate();
@@ -346,28 +385,22 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
               );
               cards.add(card);
               flashcardModels.add(FlashcardModel.fromEntity(card));
-              responseCardsAdded++;
             }
           }
 
-          // 3b. Numbered lists with bold concepts: 1. **Step/Concept**: Explanation
+          // 3c. Numbered lists with bold concepts: 1. **Step/Concept**: Explanation
           final numberedRegex = RegExp(
             r'^\s*\d+[\.\)]\s+\*\*([^*:\n]{2,60})\*\*\s*[:\-–]?\s*(.+)$',
             multiLine: true,
           );
           for (final match in numberedRegex.allMatches(resp)) {
-            if (cards.length >= 20 || responseCardsAdded >= perResponseTarget) {
-              break;
-            }
+            if (cards.length >= 50) break;
             final concept = match.group(1)!.trim();
             final detail = match.group(2)!.trim();
             if (detail.length < 15) continue;
 
-            final question = 'Explain "$concept" and its key characteristics:';
-            final normQ = question.toLowerCase().replaceAll(
-              RegExp('[^a-z0-9]'),
-              '',
-            );
+            final question = 'Explain "$concept" and its step-by-step role:';
+            final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
             if (!seenQuestions.contains(normQ)) {
               seenQuestions.add(normQ);
               final cardId = UuidUtils.generate();
@@ -381,20 +414,17 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
               );
               cards.add(card);
               flashcardModels.add(FlashcardModel.fromEntity(card));
-              responseCardsAdded++;
             }
           }
 
-          // 3c. Section headers with descriptive paragraphs
+          // 3d. Section headers with descriptive paragraphs
           final sectionRegex = RegExp(
-            r'^(?:#{1,4}\s+|\*\*)([A-Z][a-zA-Z0-9\s,\-]{3,50})(?:\*\*)?:?\s*$',
+            r'^(?:#{1,4}\s+|\*\*)([A-Z0-9][a-zA-Z0-9\s,\-:\?]{3,60})(?:\*\*)?:?\s*$',
             multiLine: true,
           );
           final sectionMatches = sectionRegex.allMatches(resp).toList();
           for (var i = 0; i < sectionMatches.length; i++) {
-            if (cards.length >= 20 || responseCardsAdded >= perResponseTarget) {
-              break;
-            }
+            if (cards.length >= 50) break;
             final sectionTitle = sectionMatches[i].group(1)!.trim();
             final start = sectionMatches[i].end;
             final end = (i + 1 < sectionMatches.length)
@@ -408,31 +438,19 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
             String question;
             if (lowerTitle.contains('theorem') || lowerTitle.contains('law')) {
               question = 'State and explain the "$sectionTitle":';
-            } else if (lowerTitle.contains('proof') ||
-                lowerTitle.contains('derivation')) {
-              question =
-                  'What are the key steps in the derivation for "$sectionTitle"?';
-            } else if (lowerTitle.contains('formula') ||
-                lowerTitle.contains('equation')) {
-              question =
-                  'What mathematical formulation defines "$sectionTitle"?';
-            } else if (lowerTitle.contains('rule') ||
-                lowerTitle.contains('principle')) {
-              question =
-                  'What core rules or principles govern "$sectionTitle"?';
-            } else if (lowerTitle.contains('category') ||
-                lowerTitle.contains('classification') ||
-                lowerTitle.contains('role')) {
-              question = 'How is "$sectionTitle" categorized and explained?';
+            } else if (lowerTitle.contains('step') || lowerTitle.contains('strategy')) {
+              question = 'What are the key steps and techniques for "$sectionTitle"?';
+            } else if (lowerTitle.contains('formula') || lowerTitle.contains('equation')) {
+              question = 'What mathematical formulation defines "$sectionTitle"?';
+            } else if (lowerTitle.contains('rule') || lowerTitle.contains('principle')) {
+              question = 'What core rules or principles govern "$sectionTitle"?';
+            } else if (lowerTitle.contains('question') || lowerTitle.contains('category')) {
+              question = 'What are the key questions/categories for "$sectionTitle"?';
             } else {
-              question =
-                  'Explain the key principles and concepts of "$sectionTitle":';
+              question = 'Explain the key principles and insights for "$sectionTitle":';
             }
 
-            final normQ = question.toLowerCase().replaceAll(
-              RegExp('[^a-z0-9]'),
-              '',
-            );
+            final normQ = question.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
             if (!seenQuestions.contains(normQ)) {
               seenQuestions.add(normQ);
               final cardId = UuidUtils.generate();
@@ -440,69 +458,31 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
                 id: cardId,
                 deckId: deckId,
                 front: question,
-                back: sectionBody.length > 500
-                    ? '${sectionBody.substring(0, 500)}...'
+                back: sectionBody.length > 800
+                    ? '${sectionBody.substring(0, 800)}...'
                     : sectionBody,
                 sourceTopic: sectionTitle,
                 nextDueDate: DateTime.now().add(const Duration(days: 1)),
               );
               cards.add(card);
               flashcardModels.add(FlashcardModel.fromEntity(card));
-              responseCardsAdded++;
-            }
-          }
-
-          // 3d. Mathematical formulas with context
-          final formulaRegex = RegExp(
-            r'(\$\$.*?\$\$|\\\[.*?\\\])',
-            dotAll: true,
-          );
-          final formulaMatches = formulaRegex.allMatches(resp);
-          for (final fMatch in formulaMatches) {
-            if (cards.length >= 20 || responseCardsAdded >= perResponseTarget) {
-              break;
-            }
-            final formula = fMatch.group(1)!.trim();
-            final cardId = UuidUtils.generate();
-            final question =
-                'Explain the mathematical formulation and physical meaning of: $formula';
-            final normQ = question.toLowerCase().replaceAll(
-              RegExp('[^a-z0-9]'),
-              '',
-            );
-            if (!seenQuestions.contains(normQ)) {
-              seenQuestions.add(normQ);
-              final card = FlashcardEntity(
-                id: cardId,
-                deckId: deckId,
-                front: question,
-                back: formula,
-                backLatex: formula
-                    .replaceAll(RegExp(r'^\$\$|\$\$$|^\\\[|\\\]$'), '')
-                    .trim(),
-                sourceTopic: deckTitle,
-                nextDueDate: DateTime.now().add(const Duration(days: 1)),
-              );
-              cards.add(card);
-              flashcardModels.add(FlashcardModel.fromEntity(card));
-              responseCardsAdded++;
             }
           }
         }
       }
 
-      // 4. Fallback if still empty (use AI response summary, never user prompt)
+      // 4. Absolute Fallback if cards list is still empty
       if (cards.isEmpty) {
         final fallbackBack = aiResponses.isNotEmpty
             ? aiResponses.first
-            : 'Study deck generated from Syllabot AI responses on $deckTitle';
+            : 'Study deck generated from Syllabot AI dialogue on $deckTitle';
         final cardId = UuidUtils.generate();
         final cardEntity = FlashcardEntity(
           id: cardId,
           deckId: deckId,
           front: 'What are the principal insights explained for $deckTitle?',
-          back: fallbackBack.length > 400
-              ? '${fallbackBack.substring(0, 400)}...'
+          back: fallbackBack.length > 500
+              ? '${fallbackBack.substring(0, 500)}...'
               : fallbackBack,
           sourceTopic: deckTitle,
           nextDueDate: DateTime.now().add(const Duration(days: 1)),

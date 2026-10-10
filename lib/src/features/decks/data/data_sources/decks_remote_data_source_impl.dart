@@ -138,6 +138,19 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           data: jsonStr,
         ),
       );
+      for (final entry in _localDeckCards.entries) {
+        if (entry.value.isNotEmpty) {
+          final cardsJson = jsonEncode(
+            entry.value.map((c) => c.toJson()).toList(),
+          );
+          unawaited(
+            _localStorage?.savePreference(
+              key: '${PrefKeys.persistedDeckCardsPrefix}${entry.key}',
+              data: cardsJson,
+            ),
+          );
+        }
+      }
     } on Object catch (_) {}
   }
 
@@ -186,6 +199,27 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         }
       }
     } on Object catch (_) {}
+
+    // 3. Populate cards cache for all known local decks from local storage
+    for (final deck in _localCreatedDecks) {
+      if (!_localDeckCards.containsKey(deck.id) ||
+          _localDeckCards[deck.id]!.isEmpty) {
+        try {
+          final rawCards = _localStorage?.getPreference(
+            key: '${PrefKeys.persistedDeckCardsPrefix}${deck.id}',
+          );
+          if (rawCards != null && rawCards.isNotEmpty) {
+            final cardList = jsonDecode(rawCards) as List<dynamic>;
+            final loadedCards = cardList
+                .map((e) => FlashcardModel.fromJson(e as Map<String, dynamic>))
+                .toList();
+            if (loadedCards.isNotEmpty) {
+              _localDeckCards[deck.id] = loadedCards;
+            }
+          }
+        } on Object catch (_) {}
+      }
+    }
   }
 
   @override
@@ -390,6 +424,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           dueCards: effectiveDue,
           masteryRate: effectiveMastery,
           lastStudied: effectiveLastStudied,
+          cards: inMemCards ?? remote.cards,
         );
       }).toList();
 

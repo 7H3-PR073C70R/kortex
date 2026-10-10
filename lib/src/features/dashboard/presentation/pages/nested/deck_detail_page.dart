@@ -71,16 +71,18 @@ class _DeckDetailContent extends HookWidget {
 
     final loadedCards = useState<List<FlashcardEntity>>(deck?.cards ?? []);
     final isLoadingCards = useState<bool>(false);
+    final errorMessage = useState<String?>(null);
 
-    useEffect(() {
-      if (deck != null && deck.cards.isNotEmpty) {
-        loadedCards.value = deck.cards;
-      } else if (locator.isRegistered<GetDeckCardsUseCase>()) {
+    void fetchCards() {
+      if (locator.isRegistered<GetDeckCardsUseCase>()) {
         isLoadingCards.value = true;
+        errorMessage.value = null;
         unawaited(
           locator<GetDeckCardsUseCase>()(deckId).then((res) {
             res.fold(
-              (_) {},
+              (failure) {
+                errorMessage.value = failure.message;
+              },
               (cards) {
                 loadedCards.value = cards;
               },
@@ -88,6 +90,14 @@ class _DeckDetailContent extends HookWidget {
             isLoadingCards.value = false;
           }),
         );
+      }
+    }
+
+    useEffect(() {
+      if (deck != null && deck.cards.isNotEmpty) {
+        loadedCards.value = deck.cards;
+      } else {
+        fetchCards();
       }
       return null;
     }, [deckId, deck?.cards]);
@@ -213,6 +223,55 @@ class _DeckDetailContent extends HookWidget {
                   ? const Center(
                       child: AppLogoLoader(size: 56),
                     )
+                  : errorMessage.value != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.cloud_off_rounded,
+                            size: 56,
+                            color: colors.textMuted.withAlpha(140),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Unable to Load Cards',
+                            style: typography.callout.bold.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            errorMessage.value!,
+                            textAlign: TextAlign.center,
+                            style: typography.footnote.regular.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ShrinkableButton(
+                            onTap: fetchCards,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.badge),
+                              ),
+                              child: Text(
+                                'Retry',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                   : dynamicCards.isEmpty
                   ? Center(
                       child: Column(
@@ -236,6 +295,41 @@ class _DeckDetailContent extends HookWidget {
                             textAlign: TextAlign.center,
                             style: typography.footnote.regular.copyWith(
                               color: colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ShrinkableButton(
+                            onTap: fetchCards,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceSecondary,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.badge),
+                                border: Border.all(
+                                  color: colors.surfaceBorder,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.refresh_rounded,
+                                    size: 14,
+                                    color: colors.textPrimary,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Refresh Cards',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
