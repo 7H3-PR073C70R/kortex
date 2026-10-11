@@ -4,6 +4,7 @@ import { chunkMarkdown } from "../_shared/markdown_chunker.ts";
 import { ServerDocumentParser } from "../_shared/server_document_parser.ts";
 import { checkAndEnforceQuota } from "../_shared/quota_guard.ts";
 import { safeFetch, readCappedArrayBuffer } from "../_shared/security_guard.ts";
+import { getBatchEmbeddings } from "../_shared/embedding_service.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -156,8 +157,12 @@ serve(async (req: Request) => {
     );
 
     const embeddingInserts = [];
-    for (const chunk of chunks) {
-      const embedding = generateDeterministicVector(chunk.content);
+    const chunkContents = chunks.map((c) => c.content);
+    const embeddings = await getBatchEmbeddings(chunkContents);
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const embedding = embeddings ? embeddings[i] : null;
       embeddingInserts.push({
         document_id: documentId,
         user_id: userId,
@@ -169,7 +174,7 @@ serve(async (req: Request) => {
         has_table: chunk.hasTable,
         has_math: chunk.hasMath,
         has_code: chunk.hasCode,
-        embedding,
+        embedding: embedding ? JSON.stringify(embedding) : null,
         metadata: {
           ...metadata,
           chunkId: chunk.id,
@@ -292,15 +297,3 @@ serve(async (req: Request) => {
     );
   }
 });
-
-function generateDeterministicVector(text: string, dim = 1536): number[] {
-  const vector = new Array(dim).fill(0);
-  for (let i = 0; i < text.length; i++) {
-    const charCode = text.charCodeAt(i);
-    const index = (charCode * (i + 1)) % dim;
-    vector[index] = (vector[index] + charCode / 255.0) / 2.0;
-  }
-  const magnitude =
-    Math.sqrt(vector.reduce((acc, val) => acc + val * val, 0)) || 1;
-  return vector.map((v) => v / magnitude);
-}

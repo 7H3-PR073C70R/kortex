@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { SemanticCacheProvider } from "../_shared/semantic_cache_provider.ts";
+import { getBatchEmbeddings } from "../_shared/embedding_service.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,18 +44,6 @@ function chunkText(text: string, chunkSize = 500, overlap = 50): string[] {
   }
 
   return chunks;
-}
-
-function generateDeterministicVector(text: string, dim = 1536): number[] {
-  const vector = new Array(dim).fill(0);
-  for (let i = 0; i < text.length; i++) {
-    const charCode = text.charCodeAt(i);
-    const index = (charCode * (i + 1)) % dim;
-    vector[index] = (vector[index] + charCode / 255.0) / 2.0;
-  }
-  const magnitude =
-    Math.sqrt(vector.reduce((acc, val) => acc + val * val, 0)) || 1;
-  return vector.map((v) => v / magnitude);
 }
 
 serve(async (req) => {
@@ -183,11 +172,16 @@ serve(async (req) => {
     const recordsToInsert = [];
 
     if (chunks && chunks.length > 0) {
-      for (let i = 0; i < chunks.length; i++) {
-        const item = chunks[i];
+      const validItems = chunks.filter(
+        (c) => c.content && c.content.trim().length > 0
+      );
+      const textList = validItems.map((c) => c.content.trim());
+      const embeddings = await getBatchEmbeddings(textList);
+
+      for (let i = 0; i < validItems.length; i++) {
+        const item = validItems[i];
         const content = item.content.trim();
-        if (!content) continue;
-        const embedding = generateDeterministicVector(content, 1536);
+        const embedding = embeddings ? embeddings[i] : null;
 
         recordsToInsert.push({
           document_id: validDocumentId,
@@ -199,21 +193,23 @@ serve(async (req) => {
             client_document_id: documentId,
             ...item.metadata,
             chunk_index: item.chunk_index ?? i,
-            total_chunks: chunks.length,
+            total_chunks: validItems.length,
             if_page: item.page_number,
             page_number: item.page_number ?? item.metadata?.page_number,
             paragraph_number:
               item.paragraph_number ?? item.metadata?.paragraph_number,
             document_title: metadata.filename ?? metadata.documentTitle,
           },
-          embedding: JSON.stringify(embedding),
+          embedding: embedding ? JSON.stringify(embedding) : null,
         });
       }
     } else if (rawText) {
       const textChunks = chunkText(rawText);
+      const embeddings = await getBatchEmbeddings(textChunks);
+
       for (let i = 0; i < textChunks.length; i++) {
         const chunk = textChunks[i];
-        const embedding = generateDeterministicVector(chunk, 1536);
+        const embedding = embeddings ? embeddings[i] : null;
 
         recordsToInsert.push({
           document_id: validDocumentId,
@@ -227,7 +223,7 @@ serve(async (req) => {
             total_chunks: textChunks.length,
             document_title: metadata.filename ?? metadata.documentTitle,
           },
-          embedding: JSON.stringify(embedding),
+          embedding: embedding ? JSON.stringify(embedding) : null,
         });
       }
     }
