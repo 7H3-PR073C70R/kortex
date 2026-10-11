@@ -1009,10 +1009,48 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  /// Flushes pending offline outbox payloads and FSRS logs before credentials are wiped.
+  Future<void> _flushOfflineDataBeforeLogout() async {
+    try {
+      if (locator.isRegistered<AppSyncEngine>()) {
+        await locator<AppSyncEngine>()
+            .flushAllPendingOutboxes()
+            .timeout(const Duration(seconds: 5));
+      } else {
+        final futures = <Future<void>>[];
+        if (locator.isRegistered<CardSyncQueue>()) {
+          futures.add(locator<CardSyncQueue>().flushPendingLogs());
+        }
+        if (locator.isRegistered<QuizRepository>()) {
+          futures.add(locator<QuizRepository>().flushPendingQuizSubmissions());
+        }
+        if (locator.isRegistered<UserActivityService>()) {
+          futures.add(locator<UserActivityService>().syncPendingProgressToBackend());
+        }
+        if (locator.isRegistered<CommunityRepository>()) {
+          futures.add(locator<CommunityRepository>().flushPendingForumActions());
+        }
+        if (futures.isNotEmpty) {
+          await Future.wait(futures).timeout(const Duration(seconds: 5));
+        }
+      }
+    } on Object catch (e, st) {
+      AppLogger.warning(
+        'Offline data flush timed out or failed prior to sign-out: $e',
+        tag: 'AuthBloc',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
   Future<void> _onSignOutRequested(
     AuthSignOutRequested event,
     Emitter<AuthState> emit,
   ) async {
+    // 1. Flush offline outbox & pending review logs before session credentials are wiped
+    await _flushOfflineDataBeforeLogout();
+
     try {
       await locator<LocalStorageService>().savePreference(
         key: PrefKeys.isNewlyRegistered,

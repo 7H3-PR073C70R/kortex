@@ -82,6 +82,7 @@ class AppSyncEngine {
   
   final List<AppSyncPayload> _queue = [];
   bool _isSyncing = false;
+  Completer<void>? _activeFlushCompleter;
   bool _isFullSyncInProgress = false;
   bool _hasPendingFullSync = false;
   Timer? _connectivityDebounceTimer;
@@ -294,14 +295,64 @@ class AppSyncEngine {
     unawaited(flush());
   }
 
+  /// Flushes all pending outbox records, review logs, and progress to Supabase
+  /// sequentially before session teardown or logout.
+  Future<void> flushAllPendingOutboxes() async {
+    // 1. Flush AppSyncEngine CRDT payloads
+    await flush();
+
+    // 2. Flush CardSyncQueue FSRS review logs sequentially
+    if (locator.isRegistered<CardSyncQueue>()) {
+      try {
+        await locator<CardSyncQueue>().flushPendingLogs();
+      } on Object catch (e, st) {
+        AppLogger.recordNonFatal(e, st);
+      }
+    }
+
+    // 3. Flush QuizRepository pending submissions sequentially
+    if (locator.isRegistered<QuizRepository>()) {
+      try {
+        await locator<QuizRepository>().flushPendingQuizSubmissions();
+      } on Object catch (e, st) {
+        AppLogger.recordNonFatal(e, st);
+      }
+    }
+
+    // 4. Sync UserActivityService progress sequentially
+    if (locator.isRegistered<UserActivityService>()) {
+      try {
+        await locator<UserActivityService>().syncPendingProgressToBackend();
+      } on Object catch (e, st) {
+        AppLogger.recordNonFatal(e, st);
+      }
+    }
+
+    // 5. Flush CommunityRepository pending forum actions sequentially
+    if (locator.isRegistered<CommunityRepository>()) {
+      try {
+        await locator<CommunityRepository>().flushPendingForumActions();
+      } on Object catch (e, st) {
+        AppLogger.recordNonFatal(e, st);
+      }
+    }
+  }
+
   Future<void> flush() async {
-    if (_isSyncing || _queue.isEmpty) return;
+    while (_isSyncing) {
+      await _activeFlushCompleter?.future;
+    }
+    if (_queue.isEmpty) return;
+
     _isSyncing = true;
+    _activeFlushCompleter = Completer<void>();
     _syncStatusController.add(SyncStatus.syncing);
 
     final headers = _headers;
     if (headers == null) {
       _isSyncing = false;
+      _activeFlushCompleter?.complete();
+      _activeFlushCompleter = null;
       _syncStatusController.add(SyncStatus.online);
       return;
     }
@@ -324,10 +375,18 @@ class AppSyncEngine {
         _queue.removeWhere((p) => batch.any((b) => b.id == p.id));
       }
     } on Object catch (e, stack) {
-      debugPrint('[AppSyncEngine] Flush error after retries: $e\n$stack');
+      AppLogger.error(
+        'AppSyncEngine flush error: $e',
+        tag: 'AppSyncEngine',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       await _persistQueue();
       _isSyncing = false;
+      final comp = _activeFlushCompleter;
+      _activeFlushCompleter = null;
+      comp?.complete();
       _syncStatusController.add(_queue.isEmpty ? SyncStatus.online : SyncStatus.offline);
     }
   }
