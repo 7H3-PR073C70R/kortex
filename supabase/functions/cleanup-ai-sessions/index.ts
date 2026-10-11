@@ -1,9 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { timingSafeEqualString } from "../_shared/security_guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 serve(async (req) => {
@@ -18,15 +19,23 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization") ?? "";
     const customCronHeader = req.headers.get("X-Cron-Secret") ?? "";
 
-    const isServiceRole =
-      supabaseServiceKey &&
-      authHeader.replace(/^Bearer\s+/i, "").trim() === supabaseServiceKey;
-    const isCronMatch =
-      cronSecret &&
-      (customCronHeader === cronSecret ||
-        authHeader.replace(/^Bearer\s+/i, "").trim() === cronSecret);
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
 
-    if (!isServiceRole && !isCronMatch) {
+    // Constant-time check for privileged service role or cron secret
+    const isServiceRole = Boolean(
+      supabaseServiceKey &&
+      token &&
+      (await timingSafeEqualString(token, supabaseServiceKey))
+    );
+
+    const isCronSecret = Boolean(
+      cronSecret &&
+      ((customCronHeader &&
+        (await timingSafeEqualString(customCronHeader, cronSecret))) ||
+        (token && (await timingSafeEqualString(token, cronSecret))))
+    );
+
+    if (!isServiceRole && !isCronSecret) {
       return new Response(
         JSON.stringify({ error: "Unauthorized: Restricted to scheduled background cron jobs" }),
         {
