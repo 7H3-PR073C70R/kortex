@@ -97,6 +97,39 @@ class OfflineCardBuilder {
   /// Extracts the deck title prioritizing:
   /// 1. Document metadata title.
   /// 2. Primary first-page heading (Level 1 heading, or first heading on page 1).
+  static String _sanitizeDeckTitle(String raw) {
+    var clean = raw
+        .replaceAll(RegExp(r'\s*\(Page\s+\d+(?:\s+of\s+\d+)?\)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s*-\s*Page\s+\d+', caseSensitive: false), '')
+        .replaceAll(RegExp(r'^(?:#+|\d+(?:\.\d+)*\.?)\s*'), '')
+        .replaceAllMapped(RegExp(r'\b([A-Z])\s+([a-z]{2,})\b'), (m) => '${m[1]}${m[2]}')
+        .replaceAll(RegExp(r'\bFlut\s+ter\b', caseSensitive: false), 'Flutter')
+        .replaceAll(RegExp(r'^[#*_\-\s]+|[#*_\-\s]+$'), '')
+        .trim();
+    return clean;
+  }
+
+  static bool _isValidDeckTitle(String clean) {
+    if (clean.length < 3 || clean.length > 100) return false;
+    if (RegExp(r'\b(?:\d{1,2}(?:st|nd|rd|th)?\s+)?(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{2,4}\b', caseSensitive: false).hasMatch(clean)) {
+      return false;
+    }
+    if (clean.startsWith('-') || clean.startsWith('–') || clean.contains('% credit') || clean.contains('Base Fee')) {
+      return false;
+    }
+    if (RegExp(r'^(?:department\s+of|faculty\s+of|laboratory\s+of|lab\s+of)\b', caseSensitive: false).hasMatch(clean)) {
+      return false;
+    }
+    final zone = DocumentZoneClassifier.instance.classifyHeading(clean);
+    if (DocumentZoneClassifier.isNonPedagogicalZone(zone)) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Extracts canonical deck title prioritizing:
+  /// 1. Metadata title.
+  /// 2. First validated pedagogical heading in IR / text.
   /// 3. Fallback to clean document filename.
   static String extractDeckTitle({
     String? fullText,
@@ -107,13 +140,15 @@ class OfflineCardBuilder {
     if (metadata != null) {
       final t = metadata['title'] ?? metadata['deck_title'] ?? metadata['deckTitle'];
       if (t is String && t.trim().isNotEmpty) {
-        return t.trim();
+        final clean = _sanitizeDeckTitle(t);
+        if (_isValidDeckTitle(clean)) return clean;
       }
     }
     if (ir != null && ir.metadata.isNotEmpty) {
       final t = ir.metadata['title'] ?? ir.metadata['deck_title'] ?? ir.metadata['deckTitle'];
       if (t is String && t.trim().isNotEmpty) {
-        return t.trim();
+        final clean = _sanitizeDeckTitle(t);
+        if (_isValidDeckTitle(clean)) return clean;
       }
     }
 
@@ -121,11 +156,11 @@ class OfflineCardBuilder {
       final page1Headings = ir.headings.where((h) => h.provenance.page == 1).toList();
       if (page1Headings.isNotEmpty) {
         final h1 = page1Headings.firstWhere((h) => h.level == 1, orElse: () => page1Headings.first);
-        final clean = h1.text.trim();
-        if (clean.isNotEmpty && clean.length <= 100) return clean;
+        final clean = _sanitizeDeckTitle(h1.text);
+        if (_isValidDeckTitle(clean)) return clean;
       } else {
-        final clean = ir.headings.first.text.trim();
-        if (clean.isNotEmpty && clean.length <= 100) return clean;
+        final clean = _sanitizeDeckTitle(ir.headings.first.text);
+        if (_isValidDeckTitle(clean)) return clean;
       }
     }
 
@@ -134,11 +169,11 @@ class OfflineCardBuilder {
       for (final line in lines) {
         final trimmed = line.trim();
         if (trimmed.startsWith('# ') && trimmed.length > 2) {
-          final clean = trimmed.substring(2).trim();
-          if (clean.isNotEmpty && clean.length <= 100) return clean;
+          final clean = _sanitizeDeckTitle(trimmed.substring(2));
+          if (_isValidDeckTitle(clean)) return clean;
         }
       }
-      for (final line in lines.take(15)) {
+      for (final line in lines.take(25)) {
         final trimmed = line.trim();
         if (trimmed.isNotEmpty &&
             trimmed.length <= 80 &&
@@ -146,8 +181,8 @@ class OfflineCardBuilder {
             !trimmed.startsWith('http') &&
             !trimmed.contains('===') &&
             !trimmed.contains('---')) {
-          final clean = trimmed.replaceFirst(RegExp(r'^(?:#+|\d+(?:\.\d+)*\.?)\s*'), '').trim();
-          if (clean.length >= 3) return clean;
+          final clean = _sanitizeDeckTitle(trimmed);
+          if (_isValidDeckTitle(clean)) return clean;
         }
       }
     }
@@ -329,15 +364,15 @@ class OfflineCardBuilder {
       final block = blocks[i];
       if (block.kind != _BlockKind.bullet) flushList();
 
-      if (block.kind == _BlockKind.heading) {
-        heading = block.text;
-      }
-
       // Skip non-pedagogical zones (front matter, lifecycle/changelogs, administrative, assessment)
       // and boilerplate metadata lines
       if (DocumentZoneClassifier.isNonPedagogicalZone(block.zone) ||
           DocumentZoneClassifier.instance.shouldSkipBlockContent(block.text, currentZone: block.zone)) {
         continue;
+      }
+
+      if (block.kind == _BlockKind.heading) {
+        heading = block.text;
       }
 
       switch (block.kind) {
@@ -363,7 +398,7 @@ class OfflineCardBuilder {
             ),
           );
         case _BlockKind.glossary:
-          final card = _glossaryCard(block, docContext);
+          final card = _glossaryCard(block, docContext, heading);
           if (card != null) {
             structured.add(card);
           }
@@ -1372,7 +1407,7 @@ class OfflineCardBuilder {
       return false; // Reject "Not testing the app"
     }
     if (RegExp(
-      r'^(?:stay|ensure|build|develop|collaborate|work|maintain|write|participate|manage|create|implement|monitor|follow|review|use|apply|handle)\b',
+      r'^(?:stay|ensure|build|develop|collaborate|work|maintain|write|participate|manage|create|implement|monitor|follow|review|use|apply|handle|document|test|run|debug|optimize|deploy|setup|install|configure)\b',
       caseSensitive: false,
     ).hasMatch(term)) {
       return false; // Reject task duties
@@ -1501,7 +1536,7 @@ class OfflineCardBuilder {
     'such',
   };
 
-  OfflineCard? _glossaryCard(_Block block, String docContext) {
+  OfflineCard? _glossaryCard(_Block block, String docContext, [String? currentHeading]) {
     final term = block.term!;
     final body = block.text;
 
@@ -1514,7 +1549,12 @@ class OfflineCardBuilder {
     if (cleanBody.startsWith('-') || cleanBody.startsWith('–') || cleanBody.startsWith('—')) return null;
     if (RegExp(r'\b\d+\.\d+(?:\.\d+)*\b').hasMatch(cleanBody)) return null;
     if (cleanBody.length < 15) return null;
-    if (RegExp(r"^(?:what(?:'s|\s+is)\s+next|see\s+also|read\s+more|click\s+here|learn\s+more)\b", caseSensitive: false).hasMatch(cleanBody)) {
+    if (RegExp(r"\b(?:what(?:'s|\s+is)\s+next\??|see\s+also|read\s+more|click\s+here|learn\s+more)\b", caseSensitive: false).hasMatch(cleanBody)) {
+      return null;
+    }
+    final wordsInBody = cleanBody.split(RegExp(r'\s+'));
+    final capWords = wordsInBody.where((w) => RegExp(r'^[A-Z]').hasMatch(w)).length;
+    if (wordsInBody.length >= 4 && !_endsSentence(cleanBody) && (capWords / wordsInBody.length) >= 0.70) {
       return null;
     }
     if (DocumentZoneClassifier.instance.shouldSkipBlockContent(cleanBody, currentZone: block.zone)) {
@@ -1535,6 +1575,7 @@ class OfflineCardBuilder {
         front: 'What is the syntax of $term$lang?',
         back: sanitizedBody,
         confidence: 0.88,
+        heading: block.sectionTitle ?? currentHeading,
       );
     }
 
@@ -1595,6 +1636,7 @@ class OfflineCardBuilder {
       front: front,
       back: sanitizedBody,
       confidence: 0.85,
+      heading: block.sectionTitle ?? currentHeading,
     );
   }
 
@@ -1654,6 +1696,21 @@ class OfflineCardBuilder {
     final block = blocks[index];
     final code = block.text.trim();
     if (code.length < 15) return null;
+
+    // Reject TOC entries that were falsely marked as code due to monospace font
+    final cleanLines = code.replaceAll(RegExp(r'^```[a-z]*|```$', multiLine: true), '').trim().split('\n');
+    final tocLineCount = cleanLines.where((l) => RegExp(r'^(?:[A-Za-z0-9_.]+\s+)+\d{1,4}$').hasMatch(l.trim())).length;
+    if (cleanLines.isNotEmpty && (tocLineCount / cleanLines.length) >= 0.5) {
+      return null;
+    }
+
+    // Reject incomplete/truncated code fragments ending with open brace or starting with closing brace
+    final trimmedCode = cleanLines.join('\n').trim();
+    if (trimmedCode.endsWith('{') || trimmedCode.startsWith('}')) {
+      final openBraces = '{'.allMatches(trimmedCode).length;
+      final closeBraces = '}'.allMatches(trimmedCode).length;
+      if (openBraces != closeBraces) return null;
+    }
 
     final firstLine = code.split('\n').first.trim();
     var lang = block.codeLanguage ?? '';
@@ -2131,10 +2188,14 @@ class OfflineCardBuilder {
       if ((prev.kind == _BlockKind.heading ||
               prev.kind == _BlockKind.paragraph) &&
           _wordCount(prev.text) <= 8) {
-        return prev.text.replaceFirst(
-          RegExp(r'^(?:example|code)\s*:\s*', caseSensitive: false),
-          '',
-        );
+        final prevTrim = prev.text.trim();
+        final isCodeSyntax = RegExp(r'[{}(),;=]|->|=>|\b(?:if|else|for|while|return|class|var|val|bool|int|void)\b').hasMatch(prevTrim);
+        if (!isCodeSyntax) {
+          return prevTrim.replaceFirst(
+            RegExp(r'^(?:example|code)\s*:\s*', caseSensitive: false),
+            '',
+          );
+        }
       }
     }
     return heading;
@@ -2198,6 +2259,11 @@ class OfflineCardBuilder {
     ).hasMatch(trimmed)) {
       return null;
     }
+    if (RegExp(r'\b(?:prompts?\s+(?:me|us)|in\s+(?:my|our)\s+experience|as\s+i\s+mentioned|i\s+(?:frequently|often|believe|think)|author|my\s+code)\b', caseSensitive: false).hasMatch(sentence) ||
+        sentence.contains('“') ||
+        (sentence.contains('"') && sentence.contains('?'))) {
+      return null;
+    }
 
     final m = _definitionRe.firstMatch(sentence);
     if (m == null) return null;
@@ -2235,6 +2301,9 @@ class OfflineCardBuilder {
     if (words.length > 5) return null;
     if (!RegExp('^[A-Z]').hasMatch(subject)) return null;
     if (_badSubjectStarts.contains(words.first.toLowerCase())) return null;
+    if (words.length == 1 && {'time', 'life', 'day', 'world', 'moment', 'thing', 'way'}.contains(subject.toLowerCase())) {
+      return null;
+    }
     if (words.any((w) => _subjectBannedWords.contains(w.toLowerCase()))) {
       return null;
     }
@@ -2369,6 +2438,14 @@ class OfflineCardBuilder {
     'factors',
     'something',
     'anything',
+    'agreement',
+    'liability',
+    'party',
+    'parties',
+    'verify',
+    'prove',
+    'solve',
+    'solution',
   };
 
   Map<String, int> _termFrequency(List<_Block> blocks) {
@@ -2403,10 +2480,19 @@ class OfflineCardBuilder {
 
     final trimmed = sentence.trim();
     if (RegExp(
-      r'^(?:however\b|keep in mind\b|it(?:\x27|’|s)? important\b|as a rough estimate\b|we recommend\b|please submit\b|good luck\b|you can\b)',
+      r'^(?:however\b|keep in mind\b|it(?:\x27|’|s)? important\b|as a rough estimate\b|we recommend\b|please submit\b|good luck\b|you can\b|exercise\b|solution\b|problem\b|practice\b|drill\b|task\b|answer\b|hint\b)',
       caseSensitive: false,
     ).hasMatch(trimmed)) {
       return null;
+    }
+
+    // Strip leading section header prefixes
+    var effectiveSentence = sentence.replaceFirst(
+      RegExp(r'^(?:section|chapter|part)\s+\d+(?:\.\d+)*:?\s+.*?(?:\.|\s{2,}|:\s*)', caseSensitive: false),
+      '',
+    ).trim();
+    if (effectiveSentence.length < 20 || !_endsSentence(effectiveSentence)) {
+      effectiveSentence = sentence;
     }
 
     final firstWord = sentence
@@ -2429,7 +2515,7 @@ class OfflineCardBuilder {
     final matches = RegExp(
       r"[\p{L}\p{N}][\p{L}\p{N}'’\-]*[\p{L}\p{N}]|[\p{Lu}]{2,}|[\p{Lo}]+",
       unicode: true,
-    ).allMatches(sentence);
+    ).allMatches(effectiveSentence);
     for (final m in matches) {
       final word = m.group(0)!;
       final lowerWord = word.toLowerCase();
@@ -2453,18 +2539,18 @@ class OfflineCardBuilder {
     }
     if (best == null) return null;
 
-    final blank = sentence.replaceAll(
+    final blank = effectiveSentence.replaceAll(
       RegExp(r'(?<=[^\p{L}]|^)' + RegExp.escape(best) + r'(?=[^\p{L}]|$)', unicode: true),
       '_____',
     );
-    if (blank == sentence) return null;
+    if (blank == effectiveSentence) return null;
 
     final cleanHeading = heading
         ?.replaceFirst(RegExp(r'^(?:#+|\d+(?:\.\d+)*\.?)\s*'), '')
         .trim();
     final contextualFront = (cleanHeading != null &&
             cleanHeading.isNotEmpty &&
-            !sentence.toLowerCase().contains(cleanHeading.toLowerCase()))
+            !effectiveSentence.toLowerCase().contains(cleanHeading.toLowerCase()))
         ? 'In "$cleanHeading", complete: $blank'
         : blank;
 
@@ -2472,7 +2558,7 @@ class OfflineCardBuilder {
       card: OfflineCard(
         type: OfflineCardType.cloze,
         front: contextualFront,
-        back: '$best\n\n$sentence',
+        back: '$best\n\n$effectiveSentence',
         confidence: 0.75,
         heading: heading,
       ),

@@ -35,16 +35,22 @@ class DocumentZoneClassifier {
   // ---------------------------------------------------------------------------
   // ZONE A: FRONT MATTER & NAVIGATION REGEX PATTERNS
   // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // ZONE A: FRONT MATTER & NAVIGATION REGEX PATTERNS
+  // ---------------------------------------------------------------------------
   static final _frontMatterRegex = RegExp(
-  '^(?:'
-  r'table\s+of\s+contents|brief\s+contents|contents|'
-  r'(?:subject\s+|author\s+)?index(?:es|ices)?|'
-  r'list\s+of\s+(?:figures|tables|illustrations|plates|boxes)|'
-  'preface|foreword|acknowledg(?:e)?ments?'
-  r')[\s\p{P}]*$',
-  caseSensitive: false,
-  unicode: true,
-);
+    '^(?:'
+    r'table\s+of\s+contents|brief\s+contents|contents|'
+    r'(?:subject\s+|author\s+)?index(?:es|ices)?|'
+    r'list\s+of\s+(?:figures|tables|illustrations|plates|boxes)|'
+    r'preface|foreword|acknowledg(?:e)?ments?|'
+    r'0(?:\.\d+)*\s+.*|chapter\s+0\b.*|'
+    r'how\s+to\s+(?:use|read)\s+this\s+book.*|about\s+this\s+book.*|'
+    r'conventions?\s+used.*|typographic(?:al)?\s+conventions?.*'
+    r')[\s\p{P}]*$',
+    caseSensitive: false,
+    unicode: true,
+  );
 
   // ---------------------------------------------------------------------------
   // ZONE B: ADMINISTRATIVE, LEGAL, COMMUNITY & FEEDBACK PATTERNS
@@ -55,9 +61,11 @@ class DocumentZoneClassifier {
     r'slack(?:\s+guidelines?|\s+rules?|\s+channels?)?|discord(?:\s+guidelines?|\s+rules?|\s+channels?)?|'
     r'moderators?|user\s+groups?|kug\s+guidelines?|'
     r'license|licensing|copyright|all\s+rights\s+reserved|trademarks?|terms\s+of\s+(?:service|use)|'
-    r'about\s+the\s+authors?|contributors?\s+and\s+acknowledgments?|contributing(?:\s+guidelines?)?|'
+    r'about\s+the\s+authors?|contributors?(?:\s+and\s+(?:acknowledgments?|reviewers?))?|reviewers?|'
+    r'contributing(?:\s+guidelines?)?|'
     r'join\s+us(?:\s+on)?|documentation\s+survey|survey(?:\s+and|\s*&)?\s*feedback|stay\s+connected|'
-    r'subscribe\s+to(?:\s+our)?\s+newsletter'
+    r'subscribe\s+to(?:\s+our)?\s+newsletter|'
+    r'bill\s+to:|invoice(?:\s+details)?|payment\s+terms|statement\s+of\s+work'
     r')\b',
     caseSensitive: false,
   );
@@ -99,7 +107,9 @@ class DocumentZoneClassifier {
     r'\b(?:for\s+more\s+(?:information|details),?\s+see(?:\s+the)?\s+(?:changelog|release\s+notes?|what\s*s\s*new|documentation))\b|'
     r'\b(?:learn\s+more\s+in\s+the\s+(?:changelog|release\s+notes?|blog\s+post))\b|'
     r'\b(?:find\s+help\s+in\s+the\s+#\w+\s+channel|get\s+an\s+invite)\b|'
-    r'(?://|#|/\*)\s*(?:write\s+your\s+code\s+here|todo:|implement\s+(?:your|solution|here))'
+    r'(?://|#|/\*)\s*(?:write\s+your\s+code\s+here|todo:|implement\s+(?:your|solution|here))|'
+    r"(?:what(?:'s|\s+is)\s+next\??\s*$)|"
+    r'^(?:exercise|solution|problem|practice|drill|task|answer|hint)\s+\d+'
     ')',
     caseSensitive: false,
   );

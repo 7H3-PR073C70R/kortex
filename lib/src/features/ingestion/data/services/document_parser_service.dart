@@ -666,7 +666,11 @@ class DocumentParserService {
         );
       }
 
-      final formula = _extractOrGenerateFormula(card.front, card.back);
+      final isCodeOrTable = card.type == OfflineCardType.code ||
+          card.type == OfflineCardType.table;
+      final formula = isCodeOrTable
+          ? null
+          : _extractOrGenerateFormula(card.front, card.back);
       if (formula != null &&
           !assets.any((a) => a.type == CardAssetType.latexEquation)) {
         assets.add(

@@ -225,7 +225,7 @@ class PedagogicalCard {
     return OcrExtractionModel(
       id: id,
       documentId: deckId,
-      topic: front,
+      topic: sourceTopic.isNotEmpty ? sourceTopic : front,
       rawText: back,
       latexContent: backLatex ?? frontLatex,
       imageUrl: imageUrl,
