@@ -93,5 +93,7 @@ jobs:
           npx -y firebase-tools@latest appdistribution:distribute build/app/outputs/flutter-apk/app-production-release.apk \
             --app "${{ secrets.FIREBASE_ANDROID_APP_ID }}" \
             --groups "testers" \
-            --release-notes "Production Android Release ${{ github.ref_name || github.sha }}"
+            --release-notes "Production Android Release ${{ github.ref_name || github.sha }}" \
+            --debug
+
 

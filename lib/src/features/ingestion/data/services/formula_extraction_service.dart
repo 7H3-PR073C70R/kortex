@@ -123,7 +123,16 @@ class FormulaExtractionService {
         trimmed.contains('->') ||
         trimmed.contains(r'\to') ||
         trimmed.contains(r'\rightarrow')) {
-      return true;
+      if (_containsCodeKeywords(trimmed)) return false;
+      if (isChemicalEquation(trimmed)) return true;
+      if (trimmed.contains(r'\') ||
+          trimmed.contains('^') ||
+          trimmed.contains('_') ||
+          trimmed.contains(r'\to') ||
+          trimmed.contains(r'\rightarrow')) {
+        return true;
+      }
+      return false;
     }
 
     // 6. Algebraic equations with operators (e.g. E = mc^2, a^2 + b^2 = c^2, y = mx + b)
@@ -656,9 +665,47 @@ class FormulaExtractionService {
         s.contains(r'\begin{align}');
   }
 
+  static final _chemicalSpeciesRegex = RegExp(
+    r'(?:[A-Z][a-z]?(?:_?\d+)?){1,8}',
+  );
+
+  /// Checks if [text] has unambiguous characteristics of a chemical reaction equation
+  /// rather than programming syntax or general textual arrows.
+  static bool isChemicalEquation(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || _containsCodeKeywords(trimmed)) return false;
+    // Reject prose lines that contain common conversational/programming English words
+    if (RegExp(
+      r'\b(?:for|example|or|and|the|with|where|code|use|read|into|from|that|this|have|does|other|pass|receive|struct|type|class|function)\b',
+      caseSensitive: false,
+    ).hasMatch(trimmed)) {
+      return false;
+    }
+    final hasArrow = trimmed.contains('→') ||
+        trimmed.contains('->') ||
+        trimmed.contains(r'\to') ||
+        trimmed.contains(r'\rightarrow');
+    if (!hasArrow) return false;
+
+    final hasPhase = RegExp(r'\((?:aq|g|l|s)\)', caseSensitive: false).hasMatch(trimmed);
+    final hasPlus = trimmed.contains('+');
+    final matches = _chemicalSpeciesRegex
+        .allMatches(trimmed)
+        .where((m) => m.group(0) != null && m.group(0)!.length >= 2)
+        .length;
+    return hasPhase || (hasPlus && matches >= 2) || matches >= 4;
+  }
+
   static bool _containsCodeKeywords(String s) {
-    return RegExp(r'\b(?:var|final|const|function|class|import|return|void)\b')
-        .hasMatch(s);
+    return RegExp(
+      r'\b(?:var|val|fun|def|final|const|function|class|interface|import|package|return|void|public|private|protected|override|if|else|when|switch|case|while|for|typealias|enum|println|print)\b',
+    ).hasMatch(s) ||
+        s.contains('{') ||
+        s.contains('}') ||
+        s.contains(';') ||
+        s.contains('::=') ||
+        s.contains('//') ||
+        s.contains('/*');
   }
 
   static const _greekToLatex = <String, String>{

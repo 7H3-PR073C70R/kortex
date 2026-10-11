@@ -6,6 +6,7 @@ import 'package:kortex/src/features/ingestion/data/services/synthesis/flashcard_
 import 'package:kortex/src/features/ingestion/domain/entities/document_ir.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/pedagogical_card_schema.dart';
+import 'package:kortex/src/features/ingestion/domain/services/document_zone_classifier.dart';
 
 /// The kind of card produced by [OfflineCardBuilder].
 enum OfflineCardType { qa, glossary, definition, formula, list, code, cloze, table, figure }
@@ -191,11 +192,13 @@ class OfflineCardBuilder {
   List<_Block> _irToBlocks(DocumentIR ir) {
     final blocks = <_Block>[];
     String? currentHeading;
+    var currentZone = DocumentZone.bodyKnowledge;
 
     for (final node in ir.blocks) {
       switch (node) {
         case HeadingBlock():
           currentHeading = node.text.trim();
+          currentZone = DocumentZoneClassifier.instance.classifyHeading(currentHeading);
           blocks.add(
             _Block(
               _BlockKind.heading,
@@ -203,6 +206,7 @@ class OfflineCardBuilder {
               sectionTitle: currentHeading,
               page: node.provenance.page,
               provenance: node.provenance,
+              zone: currentZone,
             ),
           );
         case ParagraphBlock():
@@ -213,6 +217,7 @@ class OfflineCardBuilder {
               sectionTitle: currentHeading,
               page: node.provenance.page,
               provenance: node.provenance,
+              zone: currentZone,
             ),
           );
         case ListBlock():
@@ -226,6 +231,7 @@ class OfflineCardBuilder {
                 sectionTitle: currentHeading,
                 page: item.provenance.page,
                 provenance: item.provenance,
+                zone: currentZone,
               ),
             );
           }
@@ -239,6 +245,7 @@ class OfflineCardBuilder {
               sectionTitle: currentHeading,
               page: node.provenance.page,
               provenance: node.provenance,
+              zone: currentZone,
             ),
           );
         case TableBlock():
@@ -252,6 +259,7 @@ class OfflineCardBuilder {
               sectionTitle: currentHeading,
               page: node.provenance.page,
               provenance: node.provenance,
+              zone: currentZone,
             ),
           );
         case CodeBlock():
@@ -263,6 +271,7 @@ class OfflineCardBuilder {
               sectionTitle: currentHeading,
               page: node.provenance.page,
               provenance: node.provenance,
+              zone: currentZone,
             ),
           );
         case MathBlock():
@@ -274,6 +283,7 @@ class OfflineCardBuilder {
               sectionTitle: currentHeading,
               page: node.provenance.page,
               provenance: node.provenance,
+              zone: currentZone,
             ),
           );
         case FigureBlock():
@@ -286,6 +296,7 @@ class OfflineCardBuilder {
               sectionTitle: currentHeading,
               page: node.page,
               provenance: node.provenance,
+              zone: currentZone,
             ),
           );
       }
@@ -317,6 +328,17 @@ class OfflineCardBuilder {
     for (var i = 0; i < blocks.length; i++) {
       final block = blocks[i];
       if (block.kind != _BlockKind.bullet) flushList();
+
+      if (block.kind == _BlockKind.heading) {
+        heading = block.text;
+      }
+
+      // Skip non-pedagogical zones (front matter, lifecycle/changelogs, administrative, assessment)
+      // and boilerplate metadata lines
+      if (DocumentZoneClassifier.isNonPedagogicalZone(block.zone) ||
+          DocumentZoneClassifier.instance.shouldSkipBlockContent(block.text, currentZone: block.zone)) {
+        continue;
+      }
 
       switch (block.kind) {
         case _BlockKind.heading:
@@ -716,13 +738,21 @@ class OfflineCardBuilder {
     final blocks = <_Block>[];
     final paragraph = <String>[];
     String? currentSectionTitle;
+    var currentZone = DocumentZone.bodyKnowledge;
 
     void flushParagraph() {
       if (paragraph.isEmpty) return;
       final joined = _joinWrapped(paragraph);
       paragraph.clear();
       if (joined.length >= 20) {
-        blocks.add(_Block(_BlockKind.paragraph, joined, sectionTitle: currentSectionTitle));
+        blocks.add(
+          _Block(
+            _BlockKind.paragraph,
+            joined,
+            sectionTitle: currentSectionTitle,
+            zone: currentZone,
+          ),
+        );
       }
     }
 
@@ -810,6 +840,7 @@ class OfflineCardBuilder {
             term: label ?? (alt.isNotEmpty ? alt : 'Figure'),
             imageRef: url,
             sectionTitle: currentSectionTitle,
+            zone: currentZone,
           ),
         );
         previousBlank = true;
@@ -835,6 +866,7 @@ class OfflineCardBuilder {
             tableHeaders: headers,
             tableRows: rows,
             sectionTitle: currentSectionTitle,
+            zone: currentZone,
           ),
         );
         previousBlank = true;
@@ -854,7 +886,14 @@ class OfflineCardBuilder {
           code.add(lines[i]);
           i++;
         }
-        blocks.add(_Block(_BlockKind.code, code.join('\n')));
+        blocks.add(
+          _Block(
+            _BlockKind.code,
+            code.join('\n'),
+            sectionTitle: currentSectionTitle,
+            zone: currentZone,
+          ),
+        );
         previousBlank = true;
         continue;
       }
@@ -896,6 +935,8 @@ class OfflineCardBuilder {
             _BlockKind.formula,
             mathLines.join('\n'),
             term: lead?.replaceFirst(RegExp(r'\s*:\s*$'), ''),
+            sectionTitle: currentSectionTitle,
+            zone: currentZone,
           ),
         );
         previousBlank = true;
@@ -905,7 +946,15 @@ class OfflineCardBuilder {
       final qa = _matchQa(lines, i);
       if (qa != null) {
         flushParagraph();
-        blocks.add(_Block(_BlockKind.qa, qa.answer, term: qa.question));
+        blocks.add(
+          _Block(
+            _BlockKind.qa,
+            qa.answer,
+            term: qa.question,
+            sectionTitle: currentSectionTitle,
+            zone: currentZone,
+          ),
+        );
         previousBlank = false;
         i = qa.lastIndex + 1;
         continue;
@@ -926,6 +975,8 @@ class OfflineCardBuilder {
               _BlockKind.formula,
               lines[i],
               term: lead.replaceFirst(RegExp(r'\s*:\s*$'), ''),
+              sectionTitle: currentSectionTitle,
+              zone: currentZone,
             ),
           );
           previousBlank = false;
@@ -937,6 +988,8 @@ class OfflineCardBuilder {
               _BlockKind.formula,
               lines[i],
               term: currentSectionTitle,
+              sectionTitle: currentSectionTitle,
+              zone: currentZone,
             ),
           );
           previousBlank = false;
@@ -950,7 +1003,15 @@ class OfflineCardBuilder {
       if (headingText != null) {
         flushParagraph();
         currentSectionTitle = _cleanInline(headingText);
-        blocks.add(_Block(_BlockKind.heading, currentSectionTitle, sectionTitle: currentSectionTitle));
+        currentZone = DocumentZoneClassifier.instance.classifyHeading(currentSectionTitle);
+        blocks.add(
+          _Block(
+            _BlockKind.heading,
+            currentSectionTitle,
+            sectionTitle: currentSectionTitle,
+            zone: currentZone,
+          ),
+        );
         previousBlank = false;
         i++;
         continue;
@@ -965,7 +1026,15 @@ class OfflineCardBuilder {
         if (_bulletRe.hasMatch(nextLine) || _glossaryRe.hasMatch(nextLine)) {
           flushParagraph();
           currentSectionTitle = _cleanSectionTitle(line);
-          blocks.add(_Block(_BlockKind.heading, currentSectionTitle, sectionTitle: currentSectionTitle));
+          currentZone = DocumentZoneClassifier.instance.classifyHeading(currentSectionTitle);
+          blocks.add(
+            _Block(
+              _BlockKind.heading,
+              currentSectionTitle,
+              sectionTitle: currentSectionTitle,
+              zone: currentZone,
+            ),
+          );
           previousBlank = false;
           i++;
           continue;
@@ -981,7 +1050,15 @@ class OfflineCardBuilder {
         if (_isGlossaryTerm(term)) {
           flushParagraph();
           final (body, last) = absorb(i, _cleanInline(glossary.group(2)!));
-          blocks.add(_Block(_BlockKind.glossary, body, term: term, sectionTitle: currentSectionTitle));
+          blocks.add(
+            _Block(
+              _BlockKind.glossary,
+              body,
+              term: term,
+              sectionTitle: currentSectionTitle,
+              zone: currentZone,
+            ),
+          );
           previousBlank = false;
           i = last + 1;
           continue;
@@ -1000,6 +1077,7 @@ class OfflineCardBuilder {
             ordered: ordered,
             marker: bullet.group(1),
             sectionTitle: currentSectionTitle,
+            zone: currentZone,
           ),
         );
         previousBlank = false;
@@ -1276,6 +1354,20 @@ class OfflineCardBuilder {
     if (!RegExp('^[A-Z0-9]').hasMatch(term)) return false;
     if (RegExp(r'\d+$').hasMatch(term)) return false; // Reject "Statement 440", "Step 2"
     if (RegExp(r'^\d').hasMatch(term)) return false; // Reject "12.2 Compile-Time"
+    if (term.endsWith('?')) return false; // Reject question phrases in term
+    if (RegExp(r'\.(?:ipynb|kt|pdf|md|txt|json|xml|html|java|py|cpp|c|h|rb|go|rs|swift|ts|js)$', caseSensitive: false).hasMatch(term)) {
+      return false; // Reject file extension references
+    }
+    if (RegExp(r'^(?:val|var|fun|class|interface|object|def|fn|function|const|let)\s+', caseSensitive: false).hasMatch(term)) {
+      return false; // Reject code statements/keywords
+    }
+    if (RegExp('[{}=;<>]|->').hasMatch(term)) return false; // Reject code syntax fragments
+    if (RegExp(
+      r'^(?:hint|exercise|solution|answer|practice|task|drill|problem|step)\b',
+      caseSensitive: false,
+    ).hasMatch(term)) {
+      return false; // Reject formative assessment scaffolds
+    }
     if (RegExp(r"^(?:not|never|avoid|don'?t)\b", caseSensitive: false).hasMatch(term)) {
       return false; // Reject "Not testing the app"
     }
@@ -1422,6 +1514,12 @@ class OfflineCardBuilder {
     if (cleanBody.startsWith('-') || cleanBody.startsWith('–') || cleanBody.startsWith('—')) return null;
     if (RegExp(r'\b\d+\.\d+(?:\.\d+)*\b').hasMatch(cleanBody)) return null;
     if (cleanBody.length < 15) return null;
+    if (RegExp(r"^(?:what(?:'s|\s+is)\s+next|see\s+also|read\s+more|click\s+here|learn\s+more)\b", caseSensitive: false).hasMatch(cleanBody)) {
+      return null;
+    }
+    if (DocumentZoneClassifier.instance.shouldSkipBlockContent(cleanBody, currentZone: block.zone)) {
+      return null;
+    }
 
     final sanitizedBody = cleanBody.replaceFirst(
       RegExp(r'\s*All other tasks as assigned by.*$', caseSensitive: false),
@@ -1502,10 +1600,17 @@ class OfflineCardBuilder {
 
   OfflineCard? _formulaCard(_Block block, String? heading, String docContext, {int index = 0}) {
     final formulaText = block.text.trim();
-    final term = block.term ?? heading ?? (formulaText.contains(r'\') || formulaText.contains('=') ? 'this formula' : 'this reaction');
-    final front = formulaText.contains(r'\') || formulaText.contains('=')
-        ? 'What is the formula for $term?'
-        : 'What is the chemical equation for $term?';
+    final isChem = FormulaExtractionService.isChemicalEquation(formulaText);
+    final isMath = FormulaExtractionService.isFormula(formulaText) ||
+        formulaText.contains(r'\') ||
+        formulaText.contains('=');
+
+    if (!isChem && !isMath) return null;
+
+    final term = block.term ?? heading ?? (isChem ? 'this reaction' : 'this formula');
+    final front = isChem
+        ? 'What is the chemical equation for $term?'
+        : 'What is the formula for $term?';
 
     final assets = <CardAsset>[
       CardAsset(
@@ -2536,6 +2641,7 @@ class _Block {
     this.page = 1,
     this.codeLanguage,
     this.provenance,
+    this.zone = DocumentZone.bodyKnowledge,
   });
 
   final _BlockKind kind;
@@ -2550,6 +2656,7 @@ class _Block {
   final int page;
   final String? codeLanguage;
   final BlockProvenance? provenance;
+  final DocumentZone zone;
 }
 
 class _DefinitionResult {
