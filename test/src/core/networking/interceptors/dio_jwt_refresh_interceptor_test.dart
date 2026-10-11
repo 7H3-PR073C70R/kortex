@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
@@ -423,6 +425,189 @@ void main() {
       expect(storageService.getRefreshToken(), isNull);
       expect(expiredEvents.isNotEmpty, isTrue);
       expect(handler.errorPassed, isNotNull);
+
+      await sub.cancel();
+    });
+
+    test('P3-03 · Single-flights concurrent token refresh requests so only ONE network call is made', () async {
+      await storageService.saveAuthTokens(
+        accessToken: 'expired_token',
+        refreshToken: 'valid_refresh_token',
+      );
+
+      var refreshCallCount = 0;
+      final refreshCompleter = Completer<Response<dynamic>>();
+
+      final refreshDio = Dio();
+      refreshDio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) async {
+            if (options.path.contains(AppApiEndpoint.refreshToken)) {
+              refreshCallCount++;
+              final response = await refreshCompleter.future;
+              return handler.resolve(response);
+            }
+            return handler.resolve(
+              Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: {'ok': true},
+              ),
+            );
+          },
+        ),
+      );
+
+      final interceptor = TokenInterceptor(
+        storageService: storageService,
+        sessionExpiredService: sessionExpiredService,
+        refreshDio: refreshDio,
+      );
+
+      final handler1 = _MockErrorHandler();
+      final handler2 = _MockErrorHandler();
+
+      final req1 = RequestOptions(path: '/rest/v1/deck1');
+      final err1 = DioException(
+        requestOptions: req1,
+        response: Response(requestOptions: req1, statusCode: 401),
+      );
+
+      final req2 = RequestOptions(path: '/rest/v1/deck2');
+      final err2 = DioException(
+        requestOptions: req2,
+        response: Response(requestOptions: req2, statusCode: 401),
+      );
+
+      final future1 = interceptor.onError(err1, handler1);
+      final future2 = interceptor.onError(err2, handler2);
+
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      expect(refreshCallCount, equals(1), reason: 'Only 1 refresh network call must be initiated');
+
+      refreshCompleter.complete(
+        Response(
+          requestOptions: RequestOptions(path: AppApiEndpoint.refreshToken),
+          statusCode: 200,
+          data: {
+            'access_token': 'new_single_flight_access_token',
+            'refresh_token': 'new_single_flight_refresh_token',
+          },
+        ),
+      );
+
+      await Future.wait([future1, future2]);
+
+      expect(refreshCallCount, equals(1));
+      expect(storageService.getToken(), equals('new_single_flight_access_token'));
+      expect(handler1.resolvedResponse, isNotNull);
+      expect(handler2.resolvedResponse, isNotNull);
+    });
+
+    test('P3-03 · HTTP 429 on token refresh preserves session and does NOT trigger auto-logout', () async {
+      await storageService.saveAuthTokens(
+        accessToken: 'expired_token',
+        refreshToken: 'valid_refresh_token',
+      );
+
+      final refreshDio = Dio();
+      refreshDio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            return handler.reject(
+              DioException(
+                requestOptions: options,
+                response: Response(
+                  requestOptions: options,
+                  statusCode: 429,
+                  data: {'error': 'Too Many Requests'},
+                ),
+              ),
+            );
+          },
+        ),
+      );
+
+      final interceptor = TokenInterceptor(
+        storageService: storageService,
+        sessionExpiredService: sessionExpiredService,
+        refreshDio: refreshDio,
+      );
+
+      var sessionExpiredFired = false;
+      final sub = sessionExpiredService.onSessionExpired.listen((_) {
+        sessionExpiredFired = true;
+      });
+
+      final req = RequestOptions(path: '/rest/v1/profiles');
+      final err = DioException(
+        requestOptions: req,
+        response: Response(requestOptions: req, statusCode: 401),
+      );
+      final handler = _MockErrorHandler();
+
+      await interceptor.onError(err, handler);
+
+      expect(storageService.getToken(), equals('expired_token'), reason: 'Token must not be cleared on 429');
+      expect(storageService.getRefreshToken(), equals('valid_refresh_token'));
+      expect(sessionExpiredFired, isFalse, reason: 'Auto-logout event must not fire on 429 rate limit');
+      expect(handler.errorPassed, isNotNull);
+
+      await sub.cancel();
+    });
+
+    test('P3-03 · HTTP 401 with invalid_grant permanently invalidates session and clears credentials', () async {
+      await storageService.saveAuthTokens(
+        accessToken: 'expired_token',
+        refreshToken: 'revoked_refresh_token',
+      );
+
+      final refreshDio = Dio();
+      refreshDio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            return handler.reject(
+              DioException(
+                requestOptions: options,
+                response: Response(
+                  requestOptions: options,
+                  statusCode: 401,
+                  data: {
+                    'error': 'invalid_grant',
+                    'error_description': 'Invalid Refresh Token: Refresh Token Not Found',
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      );
+
+      final interceptor = TokenInterceptor(
+        storageService: storageService,
+        sessionExpiredService: sessionExpiredService,
+        refreshDio: refreshDio,
+      );
+
+      var sessionExpiredFired = false;
+      final sub = sessionExpiredService.onSessionExpired.listen((_) {
+        sessionExpiredFired = true;
+      });
+
+      final req = RequestOptions(path: '/rest/v1/profiles');
+      final err = DioException(
+        requestOptions: req,
+        response: Response(requestOptions: req, statusCode: 401),
+      );
+      final handler = _MockErrorHandler();
+
+      await interceptor.onError(err, handler);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(storageService.getToken(), isNull, reason: 'Access token must be cleared');
+      expect(storageService.getRefreshToken(), isNull, reason: 'Refresh token must be cleared');
+      expect(sessionExpiredFired, isTrue, reason: 'Session expired event must fire');
 
       await sub.cancel();
     });

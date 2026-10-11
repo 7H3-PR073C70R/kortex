@@ -10,16 +10,16 @@ void main() {
   group('AppLogger Unit Test Suite', () {
     late MockCrashlyticsService mockCrashlytics;
 
-    setUp(() {
+    setUp(() async {
       mockCrashlytics = MockCrashlyticsService();
       if (locator.isRegistered<CrashlyticsService>()) {
-        locator.unregister<CrashlyticsService>();
+        await locator.unregister<CrashlyticsService>();
       }
     });
 
-    tearDown(() {
+    tearDown(() async {
       if (locator.isRegistered<CrashlyticsService>()) {
-        locator.unregister<CrashlyticsService>();
+        await locator.unregister<CrashlyticsService>();
       }
     });
 
@@ -44,15 +44,15 @@ void main() {
 
       when(
         () => mockCrashlytics.recordError(
-          any(),
-          any(),
-          reason: any(named: 'reason'),
-          information: any(named: 'information'),
-          fatal: any(named: 'fatal'),
+          any<dynamic>(),
+          any<StackTrace>(),
+          reason: any<String>(named: 'reason'),
+          information: any<Iterable<Object>>(named: 'information'),
+          fatal: any<bool>(named: 'fatal'),
         ),
       ).thenAnswer((_) async {});
 
-      final testError = FormatException('Invalid JSON payload');
+      const testError = FormatException('Invalid JSON payload');
       final testStack = StackTrace.current;
 
       AppLogger.recordNonFatal(
@@ -69,7 +69,7 @@ void main() {
           testError,
           testStack,
           reason: 'Sync decode failure',
-          information: any(named: 'information'),
+          information: any<Iterable<Object>>(named: 'information'),
         ),
       ).called(1);
     });
@@ -79,11 +79,11 @@ void main() {
 
       when(
         () => mockCrashlytics.recordError(
-          any(),
-          any(),
-          reason: any(named: 'reason'),
-          information: any(named: 'information'),
-          fatal: any(named: 'fatal'),
+          any<dynamic>(),
+          any<StackTrace>(),
+          reason: any<String>(named: 'reason'),
+          information: any<Iterable<Object>>(named: 'information'),
+          fatal: any<bool>(named: 'fatal'),
         ),
       ).thenAnswer((_) async {});
 
@@ -95,7 +95,6 @@ void main() {
         tag: 'Payments',
         error: testError,
         stackTrace: testStack,
-        recordCrashlytics: true,
       );
 
       await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -105,7 +104,7 @@ void main() {
           testError,
           testStack,
           reason: 'Payment gateway timed out',
-          information: any(named: 'information'),
+          information: any<Iterable<Object>>(named: 'information'),
         ),
       ).called(1);
     });
@@ -128,11 +127,11 @@ void main() {
 
       verifyNever(
         () => mockCrashlytics.recordError(
-          any(),
-          any(),
-          reason: any(named: 'reason'),
-          information: any(named: 'information'),
-          fatal: any(named: 'fatal'),
+          any<dynamic>(),
+          any<StackTrace>(),
+          reason: any<String>(named: 'reason'),
+          information: any<Iterable<Object>>(named: 'information'),
+          fatal: any<bool>(named: 'fatal'),
         ),
       );
     });

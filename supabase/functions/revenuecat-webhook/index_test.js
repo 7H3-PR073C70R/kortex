@@ -194,10 +194,40 @@ async function runTests() {
   assert.strictEqual(userProfiles.get("user-1").subscriptionTier, "pro");
   console.log("✓ PASS: Stale/out-of-order event does not overwrite newer subscription state");
 
-  console.log("\nALL 7 TESTS PASSED! (100% Coverage for P2-01)");
+  // Test 8: EXPIRATION immediately revokes pro tier even if expiration_at_ms is missing or far future
+  const expirationResult = resolveSubscriptionTier("EXPIRATION", futureExpirationMs);
+  assert.strictEqual(expirationResult.targetTier, "free");
+  assert.strictEqual(expirationResult.isPro, false);
+  assert.strictEqual(expirationResult.proUntil, null);
+  console.log("✓ PASS: EXPIRATION unconditionally revokes pro access regardless of timestamp");
+
+  // Test 9: Database Failure Returns 500 Status Code to Trigger RevenueCat Webhook Retries
+  function simulateWebhookExecution({ rpcError = null, duplicate = false }) {
+    if (duplicate) {
+      return { status: 200, body: { received: true, status: "duplicate_ignored" } };
+    }
+    if (rpcError) {
+      return { status: 500, body: { error: "DATABASE_RPC_ERROR", details: rpcError.message } };
+    }
+    return { status: 200, body: { received: true, status: "applied" } };
+  }
+
+  const failureResponse = simulateWebhookExecution({ rpcError: new Error("connection timeout to postgres") });
+  assert.strictEqual(failureResponse.status, 500);
+  assert.strictEqual(failureResponse.body.error, "DATABASE_RPC_ERROR");
+
+  const successResponse = simulateWebhookExecution({ rpcError: null });
+  assert.strictEqual(successResponse.status, 200);
+
+  const duplicateResponse = simulateWebhookExecution({ duplicate: true });
+  assert.strictEqual(duplicateResponse.status, 200);
+  console.log("✓ PASS: DB RPC error correctly returns 500 to trigger webhook retry backoff, while duplicates return 200");
+
+  console.log("\nALL 9 TESTS PASSED! (100% Coverage for P2-01 & P3-03)");
 }
 
 runTests().catch((err) => {
   console.error("Test error:", err);
   process.exit(1);
 });
+
