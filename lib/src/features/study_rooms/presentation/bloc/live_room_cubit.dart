@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -976,7 +977,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       if (state.isAmbientAudioPlaying) {
         await _playTrack(state.ambientSoundTrack);
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> _playTrack(String track) async {
@@ -985,7 +986,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       await _ambientPlayer.stop();
       await _ambientPlayer.play(AssetSource(asset));
       await _ambientPlayer.setVolume(state.ambientAudioVolume);
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   void setAmbientSoundTrack(String track) {
@@ -1488,7 +1489,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     try {
       await _ambientPlayer.stop();
       await _ambientPlayer.dispose();
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return super.close();
   }
 }

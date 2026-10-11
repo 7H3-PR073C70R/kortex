@@ -18,6 +18,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/chat_auth_message.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
@@ -708,7 +709,7 @@ class AuthChatView extends HookWidget {
                   }
                 },
               );
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
           var localSaysOnboarded = false;
           try {
@@ -716,7 +717,7 @@ class AuthChatView extends HookWidget {
             localSaysOnboarded =
                 storage.getPreference(key: PrefKeys.hasCompletedOnboarding) ==
                 'true';
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
           var calibSaysOnboarded = false;
           if (!serverSaysOnboarded && !localSaysOnboarded) {
@@ -742,7 +743,7 @@ class AuthChatView extends HookWidget {
                 final list = jsonDecode(rawCourses) as List<dynamic>;
                 if (list.isNotEmpty) coursesSayOnboarded = true;
               }
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
             if (!coursesSayOnboarded &&
                 locator.isRegistered<DashboardRepository>()) {
@@ -753,7 +754,7 @@ class AuthChatView extends HookWidget {
                   (_) => false,
                   (courses) => courses.isNotEmpty,
                 );
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }
           }
 
@@ -772,7 +773,7 @@ class AuthChatView extends HookWidget {
                   data: 'true',
                 ),
               );
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             addBotMessage(
               '✨ Welcome back, **$name**! Redirecting to your Dashboard...',
             );
@@ -1029,7 +1030,7 @@ class AuthChatView extends HookWidget {
                                             ),
                                           );
                                         }
-                                      } on Object catch (_) {}
+                                      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
                                     },
                               ),
                               const SizedBox(height: 4),

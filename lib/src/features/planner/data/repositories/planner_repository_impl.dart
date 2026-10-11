@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
@@ -11,6 +12,7 @@ import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -61,7 +63,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
           unawaited(getActiveExams());
         }
       });
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> dispose() async {
@@ -74,7 +76,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
       if (locator.isRegistered<Dio>()) {
         return locator<Dio>();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 
@@ -84,7 +86,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
       if (locator.isRegistered<AppDatabase>()) {
         return locator<AppDatabase>();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 
@@ -103,7 +105,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
       if (locator.isRegistered<UserStorageService>()) {
         return locator<UserStorageService>();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 
@@ -117,7 +119,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
         final list = jsonDecode(raw) as List<dynamic>;
         return list.map((e) => e.toString()).toSet();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return <String>{};
   }
 
@@ -131,7 +133,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
           data: jsonEncode(deletions.toList()),
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   // In-memory local cache / fallback list
@@ -144,7 +146,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
         // Load synchronously from memory while kicking off async Drift sync
         unawaited(_syncFromDrift());
         return;
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     try {
@@ -159,7 +161,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
           )
           ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> _syncFromDrift() async {
@@ -181,7 +183,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
               richModelsMap[model.id] = model;
             }
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       final entries = await db.getAllExamEvents();
@@ -266,7 +268,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
           data: jsonStr,
         ),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -292,7 +294,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
                 : '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$deletedId';
             await client.delete<dynamic>(uri);
             remainingPending.remove(deletedId);
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
         await _savePendingExamDeletions(remainingPending);
       }
@@ -353,7 +355,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
                       headers: {'Prefer': 'resolution=merge-duplicates'},
                     ),
                   );
-                } on Object catch (_) {}
+                } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
               }());
             }
 

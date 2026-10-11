@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/course_track_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
@@ -104,7 +105,7 @@ class DashboardCbtReadinessGaugeCard extends StatelessWidget {
           realMockScoreRatio = feed.analyticsSummary.overallRetentionRate;
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     final readinessResult = const CbtReadinessCalculator().compute(
       syllabusCoverage: realSyllabusCoverage,

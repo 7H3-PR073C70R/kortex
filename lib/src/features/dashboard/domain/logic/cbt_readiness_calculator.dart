@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
@@ -215,7 +216,7 @@ class RegisteredCourseInput {
       if (key == 'department') return (obj as dynamic).department as String?;
       if (key == 'iconName') return (obj as dynamic).iconName as String?;
       if (key == 'colorHex') return (obj as dynamic).colorHex as String?;
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 
@@ -231,7 +232,7 @@ class RegisteredCourseInput {
       if (key == 'syllabus_coverage') return ((obj as dynamic).syllabus_coverage as num?)?.toDouble();
       if (key == 'accuracyPercent') return ((obj as dynamic).accuracyPercent as num?)?.toDouble();
       if (key == 'retentionRate') return ((obj as dynamic).retentionRate as num?)?.toDouble();
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 }
@@ -410,7 +411,7 @@ class CbtReadinessCalculator {
           }
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // 3. Fallback to course explicit single property if present
     if (course.accuracyPercent != null || course.retentionRate != null) {

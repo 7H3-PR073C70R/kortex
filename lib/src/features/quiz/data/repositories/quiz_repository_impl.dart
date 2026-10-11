@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,7 @@ import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
@@ -76,7 +78,7 @@ class QuizRepositoryImpl implements QuizRepository {
           unawaited(flushPendingQuizSubmissions());
         }
       });
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> dispose() async {
@@ -712,7 +714,7 @@ class QuizRepositoryImpl implements QuizRepository {
             syncedCount++;
             continue;
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         remaining.add(payload);
       }
     }

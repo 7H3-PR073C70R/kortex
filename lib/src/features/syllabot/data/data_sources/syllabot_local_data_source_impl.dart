@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/data/data_sources/syllabot_local_data_source.dart';
 import 'package:kortex/src/features/syllabot/data/models/chat_message_model.dart';
@@ -105,7 +107,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
             return legacy;
           }
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     try {
@@ -122,7 +124,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
               .toList();
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     return _sessionCache;
   }
@@ -147,7 +149,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
           ),
         );
         return;
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     try {
@@ -160,7 +162,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
         final jsonStr = jsonEncode(updated.map((s) => s.toJson()).toList());
         await _storage.savePreference(key: _sessionsKey, data: jsonStr);
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -173,7 +175,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
       try {
         await db.deleteSyllabotSessionById(sessionId);
         await db.deleteSyllabotMessagesForSession(sessionId);
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     try {
@@ -184,7 +186,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
         await _storage.savePreference(key: _sessionsKey, data: jsonStr);
         await _storage.deletePreference(key: '$_messageKeyPrefix$sessionId');
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -203,7 +205,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
                 latex = (jsonDecode(e.latexSnippets!) as List<dynamic>)
                     .map((x) => x.toString())
                     .toList();
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }
             return ChatMessageModel(
               id: e.id,
@@ -257,7 +259,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
             return parsed;
           }
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     try {
@@ -270,7 +272,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
               .toList();
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     return _messageCache[sessionId] ?? [];
   }
@@ -301,7 +303,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
           ),
         );
         return;
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     try {
@@ -314,7 +316,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
           data: jsonStr,
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -324,7 +326,7 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
     if (db != null) {
       try {
         await db.deleteExpiredSyllabotMessages(cutoff);
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     for (final key in List.of(_messageCache.keys)) {

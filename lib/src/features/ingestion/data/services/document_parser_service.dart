@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:archive/archive.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
 import 'package:kortex/src/features/ingestion/data/services/formula_extraction_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_docx_parser_service.dart';
@@ -78,7 +80,7 @@ class DocumentParserService {
         rethrow;
       } on ScannedDocumentException {
         rethrow;
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       return extractRawPdfStreamText(bytes);
     }
 
@@ -439,7 +441,7 @@ class DocumentParserService {
       if (figures.isNotEmpty) {
         return figures.map((f) => f.toAttachment()).toList();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     final images = <ExtractedImageAttachment>[];
 
@@ -544,7 +546,7 @@ class DocumentParserService {
               label: 'Diagram / Chart ${images.length + 1} (${width}x$height)',
             ),
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       } else if (isDct) {
         images.add(
           ExtractedImageAttachment(

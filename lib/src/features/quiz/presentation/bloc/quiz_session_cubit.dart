@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
@@ -9,6 +10,7 @@ import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -329,7 +331,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           return;
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     final fallback = _generateFallbackArcadeQuestions();
     startMillionaireQuiz(
@@ -849,7 +851,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
       if (queue != null) {
         await queue.flushPendingLogs();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     final result = await _submitQuizUseCase(
       quizTitle: state.quizTitle,
@@ -870,7 +872,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           if (locator.isRegistered<DashboardRepository>()) {
             locator<DashboardRepository>().clearFeedCache();
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
         // Telemetry: Mock exam score submission trace & Crashlytics metrics
         try {
@@ -902,24 +904,24 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
             ..setMetric('correct_answers', quizResult.correctAnswers)
             ..setMetric('duration_seconds', quizResult.durationSeconds);
           unawaited(trace.start().then((_) => trace.stop()));
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
         // Live UI state refresh for Auth streak, Decks, Dashboard, and Pod Focus Minutes
         try {
           if (locator.isRegistered<AuthBloc>()) {
             locator<AuthBloc>().add(const AuthStreakIncremented());
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           if (locator.isRegistered<DecksBloc>()) {
             locator<DecksBloc>().add(const DecksRefreshed());
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           if (locator.isRegistered<DashboardBloc>()) {
             locator<DashboardBloc>().add(const DashboardRefreshed());
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           if (locator.isRegistered<UserActivityService>()) {
             final isPerfect = quizResult.scorePercent >= 100;
@@ -946,7 +948,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
               ),
             );
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
         try {
           if (locator.isRegistered<StudyActivityTracker>()) {
@@ -959,7 +961,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
               ),
             );
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
         // Reschedule daily study reminder forward so streak notifications do not fire redundantly today
         try {
@@ -983,7 +985,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
               );
             }
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
         emit(
           state.copyWith(
@@ -1022,7 +1024,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         state: FsrsCardState.learning,
       );
       unawaited(queue.enqueueReview(log));
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   List<QuizQuestionEntity> _generateFallbackArcadeQuestions() {

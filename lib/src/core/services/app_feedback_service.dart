@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 
 /// Centralized haptic and sensory feedback controller for Kortex.
@@ -60,33 +61,33 @@ class AppFeedback {
     if (!isHapticsEnabled) return;
     try {
       unawaited(HapticFeedback.lightImpact());
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   static void medium() {
     if (!isHapticsEnabled) return;
     try {
       unawaited(HapticFeedback.mediumImpact());
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   static void heavy() {
     if (!isHapticsEnabled) return;
     try {
       unawaited(HapticFeedback.heavyImpact());
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   static void correct() {
     if (isHapticsEnabled) {
       try {
         unawaited(HapticFeedback.lightImpact());
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
     if (isSfxEnabled) {
       try {
         unawaited(SystemSound.play(SystemSoundType.click));
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -95,7 +96,7 @@ class AppFeedback {
       try {
         // Subtle, low-friction sensory notification (low RSD, non-punitive)
         unawaited(HapticFeedback.selectionClick());
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -107,15 +108,15 @@ class AppFeedback {
           if (isHapticsEnabled) {
             try {
               unawaited(HapticFeedback.mediumImpact());
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
         });
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
     if (isSfxEnabled) {
       try {
         unawaited(SystemSound.play(SystemSoundType.alert));
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -127,15 +128,15 @@ class AppFeedback {
           if (isHapticsEnabled) {
             try {
               unawaited(HapticFeedback.selectionClick());
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
         });
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
     if (isSfxEnabled) {
       try {
         unawaited(SystemSound.play(SystemSoundType.click));
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -143,12 +144,12 @@ class AppFeedback {
     if (isHapticsEnabled) {
       try {
         unawaited(HapticFeedback.selectionClick());
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
     if (isSfxEnabled) {
       try {
         unawaited(SystemSound.play(SystemSoundType.click));
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -156,7 +157,7 @@ class AppFeedback {
     if (!isHapticsEnabled) return;
     try {
       unawaited(HapticFeedback.vibrate());
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   /// Low-friction tick haptic when round timer is under 5 seconds.
@@ -164,7 +165,7 @@ class AppFeedback {
     if (!isHapticsEnabled) return;
     try {
       unawaited(HapticFeedback.selectionClick());
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   /// Multi-stage pulse for active combo streaks (🔥x2, 🔥x3, etc.)
@@ -177,11 +178,11 @@ class AppFeedback {
           if (isHapticsEnabled) {
             try {
               unawaited(HapticFeedback.heavyImpact());
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
         });
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   /// Heavy tactile burst when locking in an answer within < 2 seconds.
@@ -189,12 +190,12 @@ class AppFeedback {
     if (isHapticsEnabled) {
       try {
         unawaited(HapticFeedback.heavyImpact());
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
     if (isSfxEnabled) {
       try {
         unawaited(SystemSound.play(SystemSoundType.click));
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -208,6 +209,6 @@ class AppFeedback {
     if (!isHapticsEnabled) return;
     try {
       unawaited(HapticFeedback.lightImpact());
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 }

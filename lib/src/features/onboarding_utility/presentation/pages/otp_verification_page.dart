@@ -17,6 +17,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
@@ -92,7 +93,7 @@ class _OtpView extends HookWidget {
             localSaysOnboarded =
                 storage.getPreference(key: PrefKeys.hasCompletedOnboarding) ==
                 'true';
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
           var calibSaysOnboarded = false;
           if (!serverSaysOnboarded && !localSaysOnboarded) {
@@ -117,7 +118,7 @@ class _OtpView extends HookWidget {
                 final list = jsonDecode(rawCourses) as List<dynamic>;
                 if (list.isNotEmpty) coursesSayOnboarded = true;
               }
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
             if (!coursesSayOnboarded &&
                 locator.isRegistered<AuthRepository>()) {
@@ -129,7 +130,7 @@ class _OtpView extends HookWidget {
                     if (profile.isOnboarded) serverSaysOnboarded = true;
                   },
                 );
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }
 
             if (!coursesSayOnboarded &&
@@ -142,7 +143,7 @@ class _OtpView extends HookWidget {
                   (_) => false,
                   (courses) => courses.isNotEmpty,
                 );
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }
           }
 
@@ -162,7 +163,7 @@ class _OtpView extends HookWidget {
               authBloc.add(
                 const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
               );
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
 
           if (context.mounted) {

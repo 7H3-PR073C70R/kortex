@@ -1,7 +1,9 @@
 import 'dart:typed_data';
+
 import 'package:crypto/crypto.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
@@ -203,7 +205,7 @@ class IngestionRepositoryImpl implements IngestionRepository {
           (d.title.trim().toLowerCase() == deckTitle.trim().toLowerCase() &&
            (courseId == null || d.courseId == courseId)),
         ).firstOrNull;
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       final deckId = existingDeck?.id ?? UuidUtils.generate();
       final cards = <FlashcardEntity>[];

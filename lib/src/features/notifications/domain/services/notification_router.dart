@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/widgets.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
 import 'package:kortex/src/features/notifications/presentation/pages/notifications_page.dart';
@@ -83,7 +85,7 @@ class NotificationRouter {
         BuildContext? navCtx;
         try {
           navCtx = router.navigatorKey.currentContext;
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         if (navCtx != null) {
           await NotificationsPage.show(navCtx);
         } else {
@@ -248,7 +250,7 @@ class NotificationRouter {
         try {
           await router.pushPath(clean);
           return true;
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       return false;

@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
@@ -143,7 +144,7 @@ class DeepDocumentDedupService {
               startPageIndex: index,
               endPageIndex: index,
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
           final normalized = _normalizeText(pageText);
           sampledPages[index] = normalized.length > 600
@@ -185,7 +186,7 @@ class DeepDocumentDedupService {
     var textContent = '';
     try {
       textContent = utf8.decode(bytes, allowMalformed: true);
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     final lines = textContent
         .split('\n')

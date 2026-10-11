@@ -8,6 +8,7 @@ import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
@@ -85,7 +86,7 @@ class AudioLectureIngestionSheet extends HookWidget {
               (doc.bytes.lengthInBytes / (1024 * 1024)).toStringAsFixed(1);
           fileSize.value = '$sizeMb MB';
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     Future<void> startWhisperProcessing() async {
@@ -124,7 +125,7 @@ class AudioLectureIngestionSheet extends HookWidget {
           onTranscriptionCompleted?.call(text);
           AppFeedback.correct();
           return;
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       // Live processing fallback simulation if no file picked yet

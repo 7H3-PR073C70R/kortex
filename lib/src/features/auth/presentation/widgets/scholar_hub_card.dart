@@ -9,6 +9,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
@@ -81,7 +82,7 @@ class ScholarHubCard extends StatelessWidget {
         final calcLevel = userActivity.getLevelForXp(xp);
         level = math.max(level, calcLevel);
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     final photoUrl = profile?.photoUrl;
 
@@ -589,7 +590,7 @@ class ScholarHubCard extends StatelessWidget {
               ),
             ),
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       } else if (photoUrl.startsWith('http://') ||
           photoUrl.startsWith('https://')) {
         return ClipOval(

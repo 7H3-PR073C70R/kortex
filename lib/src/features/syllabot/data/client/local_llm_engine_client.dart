@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/local_llm/flutter_llama_adapter.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
@@ -186,7 +187,7 @@ class LocalLlmEngineClient {
                 // Automatically clean up incomplete or partial downloads
                 try {
                   f.deleteSync();
-                } on Object catch (_) {}
+                } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
                 return false;
               },
             )
@@ -217,7 +218,7 @@ class LocalLlmEngineClient {
           // Clean up partial download and clear preference keys
           try {
             File(path).deleteSync();
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           unawaited(storage.deletePreference(key: _modelStorageKey));
           unawaited(storage.deletePreference(key: _modelPathKey));
           unawaited(storage.deletePreference(key: PrefKeys.syllabotActiveLocalModelPath));
@@ -276,7 +277,7 @@ class LocalLlmEngineClient {
         } else {
           try {
             targetFile.deleteSync();
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       }
 
@@ -292,10 +293,10 @@ class LocalLlmEngineClient {
             } else {
               try {
                 File(hfPath).deleteSync();
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       if (!downloaded && activePath != null && File(activePath).existsSync()) {
@@ -312,7 +313,7 @@ class LocalLlmEngineClient {
         } else if (len < minExpectedBytes) {
           try {
             f.deleteSync();
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       }
 
@@ -330,7 +331,7 @@ class LocalLlmEngineClient {
             if (hfTemp.existsSync()) {
               partialBytes = hfTemp.lengthSync();
             }
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       }
 
@@ -574,19 +575,19 @@ class LocalLlmEngineClient {
         if (FlutterLlama.instance.isModelLoaded) {
           await FlutterLlama.instance.unloadModel();
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       // 2. Delete file from target.filePath if present
       if (target.filePath != null && File(target.filePath!).existsSync()) {
         try {
           await File(target.filePath!).delete();
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       // 3. Delete HuggingFace model cache directory via ModelManager
       try {
         await ModelManager.fromPreset(target.preset).deleteModel();
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       final appDir = await getApplicationDocumentsDirectory();
       final hfDir = Directory(
@@ -595,7 +596,7 @@ class LocalLlmEngineClient {
       if (hfDir.existsSync()) {
         try {
           hfDir.deleteSync(recursive: true);
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       // 4. Delete model file in unified kortex_models directory
@@ -607,14 +608,14 @@ class LocalLlmEngineClient {
       if (sharedFile.existsSync()) {
         try {
           sharedFile.deleteSync();
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       final tempFile = File('${sharedDir.path}/$presetFileName.tmp');
       if (tempFile.existsSync()) {
         try {
           tempFile.deleteSync();
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       // 5. Clean up preferences
@@ -648,14 +649,14 @@ class LocalLlmEngineClient {
       if (FlutterLlama.instance.isModelLoaded) {
         await FlutterLlama.instance.unloadModel();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
       final f = File(modelPath);
       if (f.existsSync()) {
         f.deleteSync();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
       final appDir = await getApplicationDocumentsDirectory();
@@ -665,11 +666,11 @@ class LocalLlmEngineClient {
           if (entity is File) {
             try {
               entity.deleteSync();
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     final storage = locator.isRegistered<LocalStorageService>()
         ? locator<LocalStorageService>()

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/study_rooms/domain/services/whiteboard_compression.dart';
 
 class EphemeralParticipant {
@@ -547,7 +548,7 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
           }
           _notifyParticipants(roomId);
         }
-      } on Exception catch (_) {}
+      } on Exception catch (e, st) { AppLogger.recordNonFatal(e, st); }
     });
   }
 

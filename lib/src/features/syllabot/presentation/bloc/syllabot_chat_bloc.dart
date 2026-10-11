@@ -1,9 +1,11 @@
 import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/error_message_handler.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -265,7 +267,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
             ),
           );
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
     _streamStartTime = null;
 
@@ -352,7 +354,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
           orElse: () => SocraticMode.stepByStep,
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return SocraticMode.stepByStep;
   }
 
@@ -403,7 +405,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
             ) !=
             null;
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     emit(
       state.copyWith(
@@ -525,7 +527,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
               ),
             );
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
         // Refresh Decks & Dashboard in real-time
         if (locator.isRegistered<DecksBloc>()) {

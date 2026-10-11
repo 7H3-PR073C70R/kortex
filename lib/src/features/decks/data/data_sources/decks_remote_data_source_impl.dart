@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
@@ -51,7 +53,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           unawaited(getUserDecks());
         }
       });
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> dispose() async {
@@ -110,7 +112,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         final list = jsonDecode(raw) as List<dynamic>;
         return list.map((e) => e.toString()).toSet();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return <String>{};
   }
 
@@ -124,7 +126,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           data: jsonEncode(deletions.toList()),
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   void _persistLocalDecksToStorage() {
@@ -151,7 +153,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           );
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> _loadPersistedDecksIntoMemory() async {
@@ -167,7 +169,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
             _localCreatedDecks[idx] = deck;
           }
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     // 2. Supplement / Fallback: SharedPreferences loader
@@ -198,7 +200,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           }
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // 3. Populate cards cache for all known local decks from local storage
     for (final deck in _localCreatedDecks) {
@@ -217,7 +219,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
               _localDeckCards[deck.id] = loadedCards;
             }
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
     }
   }
@@ -329,7 +331,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
             try {
               await _client.deleteDeck(deletedId);
               remainingPending.remove(deletedId);
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           } else {
             remainingPending.remove(deletedId);
           }
@@ -415,7 +417,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
                 if (effectiveLastStudied != null)
                   'last_studied': effectiveLastStudied.toIso8601String(),
               });
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }());
         }
 
@@ -478,7 +480,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
                 await _client.bulkInsertCards(cardsPayload);
               }
             }
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }());
       }
 
@@ -618,7 +620,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
             _localDeckCards[deck.id] = cards;
             unawaited(_localDataSource?.saveCards(deck.id, cards));
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
     }
   }
@@ -647,7 +649,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           _localDeckCards[deckId] = localCards;
           return localCards;
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     // 2. Check legacy persistent storage
@@ -666,7 +668,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           return loaded;
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // 3. Fetch from remote if not cached locally, deckId is a valid UUID, and user is authenticated
     final token = _userStorage?.getToken();
@@ -960,7 +962,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       _localCreatedDecks.removeWhere((d) => d.id == deck.id);
       try {
         await _client.deleteDeck(deck.id);
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
     _persistLocalDecksToStorage();
 
@@ -1004,7 +1006,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           'course_id': courseId,
           'course_code': courseCode,
         });
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -1019,7 +1021,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     for (final id in allIds) {
       try {
         await _client.deleteDeck(id);
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 }

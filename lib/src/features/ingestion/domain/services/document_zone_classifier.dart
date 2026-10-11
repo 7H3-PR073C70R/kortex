@@ -43,7 +43,7 @@ class DocumentZoneClassifier {
     r'table\s+of\s+contents|brief\s+contents|contents|'
     r'(?:subject\s+|author\s+)?index(?:es|ices)?|'
     r'list\s+of\s+(?:figures|tables|illustrations|plates|boxes)|'
-    r'preface|foreword|acknowledg(?:e)?ments?|'
+    'preface|foreword|acknowledg(?:e)?ments?|'
     r'0(?:\.\d+)*\s+.*|chapter\s+0\b.*|'
     r'how\s+to\s+(?:use|read)\s+this\s+book.*|about\s+this\s+book.*|'
     r'conventions?\s+used.*|typographic(?:al)?\s+conventions?.*'

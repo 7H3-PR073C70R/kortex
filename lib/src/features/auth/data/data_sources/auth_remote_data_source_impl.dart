@@ -1,8 +1,10 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/services/device_identity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/data/client/auth_api_client.dart';
 import 'package:kortex/src/features/auth/data/data_sources/auth_remote_data_source.dart';
@@ -154,12 +156,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           rawData.first as Map<String, dynamic>,
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
       final profile = await fetchUserProfile();
       if (profile.id.isNotEmpty) return profile;
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     return UserProfileModel(
       id: '',
@@ -225,7 +227,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (data is String) {
         try {
           data = jsonDecode(data);
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
       if (data is Map) {
         if (data['code'] == 'DEVICE_LIMIT_EXCEEDED') {

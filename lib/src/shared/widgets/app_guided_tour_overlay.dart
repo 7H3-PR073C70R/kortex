@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +10,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -114,7 +116,7 @@ class AppGuidedTourOverlay extends StatefulWidget {
     TabsRouter? tabsRouter;
     try {
       tabsRouter = AutoTabsRouter.of(context);
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     if (onBeforeStart != null) {
       await Future<void>.delayed(const Duration(milliseconds: 380));
@@ -521,7 +523,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
       if (tabsRouter.activeIndex != targetTabIndex) {
         tabsRouter.setActiveIndex(targetTabIndex);
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // Trigger sub-tab activation callback (e.g. Study Hub inner tabs)
     step.onStepActivated?.call();

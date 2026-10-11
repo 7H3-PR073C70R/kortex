@@ -10,6 +10,7 @@ import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/data/client/community_api_client.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_local_data_source.dart';
@@ -90,7 +91,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   Future<List<StudyRoomModel>> fetchStudyRooms({String? category}) async {
     try {
       unawaited(_client.cleanupStaleStudyPodsAndRooms({}));
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
       final params = <String, dynamic>{
@@ -317,7 +318,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           if (rpcPosts.isNotEmpty) {
             return rpcPosts;
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       } else if (sortFilter == 'saved' || sortFilter == 'bookmarks') {
         if (_localDataSource != null) {
           try {
@@ -328,7 +329,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
                 posts.add(cp);
               }
             }
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       }
 
@@ -384,7 +385,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
             }
             return cachedPosts;
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       rethrow;
@@ -625,7 +626,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
             }
             return cached;
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       rethrow;
@@ -1130,7 +1131,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
                 'downvotes': newDownvotes,
               },
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       } on Object catch (_) {
         // Preserve optimistic local-first state
@@ -1246,7 +1247,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
                 'downvotes': newDownvotes,
               },
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       } on Object catch (_) {
         // Preserve optimistic local-first state
@@ -1394,7 +1395,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
             streamController.add(List.unmodifiable(currentCache));
           }
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     // Initial fetch from REST
@@ -1444,7 +1445,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
                     }
                   }
                 }
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             },
             onError: (Object error) {
               if (streamController.isClosed) return;
@@ -1481,7 +1482,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   Future<List<StudyCircleModel>> fetchStudyCircles({String? track}) async {
     try {
       unawaited(_client.cleanupStaleStudyPodsAndRooms({}));
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     final params = <String, dynamic>{
       'select': '*,study_circle_members(*)',
@@ -1572,7 +1573,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           'avatar_url': ?avatarUrl,
           'role': 'creator',
         });
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     return createdCircle;
@@ -1627,7 +1628,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           'circle_id': 'eq.$circleId',
           'user_id': 'eq.$userId',
         });
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     final res = await _client.fetchStudyCircles({
@@ -1867,7 +1868,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       if (list is List) {
         return list.map((e) => e.toString()).toList();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return const [];
   }
 
@@ -1907,7 +1908,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         if (!streamController.isClosed) {
           streamController.add(_sortedLeaderboard(cache));
         }
-      } on Exception catch (_) {}
+      } on Exception catch (e, st) { AppLogger.recordNonFatal(e, st); }
     });
 
     streamController.onCancel = () => wsSub.cancel().ignore();
@@ -2063,7 +2064,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           data: encoded,
         ),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   bool _isAutoProvisionedHashRoom(StudyRoomModel room) {
@@ -2095,7 +2096,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           if (rooms.isNotEmpty) return rooms;
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return _getCuratedFallbackRooms(category: category);
   }
 
@@ -2137,7 +2138,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           data: encoded,
         ),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   List<StudyCircleModel> _getLocalPersistedCircles({String? track}) {
@@ -2158,7 +2159,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           if (circles.isNotEmpty) return circles;
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return _getCuratedFallbackCircles(track: track);
   }
 
@@ -2184,7 +2185,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           data: encoded,
         ),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   List<SharedDeckModel> _getLocalPersistedSharedDecks({String? subject}) {
@@ -2205,7 +2206,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           if (decks.isNotEmpty) return decks;
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return _getCuratedFallbackSharedDecks(subject: subject);
   }
 
@@ -2296,7 +2297,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           unawaited(notifService.unsubscribeFromTopic('forum_post_$postId'));
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     bool? serverResult;
 
@@ -2319,7 +2320,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         if (dioErr.response?.statusCode == 404) {
           _isSubscriptionRpcAvailable = false;
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     // 3. Direct REST table fallback on forum_post_subscriptions if RPC is unavailable/failed
@@ -2338,7 +2339,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           });
           serverResult = false;
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     if (serverResult != null && serverResult != nextState) {
@@ -2387,7 +2388,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         if (dioErr.response?.statusCode == 404) {
           _isSubscriptionRpcAvailable = false;
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     // Direct REST table query fallback
@@ -2402,7 +2403,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         if (data is List) {
           serverResult = data.isNotEmpty;
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     if (serverResult != null) {

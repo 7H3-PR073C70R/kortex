@@ -10,6 +10,7 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/kokoro_model_downloader.dart';
 import 'package:kortex/src/core/services/kokoro_tts_adapter.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_text_normalizer.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/tts_config.dart';
 import 'package:path_provider/path_provider.dart';
@@ -318,7 +319,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
           }
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     _config = TtsConfig.forCurrentPlatform(
       gender: _gender,
@@ -347,7 +348,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
           _currentChunkPlaybackCompleter!.complete();
         }
       });
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   void _initFlutterTts() {
@@ -380,7 +381,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
         });
 
       unawaited(_configureFlutterTts());
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> _configureFlutterTts() async {
@@ -402,12 +403,12 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
               IosTextToSpeechAudioCategoryOptions.mixWithOthers,
             ],
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       try {
         await _flutterTts.awaitSpeakCompletion(true);
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       if (_customPlatformVoice != null && _customPlatformVoice!.isNotEmpty) {
         await _flutterTts.setVoice({
@@ -450,7 +451,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
           debugPrint('[TTS Web] Best voice selection error: $e');
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   void _setSpeakingState(bool speaking) {
@@ -483,7 +484,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
         key: PrefKeys.kokoroVoiceName,
         data: _kokoroVoice,
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -496,7 +497,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
         key: PrefKeys.syllabotSpeechRate,
         data: rate.toString(),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -509,7 +510,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
         key: PrefKeys.syllabotVoicePitch,
         data: pitch.toString(),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -538,7 +539,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
           data: correspondingGender.name,
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -549,7 +550,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
         key: PrefKeys.edgeVoiceName,
         data: voiceName,
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -569,7 +570,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
           key: PrefKeys.syllabotVoiceName,
           data: voiceName,
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -627,7 +628,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
           }
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     return list;
   }
@@ -716,14 +717,14 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
 
     try {
       await _audioPlayer?.stop();
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
       if (_isFlutterTtsSpeaking) {
         await _flutterTts.stop();
         _isFlutterTtsSpeaking = false;
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     _setSpeakingState(false);
   }

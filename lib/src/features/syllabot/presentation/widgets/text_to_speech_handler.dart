@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/text_to_speech_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_text_normalizer.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/tts_config.dart';
@@ -43,7 +44,7 @@ class TextToSpeechHandler {
           isSpeakingNotifier.value = speaking;
           onSpeakingChanged?.call(speaking);
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     };
     _service.isSpeakingNotifier.addListener(_isSpeakingListener);
     isSpeakingNotifier.value = _service.isSpeaking;

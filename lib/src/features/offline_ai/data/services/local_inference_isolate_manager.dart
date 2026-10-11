@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/local_llm/flutter_llama_adapter.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 
 class InferenceTimeoutException implements Exception {
@@ -458,7 +460,7 @@ class LocalInferenceIsolateManager {
       if (decoded is List) {
         return decoded.cast<Map<String, dynamic>>();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return [];
   }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:crypto/crypto.dart';
 import 'package:desktop_drop/desktop_drop.dart';
@@ -15,6 +16,7 @@ import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -76,7 +78,7 @@ class FileDropZoneWidget extends HookWidget {
           final decoded = jsonDecode(byHash) as Map<String, dynamic>;
           deckId = decoded['deckId'] as String?;
           deckTitle = decoded['deckTitle'] as String?;
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       // Check by normalized base filename if not found by hash
@@ -87,7 +89,7 @@ class FileDropZoneWidget extends HookWidget {
             final decoded = jsonDecode(byName) as Map<String, dynamic>;
             deckId = decoded['deckId'] as String?;
             deckTitle = decoded['deckTitle'] as String?;
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       }
 
@@ -111,7 +113,7 @@ class FileDropZoneWidget extends HookWidget {
               deckTitle ?? filename.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), ''),
         };
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 

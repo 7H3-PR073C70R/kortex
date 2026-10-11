@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
@@ -254,7 +256,7 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
             subject: prevQuestion.subject,
           );
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 

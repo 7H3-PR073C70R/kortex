@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 
 class ForumPostModel {
   const ForumPostModel({
@@ -121,7 +122,7 @@ class ForumPostModel {
             }
           }
         }
-      } catch (_) {}
+      } catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     // 3. Markdown images embedded in content: ![alt](url)
@@ -162,7 +163,7 @@ class ForumPostModel {
               }
             }
           }
-        } catch (_) {}
+        } catch (e, st) { AppLogger.recordNonFatal(e, st); }
       } else {
         final parts = trimmed
             .split(',')
@@ -189,7 +190,7 @@ class ForumPostModel {
             }
           }
         }
-      } catch (_) {}
+      } catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     // 3. Fallback to Hashtags in content if empty

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/pdf_figure_extractor.dart';
@@ -188,7 +189,7 @@ class LocalPdfParserService {
               report: report,
             );
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
         if (pageText.trim().isEmpty) {
           pageText = extractor.extractText(startPageIndex: i);

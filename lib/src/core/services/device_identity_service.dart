@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 
 /// Centralized service for generating and retrieving persistent, unique
 /// device identifiers and device metadata for backend session enforcement.
@@ -46,7 +47,7 @@ class DeviceIdentityService {
           return prefsExisting;
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // Generate new persistent device UUID
     final newId = _generateUniqueDeviceId();
@@ -54,14 +55,14 @@ class DeviceIdentityService {
 
     try {
       await _secureStorage.write(key: _deviceIdKey, value: newId);
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
       final localStorage = _localStorage;
       if (localStorage != null) {
         await localStorage.savePreference(key: _deviceIdKey, data: newId);
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     return newId;
   }

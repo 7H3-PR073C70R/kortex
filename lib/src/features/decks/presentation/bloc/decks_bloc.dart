@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -82,7 +84,7 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
         final storage = locator<LocalStorageService>();
         await storage.deletePreference(key: 'extracted_doc_${event.deckId}');
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     if (_deleteDeckUseCase != null) {
       await _deleteDeckUseCase(event.deckId);

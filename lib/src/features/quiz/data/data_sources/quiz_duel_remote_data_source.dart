@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 
 abstract class QuizDuelRemoteDataSource {
   Future<Map<String, dynamic>> recordDuelOutcome({
@@ -93,7 +94,7 @@ class QuizDuelRemoteDataSourceImpl implements QuizDuelRemoteDataSource {
             },
           );
           return const <String, dynamic>{'status': 'inserted_via_fallback'};
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
       rethrow;
     }

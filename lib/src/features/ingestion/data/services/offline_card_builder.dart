@@ -98,7 +98,7 @@ class OfflineCardBuilder {
   /// 1. Document metadata title.
   /// 2. Primary first-page heading (Level 1 heading, or first heading on page 1).
   static String _sanitizeDeckTitle(String raw) {
-    var clean = raw
+    final clean = raw
         .replaceAll(RegExp(r'\s*\(Page\s+\d+(?:\s+of\s+\d+)?\)', caseSensitive: false), '')
         .replaceAll(RegExp(r'\s*-\s*Page\s+\d+', caseSensitive: false), '')
         .replaceAll(RegExp(r'^(?:#+|\d+(?:\.\d+)*\.?)\s*'), '')
@@ -1553,7 +1553,7 @@ class OfflineCardBuilder {
       return null;
     }
     final wordsInBody = cleanBody.split(RegExp(r'\s+'));
-    final capWords = wordsInBody.where((w) => RegExp(r'^[A-Z]').hasMatch(w)).length;
+    final capWords = wordsInBody.where((w) => RegExp('^[A-Z]').hasMatch(w)).length;
     if (wordsInBody.length >= 4 && !_endsSentence(cleanBody) && (capWords / wordsInBody.length) >= 0.70) {
       return null;
     }

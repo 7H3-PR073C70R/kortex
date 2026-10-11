@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -58,7 +60,7 @@ String extractAttachmentFileName(
         return rawLast;
       }
     }
-  } on Object catch (_) {}
+  } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   return fallback;
 }
 

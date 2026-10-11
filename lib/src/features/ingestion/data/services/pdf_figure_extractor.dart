@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_ir.dart';
 
@@ -743,7 +744,7 @@ class PdfFigureExtractor {
               width: width,
               height: height,
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       }
 
@@ -884,7 +885,7 @@ class PdfFigureExtractor {
             if (palObj.dict.contains('/FlateDecode')) {
               try {
                 return Uint8List.fromList(zlib.decode(palObj.stream!));
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }
             return palObj.stream;
           }

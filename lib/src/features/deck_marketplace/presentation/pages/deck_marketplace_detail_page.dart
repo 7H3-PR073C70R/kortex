@@ -13,6 +13,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
@@ -115,7 +116,7 @@ class DeckMarketplaceDetailPage extends HookWidget {
             );
           },
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     Future<void> handleDelete() async {
@@ -245,7 +246,7 @@ class DeckMarketplaceDetailPage extends HookWidget {
                   data: jsonEncode(existingList),
                 );
               }
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
             if (locator.isRegistered<DecksBloc>()) {
               locator<DecksBloc>().add(const DecksRefreshed());
@@ -257,10 +258,10 @@ class DeckMarketplaceDetailPage extends HookWidget {
             if (!context.mounted) return;
             try {
               context.read<DecksBloc>().add(const DecksRefreshed());
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             try {
               context.read<DashboardBloc>().add(const DashboardRefreshed());
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
             context.showSnackBar(message: l10n.marketplaceCloneSuccess);
           },

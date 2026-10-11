@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:bloc/bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/database/app_database.dart';
@@ -10,6 +11,7 @@ import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/sync/app_sync_engine.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
@@ -100,7 +102,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final userStorage = locator.isRegistered<UserStorageService>()
         ? locator<UserStorageService>()
         : null;
-    final hasSession = userStorage?.hasActiveSession() ?? true;
+    final hasSession = userStorage?.hasActiveSession() ?? false;
 
     if (!hasSession) {
       emit(
@@ -183,7 +185,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             if (hasRemoteCourses) {
               isOnboarded = true;
             }
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
         var effectiveProfile = isOnboarded && !profile.isOnboarded
             ? profile.copyWith(isOnboarded: true)
@@ -200,7 +202,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 data: 'true',
               ),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
         if (isOnboarded && !profile.isOnboarded) {
           try {
@@ -214,7 +216,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                     : 20,
               ),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         // Persist targetTrack locally for leaderboard fallback
@@ -226,7 +228,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 data: effectiveProfile.targetTrack,
               ),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         final session = isOnboarded
@@ -259,7 +261,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 );
               }),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           _syncDeviceToken(profile.id);
           _flushAllPendingSyncs();
         }
@@ -337,7 +339,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             userId: userId,
           ),
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -394,7 +396,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 data: 'true',
               ),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           emit(
             state.copyWith(
               status: AuthStatus.authenticated,
@@ -405,7 +407,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           if (user.id.isNotEmpty) {
             try {
               unawaited(RevenueCatService.instance.init(user.id));
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             _syncDeviceToken(user.id);
           }
           add(const AuthProfileFetchRequested());
@@ -482,7 +484,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                   ),
                 );
               }
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             emit(
               state.copyWith(
                 status: AuthStatus.needsOnboarding,
@@ -505,7 +507,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                     data: event.promoCode!.trim(),
                   ),
                 );
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }
             emit(
               state.copyWith(
@@ -597,7 +599,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 ),
               );
             }
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           emit(
             state.copyWith(
               status: AuthStatus.needsOnboarding,
@@ -609,7 +611,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           if (resolvedUser.id.isNotEmpty) {
             try {
               unawaited(RevenueCatService.instance.init(resolvedUser.id));
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             _syncDeviceToken(resolvedUser.id);
           }
           add(const AuthProfileFetchRequested());
@@ -656,7 +658,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           if (user.id.isNotEmpty) {
             try {
               unawaited(RevenueCatService.instance.init(user.id));
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             _syncDeviceToken(user.id);
           }
           add(const AuthProfileFetchRequested());
@@ -722,7 +724,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final list = jsonDecode(rawCourses) as List<dynamic>;
         if (list.isNotEmpty) return true;
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return false;
   }
 
@@ -756,7 +758,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 unawaited(
                   locator<UpdateDisplayNameUseCase>()(storedName.trim()),
                 );
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }
           }
           unawaited(userStorage.saveUserProfile(mergedProfile));
@@ -766,7 +768,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           if (liveStreak > profile.streakDays) {
             mergedProfile = profile.copyWith(streakDays: liveStreak);
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
         final isCachedPro =
             locator.isRegistered<UserStorageService>() &&
@@ -791,7 +793,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             if (hasRemoteCourses) {
               isOnboarded = true;
             }
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         if (isOnboarded && !mergedProfile.isOnboarded) {
@@ -807,7 +809,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                     : 20,
               ),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         if (isOnboarded) {
@@ -830,7 +832,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 data: 'true',
               ),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         // Persist targetTrack locally so the leaderboard can read it even
@@ -843,7 +845,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 data: mergedProfile.targetTrack,
               ),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         if (locator.isRegistered<UserActivityService>()) {
@@ -873,7 +875,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 );
               }),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       },
     );
@@ -913,7 +915,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           if (liveStreak > profile.streakDays) {
             mergedProfile = profile.copyWith(streakDays: liveStreak);
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         emit(
           state.copyWith(
             status: AuthStatus.authenticated,
@@ -973,7 +975,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final activityService = locator<UserActivityService>();
         liveStreak = activityService.getCurrentStreak();
         liveFreezes = activityService.getStreakFreezes();
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       final updatedStreak = liveStreak > 0
           ? liveStreak
@@ -1003,7 +1005,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 // Background synchronization error logged safely
               }),
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -1016,7 +1018,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         key: PrefKeys.isNewlyRegistered,
         data: 'false',
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     await _authRepository.signOut();
     if (locator.isRegistered<AutoCommunityCubit>()) {
       locator<AutoCommunityCubit>().reset();
@@ -1111,7 +1113,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // 6. Sign out session from backend (if token still cached)
     try {
       await _authRepository.signOut();
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     emit(
       const AuthState(

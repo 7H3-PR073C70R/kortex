@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +16,7 @@ import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
@@ -207,7 +209,7 @@ class _AnalyticsDetailView extends HookWidget {
                             locator<AuthBloc>().add(
                               const AuthStreakIncremented(),
                             );
-                          } on Object catch (_) {}
+                          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
                         }
                       } else {
                         AppFeedback.incorrect();
@@ -284,7 +286,7 @@ class _AnalyticsDetailView extends HookWidget {
     try {
       final summary = locator<UserActivityService>().getAnalyticsSummary();
       live = summary.toEntity();
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     if (feedAnalytics == null) {
       return live ?? _buildEmptyAnalytics();
@@ -1911,7 +1913,7 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                             unawaited(
                               context.router.push(const ExamTimetableRoute()),
                             );
-                          } on Object catch (_) {}
+                          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
                         },
                         icon: const Icon(Icons.tune_rounded, size: 15),
                         label: const Text('Cram Targets'),
@@ -2095,7 +2097,7 @@ void _showNeuralRepairBottomSheet(
                             const MainRoute(children: [DecksRoute()]),
                           ),
                         );
-                      } on Object catch (_) {}
+                      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
                     },
                   ),
                   const SizedBox(height: 10),
@@ -2110,7 +2112,7 @@ void _showNeuralRepairBottomSheet(
                         unawaited(
                           context.router.push(PastQuestionsBoardRoute()),
                         );
-                      } on Object catch (_) {}
+                      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
                     },
                   ),
                   const SizedBox(height: 10),

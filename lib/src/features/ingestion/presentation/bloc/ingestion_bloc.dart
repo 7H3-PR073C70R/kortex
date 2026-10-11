@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -130,7 +132,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
           ),
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   void _notifyProcessingFailed({
@@ -153,7 +155,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
           ),
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   void _onSetSynthesisMode(
@@ -362,7 +364,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             key: pendingIngestionJobKey,
             data: jsonEncode(map),
           ));
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
     }
   }
@@ -469,7 +471,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
               );
             }
           }, onError: (_) {});
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
       final ocrResult = await _processOcr(
@@ -599,7 +601,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             try {
               final map = jsonDecode(info) as Map<String, dynamic>;
               cachedDeckId = map['deckId'] as String?;
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
         }
         if (cachedDeckId == null && documentId != null) {
@@ -610,7 +612,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             try {
               final map = jsonDecode(info) as Map<String, dynamic>;
               cachedDeckId = map['deckId'] as String?;
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
         }
         if (cachedDeckId == null) {
@@ -621,7 +623,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             try {
               final map = jsonDecode(info) as Map<String, dynamic>;
               cachedDeckId = map['deckId'] as String?;
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
         }
       }
@@ -699,7 +701,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             );
           }
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       if (locator.isRegistered<DecksBloc>()) {
         locator<DecksBloc>().add(const DecksRefreshed());
@@ -889,7 +891,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
               );
             }
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
         // Refresh Decks & Dashboard in real-time
         if (locator.isRegistered<DecksBloc>()) {
@@ -958,7 +960,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
                       ..add('${d.contentHash}_$cId')
                       ..add('${baseName}_$cId');
                   }
-                } on Object catch (_) {}
+                } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
               }
             }
           }
@@ -992,7 +994,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
       if (locator.isRegistered<IngestionRepository>()) {
         await locator<IngestionRepository>().deleteDocument(event.documentId);
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // Clean up local storage references
     try {
@@ -1010,7 +1012,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         await storage.deletePreference(key: 'extracted_doc_${targetDoc.id}');
         await storage.deletePreference(key: 'extracted_doc_$baseName');
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> _onProcessCameraImage(
@@ -1294,7 +1296,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         try {
           final map = jsonDecode(raw) as Map<String, dynamic>;
           emit(state.copyWith(pendingInterruptedJob: map));
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
     }
   }

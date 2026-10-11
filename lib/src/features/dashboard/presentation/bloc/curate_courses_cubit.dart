@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
@@ -201,7 +203,7 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
                 data: 'true',
               ),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
           try {
             final authBloc = locator<AuthBloc>();
@@ -223,7 +225,7 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
             authBloc.add(
               const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         emit(state.copyWith(status: CurateCoursesStatus.success));
@@ -275,7 +277,7 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
         if (locator.isRegistered<DecksBloc>()) {
           locator<DecksBloc>().add(const DecksRefreshed());
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 }

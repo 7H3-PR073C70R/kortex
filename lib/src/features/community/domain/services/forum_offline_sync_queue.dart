@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/data/models/forum_post_model.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
@@ -43,7 +44,7 @@ class QueuedForumAction extends Equatable {
         post = ForumPostModel.fromJson(
           Map<String, dynamic>.from(json['postPayload'] as Map),
         ).toEntity();
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     ForumReplyEntity? reply;
@@ -52,7 +53,7 @@ class QueuedForumAction extends Equatable {
         reply = ForumReplyModel.fromJson(
           Map<String, dynamic>.from(json['replyPayload'] as Map),
         ).toEntity();
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     return QueuedForumAction(
@@ -173,7 +174,7 @@ class ForumOfflineSyncQueue {
       if (locator.isRegistered<LocalStorageService>()) {
         return locator<LocalStorageService>();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 

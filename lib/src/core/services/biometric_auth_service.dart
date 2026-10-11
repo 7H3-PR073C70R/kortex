@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:local_auth/local_auth.dart';
 
 abstract class BiometricAuthService {
@@ -66,7 +67,7 @@ class BiometricAuthServiceImpl implements BiometricAuthService {
           return Duration(seconds: seconds);
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return defaultTimeout;
   }
 
@@ -77,7 +78,7 @@ class BiometricAuthServiceImpl implements BiometricAuthService {
         key: _timeoutKey,
         data: timeout.inSeconds.toString(),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -148,6 +149,6 @@ class BiometricAuthServiceImpl implements BiometricAuthService {
         data: enabled.toString(),
       );
       _enabledNotifier.value = enabled;
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 }

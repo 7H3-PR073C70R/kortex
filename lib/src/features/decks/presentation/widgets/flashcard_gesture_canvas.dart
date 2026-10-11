@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +11,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_cubit.dart';
@@ -461,7 +463,7 @@ class _CardFace extends StatelessWidget {
     FocusSessionState? focusState;
     try {
       focusState = context.watch<FocusSessionCubit?>()?.state;
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     final hasParkedThoughts = focusState?.parkedThoughts.isNotEmpty ?? false;
 
     return Semantics(

@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
@@ -81,7 +83,7 @@ class StudyActivityTrackerImpl implements StudyActivityTracker {
       if (locator.isRegistered<StudyCircleCubit>()) {
         unawaited(locator<StudyCircleCubit>().loadStudyCircles());
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
       if (locator.isRegistered<CommunityHubBloc>()) {
@@ -89,6 +91,6 @@ class StudyActivityTrackerImpl implements StudyActivityTracker {
           const RecordPodFocusMinutesEvent(circleId: '', minutes: 0),
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 }

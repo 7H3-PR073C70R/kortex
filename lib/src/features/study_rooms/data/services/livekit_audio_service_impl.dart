@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/study_rooms/domain/services/livekit_audio_service.dart';
 import 'package:livekit_client/livekit_client.dart' as lk;
 import 'package:permission_handler/permission_handler.dart' as ph;
@@ -264,7 +266,7 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
     try {
       await _room?.disconnect();
       await _listener?.dispose();
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     _room = null;
     _listener = null;

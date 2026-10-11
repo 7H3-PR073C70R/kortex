@@ -19,6 +19,7 @@ import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
@@ -533,7 +534,7 @@ class ForumThreadDetailPage extends HookWidget {
         if (hubBloc != null) {
           hubBloc.add(ToggleBookmarkForumPostEvent(post.id));
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       await repo.toggleBookmarkForumPost(post.id);
     }
 
@@ -3266,7 +3267,7 @@ class ForumThreadDetailPage extends HookWidget {
                                         photo.path,
                                       ];
                                     }
-                                  } on Object catch (_) {}
+                                  } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
                                 },
                               ),
 
@@ -3584,7 +3585,7 @@ class ForumThreadDetailPage extends HookWidget {
                                                         ForumMediaType.voice,
                                                   );
                                               finalReplyVoiceNoteUrl = r2Url;
-                                            } on Object catch (_) {}
+                                            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
                                           }
 
                                           final res = await repo

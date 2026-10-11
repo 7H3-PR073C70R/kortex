@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +10,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
@@ -111,13 +113,13 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
               explicitTrack: activeTrack ?? subjectToRecord,
             ),
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       if (locator.isRegistered<DashboardBloc>()) {
         try {
           locator<DashboardBloc>().add(const DashboardRefreshed());
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       // If this quiz is associated with an active exam, update its empirical grade in CramPlannerCubit
@@ -150,7 +152,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
               ),
             );
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       if (widget.showCelebrationDialog) {

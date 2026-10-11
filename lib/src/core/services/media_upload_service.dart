@@ -8,6 +8,7 @@ import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 
 enum ForumMediaType {
@@ -202,7 +203,7 @@ class MediaUploadService {
           }
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     return null;
   }
@@ -251,7 +252,7 @@ class MediaUploadService {
           ));
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   /// Transcribes a recorded voice note via the Supabase Edge Function (Groq Whisper),

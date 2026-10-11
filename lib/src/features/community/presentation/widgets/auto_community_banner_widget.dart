@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/community/domain/entities/study_community_entity.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_state.dart';
@@ -66,7 +68,7 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
         unawaited(
           SemanticsService.sendAnnouncement(view, message, TextDirection.ltr),
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 

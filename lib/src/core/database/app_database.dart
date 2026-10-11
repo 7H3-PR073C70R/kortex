@@ -1,9 +1,11 @@
 // ignore_for_file: document_ignores, avoid_positional_boolean_parameters
 
 import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:kortex/src/core/database/tables.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/decks/domain/logic/deck_title_resolver.dart';
 
 part 'app_database.g.dart';
@@ -65,27 +67,27 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'ALTER TABLE forum_posts ADD COLUMN downvotes INTEGER NOT NULL DEFAULT 0;',
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       try {
         await customStatement(
           'ALTER TABLE forum_posts ADD COLUMN user_vote INTEGER NOT NULL DEFAULT 0;',
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       try {
         await customStatement(
           'ALTER TABLE forum_replies ADD COLUMN parent_reply_id TEXT REFERENCES forum_replies(id) ON DELETE CASCADE;',
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       try {
         await customStatement(
           'ALTER TABLE forum_replies ADD COLUMN downvotes INTEGER NOT NULL DEFAULT 0;',
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       try {
         await customStatement(
           'ALTER TABLE forum_replies ADD COLUMN user_vote INTEGER NOT NULL DEFAULT 0;',
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       // Self-healing: FSRS-6 native columns on flashcards table
       await ensureFsrsColumnsExist();
     },
@@ -126,19 +128,19 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         try {
           await m.addColumn(forumPosts, forumPosts.downvotes);
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           await m.addColumn(forumPosts, forumPosts.userVote);
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           await m.addColumn(forumReplies, forumReplies.parentReplyId);
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           await m.addColumn(forumReplies, forumReplies.downvotes);
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           await m.addColumn(forumReplies, forumReplies.userVote);
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_forum_replies_parent_reply_id ON forum_replies(parent_reply_id);',
         );
@@ -151,32 +153,32 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(
             'ALTER TABLE flashcards ADD COLUMN stability REAL NOT NULL DEFAULT 0.0;',
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           await customStatement(
             'ALTER TABLE flashcards ADD COLUMN difficulty REAL NOT NULL DEFAULT 0.0;',
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           await customStatement(
             'ALTER TABLE flashcards ADD COLUMN elapsed_days INTEGER NOT NULL DEFAULT 0;',
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           await customStatement(
             'ALTER TABLE flashcards ADD COLUMN scheduled_days INTEGER NOT NULL DEFAULT 0;',
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           await customStatement(
             'ALTER TABLE flashcards ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;',
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         try {
           await customStatement(
             'ALTER TABLE flashcards ADD COLUMN state INTEGER NOT NULL DEFAULT 0;',
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
       if (from < 6) {
         await ensureFsrsColumnsExist();
@@ -540,7 +542,7 @@ class AppDatabase extends _$AppDatabase {
         );
       }
       _fsrsColumnsChecked = true;
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> batchUpsertFlashcards(
@@ -650,7 +652,7 @@ class AppDatabase extends _$AppDatabase {
         for (final card in effectiveCards) {
           try {
             await into(flashcards).insertOnConflictUpdate(card);
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       }
     }
@@ -703,11 +705,11 @@ class AppDatabase extends _$AppDatabase {
       } on Object catch (_) {
         try {
           await into(decks).insertOnConflictUpdate(deck);
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         for (final card in effectiveCards) {
           try {
             await into(flashcards).insertOnConflictUpdate(card);
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       }
     }

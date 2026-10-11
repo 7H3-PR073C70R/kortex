@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 bool get _isIosSimulator =>
@@ -70,7 +71,7 @@ class LocalMlkitOcrClient {
       } finally {
         try {
           await tmpFile.delete();
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
     }
 

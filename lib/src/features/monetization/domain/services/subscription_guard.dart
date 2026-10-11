@@ -7,6 +7,7 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
@@ -132,7 +133,7 @@ class SubscriptionGuard {
         key: PrefKeys.dailyUploadCount,
         data: (current + 1).toString(),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   bool canUploadDocument({required int fileSizeBytes}) {
@@ -202,7 +203,7 @@ class SubscriptionGuard {
         if (updatedCount != null) {
           _cachedTodaySyllabotCount = updatedCount;
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -335,7 +336,7 @@ class SubscriptionGuard {
         if (updatedCount != null) {
           _cachedTodayAiSmartGenCount = updatedCount;
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 

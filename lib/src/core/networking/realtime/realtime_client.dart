@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:kortex/src/core/constants/app_env.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// Event types pushed by the Realtime backend.
@@ -154,7 +155,7 @@ class RealtimeClient {
           ctrl.add({'event': event, 'payload': payload});
         }
       }
-    } on Exception catch (_) {}
+    } on Exception catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   String _nextRef() => '${++_refCounter}';
@@ -162,7 +163,7 @@ class RealtimeClient {
   void _send(Map<String, dynamic> message) {
     try {
       _channel?.sink.add(jsonEncode(message));
-    } on Exception catch (_) {}
+    } on Exception catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   void _joinTopic(String topic) {

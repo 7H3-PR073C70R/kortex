@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
@@ -441,7 +442,7 @@ class _CbtReadinessBreakdownSheetState
           _subjectsWithPastQuestions.addAll(matched);
         });
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override

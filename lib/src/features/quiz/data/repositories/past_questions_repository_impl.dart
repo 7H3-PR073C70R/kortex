@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_local_data_source.dart';
@@ -79,10 +81,10 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
                 );
               }
             }
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }());
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> _persistBookmarkedIds() async {
@@ -112,7 +114,7 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
           ).catchError((_) => Response<dynamic>(requestOptions: RequestOptions())),
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -156,7 +158,7 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
           courseId: courseId,
           courseCode: courseCode,
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       // 3. Merge results: remote items take precedence over local items for matching IDs
       final seenIds = <String>{};
@@ -200,7 +202,7 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
           category,
         );
         if (local.isNotEmpty) return local;
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       return _remoteDataSource.getAvailableSubjects(category);
     }).makeRequest();
   }
@@ -215,7 +217,7 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
           category,
         );
         if (local.isNotEmpty) return local;
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       return _remoteDataSource.getAvailableYears(category);
     }).makeRequest();
   }
@@ -265,12 +267,12 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
       // 1. Save to local data source
       try {
         await _effectiveLocalDataSource.savePastQuestions(models);
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       // 2. Sync to remote data source
       try {
         await _remoteDataSource.savePastQuestions(models);
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }).makeRequest();
   }
 }

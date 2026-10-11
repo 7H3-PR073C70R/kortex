@@ -1,9 +1,11 @@
 import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
@@ -219,7 +221,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
             ).then((_) {
               try {
                 locator<DashboardBloc>().add(const DashboardRefreshed());
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }),
           );
         }
@@ -272,7 +274,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
       locator<AuthBloc>().add(
         const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   void nextStep() {
@@ -326,7 +328,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
             ).then((_) {
               try {
                 locator<DashboardBloc>().add(const DashboardRefreshed());
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }),
           );
         }
@@ -342,7 +344,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
               ),
             );
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
         emit(
           state.copyWith(

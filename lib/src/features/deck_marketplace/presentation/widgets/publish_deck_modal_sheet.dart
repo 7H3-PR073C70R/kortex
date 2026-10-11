@@ -7,6 +7,7 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/services/content_safety_moderation_service.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
@@ -455,7 +456,7 @@ class PublishDeckModalSheet extends HookWidget {
                                   if (cards.isNotEmpty) {
                                     totalCards = cards.length;
                                   }
-                                } on Object catch (_) {}
+                                } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
                               }
 
                               // Perform content safety moderation & personal note stripping

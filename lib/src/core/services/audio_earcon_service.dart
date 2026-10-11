@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Earcon tone types for Syllabot conversational state transitions.
@@ -50,7 +52,7 @@ class AudioEarconServiceImpl implements AudioEarconService {
   void _initAudioPlayer() {
     try {
       unawaited(_player.setVolume(0.45));
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -95,7 +97,7 @@ class AudioEarconServiceImpl implements AudioEarconService {
         case EarconType.error:
           unawaited(HapticFeedback.heavyImpact());
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<String?> _getOrCreateToneFile(EarconType type) async {

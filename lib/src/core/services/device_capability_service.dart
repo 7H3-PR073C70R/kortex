@@ -1,5 +1,7 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/shared/hardware/services/device_performance_benchmark.dart';
 import 'package:path_provider/path_provider.dart';
@@ -55,7 +57,7 @@ class DeviceCapabilityService {
             .getHardwareProfile();
         totalRamGb = profile.totalRamGb;
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
       final docDir = await getApplicationDocumentsDirectory();

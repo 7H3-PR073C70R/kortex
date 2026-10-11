@@ -14,6 +14,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
@@ -67,7 +68,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
               milestonePref == null || milestonePref == 'true';
         });
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> _setDailyReminder(bool enabled) async {
@@ -85,7 +86,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           locator.isRegistered<NotificationService>()) {
         unawaited(locator<NotificationService>().cancelAllNotifications());
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> _setMilestoneAlerts(bool enabled) async {
@@ -103,7 +104,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           locator.isRegistered<NotificationService>()) {
         unawaited(locator<NotificationService>().cancelAllNotifications());
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   void _exportIcalTimetable(BuildContext context, List<ExamEventEntity> exams) {

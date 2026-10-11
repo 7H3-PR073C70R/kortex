@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
+
 import 'package:drift/drift.dart' show Value;
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/data/client/dashboard_api_client.dart';
 import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source.dart';
@@ -39,7 +41,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       if (locator.isRegistered<AppDatabase>()) {
         return locator<AppDatabase>();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 
@@ -96,7 +98,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
           return deduplicated;
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return _getCoursesFromCalibrationProfile();
   }
 
@@ -168,12 +170,12 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
                   data: jsonStr,
                 ),
               );
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             return matched;
           }
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return const [];
   }
 
@@ -230,7 +232,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
             .where((d) => d.dueCards > 0)
             .toList();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return const [];
   }
 
@@ -354,7 +356,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
             data: 'true',
           ),
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     } else if (localCourses.isNotEmpty) {
       feed = feed.copyWith(curatedCourses: localCourses);
     }
@@ -404,7 +406,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
           );
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // Security: clamp overallRetentionRate to [0.0, 1.0] so malformed server
     // responses cannot corrupt the CBT readiness calculator or UI gauges.
@@ -447,7 +449,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     try {
       final decks = await _client.getReviewQueue();
       if (decks.isNotEmpty) return decks;
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     final local = _getLocallySavedDecks();
     if (local.isNotEmpty) return local;
@@ -474,7 +476,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
               )
               .toList();
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     return local;
@@ -505,7 +507,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
               );
             }).toList();
             await db.batchUpsertCourseModules(companions);
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
         return courses;
       }
@@ -551,7 +553,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
               );
             }).toList();
             unawaited(db.batchUpsertCourseModules(companions));
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
         return remoteCourses;
       } else {
@@ -563,11 +565,11 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
                 'p_courses': localCourses.map((c) => c.toJson()).toList(),
               }),
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           return localCourses;
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     return _getLocallySavedCourses();
   }
@@ -624,14 +626,14 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
           data: 'true',
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // 2. Sync to Supabase RPC
     try {
       await _client.syncUserCourses({
         'p_courses': courses,
       });
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -703,9 +705,9 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         // Notify DashboardBloc immediately so UI reflects newly curated courses without waiting
         try {
           locator<DashboardBloc>().add(const DashboardRefreshed());
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // 2. Sync to Supabase RPC (gracefully non-blocking)
     try {
@@ -713,7 +715,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         'p_exam_name': examName,
         'p_subjects': subjects,
       });
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -752,12 +754,12 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       if (db != null) {
         try {
           await db.deleteAllCourseModules();
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
       await _client.syncUserCourses({
         'p_courses': <Map<String, dynamic>>[],
       });
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override

@@ -1,10 +1,12 @@
 import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -73,7 +75,7 @@ class PermissionsCubit extends Cubit<PermissionsState> {
         if (userId != null && userId.isNotEmpty) {
           unawaited(notifService.syncDeviceTokenWithBackend(userId: userId));
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -112,6 +114,6 @@ class PermissionsCubit extends Cubit<PermissionsState> {
           data: 'true',
         ),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 }

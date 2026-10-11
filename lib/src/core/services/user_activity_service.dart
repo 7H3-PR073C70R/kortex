@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
@@ -167,7 +169,7 @@ class UserActivityServiceImpl implements UserActivityService {
           unawaited(syncPendingProgressToBackend());
         }
       });
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   int _getPendingXpDelta() {
@@ -189,7 +191,7 @@ class UserActivityServiceImpl implements UserActivityService {
           data: delta.toString(),
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -663,7 +665,7 @@ class UserActivityServiceImpl implements UserActivityService {
           channelId: NotificationService.channelStreak,
         ),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override

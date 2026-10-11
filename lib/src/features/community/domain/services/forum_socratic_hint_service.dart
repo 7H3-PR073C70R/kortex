@@ -1,4 +1,6 @@
 import 'dart:async';
+
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
@@ -199,7 +201,7 @@ class ForumSocraticHintService {
                 !isTemplateOrGenericEcho(localCandidate)) {
               candidate = localCandidate;
             }
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         // Step 3: Direct local LLM generation fallback if available
@@ -221,7 +223,7 @@ class ForumSocraticHintService {
                 candidate = directLocal;
               }
             }
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         // Step 4: Strict Error Handling - Never return mock or heuristic fallback text

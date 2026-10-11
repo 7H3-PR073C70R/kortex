@@ -1,8 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/shared/widgets/tailored_biometric_lock_view.dart';
 
@@ -96,8 +98,7 @@ class _BiometricLockOverlayState extends State<BiometricLockOverlay>
           _isLocked = false;
         });
       }
-    } on Object catch (_) {
-    } finally {
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); } finally {
       _isAuthenticating = false;
     }
   }

@@ -1,6 +1,7 @@
 import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -45,7 +46,7 @@ class PromoCodeRepositoryImpl implements PromoCodeRepository {
             locator<AuthBloc>().add(const AuthSubscriptionUpdated(isPro: true));
             locator<AuthBloc>().add(const AuthProfileFetchRequested());
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       return Right(result);

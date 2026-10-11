@@ -12,6 +12,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
@@ -142,8 +143,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       if (success && mounted) {
         await _proceedToApp();
       }
-    } on Object catch (_) {
-    } finally {
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); } finally {
       _isAuthenticating = false;
     }
   }
@@ -196,7 +196,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       final storage = locator<LocalStorageService>();
       localSaysOnboarded =
           storage.getPreference(key: PrefKeys.hasCompletedOnboarding) == 'true';
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // 3. Calibration profile object from local storage
     var calibSaysOnboarded = false;
@@ -221,7 +221,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
           final list = jsonDecode(rawCourses) as List<dynamic>;
           if (list.isNotEmpty) coursesSayOnboarded = true;
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       if (!coursesSayOnboarded && locator.isRegistered<DashboardRepository>()) {
         try {
@@ -231,7 +231,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
             (_) => false,
             (courses) => courses.isNotEmpty,
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
     }
 
@@ -250,7 +250,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
             data: 'true',
           ),
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     // Sync AuthBloc session status immediately before navigation so guards agree

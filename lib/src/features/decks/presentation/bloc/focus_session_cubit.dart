@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
@@ -83,7 +85,7 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is Map<String, dynamic>) return decoded;
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return {};
   }
 
@@ -444,7 +446,7 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
           subject: state.deckTitle,
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
       if (locator.isRegistered<StudyActivityTracker>()) {
@@ -459,7 +461,7 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
           ),
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
       if (locator.isRegistered<DecksRemoteDataSource>()) {
@@ -468,7 +470,7 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
           finalCards.map(FlashcardModel.fromEntity).toList(),
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     if (_saveSessionResultsUseCase != null) {
       try {
@@ -482,7 +484,7 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
             dueCards: remainingDue,
           ),
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     // Flush any pending FSRS review logs to backend
@@ -585,7 +587,7 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
             .toList();
         emit(state.copyWith(parkedThoughts: thoughts));
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   Future<void> _saveThoughts(List<ThoughtEntry> thoughts) async {
@@ -598,7 +600,7 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
       if (storage == null) return;
       final raw = jsonEncode(thoughts.map((e) => e.toJson()).toList());
       await storage.savePreference(key: thoughtStorageKey, data: raw);
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   // --- TTS & Audio Helpers ---

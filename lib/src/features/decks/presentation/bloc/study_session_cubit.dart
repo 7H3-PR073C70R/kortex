@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:math' as math;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
@@ -10,6 +11,7 @@ import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
@@ -77,7 +79,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is Map<String, dynamic>) return decoded;
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return {};
   }
 
@@ -199,7 +201,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           data: saveElapsed.toString(),
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   /// Clears saved checkpoint when a deck is completed or reset
@@ -222,7 +224,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           key: '__kortex_deck_checkpoint_elapsed_$targetId',
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   /// Retrieves saved progress checkpoint for a deck
@@ -247,7 +249,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           return (index: idx, elapsedSeconds: elapsed);
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 
@@ -269,7 +271,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       if (locator.isRegistered<NotificationService>()) {
         unawaited(locator<NotificationService>().cancelStudyReminder());
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     List<FlashcardEntity> cards;
     if (deckId == 'all' || deckId == 'all_decks' || deckId == 'cross_deck') {
@@ -803,31 +805,31 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       if (locator.isRegistered<DashboardRepository>()) {
         locator<DashboardRepository>().clearFeedCache();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // 4. Increment streak in AuthBloc
     try {
       if (locator.isRegistered<AuthBloc>()) {
         locator<AuthBloc>().add(const AuthStreakIncremented());
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // 5. Trigger live refresh on DecksBloc and DashboardBloc
     try {
       if (locator.isRegistered<DecksBloc>()) {
         locator<DecksBloc>().add(const DecksRefreshed());
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     try {
       if (locator.isRegistered<DashboardBloc>()) {
         locator<DashboardBloc>().add(const DashboardRefreshed());
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     try {
       if (locator.isRegistered<CramPlannerCubit>()) {
         unawaited(locator<CramPlannerCubit>().loadExams());
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // 6. Telemetry: Performance trace and Crashlytics completion metrics
     try {
@@ -851,7 +853,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           ..setMetric('duration_seconds', elapsedSeconds);
         unawaited(trace.start().then((_) => trace.stop()));
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -890,6 +892,6 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           minute: settings.preferredReminderMinute,
         ),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 }

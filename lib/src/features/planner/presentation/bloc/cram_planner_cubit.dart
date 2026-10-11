@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/data/models/analytics_summary_model.dart';
@@ -299,7 +300,7 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
           (_) {},
           (fetched) => allDecks = fetched,
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     final result = await _repository.getActiveExams();

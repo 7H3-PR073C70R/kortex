@@ -7,6 +7,7 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/dynamic_link_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
@@ -78,7 +79,7 @@ class AuthRouteGuard extends AutoRouteGuard {
               final list = jsonDecode(rawCourses) as List<dynamic>;
               if (list.isNotEmpty) return true;
             }
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           return false;
         }();
 
@@ -95,7 +96,7 @@ class AuthRouteGuard extends AutoRouteGuard {
                 }
               },
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         if (!isCalibrated && locator.isRegistered<DashboardRepository>()) {
@@ -110,7 +111,7 @@ class AuthRouteGuard extends AutoRouteGuard {
                 }
               },
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         if (isCalibrated) {
@@ -120,7 +121,7 @@ class AuthRouteGuard extends AutoRouteGuard {
               key: PrefKeys.hasCompletedOnboarding,
               data: 'true',
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           _authBloc.add(
             const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
           );

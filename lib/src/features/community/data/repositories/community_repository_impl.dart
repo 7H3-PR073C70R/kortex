@@ -10,6 +10,7 @@ import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -667,7 +668,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
               );
             }
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       final effectiveCardCount = cardsList.isNotEmpty
@@ -751,7 +752,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
             data: jsonEncode(existingList),
           );
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       return clonedDeck;
     }).makeRequest();

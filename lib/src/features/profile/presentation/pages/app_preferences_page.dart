@@ -15,6 +15,7 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/enums/theme_preset.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -45,7 +46,7 @@ class AppPreferencesPage extends HookWidget {
       if (locator.isRegistered<LocalStorageService>()) {
         localStorage = locator<LocalStorageService>();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     final initialReminders =
         localStorage?.getPreference(key: 'study_reminders_enabled') != 'false';
@@ -70,7 +71,7 @@ class AppPreferencesPage extends HookWidget {
                       .value;
             }
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       unawaited(fetchPreferences());

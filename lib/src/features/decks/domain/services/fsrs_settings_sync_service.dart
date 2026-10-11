@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
+
 import 'package:dio/dio.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/models/fsrs_user_settings.dart';
 
@@ -107,7 +109,7 @@ class FsrsSettingsSyncService {
       if (locator.isRegistered<LocalStorageService>()) {
         return locator<LocalStorageService>();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 
@@ -174,7 +176,7 @@ class FsrsSettingsSyncService {
   Dio? get _effectiveDio {
     try {
       if (locator.isRegistered<Dio>()) return locator<Dio>();
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 }

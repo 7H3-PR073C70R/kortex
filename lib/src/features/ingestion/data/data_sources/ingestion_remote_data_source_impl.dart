@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
@@ -10,6 +11,7 @@ import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/data/client/ingestion_api_client.dart';
 import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
@@ -58,7 +60,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       if (locator.isRegistered<LocalStorageService>()) {
         return locator<LocalStorageService>();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 
@@ -78,7 +80,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
           data: jsonEncode(updated.map((d) => d.toJson()).toList()),
         );
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   List<DocumentUploadModel> _getLocalPersistedDocuments() {
@@ -94,7 +96,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
               .toList();
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return [];
   }
 
@@ -383,7 +385,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             unawaited(_persistDocumentLocally(rpcResult));
             return rpcResult;
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
     }
 
@@ -465,7 +467,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
           fileBytes = Uint8List.fromList(res.data!);
           _documentBytesCache[documentId] = fileBytes;
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     final isPdf =
@@ -517,7 +519,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             if (blocks.isNotEmpty) {
               extractedText = blocks.map((b) => b.text).join('\n\n');
             }
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         if (extractedText == null || extractedText.trim().isEmpty) {
@@ -534,7 +536,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             );
           }
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
 
     // 1. Remote Server Compute & Luna AI Synthesis
@@ -648,7 +650,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
               contentType: contentType,
               token: token,
             );
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
 
         return r2Url ??
@@ -782,7 +784,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         }
         return docs;
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return _getLocalPersistedDocuments();
   }
 
@@ -819,7 +821,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
           await storage.deletePreference(key: 'extracted_doc_$baseName');
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     // 3. Delete from Supabase remote database if authenticated
     final token = _userStorage?.getToken();
@@ -828,7 +830,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
         await _dio.delete<dynamic>(
           '${AppApiEndpoint.baseUri}/rest/v1/documents?id=eq.$documentId',
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 

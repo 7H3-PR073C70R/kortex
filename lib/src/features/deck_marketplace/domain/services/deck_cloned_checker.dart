@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/entities/shared_deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
@@ -70,7 +72,7 @@ bool isDeckAlreadyCloned(
         }
       }
     }
-  } on Object catch (_) {}
+  } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
   return false;
 }

@@ -9,6 +9,7 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/social_auth_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/error_message_handler.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
@@ -137,7 +138,7 @@ class AuthNavigationListener extends StatelessWidget {
                     }
                   },
                 );
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }
 
             // 2. Local pref key set by CalibrationLocalDataSourceImpl.saveCalibrationProfile
@@ -149,7 +150,7 @@ class AuthNavigationListener extends StatelessWidget {
                     key: PrefKeys.hasCompletedOnboarding,
                   ) ==
                   'true';
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
             // 3. Fallback: read calibration profile from local storage
             var calibSaysOnboarded = false;
@@ -176,7 +177,7 @@ class AuthNavigationListener extends StatelessWidget {
                   final list = jsonDecode(rawCourses) as List<dynamic>;
                   if (list.isNotEmpty) coursesSayOnboarded = true;
                 }
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
               if (!coursesSayOnboarded &&
                   locator.isRegistered<DashboardRepository>()) {
@@ -187,7 +188,7 @@ class AuthNavigationListener extends StatelessWidget {
                     (_) => false,
                     (courses) => courses.isNotEmpty,
                   );
-                } on Object catch (_) {}
+                } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
               }
             }
 
@@ -211,7 +212,7 @@ class AuthNavigationListener extends StatelessWidget {
                     AuthSessionStatus.authenticatedComplete,
                   ),
                 );
-              } on Object catch (_) {}
+              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             }
 
             if (context.mounted) {

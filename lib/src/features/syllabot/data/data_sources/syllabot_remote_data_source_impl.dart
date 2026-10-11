@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/features/syllabot/data/client/syllabot_api_client.dart';
 import 'package:kortex/src/features/syllabot/data/data_sources/syllabot_remote_data_source.dart';
@@ -122,7 +123,7 @@ class SyllabotRemoteDataSourceImpl implements SyllabotRemoteDataSource {
           },
         ),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override

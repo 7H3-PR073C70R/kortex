@@ -3,6 +3,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -42,7 +43,7 @@ class StudyStatisticsSummaryCard extends StatelessWidget {
           retentionPct = (summary.overallRetentionRate * 100).toInt();
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     final studyHours = (totalStudyTimeMins / 60.0).toStringAsFixed(1);
 

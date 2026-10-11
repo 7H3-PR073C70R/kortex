@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/auth/data/models/user_profile_model.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 
@@ -119,7 +121,7 @@ class UserStorageServiceImpl implements UserStorageService {
       if (rawProStatus != null) {
         _cachedProStatus = rawProStatus == 'true';
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     if (_cachedProStatus == null) {
       final localPro = _localStorageService.getPreference(key: _proStatusKey);
       if (localPro != null) {
@@ -149,7 +151,7 @@ class UserStorageServiceImpl implements UserStorageService {
       try {
         final json = jsonDecode(rawProfile) as Map<String, dynamic>;
         _cachedProfile = UserProfileModel.fromJson(json).toEntity();
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -415,7 +417,7 @@ class UserStorageServiceImpl implements UserStorageService {
         key: _tokenKey,
         data: clean,
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -437,7 +439,7 @@ class UserStorageServiceImpl implements UserStorageService {
         key: _refreshTokenKey,
         data: clean,
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -458,14 +460,14 @@ class UserStorageServiceImpl implements UserStorageService {
         key: _proStatusKey,
         value: valueStr,
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     try {
       await _localStorageService.savePreference(
         key: _proStatusKey,
         data: valueStr,
       );
       unawaited(_safeLocalDelete(PrefKeys.isProSubscriber));
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -534,7 +536,7 @@ class UserStorageServiceImpl implements UserStorageService {
           key: PrefKeys.userDisplayName,
           data: incomingName,
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
     if (profile.photoUrl != null && profile.photoUrl!.trim().isNotEmpty) {
       _cachedAvatarUrl = profile.photoUrl!.trim();
@@ -543,7 +545,7 @@ class UserStorageServiceImpl implements UserStorageService {
           key: PrefKeys.userAvatarUrl,
           data: profile.photoUrl!.trim(),
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
     try {
       final model = UserProfileModel(
@@ -566,7 +568,7 @@ class UserStorageServiceImpl implements UserStorageService {
         key: PrefKeys.cachedUserProfile,
         data: jsonEncode(model.toJson()),
       );
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override
@@ -580,7 +582,7 @@ class UserStorageServiceImpl implements UserStorageService {
         final json = jsonDecode(raw) as Map<String, dynamic>;
         return _cachedProfile = UserProfileModel.fromJson(json).toEntity();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 

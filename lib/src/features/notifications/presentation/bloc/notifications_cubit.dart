@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +8,7 @@ import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_state.dart';
@@ -63,7 +65,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           );
         });
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   /// Loads real notifications from local cache and the backend API.
@@ -95,7 +97,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
               ));
             }
           }
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
     }
 
@@ -294,7 +296,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         final encoded = jsonEncode(items.map((e) => e.toJson()).toList());
         unawaited(localStore.savePreference(key: _cacheKey, data: encoded));
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   @override

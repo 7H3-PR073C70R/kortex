@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
@@ -111,7 +113,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
                 id: local.id,
               );
               remoteModels.add(created);
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
         }
 
@@ -122,7 +124,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
           }
           return entities;
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       // Fall back to persistent local storage sessions
       return localModels.map((m) => m.toEntity()).toList();
@@ -149,7 +151,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
             socraticMode: socraticMode,
             id: sessionId,
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       createdModel ??= ConversationSessionModel(
@@ -187,7 +189,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
           }
           return remote.map((m) => m.toEntity()).toList();
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       // Fall back to local cache
       final cached = await _local.getCachedMessages(sessionId: sessionId);
@@ -202,7 +204,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
     return Future<void>.sync(() async {
       try {
         await _remote.deleteSession(sessionId: sessionId);
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       await _local.deleteSession(sessionId);
     }).makeRequest();
   }
@@ -215,7 +217,7 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
         await Future.wait(
           sessions.map((s) => _remote.deleteSession(sessionId: s.id)),
         );
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       final localSessions = await _local.getCachedSessions();
       await Future.wait(
         localSessions.map((s) => _local.deleteSession(s.id)),

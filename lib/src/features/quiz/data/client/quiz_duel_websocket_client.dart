@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
@@ -41,7 +42,7 @@ class QuizDuelWebSocketClient {
       if (locator.isRegistered<Dio>()) {
         return locator<Dio>();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return null;
   }
 
@@ -110,7 +111,7 @@ class QuizDuelWebSocketClient {
             }).toList();
           }
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
       // Fallback: Attempt Edge Function AI question generation
       try {
@@ -159,7 +160,7 @@ class QuizDuelWebSocketClient {
             }).toList();
           }
         }
-      } on Object catch (_) {}
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
     return const [];
   }
@@ -471,7 +472,7 @@ class QuizDuelWebSocketClient {
             }
           }
         }
-      } on Exception catch (_) {}
+      } on Exception catch (e, st) { AppLogger.recordNonFatal(e, st); }
     });
   }
 
@@ -561,7 +562,7 @@ class QuizDuelWebSocketClient {
             }
           }
         }
-      } on Exception catch (_) {}
+      } on Exception catch (e, st) { AppLogger.recordNonFatal(e, st); }
     });
   }
 
@@ -1303,9 +1304,9 @@ class QuizDuelWebSocketClient {
               'forfeit_user_id': ?validForfeit,
             },
           );
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   void _applyEmoteLocally({

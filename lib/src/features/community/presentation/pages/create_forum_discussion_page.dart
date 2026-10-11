@@ -15,6 +15,7 @@ import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/domain/services/content_moderation_service.dart';
@@ -490,7 +491,7 @@ class CreateForumDiscussionPage extends HookWidget {
                 )
                 .forEach(buffer.write);
             generated = buffer.toString().trim();
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
           if (generated.isEmpty) {
             try {
@@ -509,7 +510,7 @@ class CreateForumDiscussionPage extends HookWidget {
                   )
                   .forEach(buffer.write);
               generated = buffer.toString().trim();
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
         }
         if (generated.isEmpty && locator.isRegistered<LocalLlmEngineClient>()) {
@@ -528,7 +529,7 @@ class CreateForumDiscussionPage extends HookWidget {
                 )
                 .forEach(buffer.write);
             generated = buffer.toString().trim();
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
         if (generated.isNotEmpty && context.mounted) {
           contentController.text = generated;
@@ -714,7 +715,7 @@ class CreateForumDiscussionPage extends HookWidget {
             mediaType: ForumMediaType.voice,
           );
           finalVoiceNoteUrl = r2Url;
-        } on Object catch (_) {}
+        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
       }
 
       if (onSubmit != null) {
@@ -803,7 +804,7 @@ class CreateForumDiscussionPage extends HookWidget {
               hubBloc.add(
                 ChangeForumSortFilterEvent(hubBloc.state.selectedForumFilter),
               );
-            } on Object catch (_) {}
+            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
             if (context.mounted) {
               context.showSnackBar(

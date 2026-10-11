@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:retrofit/retrofit.dart';
@@ -199,7 +201,7 @@ extension SyllabotStreamExtension on Dio {
           final cleanedMsg = _cleanErrorMessage(rawMsg);
           throw Exception(cleanedMsg);
         }
-      } on FormatException catch (_) {}
+      } on FormatException catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }
 
@@ -217,7 +219,7 @@ extension SyllabotStreamExtension on Dio {
           }
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return rawMessage;
   }
 }

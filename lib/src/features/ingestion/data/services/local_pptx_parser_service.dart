@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:math' as math;
+
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/ingestion/data/services/formula_extraction_service.dart';
 import 'package:xml/xml.dart';
 
@@ -164,7 +166,7 @@ class LocalPptxParserService {
           result[id] = target;
         }
       }
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     return result;
   }
 

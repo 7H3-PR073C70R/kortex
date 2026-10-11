@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/services.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
@@ -243,13 +244,13 @@ class SpeechToTextHandler {
     try {
       await _speechToText.cancel();
       onListeningChanged(false);
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 
   /// Releases resources.
   void dispose() {
     try {
       unawaited(_speechToText.cancel());
-    } on Object catch (_) {}
+    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
   }
 }

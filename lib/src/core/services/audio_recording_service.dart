@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -178,7 +180,7 @@ class AudioRecordingServiceImpl implements AudioRecordingService {
         if (file.existsSync()) {
           try {
             await file.delete();
-          } on Object catch (_) {}
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
       }
       _currentRecordingPath = null;
