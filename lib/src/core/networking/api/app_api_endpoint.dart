@@ -36,6 +36,7 @@ class AppApiEndpoint {
   static const String courseTracks = '/rest/v1/course_tracks';
   static const String updateProfileRpc =
       '/rest/v1/rpc/update_user_profile_track_and_goal';
+  static const String deleteAccount = '/functions/v1/delete-account';
 
   // Dashboard Endpoints
   static const String dashboardFeed = '/rest/v1/rpc/get_dashboard_feed';

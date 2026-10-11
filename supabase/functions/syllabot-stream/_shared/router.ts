@@ -14,7 +14,26 @@ export interface RouterOptions {
   forceModel?: string;
   defaultModel?: string;
   proModel?: string;
+  userTier?: "free" | "pro";
 }
+
+export const FREE_MODEL_WHITELIST = [
+  "llama-3.3-70b-versatile",
+  "gemini-2.0-flash",
+  "gemini-3.1-flash-lite",
+  "gpt-oss-20b",
+  "openrouter/free",
+  "luna",
+];
+
+export const PRO_REASONING_MODELS = [
+  "deepseek/deepseek-r1",
+  "deepseek-reasoner",
+  "openai/o1",
+  "openai/o3-mini",
+  "gemini-2.0-pro-exp",
+  "anthropic/claude-3.5-sonnet",
+];
 
 const LATEX_PATTERNS = [
   /\$\$/,
@@ -86,38 +105,67 @@ const CODE_KEYWORDS = [
 ];
 
 /**
- * Inspects conversation history and last user message to detect
- * complex STEM, LaTeX, or coding questions for reasoning effort while
- * standardizing exclusively on Luna.
+ * Inspects conversation history and subscription tier to select models securely.
+ * Ignores client-provided forceModel for Free-tier users if it specifies a Pro/reasoning model.
+ * Allocates deep reasoning compute exclusively to verified Pro users.
  */
 export function selectModelAndParams(
   messages: Message[],
   options?: RouterOptions
 ): ModelSelectionResult {
-  const lunaModel =
-    options?.forceModel ||
+  const isPro = options?.userTier === "pro";
+  const defaultFreeModel =
     options?.defaultModel ||
-    Deno.env.get("LUNA_MODEL") ||
     Deno.env.get("DEFAULT_MODEL") ||
-    "luna";
+    "llama-3.3-70b-versatile";
 
+  let selectedModel = isPro
+    ? options?.proModel || Deno.env.get("PRO_MODEL") || "deepseek/deepseek-r1"
+    : defaultFreeModel;
+
+  // Handle caller requested forceModel
   if (options?.forceModel) {
-    const isPro = options.forceModel.includes("pro") || options.forceModel.includes("reasoner") || options.forceModel.includes("r1");
-    return {
-      model: options.forceModel,
-      reasoning_effort: isPro ? "high" : undefined,
-      reasoningDetected: isPro,
-      matchedCriteria: ["caller_override"],
-    };
+    const requested = options.forceModel.toLowerCase();
+    const isRequestingPro =
+      requested.includes("pro") ||
+      requested.includes("reasoner") ||
+      requested.includes("r1") ||
+      requested.includes("o1") ||
+      requested.includes("o3") ||
+      requested.includes("sonnet");
+
+    if (isPro) {
+      // Pro users are authorized to force specific models including deep reasoners
+      return {
+        model: options.forceModel,
+        reasoning_effort: isRequestingPro ? "high" : undefined,
+        reasoningDetected: isRequestingPro,
+        matchedCriteria: ["pro_caller_override"],
+      };
+    } else {
+      // Free users: sanitize forceModel against free whitelist
+      const isApprovedFreeModel = FREE_MODEL_WHITELIST.some((m) =>
+        requested.includes(m.toLowerCase())
+      );
+      if (isApprovedFreeModel) {
+        selectedModel = options.forceModel;
+      } else {
+        console.warn(
+          `[Router] Free user requested unauthorized model "${options.forceModel}". Reverting to free default "${defaultFreeModel}".`
+        );
+        selectedModel = defaultFreeModel;
+      }
+    }
   }
 
   if (!messages || messages.length === 0) {
     return {
-      model: lunaModel,
+      model: selectedModel,
       reasoningDetected: false,
     };
   }
 
+  // Detect complex STEM, LaTeX, or coding questions
   const nonSystemMessages = messages.filter((m) => m.role !== "system");
   const lastUserMessage =
     [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
@@ -164,10 +212,14 @@ export function selectModelAndParams(
 
   const reasoningDetected = matchedCriteria.length > 0;
 
+  // Deep reasoning effort is only granted to Pro users
+  const effectiveReasoningEffort =
+    isPro && reasoningDetected ? ("high" as const) : undefined;
+
   return {
-    model: lunaModel,
-    reasoning_effort: reasoningDetected ? "high" : undefined,
-    reasoningDetected,
+    model: selectedModel,
+    reasoning_effort: effectiveReasoningEffort,
+    reasoningDetected: isPro && reasoningDetected,
     matchedCriteria: reasoningDetected ? matchedCriteria : undefined,
   };
 }

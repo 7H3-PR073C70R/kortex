@@ -1,9 +1,11 @@
-import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
 export type QuotaActionType =
   | "document_ingestion"
   | "syllabot_query"
-  | "flashcard_generation";
+  | "flashcard_generation"
+  | "quiz_generation"
+  | "ai_smart_gen";
 
 export interface QuotaGuardResult {
   allowed: boolean;
@@ -13,18 +15,21 @@ export interface QuotaGuardResult {
   response?: Response;
 }
 
-export const FREE_TIER_LIMITS = {
+export const FREE_TIER_LIMITS: Record<QuotaActionType, number> = {
   document_ingestion: 3, // 3 Ingestions per day
   syllabot_query: 20, // 20 Queries per day (MON-04)
-  flashcard_generation: 10, // 10 Deck syntheses per day for free tier
-} as const;
+  flashcard_generation: 10, // 10 Deck syntheses per day
+  quiz_generation: 10, // 10 Quizzes per day
+  ai_smart_gen: 0, // 0 for free tier (Fast Local synthesis is uncapped)
+};
 
 export const UPGRADE_URL = "https://kortexify.app/pay";
 
 /**
- * Hard Quota & Paywall Enforcement Middleware.
- * Synchronized with PostgreSQL UTC day boundaries (matching RPC functions).
- * Tracks usage authoritatively in `public.usage_logs`.
+ * Hard Atomic Quota & Paywall Enforcement Middleware.
+ * Synchronized with PostgreSQL UTC day boundaries via `public.check_and_consume_ai_quota`.
+ * Enforces atomic FOR UPDATE row locking in PostgreSQL to eliminate TOCTOU race conditions.
+ * Fails closed on database communication errors.
  */
 export async function checkAndEnforceQuota(
   supabaseClient: SupabaseClient,
@@ -37,124 +42,111 @@ export async function checkAndEnforceQuota(
       "authorization, x-client-info, apikey, content-type",
   }
 ): Promise<QuotaGuardResult> {
-  const { data: profile } = await supabaseClient
-    .from("profiles")
-    .select("subscription_tier, is_pro, pro_until")
-    .eq("id", userId)
-    .single();
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const client =
+      supabaseUrl && serviceRoleKey
+        ? createClient(supabaseUrl, serviceRoleKey)
+        : supabaseClient;
 
-  const isProActive =
-    profile?.is_pro === true ||
-    profile?.subscription_tier === "pro" ||
-    (profile?.pro_until && new Date(profile.pro_until).getTime() > Date.now());
+    const { data, error } = await client.rpc(
+      "check_and_consume_ai_quota",
+      {
+        p_user_id: userId,
+        p_action_type: actionType,
+        p_token_count: tokenCount,
+      }
+    );
 
-  const tier: "free" | "pro" = isProActive ? "pro" : "free";
-
-  const now = new Date();
-  // Standardized UTC calendar day boundary (00:00:00 UTC) matching Postgres RPC date_trunc('day', now())
-  const startOfUtcDay = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0)
-  ).toISOString();
-
-  if (tier === "pro") {
-    try {
-      await supabaseClient.from("usage_logs").insert({
-        user_id: userId,
-        action_type: actionType,
-        token_count: tokenCount,
-        tier: "pro",
-        created_at: now.toISOString(),
-      });
-    } catch (err) {
-      console.warn("[QuotaGuard] Failed to record pro usage log:", err);
+    if (error) {
+      console.error(
+        `[QuotaGuard] check_and_consume_ai_quota RPC failed for user ${userId}:`,
+        error
+      );
+      // Fail closed: reject request rather than allowing unlimited API abuse
+      const errorPayload = {
+        error: "QUOTA_VERIFICATION_ERROR",
+        message:
+          "Unable to verify AI usage quota at this time. Please try again shortly.",
+      };
+      return {
+        allowed: false,
+        tier: "free",
+        currentUsage: 0,
+        maxLimit: 0,
+        response: new Response(JSON.stringify(errorPayload), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }),
+      };
     }
 
-    const { count: proUsageCount } = await supabaseClient
-      .from("usage_logs")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("action_type", actionType)
-      .gte("created_at", startOfUtcDay);
+    const isAllowed = Boolean(data?.allowed);
+    const tier: "free" | "pro" = data?.tier === "pro" ? "pro" : "free";
+    const currentUsage: number = data?.current_usage ?? 0;
+    const maxLimit: number = data?.max_limit ?? (tier === "pro" ? Infinity : FREE_TIER_LIMITS[actionType]);
+    const resetSeconds: number = data?.reset_seconds ?? 3600;
+
+    if (!isAllowed) {
+      console.warn(
+        `[QuotaGuard] User ${userId} exceeded daily UTC ${actionType} limit (${currentUsage}/${maxLimit}) on tier ${tier}.`
+      );
+
+      const errorPayload = {
+        error: "QUOTA_EXCEEDED",
+        message: `Daily limit of ${maxLimit} ${actionType.replace(/_/g, " ")} reached for ${tier} tier.`,
+        upgrade_url: UPGRADE_URL,
+        action: actionType,
+        current_usage: currentUsage,
+        limit: maxLimit,
+        reset_seconds: resetSeconds,
+      };
+
+      const response = new Response(JSON.stringify(errorPayload), {
+        status: 402, // Payment Required
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "Retry-After": resetSeconds.toString(),
+        },
+      });
+
+      return {
+        allowed: false,
+        tier,
+        currentUsage,
+        maxLimit,
+        response,
+      };
+    }
 
     return {
       allowed: true,
-      tier: "pro",
-      currentUsage: proUsageCount ?? 1,
-      maxLimit: Infinity,
+      tier,
+      currentUsage,
+      maxLimit,
     };
-  }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[QuotaGuard] Exception enforcing quota for user ${userId}:`, message);
 
-  const maxLimit = FREE_TIER_LIMITS[actionType];
-
-  const { count: usageCount } = await supabaseClient
-    .from("usage_logs")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("action_type", actionType)
-    .gte("created_at", startOfUtcDay);
-
-  const currentCount = usageCount ?? 0;
-
-  if (currentCount >= maxLimit) {
-    console.warn(
-      `[QuotaGuard] User ${userId} exceeded daily UTC ${actionType} limit (${currentCount}/${maxLimit}).`
-    );
-
-    const endOfUtcDay = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate() + 1,
-        0,
-        0,
-        0
-      )
-    );
-    const resetSeconds = Math.max(
-      1,
-      Math.floor((endOfUtcDay.getTime() - now.getTime()) / 1000)
-    );
-
-    const errorPayload = {
-      error: "QUOTA_EXCEEDED",
-      message: `Daily limit of ${maxLimit} ${actionType.replace("_", " ")} reached for free tier.`,
-      upgrade_url: UPGRADE_URL,
-      action: actionType,
-      current_usage: currentCount,
-      limit: maxLimit,
-      reset_seconds: resetSeconds,
-    };
-
-    const response = new Response(JSON.stringify(errorPayload), {
-      status: 402, // Payment Required
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-        "Retry-After": resetSeconds.toString(),
-      },
-    });
-
+    // Fail closed
     return {
       allowed: false,
       tier: "free",
-      currentUsage: currentCount,
-      maxLimit,
-      response,
+      currentUsage: 0,
+      maxLimit: 0,
+      response: new Response(
+        JSON.stringify({
+          error: "QUOTA_SERVICE_UNAVAILABLE",
+          message: "Internal error enforcing usage limits. Please retry.",
+        }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      ),
     };
   }
-
-  await supabaseClient.from("usage_logs").insert({
-    user_id: userId,
-    action_type: actionType,
-    token_count: tokenCount,
-    tier: "free",
-    created_at: now.toISOString(),
-  });
-
-  return {
-    allowed: true,
-    tier: "free",
-    currentUsage: currentCount + 1,
-    maxLimit,
-  };
 }

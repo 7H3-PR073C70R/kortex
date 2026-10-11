@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/database/app_database.dart';
+import 'package:kortex/src/core/helpers/logging_helper.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
@@ -1016,33 +1017,67 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(state.copyWith(status: AuthStatus.loading));
 
-    // 1. Delete Remote Account & User Profile Data
-    try {
-      if (locator.isRegistered<DeleteAccountUseCase>()) {
-        await locator<DeleteAccountUseCase>()(const NoParams());
+    // 1. Delete Remote Account & User Profile Data from backend
+    var deletionFailed = false;
+    String? failureMessage;
+
+    if (locator.isRegistered<DeleteAccountUseCase>()) {
+      try {
+        final result = await locator<DeleteAccountUseCase>()(const NoParams());
+        result.fold(
+          (failure) {
+            deletionFailed = true;
+            failureMessage = failure.message;
+          },
+          (_) {},
+        );
+      } on Object catch (e, stack) {
+        deletionFailed = true;
+        failureMessage = e.toString();
+        logError(e, stack);
       }
-    } on Object catch (_) {}
+    }
+
+    if (deletionFailed) {
+      logMessage(
+        'Remote account deletion failed: $failureMessage. Aborting local data purge.',
+      );
+      emit(
+        state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: failureMessage ??
+              'Unable to delete account at this time. Please check your connection and try again.',
+        ),
+      );
+      return;
+    }
 
     // 2. Purge Local Drift SQLite Database (All tables: decks, flashcards, review logs, past questions)
     try {
       if (locator.isRegistered<AppDatabase>()) {
         await locator<AppDatabase>().clearAllTables();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, stack) {
+      logError(e, stack);
+    }
 
     // 3. Clear Local Storage preferences
     try {
       if (locator.isRegistered<LocalStorageService>()) {
         await locator<LocalStorageService>().clearAllPreferences();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, stack) {
+      logError(e, stack);
+    }
 
     // 4. Clear User Session & Secure Storage credentials
     try {
       if (locator.isRegistered<UserStorageService>()) {
         locator<UserStorageService>().clearStorage();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, stack) {
+      logError(e, stack);
+    }
 
     // 5. Reset Auth Mode & Community Cubits
     try {
@@ -1052,9 +1087,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (locator.isRegistered<AutoCommunityCubit>()) {
         locator<AutoCommunityCubit>().reset();
       }
-    } on Object catch (_) {}
+    } on Object catch (e, stack) {
+      logError(e, stack);
+    }
 
-    // 6. Sign out session from backend
+    // 6. Sign out session from backend (if token still cached)
     try {
       await _authRepository.signOut();
     } on Object catch (_) {}

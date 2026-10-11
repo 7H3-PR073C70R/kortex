@@ -117,6 +117,7 @@ serve(async (req: Request) => {
 
     const routing = selectModelAndParams(messages, {
       forceModel: body.forceModel,
+      userTier: quotaCheck.tier,
     });
     const selectedModel = routing.model;
     const reasoningEffort = routing.reasoning_effort;

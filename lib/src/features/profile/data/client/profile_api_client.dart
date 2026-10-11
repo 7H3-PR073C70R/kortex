@@ -157,15 +157,13 @@ class ProfileApiClient {
     );
   }
 
-  /// Permanently deletes user profile and data records from database.
+  /// Permanently deletes user account from Supabase auth and cascades all user data.
   Future<void> deleteAccount({
     required String userId,
   }) async {
-    if (userId.isNotEmpty) {
-      await _dio.delete<dynamic>(
-        '${AppApiEndpoint.baseUri}${AppApiEndpoint.userProfiles}?id=eq.$userId',
-      );
-    }
+    await _dio.post<dynamic>(
+      '${AppApiEndpoint.baseUri}${AppApiEndpoint.deleteAccount}',
+    );
   }
 
   /// Updates user push notification preferences in Supabase.

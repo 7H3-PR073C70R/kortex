@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { chunkMarkdown } from "../_shared/markdown_chunker.ts";
 import { ServerDocumentParser } from "../_shared/server_document_parser.ts";
 import { checkAndEnforceQuota } from "../_shared/quota_guard.ts";
+import { safeFetch, readCappedArrayBuffer } from "../_shared/security_guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -116,10 +117,13 @@ serve(async (req: Request) => {
 
     if (fileUrl && (!structuredMarkdown || structuredMarkdown.length === 0)) {
       try {
-        console.log(`[IngestionWorker] Parsing document ${documentId} on server compute...`);
-        const fileRes = await fetch(fileUrl);
+        console.log(`[IngestionWorker] Fetching document ${documentId} via safe outbound client...`);
+        const fileRes = await safeFetch(fileUrl, {
+          maxSizeBytes: 30 * 1024 * 1024,
+          timeoutMs: 15000,
+        });
         if (fileRes.ok) {
-          const buf = await fileRes.arrayBuffer();
+          const buf = await readCappedArrayBuffer(fileRes, 30 * 1024 * 1024);
           const parser = new ServerDocumentParser(supabase);
           const parsed = await parser.parseDocument({
             documentId,
@@ -128,9 +132,11 @@ serve(async (req: Request) => {
             filename: `doc_${documentId}.pdf`,
           });
           structuredMarkdown = parsed.fullText;
+        } else {
+          console.warn(`[IngestionWorker] Document download failed with HTTP status ${fileRes.status}`);
         }
       } catch (err) {
-        console.warn(`[IngestionWorker] Server compute parsing failed: ${err}`);
+        console.warn(`[IngestionWorker] Server compute parsing/download failed: ${err}`);
       }
     }
 

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { LunaClient } from "../_shared/luna_client.ts";
 import { SemanticCacheProvider } from "../_shared/semantic_cache_provider.ts";
+import { checkAndEnforceQuota } from "../_shared/quota_guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,6 +39,69 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const authHeader = req.headers.get("Authorization");
+
+    // 1. Mandatory Session Authentication
+    if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
+      return new Response(
+        JSON.stringify({
+          error: "Unauthorized",
+          message: "A valid user session is required to generate quiz questions.",
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token || token === supabaseAnonKey) {
+      return new Response(
+        JSON.stringify({
+          error: "Unauthorized",
+          message: "Guest access not permitted. Please sign in to generate quiz questions.",
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const authClient = createClient(supabaseUrl, supabaseAnonKey);
+    const {
+      data: { user },
+      error: authErr,
+    } = await authClient.auth.getUser(token).catch(() => ({
+      data: { user: null },
+      error: new Error("Auth verification failed"),
+    }));
+
+    if (authErr || !user) {
+      return new Response(
+        JSON.stringify({
+          error: "Unauthorized",
+          message: "Session token is expired or invalid. Please re-authenticate.",
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const userId = user.id;
+
+    // 2. Initialize elevated DB Client
+    const supabaseClient = createClient(
+      supabaseUrl,
+      supabaseServiceKey || supabaseAnonKey
+    );
+
     const body: QuizRequest = await req.json().catch(() => ({}));
     const {
       deck_id,
@@ -53,20 +117,19 @@ Deno.serve(async (req: Request) => {
       30
     );
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
-        Deno.env.get("SUPABASE_ANON_KEY") ??
-        "",
-      {
-        global: {
-          headers: req.headers.get("Authorization")
-            ? { Authorization: req.headers.get("Authorization")! }
-            : {},
-        },
-      }
+    // 3. Atomic Quota Enforcement
+    const quotaCheck = await checkAndEnforceQuota(
+      supabaseClient,
+      userId,
+      "quiz_generation",
+      0,
+      corsHeaders
     );
+    if (!quotaCheck.allowed && quotaCheck.response) {
+      return quotaCheck.response;
+    }
 
+    // 4. Semantic Cache Check
     const targetId = deck_id ?? document_id ?? "default";
     const cachePrompt = `quiz:${targetId}:${finalQuestionCount}:${difficulty}`;
 
@@ -93,10 +156,22 @@ Deno.serve(async (req: Request) => {
     if (deck_id) {
       const { data: deck } = await supabaseClient
         .from("decks")
-        .select("title, subject")
+        .select("title, subject, user_id, is_public")
         .eq("id", deck_id)
         .single();
+
       if (deck) {
+        if (deck.user_id !== userId && !deck.is_public) {
+          return new Response(
+            JSON.stringify({
+              error: "Forbidden: You do not have access to this deck",
+            }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
         deckTitle = deck.title || deckTitle;
         if (deck.subject) {
           contextText += `Subject: ${deck.subject}\n`;
@@ -117,11 +192,25 @@ Deno.serve(async (req: Request) => {
     } else if (document_id) {
       const { data: doc } = await supabaseClient
         .from("documents")
-        .select("title")
+        .select("title, user_id")
         .eq("id", document_id)
         .single();
-      if (doc?.title) {
-        deckTitle = doc.title;
+
+      if (doc) {
+        if (doc.user_id && doc.user_id !== userId) {
+          return new Response(
+            JSON.stringify({
+              error: "Forbidden: You do not have access to this document",
+            }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        if (doc.title) {
+          deckTitle = doc.title;
+        }
       }
 
       const { data: chunks } = await supabaseClient
@@ -170,7 +259,7 @@ You MUST reply with ONLY a single valid JSON object strictly matching this schem
 }`;
 
     try {
-      console.log(`[generate-quiz-questions] Requesting quiz from Luna (${luna.modelName})...`);
+      console.log(`[generate-quiz-questions] Requesting quiz from Luna (${luna.modelName}) for user ${userId}...`);
       const lunaResponse = await luna.complete({
         messages: [
           { role: "system", content: systemPrompt },
@@ -278,4 +367,3 @@ You MUST reply with ONLY a single valid JSON object strictly matching this schem
     );
   }
 });
-
