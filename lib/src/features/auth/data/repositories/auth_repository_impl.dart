@@ -311,4 +311,18 @@ class AuthRepositoryImpl implements AuthRepository {
         })
         .makeRequest();
   }
+
+  @override
+  Future<Either<Failure, void>> disconnectDeviceSession(String targetDeviceId) {
+    return _remoteDataSource
+        .disconnectDeviceSession(targetDeviceId)
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, void>> registerDeviceSession() {
+    return _remoteDataSource
+        .registerDeviceSession()
+        .makeRequest();
+  }
 }

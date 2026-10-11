@@ -24,6 +24,7 @@ import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/device_limit_modal_sheet.dart';
 
 // -----------------------------------------------------------------------------
 // Shared auth-flow building blocks.
@@ -238,7 +239,40 @@ class AuthNavigationListener extends StatelessWidget {
           }
         } else if (state.status == AuthStatus.error &&
             state.errorMessage != null) {
-          if (!isChatMode) {
+          if (state.activeDevices.isNotEmpty) {
+            final activeDeviceInfos = state.activeDevices
+                .map(ActiveDeviceInfo.fromJson)
+                .toList();
+            unawaited(
+              DeviceLimitModalSheet.show(
+                context,
+                activeDevices: activeDeviceInfos,
+                onDisconnectDevice: (deviceId) async {
+                  if (locator.isRegistered<AuthRepository>()) {
+                    final res = await locator<AuthRepository>()
+                        .disconnectDeviceSession(deviceId);
+                    return res.fold(
+                      (l) => false,
+                      (r) async {
+                        final regRes = await locator<AuthRepository>()
+                            .registerDeviceSession();
+                        return regRes.isRight;
+                      },
+                    );
+                  }
+                  return false;
+                },
+              ).then((resolved) {
+                if (resolved == true && context.mounted) {
+                  authBloc.add(
+                    const AuthStatusChanged(
+                      AuthSessionStatus.authenticatedComplete,
+                    ),
+                  );
+                }
+              }),
+            );
+          } else if (!isChatMode) {
             context.showSnackBar(
               message: state.errorMessage!,
               type: SnackBarType.error,

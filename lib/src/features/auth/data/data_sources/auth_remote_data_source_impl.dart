@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/services/device_identity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -30,6 +32,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
     try {
       await registerDeviceSession();
+    } on DeviceLimitExceededException {
+      rethrow;
     } on Object catch (e) {
       debugPrint('[AuthRemoteDataSource] registerDeviceSession during login warning: $e');
     }
@@ -47,6 +51,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
     try {
       await registerDeviceSession();
+    } on DeviceLimitExceededException {
+      rethrow;
     } on Object catch (e) {
       debugPrint('[AuthRemoteDataSource] registerDeviceSession during register warning: $e');
     }
@@ -64,6 +70,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
     try {
       await registerDeviceSession();
+    } on DeviceLimitExceededException {
+      rethrow;
     } on Object catch (e) {
       debugPrint('[AuthRemoteDataSource] registerDeviceSession during social login warning: $e');
     }
@@ -94,6 +102,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
     try {
       await registerDeviceSession();
+    } on DeviceLimitExceededException {
+      rethrow;
     } on Object catch (e) {
       debugPrint('[AuthRemoteDataSource] registerDeviceSession during verifyOtp warning: $e');
     }
@@ -205,11 +215,36 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final deviceName = deviceIdentity.deviceName;
       final platform = deviceIdentity.platform;
 
-      await _authClient.registerDeviceSession({
+      final response = await _authClient.registerDeviceSession({
         'p_device_id': deviceId,
         'p_device_name': deviceName,
         'p_platform': platform,
       });
+
+      dynamic data = response.data;
+      if (data is String) {
+        try {
+          data = jsonDecode(data);
+        } on Object catch (_) {}
+      }
+      if (data is Map) {
+        if (data['code'] == 'DEVICE_LIMIT_EXCEEDED') {
+          final rawDevices = data['active_devices'];
+          final activeDevices = <Map<String, dynamic>>[];
+          if (rawDevices is List) {
+            for (final item in rawDevices) {
+              if (item is Map) {
+                activeDevices.add(Map<String, dynamic>.from(item));
+              }
+            }
+          }
+          throw DeviceLimitExceededException(
+            message: data['message']?.toString() ??
+                'Maximum active device limit (3) reached for this profile.',
+            activeDevices: activeDevices,
+          );
+        }
+      }
     }
   }
 

@@ -63,4 +63,10 @@ abstract class AuthRepository {
 
   /// Refreshes session tokens in background.
   Future<Either<Failure, UserEntity>> refreshSession();
+
+  /// Disconnects/revokes an active device session slot.
+  Future<Either<Failure, void>> disconnectDeviceSession(String targetDeviceId);
+
+  /// Registers the current client device session slot.
+  Future<Either<Failure, void>> registerDeviceSession();
 }

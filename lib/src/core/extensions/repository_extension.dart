@@ -35,6 +35,14 @@ extension RepositoryExtension<T> on Future<T> {
     } on NoReadableTextException catch (e) {
       onFailure?.call();
       return Left(NoReadableTextFailure(message: e.message));
+    } on DeviceLimitExceededException catch (e) {
+      onFailure?.call();
+      return Left(
+        DeviceLimitExceededFailure(
+          message: e.message,
+          activeDevices: e.activeDevices,
+        ),
+      );
     } on ServerException catch (e, s) {
       onFailure?.call();
       debugPrint(e.toString());

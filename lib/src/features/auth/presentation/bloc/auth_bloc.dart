@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/database/app_database.dart';
+import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/helpers/logging_helper.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
@@ -340,6 +341,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  void _emitFailure(
+    Emitter<AuthState> emit,
+    Failure failure, {
+    required String fallbackMessage,
+  }) {
+    if (failure is DeviceLimitExceededFailure) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: failure.message ?? 'Device limit exceeded.',
+          activeDevices: failure.activeDevices,
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: failure.message ?? fallbackMessage,
+          activeDevices: const [],
+        ),
+      );
+    }
+  }
+
   Future<void> _onLoginRequested(
     AuthLoginRequested event,
     Emitter<AuthState> emit,
@@ -350,13 +375,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         LoginParams(email: event.email, password: event.password),
       );
       result.fold(
-        (failure) => emit(
-          state.copyWith(
-            status: AuthStatus.error,
-            errorMessage:
-                failure.message ??
-                'Authentication failed. Please check credentials.',
-          ),
+        (failure) => _emitFailure(
+          emit,
+          failure,
+          fallbackMessage: 'Authentication failed. Please check credentials.',
         ),
         (user) {
           try {
@@ -414,12 +436,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
       result.fold(
-        (failure) => emit(
-          state.copyWith(
-            status: AuthStatus.error,
-            errorMessage:
-                failure.message ?? 'Registration failed. Please check details.',
-          ),
+        (failure) => _emitFailure(
+          emit,
+          failure,
+          fallbackMessage: 'Registration failed. Please check details.',
         ),
         (user) {
           final emailPrefix =
@@ -523,13 +543,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
       result.fold(
-        (failure) => emit(
-          state.copyWith(
-            status: AuthStatus.error,
-            errorMessage:
-                failure.message ??
-                'Invalid or expired verification code. Please try again.',
-          ),
+        (failure) => _emitFailure(
+          emit,
+          failure,
+          fallbackMessage:
+              'Invalid or expired verification code. Please try again.',
         ),
         (user) {
           final emailPrefix =
@@ -622,11 +640,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
       result.fold(
-        (failure) => emit(
-          state.copyWith(
-            status: AuthStatus.error,
-            errorMessage: failure.message ?? 'Social login failed.',
-          ),
+        (failure) => _emitFailure(
+          emit,
+          failure,
+          fallbackMessage: 'Social login failed.',
         ),
         (user) {
           emit(

@@ -60,3 +60,16 @@ class NoReadableTextFailure extends Failure {
          statusCode,
        );
 }
+
+class DeviceLimitExceededFailure extends Failure {
+  const DeviceLimitExceededFailure({
+    required String message,
+    this.activeDevices = const [],
+    int? statusCode,
+  }) : super(message, statusCode);
+
+  final List<Map<String, dynamic>> activeDevices;
+
+  @override
+  List<Object> get props => [message ?? '', activeDevices];
+}

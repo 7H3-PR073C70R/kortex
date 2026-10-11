@@ -32,3 +32,17 @@ class NoReadableTextException implements Exception {
       "Couldn't read this document offline. "
       'Try again when you are online.';
 }
+
+/// Thrown when user reaches the maximum active device slot quota (3 devices).
+class DeviceLimitExceededException implements Exception {
+  const DeviceLimitExceededException({
+    required this.message,
+    this.activeDevices = const [],
+  });
+
+  final String message;
+  final List<Map<String, dynamic>> activeDevices;
+
+  @override
+  String toString() => message;
+}

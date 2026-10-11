@@ -25,6 +25,7 @@ class AuthState extends Equatable {
     this.errorMessage,
     this.needsEmailVerification = false,
     this.isMagicLinkSent = false,
+    this.activeDevices = const [],
   });
 
   final AuthStatus status;
@@ -34,6 +35,7 @@ class AuthState extends Equatable {
   final String? errorMessage;
   final bool needsEmailVerification;
   final bool isMagicLinkSent;
+  final List<Map<String, dynamic>> activeDevices;
 
   bool get isLoading => status == AuthStatus.loading;
   bool get isAuthenticated =>
@@ -55,6 +57,7 @@ class AuthState extends Equatable {
     String? errorMessage,
     bool? needsEmailVerification,
     bool? isMagicLinkSent,
+    List<Map<String, dynamic>>? activeDevices,
   }) {
     return AuthState(
       status: status ?? this.status,
@@ -65,6 +68,7 @@ class AuthState extends Equatable {
       needsEmailVerification:
           needsEmailVerification ?? this.needsEmailVerification,
       isMagicLinkSent: isMagicLinkSent ?? this.isMagicLinkSent,
+      activeDevices: activeDevices ?? this.activeDevices,
     );
   }
 
@@ -77,5 +81,6 @@ class AuthState extends Equatable {
     errorMessage,
     needsEmailVerification,
     isMagicLinkSent,
+    activeDevices,
   ];
 }
