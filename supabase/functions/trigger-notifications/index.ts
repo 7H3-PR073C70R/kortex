@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { timingSafeEqualString } from "../_shared/security_guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,26 +47,30 @@ serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
     const authHeader = req.headers.get("Authorization") ?? "";
     const customCronHeader = req.headers.get("X-Cron-Secret") ?? "";
-    const serverTriggerHeader = req.headers.get("X-Server-Trigger") ?? "";
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    const isServiceRole =
-      supabaseServiceKey &&
-      token === supabaseServiceKey;
-    const isCronSecretMatch =
-      cronSecret &&
-      (customCronHeader === cronSecret ||
-        token === cronSecret);
-    const isServerTriggerMatch =
-      serverTriggerHeader === "kortex-internal-worker";
 
-    if (!isServiceRole && !isCronSecretMatch && !isServerTriggerMatch) {
+    // Constant-time check for privileged service role or cron secret
+    const isServiceRole =
+      Boolean(supabaseServiceKey &&
+      token &&
+      (await timingSafeEqualString(token, supabaseServiceKey)));
+
+    const isCronSecret =
+      Boolean(cronSecret &&
+      ((customCronHeader &&
+        (await timingSafeEqualString(customCronHeader, cronSecret))) ||
+        (token && (await timingSafeEqualString(token, cronSecret)))));
+
+    if (!isServiceRole && !isCronSecret) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized: Endpoint restricted to internal server triggers" }),
+        JSON.stringify({
+          error: "Unauthorized",
+          message: "Endpoint restricted to internal server triggers or cron workers.",
+        }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

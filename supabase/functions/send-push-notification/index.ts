@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { timingSafeEqualString } from "../_shared/security_guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -124,35 +125,55 @@ serve(async (req: Request) => {
     const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
     const authHeader = req.headers.get("Authorization") ?? "";
     const customCronHeader = req.headers.get("X-Cron-Secret") ?? "";
-    const serverTriggerHeader = req.headers.get("X-Server-Trigger") ?? "";
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    const isServiceRole =
-      (supabaseServiceKey && token === supabaseServiceKey) ||
-      (supabaseAnonKey && token === supabaseAnonKey) ||
-      (cronSecret && (customCronHeader === cronSecret || token === cronSecret)) ||
-      serverTriggerHeader === "kortex-internal-worker";
 
-    if (!authHeader.toLowerCase().startsWith("bearer ") && !isServiceRole) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized: Missing Bearer token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Constant-time check for privileged service role or cron secret
+    const isServiceRole =
+      Boolean(supabaseServiceKey &&
+      token &&
+      (await timingSafeEqualString(token, supabaseServiceKey)));
+
+    const isCronSecret =
+      Boolean(cronSecret &&
+      ((customCronHeader &&
+        (await timingSafeEqualString(customCronHeader, cronSecret))) ||
+        (token && (await timingSafeEqualString(token, cronSecret)))));
+
+    const isPrivileged = isServiceRole || isCronSecret;
 
     let authenticatedUserId: string | null = null;
-    if (!isServiceRole) {
-      try {
-        const authClient = createClient(supabaseUrl, supabaseAnonKey);
-        const {
-          data: { user },
-          error: authError,
-        } = await authClient.auth.getUser(token);
+    if (!isPrivileged) {
+      if (!authHeader.toLowerCase().startsWith("bearer ") || !token || token === supabaseAnonKey) {
+        return new Response(
+          JSON.stringify({
+            error: "Unauthorized",
+            message: "Missing or invalid Bearer authentication token. Guest access is prohibited.",
+          }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-        if (!authError && user) {
-          authenticatedUserId = user.id;
-        }
-      } catch (_) {}
+      const authClient = createClient(supabaseUrl, supabaseAnonKey);
+      const {
+        data: { user },
+        error: authError,
+      } = await authClient.auth.getUser(token).catch(() => ({
+        data: { user: null },
+        error: new Error("Auth request failed"),
+      }));
+
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({
+            error: "Unauthorized",
+            message: "Invalid or expired session token.",
+          }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      authenticatedUserId = user.id;
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -190,11 +211,21 @@ serve(async (req: Request) => {
       );
     }
 
-    if (!isServiceRole && authenticatedUserId) {
+    if (!isPrivileged) {
+      if (!authenticatedUserId) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized: Missing authenticated user identity" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const isTargetingOthers = targetUserIds.some((id) => id !== authenticatedUserId);
       if (isTargetingOthers) {
         return new Response(
-          JSON.stringify({ error: "Forbidden: Cannot send push notifications to other users" }),
+          JSON.stringify({
+            error: "Forbidden",
+            message: "Cannot send push notifications to other users.",
+          }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

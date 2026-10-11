@@ -23,13 +23,16 @@ export class R2StorageProvider {
 
   private static getS3Client(): S3Client {
     if (!this.clientInstance) {
-      const accountId =
-        Deno.env.get("R2_ACCOUNT_ID") ?? "70d5976cda85543f749219264f8391f0";
-      const accessKeyId =
-        Deno.env.get("R2_ACCESS_KEY_ID") ?? "45baa62136f37a008f6bb338d27ca708";
-      const secretAccessKey =
-        Deno.env.get("R2_SECRET_ACCESS_KEY") ??
-        "cf4d750fbf1ff5ee3b7037e87e8f92540794260fdcdc4d82931244b2fd320246";
+      const accountId = Deno.env.get("R2_ACCOUNT_ID");
+      const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID");
+      const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY");
+
+      if (!accountId || !accessKeyId || !secretAccessKey) {
+        throw new Error(
+          "R2 storage credentials missing from environment variables (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY)"
+        );
+      }
+
       const endpoint =
         Deno.env.get("R2_S3_ENDPOINT") ??
         `https://${accountId}.r2.cloudflarestorage.com`;
@@ -51,10 +54,11 @@ export class R2StorageProvider {
   }
 
   public static get publicDomain(): string {
-    return (
-      Deno.env.get("R2_PUBLIC_DOMAIN") ??
-      "https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev"
-    ).replace(/\/+$/, "");
+    const domain = Deno.env.get("R2_PUBLIC_DOMAIN");
+    if (!domain) {
+      throw new Error("R2_PUBLIC_DOMAIN is not configured");
+    }
+    return domain.replace(/\/+$/, "");
   }
 
   /**

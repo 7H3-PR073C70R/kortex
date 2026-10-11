@@ -9,6 +9,53 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Maximum allowed audio file size: 25MB (Groq Whisper ceiling)
+const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
+
+/**
+ * Validates that the audio URL originates exclusively from authorized
+ * Kortex storage buckets (Supabase Storage or Cloudflare R2).
+ */
+function isAuthorizedStorageHost(audioUrl: string, supabaseUrl: string): boolean {
+  try {
+    const parsed = new URL(audioUrl);
+    if (parsed.protocol !== "https:") return false;
+
+    const hostname = parsed.hostname.toLowerCase();
+
+    // 1. Supabase Storage
+    if (supabaseUrl) {
+      try {
+        const expectedSupabaseHost = new URL(supabaseUrl).hostname.toLowerCase();
+        if (hostname === expectedSupabaseHost) return true;
+      } catch (_) {}
+    }
+    if (hostname.endsWith(".supabase.co") || hostname.endsWith(".supabase.in")) {
+      return true;
+    }
+
+    // 2. Cloudflare R2
+    const r2PublicDomain = Deno.env.get("R2_PUBLIC_DOMAIN");
+    if (r2PublicDomain) {
+      try {
+        const expectedR2Host = new URL(r2PublicDomain).hostname.toLowerCase();
+        if (hostname === expectedR2Host) return true;
+      } catch (_) {}
+    }
+
+    if (
+      hostname.endsWith(".r2.dev") ||
+      hostname.endsWith(".r2.cloudflarestorage.com")
+    ) {
+      return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -28,9 +75,9 @@ serve(async (req: Request) => {
     const groqApiKey = Deno.env.get("GROQ_API_KEY");
 
     if (!groqApiKey) {
-      console.error("[transcribe-voice-note] Server missing GROQ_API_KEY secret.");
+      console.error("[transcribe-voice-note] Missing GROQ_API_KEY secret.");
       return new Response(
-        JSON.stringify({ error: "Server missing GROQ_API_KEY secret" }),
+        JSON.stringify({ error: "Server misconfiguration: Groq credentials missing" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -100,7 +147,33 @@ serve(async (req: Request) => {
       );
     }
 
-    // 2. Parse & Validate Payload
+    const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // 2. Per-User Rate Limiting (Prevents Groq credit exhaustion)
+    const { data: withinLimit, error: rateLimitErr } = await serviceClient.rpc(
+      "check_and_record_rate_limit",
+      {
+        p_ip_hash: user.id,
+        p_endpoint: "transcribe-voice-note",
+        p_max_requests: 30,
+        p_window_minutes: 60,
+      }
+    );
+
+    if (!rateLimitErr && withinLimit === false) {
+      return new Response(
+        JSON.stringify({
+          error: "RATE_LIMIT_EXCEEDED",
+          message: "Hourly voice note transcription limit exceeded. Please try again later.",
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // 3. Parse & Validate Payload
     const body = await req.json().catch(() => null);
     if (!body || !body.audio_url) {
       return new Response(
@@ -116,13 +189,13 @@ serve(async (req: Request) => {
     const replyId = body.reply_id ? String(body.reply_id).trim() : null;
     const postId = body.post_id ? String(body.post_id).trim() : null;
 
-    // 3. SSRF Protection: Prevent downloading arbitrary internal IP addresses or cloud metadata
-    if (!isSafeOutboundUrl(audioUrl)) {
-      console.warn(`[transcribe-voice-note] Blocked potential SSRF attempt to: ${audioUrl}`);
+    // 4. SSRF & Storage Origin Protection
+    if (!isSafeOutboundUrl(audioUrl) || !isAuthorizedStorageHost(audioUrl, supabaseUrl)) {
+      console.warn(`[transcribe-voice-note] Rejected unauthorized audio URL: ${audioUrl}`);
       return new Response(
         JSON.stringify({
           error: "INVALID_AUDIO_URL",
-          message: "The provided audio URL failed security inspection.",
+          message: "The provided audio URL failed security inspection or does not originate from authorized Kortex storage.",
         }),
         {
           status: 400,
@@ -131,13 +204,20 @@ serve(async (req: Request) => {
       );
     }
 
-    const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-    // 4. Authorization: Verify caller owns the post or reply being transcribed
+    // 5. Ownership Verification & Existing Transcript Cache Lookup
     if (replyId) {
+      if (!uuidRegex.test(replyId)) {
+        return new Response(JSON.stringify({ error: "Invalid reply_id format" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: replyRecord, error: fetchReplyErr } = await serviceClient
         .from("forum_replies")
-        .select("id, user_id")
+        .select("id, user_id, voice_note_url, voice_note_transcript")
         .eq("id", replyId)
         .single();
 
@@ -151,11 +231,30 @@ serve(async (req: Request) => {
         );
       }
 
-      if (replyRecord.user_id !== user.id) {
+      // Fast cache return: if already transcribed, return without calling Groq
+      if (replyRecord.voice_note_transcript && replyRecord.voice_note_transcript.trim().length > 0) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transcript: replyRecord.voice_note_transcript.trim(),
+            cached: true,
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // If not owner, verify audio URL matches the recorded voice note
+      const isOwner = replyRecord.user_id === user.id;
+      const isAttachedAudio = replyRecord.voice_note_url && replyRecord.voice_note_url === audioUrl;
+
+      if (!isOwner && !isAttachedAudio) {
         return new Response(
           JSON.stringify({
             error: "Forbidden",
-            message: "You can only transcribe voice notes for your own replies.",
+            message: "You can only transcribe voice notes attached to this reply or your own replies.",
           }),
           {
             status: 403,
@@ -166,9 +265,16 @@ serve(async (req: Request) => {
     }
 
     if (postId) {
+      if (!uuidRegex.test(postId)) {
+        return new Response(JSON.stringify({ error: "Invalid post_id format" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: postRecord, error: fetchPostErr } = await serviceClient
         .from("forum_posts")
-        .select("id, user_id")
+        .select("id, user_id, voice_note_url, voice_note_transcript")
         .eq("id", postId)
         .single();
 
@@ -182,11 +288,50 @@ serve(async (req: Request) => {
         );
       }
 
-      if (postRecord.user_id !== user.id) {
+      // Fast cache return: if already transcribed, return without calling Groq
+      if (postRecord.voice_note_transcript && postRecord.voice_note_transcript.trim().length > 0) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transcript: postRecord.voice_note_transcript.trim(),
+            cached: true,
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // If not owner, verify audio URL matches the recorded voice note
+      const isOwner = postRecord.user_id === user.id;
+      const isAttachedAudio = postRecord.voice_note_url && postRecord.voice_note_url === audioUrl;
+
+      if (!isOwner && !isAttachedAudio) {
         return new Response(
           JSON.stringify({
             error: "Forbidden",
-            message: "You can only transcribe voice notes for your own posts.",
+            message: "You can only transcribe voice notes attached to this post or your own posts.",
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+    }
+
+    // If neither replyId nor postId is passed, caller must own the storage path
+    if (!replyId && !postId) {
+      const isUserAudioFolder =
+        audioUrl.includes(`/forum/voice/${user.id}/`) ||
+        audioUrl.includes(`/${user.id}/`);
+
+      if (!isUserAudioFolder) {
+        return new Response(
+          JSON.stringify({
+            error: "Forbidden",
+            message: "Standalone voice notes must reside in your own user storage directory.",
           }),
           {
             status: 403,
@@ -200,8 +345,32 @@ serve(async (req: Request) => {
       `[transcribe-voice-note] Authenticated user ${user.id} transcribing: ${audioUrl}`
     );
 
-    // 5. Fetch Audio File
-    const audioRes = await fetch(audioUrl);
+    // 6. Download Audio File with Timeout & Size Ceiling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+
+    let audioRes: Response;
+    try {
+      audioRes = await fetch(audioUrl, { signal: controller.signal });
+    } catch (fetchErr: unknown) {
+      clearTimeout(timeoutId);
+      const isAbort = (fetchErr as Error)?.name === "AbortError";
+      return new Response(
+        JSON.stringify({
+          error: isAbort ? "AUDIO_DOWNLOAD_TIMEOUT" : "AUDIO_DOWNLOAD_FAILED",
+          message: isAbort
+            ? "Downloading audio file timed out (20s limit)."
+            : "Failed to connect to audio storage source.",
+        }),
+        {
+          status: isAbort ? 504 : 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
     if (!audioRes.ok) {
       console.error(
         `[transcribe-voice-note] Failed to download audio from ${audioUrl}: ${audioRes.status}`
@@ -217,9 +386,36 @@ serve(async (req: Request) => {
       );
     }
 
-    const audioBlob = await audioRes.blob();
-    const fileName =
-      audioUrl.split("?")[0].split("/").pop() || "audio.m4a";
+    // Check Content-Length header if present
+    const contentLength = audioRes.headers.get("content-length");
+    if (contentLength && parseInt(contentLength, 10) > MAX_AUDIO_SIZE) {
+      return new Response(
+        JSON.stringify({
+          error: "PAYLOAD_TOO_LARGE",
+          message: `Audio file (${(parseInt(contentLength, 10) / (1024 * 1024)).toFixed(2)} MB) exceeds 25MB transcription limit.`,
+        }),
+        {
+          status: 413,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const audioBytes = new Uint8Array(await audioRes.arrayBuffer());
+    if (audioBytes.length > MAX_AUDIO_SIZE) {
+      return new Response(
+        JSON.stringify({
+          error: "PAYLOAD_TOO_LARGE",
+          message: `Audio file (${(audioBytes.length / (1024 * 1024)).toFixed(2)} MB) exceeds 25MB transcription limit.`,
+        }),
+        {
+          status: 413,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const fileName = audioUrl.split("?")[0].split("/").pop() || "audio.m4a";
     const cleanFileName =
       fileName.endsWith(".m4a") ||
       fileName.endsWith(".mp3") ||
@@ -227,7 +423,8 @@ serve(async (req: Request) => {
         ? fileName
         : `${fileName}.m4a`;
 
-    // 6. Forward to Groq Whisper
+    // 7. Forward to Groq Whisper
+    const audioBlob = new Blob([audioBytes]);
     const formData = new FormData();
     formData.append("file", audioBlob, cleanFileName);
     formData.append("model", "whisper-large-v3-turbo");
@@ -247,10 +444,13 @@ serve(async (req: Request) => {
     if (!groqRes.ok) {
       const errText = await groqRes.text();
       console.error(
-        `[transcribe-voice-note] Groq transcription failed: ${groqRes.status} ${errText}`
+        `[transcribe-voice-note] Groq transcription failed: ${groqRes.status}`
       );
       return new Response(
-        JSON.stringify({ error: `Groq Whisper API failed: ${errText}` }),
+        JSON.stringify({
+          error: "TRANSCRIPTION_FAILED",
+          message: "Groq speech-to-text service encountered an error.",
+        }),
         {
           status: 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -261,7 +461,7 @@ serve(async (req: Request) => {
     const groqData = await groqRes.json();
     const transcript = (groqData.text ?? "").trim();
 
-    // 7. Persist Transcript
+    // 8. Persist Transcript
     if (transcript.length > 0) {
       if (replyId) {
         await serviceClient

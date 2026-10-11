@@ -31,12 +31,12 @@ if sys.platform.startswith("win"):
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-# Cloudflare R2 Credentials & Configuration
-ACCOUNT_ID = (os.environ.get("R2_ACCOUNT_ID") or "70d5976cda85543f749219264f8391f0").strip()
-ACCESS_KEY_ID = (os.environ.get("R2_ACCESS_KEY_ID") or "45baa62136f37a008f6bb338d27ca708").strip()
-SECRET_ACCESS_KEY = (os.environ.get("R2_SECRET_ACCESS_KEY") or "cf4d750fbf1ff5ee3b7037e87e8f92540794260fdcdc4d82931244b2fd320246").strip()
+# Cloudflare R2 Credentials & Configuration (Loaded strictly from environment variables)
+ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID", "").strip()
+ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "").strip()
+SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "").strip()
 BUCKET_NAME = (os.environ.get("R2_BUCKET_NAME") or "kortex-forum-media").strip()
-PUBLIC_DOMAIN = (os.environ.get("R2_PUBLIC_DOMAIN") or "https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev").rstrip("/")
+PUBLIC_DOMAIN = os.environ.get("R2_PUBLIC_DOMAIN", "").strip().rstrip("/")
 REGION = "auto"
 SERVICE = "s3"
 
@@ -58,6 +58,12 @@ def get_signature_key(key, date_stamp, region_name, service_name):
 
 def upload_to_r2(local_path, r2_key, content_type="application/octet-stream"):
     """Uploads a file directly to Cloudflare R2 via AWS SigV4 with direct file attachment headers."""
+    if not ACCOUNT_ID or not ACCESS_KEY_ID or not SECRET_ACCESS_KEY:
+        raise ValueError(
+            "Missing required R2 credentials. Please set R2_ACCOUNT_ID, "
+            "R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY environment variables."
+        )
+
     if not os.path.isfile(local_path):
         raise FileNotFoundError(f"Local file not found for upload: {local_path}")
 
