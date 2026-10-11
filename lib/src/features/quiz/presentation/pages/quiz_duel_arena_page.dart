@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,24 +7,27 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart';
-import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
-import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.dart';
-import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_review_tab.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/duel/quiz_duel_cancelled_view.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/duel/quiz_duel_celebration_coordinator.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/duel/quiz_duel_countdown_view.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/duel/quiz_duel_forfeit_dialog.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/duel/quiz_duel_matching_view.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/duel/quiz_duel_round_content.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/duel/quiz_duel_scoreboard_view.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/duel/quiz_duel_split_scoreboard_header.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
-import 'package:kortex/src/shared/widgets/app_avatar.dart';
-import 'package:kortex/src/shared/widgets/app_badge.dart';
-import 'package:kortex/src/shared/widgets/app_button.dart';
-import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
-import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
 
 /// Full-screen competitive arena for 1v1 Real-Time Quiz Duels (QZ-13).
 class QuizDuelArenaPage extends HookWidget {
-  const QuizDuelArenaPage({super.key});
+  const QuizDuelArenaPage({
+    super.key,
+    this.quizDuelCubit,
+  });
+
+  final QuizDuelCubit? quizDuelCubit;
 
   @override
   Widget build(BuildContext context) {
@@ -43,9 +45,11 @@ class QuizDuelArenaPage extends HookWidget {
     final previousSeconds = useRef<int?>(null);
     final previousRivalSelected = useRef<bool>(false);
 
+    final cubit = quizDuelCubit ?? context.read<QuizDuelCubit>();
+
     void onSelectOption(int index) {
       AppFeedback.selection();
-      unawaited(context.read<QuizDuelCubit>().submitAnswer(index));
+      unawaited(cubit.submitAnswer(index));
     }
 
     void onSendEmote(String emote) {
@@ -54,7 +58,7 @@ class QuizDuelArenaPage extends HookWidget {
       lastEmoteSentMs.value = now;
 
       AppFeedback.light();
-      unawaited(context.read<QuizDuelCubit>().sendEmote(emote));
+      unawaited(cubit.sendEmote(emote));
       floatingEmotes.value = [...floatingEmotes.value, emote];
       Future.delayed(const Duration(milliseconds: 2200), () {
         if (floatingEmotes.value.isNotEmpty) {
@@ -63,180 +67,116 @@ class QuizDuelArenaPage extends HookWidget {
       });
     }
 
-    return BlocConsumer<QuizDuelCubit, QuizDuelState>(
-      listener: (context, state) {
-        // Countdown Audio / Haptic Tick
-        if (state.status == QuizDuelStatus.countdown &&
-            state.remainingSeconds != previousSeconds.value) {
-          previousSeconds.value = state.remainingSeconds;
-          AppFeedback.light();
-        }
+    Future<void> copyCode(String code, {bool isSuccessSnackBar = false}) async {
+      await Clipboard.setData(ClipboardData(text: code));
+      AppFeedback.light();
+      if (context.mounted) {
+        context.showSnackBar(
+          message: 'Room code $code copied!',
+          type: isSuccessSnackBar ? SnackBarType.success : SnackBarType.info,
+        );
+      }
+    }
 
-        // Duel Timer Urgent Tick (last 5 seconds)
-        if (state.status == QuizDuelStatus.inRound &&
-            state.remainingSeconds <= 5 &&
-            state.remainingSeconds > 0 &&
-            state.remainingSeconds != previousSeconds.value) {
-          previousSeconds.value = state.remainingSeconds;
-          AppFeedback.duelTimerTick();
-        }
+    void handleMatchStatusTransitions(
+      BuildContext context,
+      QuizDuelState state,
+    ) {
+      // Countdown Audio / Haptic Tick
+      if (state.status == QuizDuelStatus.countdown &&
+          state.remainingSeconds != previousSeconds.value) {
+        previousSeconds.value = state.remainingSeconds;
+        AppFeedback.light();
+      }
 
-        // Rival Locked Answer Haptic Cue
-        final rivalLocked = state.opponentParticipant?.selectedOptionIndex != null;
-        if (state.status == QuizDuelStatus.inRound &&
-            rivalLocked &&
-            !previousRivalSelected.value) {
-          AppFeedback.medium();
-        }
-        previousRivalSelected.value = rivalLocked;
+      // Duel Timer Urgent Tick (last 5 seconds)
+      if (state.status == QuizDuelStatus.inRound &&
+          state.remainingSeconds <= 5 &&
+          state.remainingSeconds > 0 &&
+          state.remainingSeconds != previousSeconds.value) {
+        previousSeconds.value = state.remainingSeconds;
+        AppFeedback.duelTimerTick();
+      }
 
-        // Round Summary Verdict Feedback (Correct / Streak / Incorrect)
-        if (previousStatus.value == QuizDuelStatus.inRound &&
-            state.status == QuizDuelStatus.roundSummary) {
-          final myIdx = state.selectedOptionIndex ?? state.myParticipant?.selectedOptionIndex;
-          final q = state.match?.currentQuestion;
-          if (myIdx != null && q != null && myIdx >= 0 && myIdx < q.options.length) {
-            final isCorrect = q.options[myIdx] == q.correctAnswer;
-            if (isCorrect) {
-              final streak = state.myParticipant?.comboStreak ?? 0;
-              if (streak >= 3) {
-                AppFeedback.comboStreak(streak);
-              } else {
-                AppFeedback.correct();
-              }
+      // Rival Locked Answer Haptic Cue
+      final rivalLocked =
+          state.opponentParticipant?.selectedOptionIndex != null;
+      if (state.status == QuizDuelStatus.inRound &&
+          rivalLocked &&
+          !previousRivalSelected.value) {
+        AppFeedback.medium();
+      }
+      previousRivalSelected.value = rivalLocked;
+
+      // Round Summary Verdict Feedback
+      if (previousStatus.value == QuizDuelStatus.inRound &&
+          state.status == QuizDuelStatus.roundSummary) {
+        final myIdx = state.selectedOptionIndex ??
+            state.myParticipant?.selectedOptionIndex;
+        final q = state.match?.currentQuestion;
+        if (myIdx != null &&
+            q != null &&
+            myIdx >= 0 &&
+            myIdx < q.options.length) {
+          final isCorrect = q.options[myIdx] == q.correctAnswer;
+          if (isCorrect) {
+            final streak = state.myParticipant?.comboStreak ?? 0;
+            if (streak >= 3) {
+              AppFeedback.comboStreak(streak);
             } else {
-              AppFeedback.incorrect();
+              AppFeedback.correct();
             }
-          }
-        }
-
-        if (state.match?.latestEmote != null &&
-            state.match?.latestEmoteTimestamp != null &&
-            state.match!.latestEmoteTimestamp != lastEmoteTs.value &&
-            state.match?.latestEmoteSenderId != state.currentUserId) {
-          lastEmoteTs.value = state.match!.latestEmoteTimestamp;
-          final emote = state.match!.latestEmote!;
-          floatingEmotes.value = [...floatingEmotes.value, emote];
-          Future.delayed(const Duration(milliseconds: 2200), () {
-            if (floatingEmotes.value.isNotEmpty) {
-              floatingEmotes.value = List.of(floatingEmotes.value)..removeAt(0);
-            }
-          });
-        }
-
-        if (state.status == QuizDuelStatus.finished &&
-            previousStatus.value != null &&
-            previousStatus.value != QuizDuelStatus.finished &&
-            !hasCelebrated.value) {
-          hasCelebrated.value = true;
-          final isWinner = state.isWinner;
-          final isDraw = state.isDraw;
-          final isForfeit = state.match?.isForfeit ?? false;
-          final forfeitByRival = isForfeit && state.match?.forfeitUserId != state.currentUserId;
-          final myScore = state.myParticipant?.score ?? 0;
-          final opponentScore = state.opponentParticipant?.score ?? 0;
-          final opponentName =
-              state.opponentParticipant?.displayName ?? 'Rival';
-
-          if (previousStatus.value != QuizDuelStatus.finished) {
-            if (isWinner || forfeitByRival) {
-              AppFeedback.duelVictory();
-            } else if (!isDraw) {
-              AppFeedback.duelDefeat();
-            } else {
-              AppFeedback.medium();
-            }
-          }
-
-          final String title;
-          final String subtitle;
-          final String emoji;
-          final String badge;
-          final int xp;
-          final String buttonText;
-          final VoidCallback? onDismissAction;
-
-          if (forfeitByRival) {
-            emoji = '🏆';
-            title = 'Rival Forfeited!';
-            subtitle =
-                '$opponentName left the arena. You have been awarded +500 victory points!';
-            badge = '🏳️ Default Victory (+500 pts)';
-            xp = 200;
-            buttonText = 'Return to Dashboard';
-            onDismissAction = () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            };
-          } else if (isWinner) {
-            emoji = '🏆';
-            title = 'Duel Victory!';
-            subtitle =
-                'Fast and accurate! You triumphed over $opponentName in the competitive arena.';
-            badge = '🏆 Arena Champion';
-            xp = 150;
-            buttonText = 'View Scoreboard';
-            onDismissAction = null;
-          } else if (isDraw) {
-            emoji = '⚔️';
-            title = 'Even Match!';
-            subtitle =
-                'Incredible duel! Both you and $opponentName finished tied on points.';
-            badge = '⚔️ Steel Sharpens Steel';
-            xp = 80;
-            buttonText = 'View Scoreboard';
-            onDismissAction = null;
           } else {
-            emoji = '🛡️';
-            title = 'Fierce Battle!';
-            subtitle =
-                'Close duel! Every round makes the next victory closer.';
-            badge = '💪 Experience Banked';
-            xp = 40;
-            buttonText = 'View Scoreboard';
-            onDismissAction = null;
+            AppFeedback.incorrect();
           }
-
-          unawaited(
-            GratificationCelebrationOverlay.show(
-              context,
-              title: title,
-              subtitle: subtitle,
-              primaryStatLabel: 'Your Score',
-              primaryStatValue: '$myScore pts',
-              secondaryStatLabel: 'Rival',
-              secondaryStatValue: isForfeit ? 'Forfeited' : '$opponentScore pts',
-              tertiaryStatLabel: 'Duel XP',
-              tertiaryStatValue: '+$xp',
-              xpEarned: xp,
-              motivationalBadge: badge,
-              buttonText: buttonText,
-              onDismiss: onDismissAction,
-              secondaryButtonText: forfeitByRival ? null : 'Rematch Now ⚔️',
-              onSecondaryAction: forfeitByRival
-                  ? null
-                  : () {
-                      unawaited(context.read<QuizDuelCubit>().requestRematch());
-                    },
-              emoji: emoji,
-            ),
-          );
-        } else if (state.status != QuizDuelStatus.finished) {
-          hasCelebrated.value = false;
         }
+      }
 
-        previousStatus.value = state.status;
-      },
+      // Incoming Emote Handling
+      if (state.match?.latestEmote != null &&
+          state.match?.latestEmoteTimestamp != null &&
+          state.match!.latestEmoteTimestamp != lastEmoteTs.value &&
+          state.match?.latestEmoteSenderId != state.currentUserId) {
+        lastEmoteTs.value = state.match!.latestEmoteTimestamp;
+        final emote = state.match!.latestEmote!;
+        floatingEmotes.value = [...floatingEmotes.value, emote];
+        Future.delayed(const Duration(milliseconds: 2200), () {
+          if (floatingEmotes.value.isNotEmpty) {
+            floatingEmotes.value = List.of(floatingEmotes.value)..removeAt(0);
+          }
+        });
+      }
+
+      // Duel Finished Celebration Overlay
+      if (state.status == QuizDuelStatus.finished &&
+          previousStatus.value != null &&
+          previousStatus.value != QuizDuelStatus.finished &&
+          !hasCelebrated.value) {
+        hasCelebrated.value = true;
+        QuizDuelCelebrationCoordinator.showCelebration(
+          context: context,
+          state: state,
+          cubit: cubit,
+        );
+      } else if (state.status != QuizDuelStatus.finished) {
+        hasCelebrated.value = false;
+      }
+
+      previousStatus.value = state.status;
+    }
+
+    return BlocConsumer<QuizDuelCubit, QuizDuelState>(
+      bloc: quizDuelCubit,
+      listener: handleMatchStatusTransitions,
       builder: (context, state) {
         final match = state.match;
-        final myPlayer =
-            state.myParticipant ??
+        final myPlayer = state.myParticipant ??
             const QuizDuelParticipant(
               userId: '',
               displayName: 'You',
               avatarUrl: '⚡',
             );
-        final opponent =
-            state.opponentParticipant ??
+        final opponent = state.opponentParticipant ??
             const QuizDuelParticipant(
               userId: '',
               displayName: 'Rival',
@@ -245,1204 +185,142 @@ class QuizDuelArenaPage extends HookWidget {
         final currentQuestion = match?.currentQuestion;
 
         if (state.status == QuizDuelStatus.matching) {
-          return Scaffold(
-            backgroundColor: isDark
-                ? colors.surfaceSecondary
-                : colors.surfacePrimary,
-            appBar: AppBar(
-              backgroundColor: colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.close_rounded),
-                onPressed: () async {
-                  AppFeedback.light();
-                  await context.read<QuizDuelCubit>().leaveMatch();
-                  if (context.mounted) {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  }
-                },
-              ),
-              title: Text(
-                match?.subject ?? 'Finding Duel',
-                style: typography.body.bold,
-              ),
-              centerTitle: true,
-            ),
-            body: SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.9, end: 1.15),
-                          duration: const Duration(milliseconds: 900),
-                          curve: Curves.easeInOut,
-                          builder: (context, scale, child) {
-                            return Transform.scale(
-                              scale: scale,
-                              child: Container(
-                                width: 104,
-                                height: 104,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: colors.primary.withAlpha(25),
-                                  border: Border.all(
-                                    color: colors.primary.withAlpha(80),
-                                    width: 2.2,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Container(
-                                    width: 68,
-                                    height: 68,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: colors.primary,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: colors.primary.withAlpha(90),
-                                          blurRadius: 18,
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.radar_rounded,
-                                        color: Colors.white,
-                                        size: 32,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 28),
-                        Text(
-                          'Searching for Challenger...',
-                          style: typography.title2.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${match?.subject ?? "Academic"} • ${match?.examBoard ?? "WAEC"}\nLooking for active scholars nearby...',
-                          style: typography.body.regular.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 36),
-                        AppButton(
-                          text: 'Play with AI Bot Now ⚡',
-                          onPressed: () async {
-                            AppFeedback.selection();
-                            await context
-                                .read<QuizDuelCubit>()
-                                .matchWithAiImmediately();
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        AppButton(
-                          text: 'Cancel Search',
-                          variant: AppButtonVariant.secondary,
-                          onPressed: () async {
-                            AppFeedback.light();
-                            await context.read<QuizDuelCubit>().leaveMatch();
-                            if (context.mounted) {
-                              Navigator.of(context)
-                                  .popUntil((route) => route.isFirst);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          return QuizDuelMatchingView(
+            match: match,
+            onPlayWithAi: () async {
+              AppFeedback.selection();
+              await cubit.matchWithAiImmediately();
+            },
+            onCancelSearch: () async {
+              AppFeedback.light();
+              await cubit.leaveMatch();
+              if (context.mounted) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+            },
           );
         }
 
         if (state.status == QuizDuelStatus.cancelled) {
-          return Scaffold(
-            backgroundColor: isDark
-                ? colors.surfaceSecondary
-                : colors.surfacePrimary,
-            body: SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 480),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: colors.warning.withAlpha(30),
-                          ),
-                          child: const Icon(
-                            Icons.exit_to_app_rounded,
-                            size: 48,
-                            color: Colors.orange,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Duel Ended',
-                          style: typography.title2.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          state.errorMessage ??
-                              'The duel match was cancelled or completed.',
-                          style: typography.body.regular.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 32),
-                        AppButton(
-                          text: 'Find Another Duel ⚔️',
-                          onPressed: () async {
-                            AppFeedback.selection();
-                            await context.read<QuizDuelCubit>().startMatchmaking(
-                              subject: match?.subject ?? 'Physics',
-                              examBoard: match?.examBoard ?? 'WAEC',
-                              userId: state.currentUserId,
-                              displayName: myPlayer.displayName,
-                              avatarUrl: myPlayer.avatarUrl,
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        AppButton(
-                          text: 'Return to Dashboard',
-                          variant: AppButtonVariant.ghost,
-                          onPressed: () {
-                            AppFeedback.light();
-                            Navigator.of(context)
-                                .popUntil((route) => route.isFirst);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          return QuizDuelCancelledView(
+            errorMessage: state.errorMessage,
+            onFindAnother: () async {
+              AppFeedback.selection();
+              await cubit.startMatchmaking(
+                subject: match?.subject ?? 'Physics',
+                examBoard: match?.examBoard ?? 'WAEC',
+                userId: state.currentUserId,
+                displayName: myPlayer.displayName,
+                avatarUrl: myPlayer.avatarUrl,
+              );
+            },
+            onReturnToDashboard: () {
+              AppFeedback.light();
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
           );
         }
 
         if (state.status == QuizDuelStatus.countdown) {
-          return Scaffold(
-            backgroundColor: isDark
-                ? colors.surfaceSecondary
-                : colors.surfacePrimary,
-            body: SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Arena Battle Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                colors.primary.withAlpha(isDark ? 60 : 35),
-                                colors.secondary.withAlpha(isDark ? 60 : 35),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.dialog,
-                            ),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(120),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.bolt_rounded,
-                                color: colors.warning,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'RIVAL FOUND • 1v1 DUEL',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  letterSpacing: 1.2,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Match Details Subtitle
-                        Text(
-                          '${match?.subject ?? "Academic"} (${match?.examBoard ?? "Standard"}) • ${match?.totalQuestions ?? 10} Questions',
-                          style: typography.body.medium.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 13.5,
-                          ),
-                        ),
-                        if (match?.roomCode != null &&
-                            match!.roomCode!.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.primary.withAlpha(isDark ? 35 : 20),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.micro,
-                              ),
-                              border: Border.all(
-                                color: colors.primary.withAlpha(80),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.vpn_key_rounded,
-                                  size: 14,
-                                  color: colors.primary,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'ROOM CODE: ${match.roomCode}',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.primary,
-                                    letterSpacing: 1.4,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                InkWell(
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.micro,
-                                  ),
-                                  onTap: () async {
-                                    await Clipboard.setData(
-                                      ClipboardData(text: match.roomCode!),
-                                    );
-                                    AppFeedback.light();
-                                    if (context.mounted) {
-                                      context.showSnackBar(
-                                        message:
-                                            'Room code ${match.roomCode} copied!',
-                                        type: SnackBarType.success,
-                                      );
-                                    }
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(2),
-                                    child: Icon(
-                                      Icons.copy_rounded,
-                                      size: 14,
-                                      color: colors.primary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 36),
-
-                        // VS Battle Ring Cards: they arrive together in one
-                        // scale-in beat, the "found my rival" moment.
-                        _MomentScale(
-                          reduceMotion: reduceMotion,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 24,
-                              horizontal: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceTertiary.withAlpha(180)
-                                  : colors.surfaceSecondary.withAlpha(200),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.dialog,
-                              ),
-                              border: Border.all(
-                                color: colors.primary.withAlpha(
-                                  isDark ? 80 : 40,
-                                ),
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.black.withAlpha(
-                                    isDark ? 50 : 20,
-                                  ),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                // Player 1 (You)
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: colors.primary,
-                                          width: 2.5,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: colors.black.withAlpha(
-                                              isDark ? 50 : 20,
-                                            ),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ],
-                                      ),
-                                      child: AppAvatar(
-                                        name: myPlayer.displayName,
-                                        customDimension: 68,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      myPlayer.displayName,
-                                      style: typography.body.bold.copyWith(
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: colors.primary.withAlpha(35),
-                                        borderRadius: BorderRadius.circular(
-                                          AppRadius.micro,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        '${myPlayer.eloRating} ELO',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.primary,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-
-                                // Glowing VS Emblem
-                                Container(
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        colors.error,
-                                        colors.warning,
-                                      ],
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.black.withAlpha(
-                                          isDark ? 60 : 30,
-                                        ),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    'VS',
-                                    style: typography.title2.bold.copyWith(
-                                      color: colors.white,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ),
-
-                                // Opponent (Rival)
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: colors.secondary,
-                                          width: 2.5,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: colors.black.withAlpha(
-                                              isDark ? 50 : 20,
-                                            ),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ],
-                                      ),
-                                      child: AppAvatar(
-                                        name: opponent.displayName,
-                                        customDimension: 68,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      opponent.displayName,
-                                      style: typography.body.bold.copyWith(
-                                        fontSize: 15,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: colors.secondary.withAlpha(35),
-                                        borderRadius: BorderRadius.circular(
-                                          AppRadius.micro,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        '${opponent.eloRating} ELO',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.secondary,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-
-                        // Countdown Indicator Pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(isDark ? 40 : 20),
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.dialog,
-                            ),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(80),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    colors.primary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Starting in ${state.remainingSeconds > 0 ? state.remainingSeconds : 1} second${state.remainingSeconds == 1 ? '' : 's'}...',
-                                style: typography.body.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          return QuizDuelCountdownView(
+            match: match,
+            myPlayer: myPlayer,
+            opponent: opponent,
+            remainingSeconds: state.remainingSeconds,
+            reduceMotion: reduceMotion,
+            onCopyRoomCode: (code) => copyCode(code, isSuccessSnackBar: true),
           );
         }
 
         if (state.status == QuizDuelStatus.finished) {
-          final isWinner = state.isWinner;
-          final isDraw = state.isDraw;
-          final p1 = match?.player1;
-          final p2 = match?.player2;
-          final p1Score = p1?.score ?? 0;
-          final p2Score = p2?.score ?? 0;
+          return QuizDuelScoreboardView(
+            state: state,
+            activeTab: activePostMatchTab.value,
+            onTabSelected: (index) {
+              AppFeedback.selection();
+              activePostMatchTab.value = index;
+            },
+            onAcceptRematch: () {
+              AppFeedback.selection();
+              unawaited(cubit.acceptRematch());
+            },
+            onDeclineRematch: () async {
+              AppFeedback.light();
+              await cubit.declineRematch();
+              if (context.mounted) {
+                await cubit.leaveMatch();
+                if (context.mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
+              }
+            },
+            onCancelRematchRequest: () {
+              AppFeedback.light();
+              unawaited(cubit.declineRematch());
+            },
+            onRequestRematch: () {
+              AppFeedback.selection();
+              unawaited(cubit.requestRematch());
+            },
+            onRematchWithAi: () {
+              AppFeedback.selection();
+              unawaited(cubit.rematchWithAiImmediately());
+            },
+            onFindNewRival: () async {
+              AppFeedback.selection();
+              await cubit.startMatchmaking(
+                subject: match?.subject ?? 'Physics',
+                examBoard: match?.examBoard ?? 'WAEC',
+                userId: state.currentUserId,
+                displayName: myPlayer.displayName,
+                avatarUrl: myPlayer.avatarUrl,
+              );
+            },
+            onShareDuel: () async {
+              final code = match?.roomCode;
+              final inviteSuffix = code != null && code.isNotEmpty
+                  ? ' Challenge me back with room code: $code'
+                  : ' Challenge me on Kortex!';
+              final p1Score = match?.player1.score ?? 0;
+              final shareText =
+                  'I scored $p1Score pts in a 1v1 Quiz Duel on ${match?.subject ?? "Academic Trivia"}!$inviteSuffix';
+              await Clipboard.setData(ClipboardData(text: shareText));
+              AppFeedback.light();
+              if (context.mounted) {
+                context.showSnackBar(
+                  message: 'Duel results & invite copied to clipboard!',
+                  type: SnackBarType.success,
+                );
+              }
+            },
+            onReturnToDashboard: () async {
+              AppFeedback.light();
+              await cubit.leaveMatch();
+              if (context.mounted) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+            },
+          );
+        }
 
-          final p1Won = match?.winnerUserId == p1?.userId ||
-              (match?.winnerUserId == null && p1Score > p2Score && !isDraw);
-          final p2Won = match?.winnerUserId == p2?.userId ||
-              (match?.winnerUserId == null && p2Score > p1Score && !isDraw);
-
-          final winnerName = p1Won
-              ? (p1?.displayName ?? 'Player 1')
-              : p2Won
-                  ? (p2?.displayName ?? 'Player 2')
-                  : 'Neither';
-          final winnerScore = p1Won ? p1Score : p2Score;
-
-          final isForfeit = match?.isForfeit ?? false;
-          final forfeitByRival = isForfeit && match?.forfeitUserId != state.currentUserId;
-          final opponentName = p1?.userId == state.currentUserId
-              ? (p2?.displayName ?? 'Opponent')
-              : (p1?.displayName ?? 'Opponent');
-
-          return Scaffold(
-            backgroundColor: isDark
-                ? colors.surfaceSecondary
-                : colors.surfacePrimary,
-            body: SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 620),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                        // Winner Emblem Header
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isDraw
-                                ? colors.warning.withAlpha(30)
-                                : isWinner
-                                    ? colors.success.withAlpha(30)
-                                    : colors.primary.withAlpha(30),
-                          ),
-                          child: Text(
-                            isDraw ? '⚔️' : '🏆',
-                            style: const TextStyle(fontSize: 48),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          forfeitByRival
-                              ? 'Rival Forfeited! Victory Awarded'
-                              : isForfeit
-                                  ? 'Match Forfeited'
-                                  : isDraw
-                                      ? "It's a Draw!"
-                                      : '$winnerName Won the Duel!',
-                          textAlign: TextAlign.center,
-                          style: typography.largeTitle.bold.copyWith(
-                            color: isDraw
-                                ? colors.warning
-                                : colors.success,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          forfeitByRival
-                              ? '$opponentName left the arena. You have been awarded +500 victory points!'
-                              : isForfeit
-                                  ? 'A player left the match early.'
-                                  : isDraw
-                                      ? 'Both scholars tied with $p1Score pts in a fierce battle.'
-                                      : 'Winner declared with $winnerScore pts in real-time!',
-                          textAlign: TextAlign.center,
-                          style: typography.body.regular.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Post-Match Liquid Glass Tab Bar
-                        AppLiquidGlassTabBar(
-                          tabs: const ['Scoreboard', 'Study Review'],
-                          icons: const [
-                            Icons.emoji_events_rounded,
-                            Icons.menu_book_rounded,
-                          ],
-                          selectedIndex: activePostMatchTab.value,
-                          onTabSelected: (index) {
-                            AppFeedback.selection();
-                            activePostMatchTab.value = index;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        if (activePostMatchTab.value == 1 && match != null)
-                          SizedBox(
-                            height: 440,
-                            child: QuizDuelReviewTab(
-                              match: match,
-                              currentUserId: state.currentUserId,
-                              onRematch: () {
-                                unawaited(
-                                  context.read<QuizDuelCubit>().requestRematch(),
-                                );
-                              },
-                            ),
-                          )
-                        else
-                          // Synchronized Real-Time Scoreboard Card
-                          Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: colors.surfacePrimary,
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.panel,
-                            ),
-                            border: Border.all(
-                              color: colors.surfaceBorder.withValues(
-                                alpha: 0.6,
-                              ),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.black.withAlpha(isDark ? 50 : 20),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                'DUEL SCOREBOARD',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textSecondary,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              if (match?.roomCode != null &&
-                                  match!.roomCode!.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.primary.withAlpha(25),
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.micro,
-                                    ),
-                                    border: Border.all(
-                                      color: colors.primary.withAlpha(60),
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'ROOM: ${match.roomCode}',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.primary,
-                                      fontSize: 11,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: [
-                                  // Player 1
-                                  Column(
-                                    children: [
-                                      Stack(
-                                        clipBehavior: Clip.none,
-                                        children: [
-                                          AppAvatar(
-                                            name: p1?.displayName ?? 'Player 1',
-                                            customDimension: 56,
-                                          ),
-                                          if (p1Won && !isDraw)
-                                            Positioned(
-                                              top: -8,
-                                              right: -8,
-                                              child: Container(
-                                                padding: const EdgeInsets.all(4),
-                                                decoration: BoxDecoration(
-                                                  color: colors.warning,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(
-                                                  Icons.emoji_events_rounded,
-                                                  size: 14,
-                                                  color: Colors.black,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        p1?.displayName ?? 'Player 1',
-                                        style: typography.body.bold,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${p1?.score ?? 0} pts',
-                                        style: typography.title2.bold.copyWith(
-                                          color: p1Won
-                                              ? colors.success
-                                              : colors.primary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      if (p1Won && !isDraw)
-                                        const AppBadge(
-                                          label: '🏆 Winner',
-                                          variant: AppBadgeVariant.success,
-                                        )
-                                      else if (isDraw)
-                                        const AppBadge(
-                                          label: '⚔️ Tied',
-                                          variant: AppBadgeVariant.warning,
-                                        )
-                                      else
-                                        const AppBadge(
-                                          label: 'Runner-up',
-                                          variant: AppBadgeVariant.secondary,
-                                        ),
-                                    ],
-                                  ),
-                                  Text(
-                                    'VS',
-                                    style: typography.title2.bold.copyWith(
-                                      color: colors.textSecondary,
-                                    ),
-                                  ),
-                                  // Player 2
-                                  Column(
-                                    children: [
-                                      Stack(
-                                        clipBehavior: Clip.none,
-                                        children: [
-                                          AppAvatar(
-                                            name: p2?.displayName ?? 'Player 2',
-                                            customDimension: 56,
-                                          ),
-                                          if (p2Won && !isDraw)
-                                            Positioned(
-                                              top: -8,
-                                              right: -8,
-                                              child: Container(
-                                                padding: const EdgeInsets.all(4),
-                                                decoration: BoxDecoration(
-                                                  color: colors.warning,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(
-                                                  Icons.emoji_events_rounded,
-                                                  size: 14,
-                                                  color: Colors.black,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        p2?.displayName ?? 'Player 2',
-                                        style: typography.body.bold,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${p2?.score ?? 0} pts',
-                                        style: typography.title2.bold.copyWith(
-                                          color: p2Won
-                                              ? colors.success
-                                              : colors.secondary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      if (p2Won && !isDraw)
-                                        const AppBadge(
-                                          label: '🏆 Winner',
-                                          variant: AppBadgeVariant.success,
-                                        )
-                                      else if (isDraw)
-                                        const AppBadge(
-                                          label: '⚔️ Tied',
-                                          variant: AppBadgeVariant.warning,
-                                        )
-                                      else
-                                        const AppBadge(
-                                          label: 'Runner-up',
-                                          variant: AppBadgeVariant.secondary,
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-
-                        if (state.didOpponentRequestRematch) ...[
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: colors.primary.withAlpha(25),
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.panel),
-                              border: Border.all(
-                                color: colors.primary.withAlpha(120),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Text('⚔️', style: TextStyle(fontSize: 28)),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${opponent.displayName} challenged you to a rematch!',
-                                        style: typography.body.bold.copyWith(
-                                          color: colors.textPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Accept to immediately launch into a new duel with fresh questions.',
-                                        style: typography.caption.regular
-                                            .copyWith(
-                                          color: colors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          AppButton(
-                            text: 'Accept Rematch! ⚔️',
-                            isLoading: state.isRematchLoading,
-                            onPressed: () {
-                              AppFeedback.selection();
-                              unawaited(
-                                context.read<QuizDuelCubit>().acceptRematch(),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          AppButton(
-                            text: 'Decline / Return to Dashboard',
-                            variant: AppButtonVariant.ghost,
-                            onPressed: () async {
-                              AppFeedback.light();
-                              await context
-                                  .read<QuizDuelCubit>()
-                                  .declineRematch();
-                              if (context.mounted) {
-                                await context
-                                    .read<QuizDuelCubit>()
-                                    .leaveMatch();
-                                if (context.mounted) {
-                                  Navigator.of(context)
-                                      .popUntil((route) => route.isFirst);
-                                }
-                              }
-                            },
-                          ),
-                        ] else if (state.didIRequestRematch) ...[
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: colors.surfacePrimary,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.panel),
-                              border: Border.all(
-                                color:
-                                    colors.surfaceBorder.withValues(alpha: 0.6),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      colors.primary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Waiting for ${opponent.displayName} to accept...',
-                                        style: typography.body.bold.copyWith(
-                                          color: colors.textPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Your rematch challenge was sent over live arena.',
-                                        style: typography.caption.regular
-                                            .copyWith(
-                                          color: colors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          AppButton(
-                            text: 'Play with AI Bot Now ⚡',
-                            onPressed: () {
-                              AppFeedback.selection();
-                              unawaited(
-                                context
-                                    .read<QuizDuelCubit>()
-                                    .rematchWithAiImmediately(),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          AppButton(
-                            text: 'Cancel Rematch Request',
-                            variant: AppButtonVariant.secondary,
-                            onPressed: () {
-                              AppFeedback.light();
-                              unawaited(
-                                context.read<QuizDuelCubit>().declineRematch(),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          AppButton(
-                            text: 'Return to Dashboard',
-                            variant: AppButtonVariant.ghost,
-                            onPressed: () async {
-                              AppFeedback.light();
-                              await context
-                                  .read<QuizDuelCubit>()
-                                  .leaveMatch();
-                              if (context.mounted) {
-                                Navigator.of(context)
-                                    .popUntil((route) => route.isFirst);
-                              }
-                            },
-                          ),
-                        ] else if (forfeitByRival) ...[
-                          AppButton(
-                            text: 'Find New Rival ⚔️',
-                            isLoading: state.isRematchLoading,
-                            onPressed: () async {
-                              AppFeedback.selection();
-                              await context
-                                  .read<QuizDuelCubit>()
-                                  .startMatchmaking(
-                                    subject: match?.subject ?? 'Physics',
-                                    examBoard: match?.examBoard ?? 'WAEC',
-                                    userId: state.currentUserId,
-                                    displayName: myPlayer.displayName,
-                                    avatarUrl: myPlayer.avatarUrl,
-                                  );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          AppButton(
-                            text: 'Practice Solo with AI ⚡',
-                            variant: AppButtonVariant.secondary,
-                            onPressed: () {
-                              AppFeedback.selection();
-                              unawaited(
-                                context
-                                    .read<QuizDuelCubit>()
-                                    .rematchWithAiImmediately(),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          AppButton(
-                            text: 'Return to Dashboard',
-                            variant: AppButtonVariant.ghost,
-                            onPressed: () async {
-                              AppFeedback.light();
-                              await context
-                                  .read<QuizDuelCubit>()
-                                  .leaveMatch();
-                              if (context.mounted) {
-                                Navigator.of(context)
-                                    .popUntil((route) => route.isFirst);
-                              }
-                            },
-                          ),
-                        ] else ...[
-                          AppButton(
-                            text: state.isOpponentAi
-                                ? 'Rematch with ${opponent.displayName} ⚔️'
-                                : 'Rematch Rival ⚔️',
-                            isLoading: state.isRematchLoading,
-                            onPressed: () {
-                              AppFeedback.selection();
-                              unawaited(
-                                context.read<QuizDuelCubit>().requestRematch(),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          AppButton(
-                            text: 'Share Duel & Invite 🚀',
-                            variant: AppButtonVariant.secondary,
-                            onPressed: () async {
-                              final code = match?.roomCode;
-                              final inviteSuffix = code != null && code.isNotEmpty
-                                  ? ' Challenge me back with room code: $code'
-                                  : ' Challenge me on Kortex!';
-                              final shareText =
-                                  'I scored $p1Score pts in a 1v1 Quiz Duel on ${match?.subject ?? "Academic Trivia"}!$inviteSuffix';
-                              await Clipboard.setData(ClipboardData(text: shareText));
-                              AppFeedback.light();
-                              if (context.mounted) {
-                                context.showSnackBar(
-                                  message: 'Duel results & invite copied to clipboard!',
-                                  type: SnackBarType.success,
-                                );
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          AppButton(
-                            text: 'Return to Dashboard',
-                            variant: AppButtonVariant.ghost,
-                            onPressed: () async {
-                              AppFeedback.light();
-                              await context.read<QuizDuelCubit>().leaveMatch();
-                              if (context.mounted) {
-                                Navigator.of(context).popUntil((route) => route.isFirst);
-                              }
-                            },
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }
-
-        // Active Duel Round & Summary View
-        final totalSeconds = (match?.durationPerQuestionSeconds ?? 60).toDouble();
-        final progress = (state.remainingSeconds / totalSeconds).clamp(0.0, 1.0);
+        // Active Duel Round Arena
+        final totalSeconds =
+            (match?.durationPerQuestionSeconds ?? 60).toDouble();
+        final progress =
+            (state.remainingSeconds / totalSeconds).clamp(0.0, 1.0);
         final timerColor = state.remainingSeconds <= 5
             ? colors.error
             : state.remainingSeconds <= 8
-            ? colors.warning
-            : colors.primary;
+                ? colors.warning
+                : colors.primary;
         final rivalLocked = opponent.selectedOptionIndex != null;
 
         Future<bool> confirmLeave() async {
-          final cubit = context.read<QuizDuelCubit>();
           if (cubit.state.status == QuizDuelStatus.finished ||
               cubit.state.status == QuizDuelStatus.cancelled) {
             return true;
           }
-
-          final result = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.dialog),
-              ),
-              title: Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded, color: colors.warning, size: 24),
-                  const SizedBox(width: 8),
-                  Text('Leave Quiz Duel?', style: typography.title3.bold),
-                ],
-              ),
-              content: Text(
-                'Are you sure you want to forfeit? Leaving now will award victory to your rival and return you to the dashboard.',
-                style: typography.body.regular.copyWith(
-                  color: colors.textSecondary,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child: Text('Stay in Duel', style: TextStyle(color: colors.textSecondary)),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.error,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                  ),
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  child: const Text('Leave & Forfeit'),
-                ),
-              ],
-            ),
-          );
-
-          return result ?? false;
+          return QuizDuelForfeitDialog.show(context);
         }
 
         return PopScope(
@@ -1451,16 +329,15 @@ class QuizDuelArenaPage extends HookWidget {
             if (didPop) return;
             final shouldLeave = await confirmLeave();
             if (shouldLeave && context.mounted) {
-              await context.read<QuizDuelCubit>().leaveMatch();
+              await cubit.leaveMatch();
               if (context.mounted) {
                 Navigator.of(context).popUntil((route) => route.isFirst);
               }
             }
           },
           child: Scaffold(
-            backgroundColor: isDark
-                ? colors.surfaceSecondary
-                : colors.surfacePrimary,
+            backgroundColor:
+                isDark ? colors.surfaceSecondary : colors.surfacePrimary,
             appBar: AppBar(
               backgroundColor: colors.transparent,
               elevation: 0,
@@ -1470,653 +347,97 @@ class QuizDuelArenaPage extends HookWidget {
                   AppFeedback.light();
                   final shouldLeave = await confirmLeave();
                   if (shouldLeave && context.mounted) {
-                    await context.read<QuizDuelCubit>().leaveMatch();
+                    await cubit.leaveMatch();
                     if (context.mounted) {
                       Navigator.of(context).popUntil((route) => route.isFirst);
                     }
                   }
                 },
               ),
-            title: Text(
-              '${match?.subject ?? "Duel"} • Q${(match?.currentQuestionIndex ?? 0) + 1}/${match?.totalQuestions ?? 5}',
-              style: typography.body.bold,
-            ),
-            centerTitle: true,
-            actions: [
-              if (match?.roomCode != null && match!.roomCode!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Center(
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(AppRadius.micro),
-                      onTap: () async {
-                        await Clipboard.setData(
-                          ClipboardData(text: match.roomCode!),
-                        );
-                        AppFeedback.light();
-                        if (context.mounted) {
-                          context.showSnackBar(
-                            message: 'Room code ${match.roomCode} copied!',
-                          );
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfacePrimary,
-                          borderRadius: BorderRadius.circular(AppRadius.micro),
-                          border: Border.all(
-                            color: colors.surfaceBorder.withValues(alpha: 0.6),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.vpn_key_rounded,
-                              size: 12,
-                              color: colors.textSecondary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              match.roomCode!,
-                              style: typography.caption.bold.copyWith(
-                                letterSpacing: 1,
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          body: Stack(
-            children: [
-              SafeArea(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 820),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Split Scoreboard Header
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.surfacePrimary,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.panel,
-                              ),
-                              border: Border.all(
-                                color: colors.surfaceBorder.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  children: [
-                                    // My info
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          AppAvatar(
-                                            name: myPlayer.displayName,
-                                            customDimension: 36,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  myPlayer.displayName,
-                                                  style: typography.caption.bold,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                                Text(
-                                                  '${myPlayer.score} pts',
-                                                  style: typography.body.bold
-                                                      .copyWith(
-                                                        color: colors.primary,
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          if (myPlayer.comboStreak > 1)
-                                            Text(
-                                              '🔥x${myPlayer.comboStreak}',
-                                              style: typography.caption.bold,
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                    // VS Center Badge
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      child: Text(
-                                        'VS',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                    // Opponent info
-                                    Expanded(
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          if (opponent.comboStreak > 1)
-                                            Text(
-                                              '🔥x${opponent.comboStreak}',
-                                              style: typography.caption.bold,
-                                            ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  opponent.displayName,
-                                                  style: typography.caption.bold,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                                Text(
-                                                  '${opponent.score} pts',
-                                                  style: typography.body.bold
-                                                      .copyWith(
-                                                        color: colors.secondary,
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          AnimatedContainer(
-                                            duration: AppMotion.snappy,
-                                            padding: const EdgeInsets.all(2),
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: rivalLocked
-                                                  ? Border.all(
-                                                      color: colors.success,
-                                                      width: 2,
-                                                    )
-                                                  : null,
-                                              boxShadow: rivalLocked
-                                                  ? [
-                                                      BoxShadow(
-                                                        color: colors.success.withAlpha(140),
-                                                        blurRadius: 8,
-                                                        spreadRadius: 1,
-                                                      ),
-                                                    ]
-                                                  : null,
-                                            ),
-                                            child: AppAvatar(
-                                              name: opponent.displayName,
-                                              customDimension: 36,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                // Live Tug-of-War Score Battle Gauge with Dynamic Delta Pill
-                                Builder(
-                                  builder: (_) {
-                                    final p1Pts = myPlayer.score;
-                                    final p2Pts = opponent.score;
-                                    final totalPts = max(1, p1Pts + p2Pts);
-                                    final p1Share = (p1Pts / totalPts).clamp(0.10, 0.90);
-                                    final delta = p1Pts - p2Pts;
-
-                                    return Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Stack(
-                                          alignment: Alignment.center,
-                                          children: [
-                                            // Split Battle Gauge
-                                            ClipRRect(
-                                              borderRadius: BorderRadius.circular(AppRadius.micro),
-                                              child: SizedBox(
-                                                height: 14,
-                                                child: Row(
-                                                  children: [
-                                                    Expanded(
-                                                      flex: (p1Share * 1000).round(),
-                                                      child: AnimatedContainer(
-                                                        duration: AppMotion.snappy,
-                                                        decoration: BoxDecoration(
-                                                          gradient: LinearGradient(
-                                                            colors: [
-                                                              colors.primary,
-                                                              colors.primary.withAlpha(200),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    Container(
-                                                      width: 2,
-                                                      color: colors.surfacePrimary,
-                                                    ),
-                                                    Expanded(
-                                                      flex: ((1 - p1Share) * 1000).round(),
-                                                      child: AnimatedContainer(
-                                                        duration: AppMotion.snappy,
-                                                        decoration: BoxDecoration(
-                                                          gradient: LinearGradient(
-                                                            colors: [
-                                                              colors.secondary.withAlpha(200),
-                                                              colors.secondary,
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            // Floating Delta Indicator Pill in Center
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1.5),
-                                              decoration: BoxDecoration(
-                                                color: colors.surfacePrimary,
-                                                borderRadius: BorderRadius.circular(AppRadius.badge),
-                                                border: Border.all(
-                                                  color: delta > 0
-                                                      ? colors.success
-                                                      : delta < 0
-                                                          ? colors.secondary
-                                                          : colors.surfaceBorder,
-                                                ),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: colors.black.withAlpha(isDark ? 60 : 25),
-                                                    blurRadius: 4,
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Text(
-                                                delta > 0
-                                                    ? '+$delta LEAD'
-                                                    : delta < 0
-                                                        ? '${delta.abs()} BEHIND'
-                                                        : 'TIED',
-                                                style: typography.caption.bold.copyWith(
-                                                  fontSize: 9.5,
-                                                  letterSpacing: 0.5,
-                                                  color: delta > 0
-                                                      ? colors.success
-                                                      : delta < 0
-                                                          ? colors.secondary
-                                                          : colors.textSecondary,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-
-                          const SizedBox(height: 10),
-
-                          // A calm presence line: you can tell the rival is
-                          // still in it without watching a number tick.
-                          if (state.status == QuizDuelStatus.inRound)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 7,
-                                  height: 7,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: rivalLocked
-                                        ? colors.success
-                                        : colors.warning,
-                                  ),
-                                ),
-                                const SizedBox(width: 7),
-                                Text(
-                                  rivalLocked
-                                      ? 'Rival has locked their answer'
-                                      : 'Rival is thinking…',
-                                  style: typography.caption.regular.copyWith(
-                                    color: colors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                          if (state.status == QuizDuelStatus.roundSummary &&
-                              currentQuestion != null) ...[
-                            Builder(
-                              builder: (context) {
-                                final mySelection = state.selectedOptionIndex ?? myPlayer.selectedOptionIndex;
-                                final userHasSelected = mySelection != null && mySelection >= 0;
-                                final isUserCorrect = userHasSelected &&
-                                    (currentQuestion.options.length > mySelection &&
-                                        currentQuestion.options[mySelection] ==
-                                            currentQuestion.correctAnswer);
-
-                                return GestureDetector(
-                                  onTap: () {
-                                    unawaited(
-                                      context
-                                          .read<QuizDuelCubit>()
-                                          .forceAdvanceToNextRound(),
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isUserCorrect
-                                          ? colors.success.withAlpha(isDark ? 50 : 25)
-                                          : userHasSelected
-                                              ? colors.error.withAlpha(isDark ? 50 : 25)
-                                              : colors.warning.withAlpha(isDark ? 50 : 25),
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.micro,
-                                      ),
-                                      border: Border.all(
-                                        color: isUserCorrect
-                                            ? colors.success.withAlpha(120)
-                                            : userHasSelected
-                                                ? colors.error.withAlpha(120)
-                                                : colors.warning.withAlpha(120),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          isUserCorrect
-                                              ? Icons.check_circle_rounded
-                                              : userHasSelected
-                                                  ? Icons.cancel_rounded
-                                                  : Icons.access_time_filled_rounded,
-                                          size: 16,
-                                          color: isUserCorrect
-                                              ? colors.success
-                                              : userHasSelected
-                                                  ? colors.error
-                                                  : colors.warning,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          isUserCorrect
-                                              ? 'ROUND VERDICT • Correct Answer!'
-                                              : userHasSelected
-                                                  ? 'ROUND VERDICT • Incorrect Answer'
-                                                  : 'ROUND VERDICT • Time Expired',
-                                          style: typography.caption.bold.copyWith(
-                                            color: isUserCorrect
-                                                ? colors.success
-                                                : userHasSelected
-                                                    ? colors.error
-                                                    : colors.warning,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Icon(
-                                          Icons.arrow_forward_ios_rounded,
-                                          size: 11,
-                                          color: (isUserCorrect
-                                                  ? colors.success
-                                                  : userHasSelected
-                                                      ? colors.error
-                                                      : colors.warning)
-                                              .withAlpha(150),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                          const SizedBox(height: 10),
-
-                          // Countdown Timer Progress Bar
-                          QuizProgressBar(
-                            value: progress,
-                            color: timerColor,
-                            height: 6,
-                            reduceMotion: reduceMotion,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Question Card
-                          if (currentQuestion != null) ...[
-                            QuizStaggeredFade(
-                              distance: 10,
-                              reduceMotion: reduceMotion,
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: colors.surfacePrimary,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.panel,
-                                  ),
-                                  border: Border.all(
-                                    color: colors.surfaceBorder.withValues(
-                                      alpha: 0.4,
-                                    ),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    LatexRichViewer(
-                                      text: currentQuestion.prompt,
-                                      style: typography.body.regular.copyWith(
-                                        fontSize: 16,
-                                        height: 1.4,
-                                        color: colors.textPrimary,
-                                      ),
-                                    ),
-                                    if (currentQuestion.latexFormula != null &&
-                                        currentQuestion
-                                            .latexFormula!
-                                            .trim()
-                                            .isNotEmpty) ...[
-                                      const SizedBox(height: 10),
-                                      LatexFormulaBlock(
-                                        formula: currentQuestion.latexFormula!,
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // MCQ Options
-                            Expanded(
-                              child: ListView.separated(
-                                itemCount: currentQuestion.options.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(height: 10),
-                                itemBuilder: (context, index) {
-                                  final option = currentQuestion.options[index];
-                                  final isSelected =
-                                      state.selectedOptionIndex == index;
-                                  final isRoundSummary =
-                                      state.status ==
-                                      QuizDuelStatus.roundSummary;
-                                  final isCorrectOption =
-                                      option == currentQuestion.correctAnswer;
-
-                                  final optionState = isRoundSummary
-                                      ? McqOptionCard.resolveState(
-                                          isSelected: isSelected,
-                                          isAnswered: true,
-                                          isCorrect: isCorrectOption,
-                                        )
-                                      : (isSelected
-                                            ? McqOptionState.selected
-                                            : McqOptionState.idle);
-
-                                  final trailingLabel = isRoundSummary
-                                      ? (isSelected
-                                          ? (isCorrectOption
-                                              ? 'Your Answer'
-                                              : 'Your Pick')
-                                          : (isCorrectOption
-                                              ? 'Correct Answer'
-                                              : null))
-                                      : null;
-
-                                  return QuizStaggeredFade(
-                                    key: ValueKey(
-                                      'duel-opt-${match?.currentQuestionIndex}-$index',
-                                    ),
-                                    index: index,
-                                    distance: 10,
-                                    reduceMotion: reduceMotion,
-                                    child: McqOptionCard(
-                                      optionText: option,
-                                      index: index,
-                                      state: optionState,
-                                      trailingLabel: trailingLabel,
-                                      reduceMotion: reduceMotion,
-                                      onTap: () {
-                                        if (state.isMyAnswerLocked ||
-                                            isRoundSummary) {
-                                          return;
-                                        }
-                                        onSelectOption(index);
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-
-                          // Bottom Emote Bar
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: ['🔥', '⚡', '🤯', '👏', '🎯'].map((
-                                emote,
-                              ) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                  ),
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(20),
-                                    onTap: () => onSendEmote(emote),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: colors.surfaceSecondary,
-                                      ),
-                                      child: Text(
-                                        emote,
-                                        style: context.typography.body.regular.copyWith(fontSize: 20),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+              title: Text(
+                '${match?.subject ?? "Duel"} • Q${(match?.currentQuestionIndex ?? 0) + 1}/${match?.totalQuestions ?? 5}',
+                style: typography.body.bold,
               ),
-
-              // Floating Emote Layer
-              ...floatingEmotes.value.map((emote) {
-                return Positioned(
-                  bottom: 120,
-                  right: 32,
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: 1),
-                    duration: const Duration(milliseconds: 1800),
-                    builder: (context, value, child) {
-                      return Transform.translate(
-                        offset: Offset(0, -value * 120),
-                        child: Opacity(
-                          opacity: 1.0 - (value * 0.7),
-                          child: Text(
-                            emote,
-                            style: context.typography.body.regular.copyWith(fontSize: 36),
+              centerTitle: true,
+              actions: [
+                if (match?.roomCode != null && match!.roomCode!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Center(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => copyCode(match.roomCode!),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color:
+                                  colors.surfaceBorder.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.vpn_key_rounded,
+                                size: 12,
+                                color: colors.textSecondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                match.roomCode!,
+                                style: typography.caption.bold.copyWith(
+                                  letterSpacing: 1,
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      );
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: QuizDuelSplitScoreboardHeader(
+                    myPlayer: myPlayer,
+                    opponent: opponent,
+                    rivalLocked: rivalLocked,
+                  ),
+                ),
+                Expanded(
+                  child: QuizDuelRoundContent(
+                    state: state,
+                    currentQuestion: currentQuestion,
+                    myPlayer: myPlayer,
+                    opponent: opponent,
+                    rivalLocked: rivalLocked,
+                    progress: progress,
+                    timerColor: timerColor,
+                    reduceMotion: reduceMotion,
+                    floatingEmotes: floatingEmotes.value,
+                    onSelectOption: onSelectOption,
+                    onSendEmote: onSendEmote,
+                    onQuickAdvance: () {
+                      unawaited(cubit.forceAdvanceToNextRound());
                     },
                   ),
-                );
-              }),
-            ],
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
- }
-}
-
-/// One-shot scale-in used for the "rival found" moment, so both player cards
-/// arrive together in a single beat instead of popping in instantly.
-class _MomentScale extends StatelessWidget {
-  const _MomentScale({required this.reduceMotion, required this.child});
-
-  final bool reduceMotion;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (reduceMotion) return child;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: AppMotion.expressive,
-      curve: AppMotion.easeOutCubic,
-      builder: (context, t, _) => Opacity(
-        opacity: t,
-        child: Transform.scale(scale: 0.92 + 0.08 * t, child: child),
-      ),
+        );
+      },
     );
   }
 }
