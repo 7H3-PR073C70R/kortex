@@ -1,73 +1,112 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:intl/intl.dart';
-import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
-import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/ebbinghaus_decay_calculator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/adaptive_retention_chart.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/analytics_cognitive_insights_card.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/analytics_heatmap_card.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/analytics_kpi_grid.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/analytics_neural_repair_sheet.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/analytics_shimmer_skeleton.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/analytics_subject_mastery_card.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/analytics_timeframe_filter_helper.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/analytics_weekly_velocity_chart.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/streak_shield_indicator.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
-import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
-import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 @RoutePage()
 class AnalyticsDetailPage extends HookWidget {
-  const AnalyticsDetailPage({super.key});
+  const AnalyticsDetailPage({
+    super.key,
+    this.dashboardBloc,
+    this.activityService,
+    this.authBloc,
+    this.subscriptionGuard,
+  });
+
+  final DashboardBloc? dashboardBloc;
+  final UserActivityService? activityService;
+  final AuthBloc? authBloc;
+  final SubscriptionGuard? subscriptionGuard;
 
   @override
   Widget build(BuildContext context) {
-    final dashboardBloc = locator<DashboardBloc>();
+    final effectiveBloc = dashboardBloc ??
+        (locator.isRegistered<DashboardBloc>()
+            ? locator<DashboardBloc>()
+            : null);
+    final effectiveActivityService = activityService ??
+        (locator.isRegistered<UserActivityService>()
+            ? locator<UserActivityService>()
+            : null);
+    final effectiveAuthBloc = authBloc ??
+        (locator.isRegistered<AuthBloc>()
+            ? locator<AuthBloc>()
+            : null);
+    final effectiveSubscriptionGuard = subscriptionGuard ??
+        (locator.isRegistered<SubscriptionGuard>()
+            ? locator<SubscriptionGuard>()
+            : null);
 
     useEffect(() {
-      dashboardBloc.add(const DashboardStarted());
-      final activityService = locator.isRegistered<UserActivityService>()
-          ? locator<UserActivityService>()
-          : null;
-      final subscription = activityService?.analyticsSummaryStream.listen((_) {
-        dashboardBloc.add(const DashboardRefreshed());
+      effectiveBloc?.add(const DashboardStarted());
+      final subscription =
+          effectiveActivityService?.analyticsSummaryStream.listen((_) {
+        effectiveBloc?.add(const DashboardRefreshed());
       });
       return () {
         unawaited(subscription?.cancel());
       };
-    }, const []);
+    }, [effectiveBloc, effectiveActivityService]);
 
-    return BlocProvider<DashboardBloc>.value(
-      value: dashboardBloc,
-      child: const _AnalyticsDetailView(),
+    final view = AnalyticsDetailView(
+      activityService: effectiveActivityService,
+      authBloc: effectiveAuthBloc,
+      subscriptionGuard: effectiveSubscriptionGuard,
     );
+
+    if (effectiveBloc != null) {
+      return BlocProvider<DashboardBloc>.value(
+        value: effectiveBloc,
+        child: view,
+      );
+    }
+
+    return view;
   }
 }
 
-class _AnalyticsDetailView extends HookWidget {
-  const _AnalyticsDetailView();
+class AnalyticsDetailView extends HookWidget {
+  const AnalyticsDetailView({
+    super.key,
+    this.activityService,
+    this.authBloc,
+    this.subscriptionGuard,
+  });
+
+  final UserActivityService? activityService;
+  final AuthBloc? authBloc;
+  final SubscriptionGuard? subscriptionGuard;
 
   @override
   Widget build(BuildContext context) {
@@ -79,9 +118,6 @@ class _AnalyticsDetailView extends HookWidget {
     final selectedFilterIndex = useState<int>(0);
     const filterOptions = ['Last 7 Days', 'Last 30 Days', 'All Time'];
 
-    final activityService = locator.isRegistered<UserActivityService>()
-        ? locator<UserActivityService>()
-        : null;
     final freezeCountState = useState<int>(
       activityService?.getStreakFreezes() ?? 1,
     );
@@ -115,15 +151,19 @@ class _AnalyticsDetailView extends HookWidget {
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
           if (state.isLoading && state.feed == null) {
-            return const _AnalyticsShimmerSkeleton();
+            return const AnalyticsShimmerSkeleton();
           }
 
           final feed = state.feed;
-          final rawAnalytics = _resolveAnalytics(feed?.analyticsSummary);
+          final rawAnalytics = AnalyticsTimeframeFilterHelper.resolveAnalytics(
+            feed?.analyticsSummary,
+            activityService: activityService,
+          );
           final courses = feed?.curatedCourses ?? const <CuratedCourseEntity>[];
 
           final filterIndex = selectedFilterIndex.value;
-          final analytics = _filterAnalyticsByTimeframe(
+          final analytics =
+              AnalyticsTimeframeFilterHelper.filterAnalyticsByTimeframe(
             rawAnalytics,
             filterIndex,
           );
@@ -180,7 +220,7 @@ class _AnalyticsDetailView extends HookWidget {
                   const SizedBox(height: 18),
 
                   // 2. Executive Performance Overview (4-Grid KPI Cards)
-                  _ExecutiveKpiGrid(
+                  AnalyticsKpiGrid(
                     analytics: analytics,
                     timeframeIndex: filterIndex,
                   ),
@@ -193,23 +233,25 @@ class _AnalyticsDetailView extends HookWidget {
                     userXp: math.max(analytics.xpPoints, userXpState.value),
                     onPurchaseFreeze: () async {
                       if (activityService == null) return;
-                      final success = await activityService
+                      final success = await activityService!
                           .purchaseStreakFreeze();
                       if (success) {
                         AppFeedback.celebration();
-                        freezeCountState.value = activityService
+                        freezeCountState.value = activityService!
                             .getStreakFreezes();
-                        userXpState.value = activityService.getXpPoints();
+                        userXpState.value = activityService!.getXpPoints();
                         if (context.mounted) {
                           context.showSnackBar(
                             message: l10n.streakFreezeSuccess,
                             type: SnackBarType.success,
                           );
                           try {
-                            locator<AuthBloc>().add(
+                            authBloc?.add(
                               const AuthStreakIncremented(),
                             );
-                          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+                          } on Object catch (e, st) {
+                            AppLogger.recordNonFatal(e, st);
+                          }
                         }
                       } else {
                         AppFeedback.incorrect();
@@ -228,7 +270,7 @@ class _AnalyticsDetailView extends HookWidget {
                   AdaptiveRetentionChart(
                     points: retentionPoints,
                     onTriggerNeuralRepair: (day, retrievability) {
-                      _showNeuralRepairBottomSheet(
+                      showAnalyticsNeuralRepairSheet(
                         context,
                         day,
                         retrievability,
@@ -238,7 +280,7 @@ class _AnalyticsDetailView extends HookWidget {
                   const SizedBox(height: 20),
 
                   // 4. Weekly Study Volume & Velocity Bar Chart
-                  _WeeklyVelocityChart(
+                  AnalyticsWeeklyVelocityChart(
                     analytics: analytics,
                     timeframeIndex: filterIndex,
                     colors: colors,
@@ -247,7 +289,7 @@ class _AnalyticsDetailView extends HookWidget {
                   const SizedBox(height: 20),
 
                   // 5. Activity Heatmap & Consistency Grid
-                  _DetailedHeatMapCard(
+                  AnalyticsDetailedHeatMapCard(
                     analytics: analytics,
                     timeframeIndex: filterIndex,
                     colors: colors,
@@ -256,7 +298,7 @@ class _AnalyticsDetailView extends HookWidget {
                   const SizedBox(height: 20),
 
                   // 6. Course & Subject Mastery Breakdown
-                  _SubjectMasteryCard(
+                  AnalyticsSubjectMasteryCard(
                     courses: courses,
                     colors: colors,
                     isDark: isDark,
@@ -264,1952 +306,19 @@ class _AnalyticsDetailView extends HookWidget {
                   const SizedBox(height: 20),
 
                   // 7. Syllabot Cognitive Diagnostics & Smart Recommendations
-                  _SyllabotCognitiveInsightsCard(
+                  AnalyticsCognitiveInsightsCard(
                     insightText: feed?.syllabotDailyInsight,
                     hasData: hasData,
                     colors: colors,
                     isDark: isDark,
+                    activityService: activityService,
+                    subscriptionGuard: subscriptionGuard,
                   ),
                 ],
               ),
             ),
           );
         },
-      ),
-    );
-  }
-
-  static AnalyticsSummaryEntity _resolveAnalytics(
-    AnalyticsSummaryEntity? feedAnalytics,
-  ) {
-    AnalyticsSummaryEntity? live;
-    try {
-      final summary = locator<UserActivityService>().getAnalyticsSummary();
-      live = summary.toEntity();
-    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-
-    if (feedAnalytics == null) {
-      return live ?? _buildEmptyAnalytics();
-    }
-
-    if (live == null) {
-      return feedAnalytics;
-    }
-
-    final effectiveStreak = math.max(
-      feedAnalytics.currentStreakDays,
-      live.currentStreakDays,
-    );
-    final effectiveLongest = math.max(
-      feedAnalytics.longestStreakDays,
-      live.longestStreakDays,
-    );
-    final effectiveMinutes = math.max(
-      feedAnalytics.weeklyMinutesStudied,
-      live.weeklyMinutesStudied,
-    );
-    final effectiveRetention = feedAnalytics.overallRetentionRate > 0
-        ? feedAnalytics.overallRetentionRate
-        : live.overallRetentionRate;
-    final effectiveMastered = math.max(
-      feedAnalytics.totalCardsMastered,
-      live.totalCardsMastered,
-    );
-    final effectiveXp = math.max(
-      feedAnalytics.xpPoints,
-      live.xpPoints,
-    );
-    final effectiveRank = live.academicRank != 'Neural Scholar I'
-        ? live.academicRank
-        : feedAnalytics.academicRank;
-
-    final hasLiveHeat = live.heatMapData.any((d) => d.intensityLevel > 0);
-
-    return AnalyticsSummaryEntity(
-      currentStreakDays: effectiveStreak,
-      longestStreakDays: effectiveLongest,
-      weeklyMinutesStudied: effectiveMinutes,
-      overallRetentionRate: effectiveRetention,
-      totalCardsMastered: effectiveMastered,
-      heatMapData: hasLiveHeat ? live.heatMapData : feedAnalytics.heatMapData,
-      xpPoints: effectiveXp,
-      academicRank: effectiveRank,
-    );
-  }
-
-  static AnalyticsSummaryEntity _buildEmptyAnalytics() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final currentMonday = DateTime(
-      today.year,
-      today.month,
-      today.day - (today.weekday - 1),
-    );
-    final startMonday = DateTime(
-      currentMonday.year,
-      currentMonday.month,
-      currentMonday.day - 21,
-    );
-
-    final heatMap = List.generate(28, (i) {
-      final day = DateTime(
-        startMonday.year,
-        startMonday.month,
-        startMonday.day + i,
-      );
-      return HeatMapDayEntity(
-        date: day,
-        intensityLevel: 0,
-        cardsReviewed: 0,
-        minutesStudied: 0,
-      );
-    });
-
-    return AnalyticsSummaryEntity(
-      currentStreakDays: 0,
-      longestStreakDays: 0,
-      weeklyMinutesStudied: 0,
-      overallRetentionRate: 0,
-      totalCardsMastered: 0,
-      heatMapData: heatMap,
-      xpPoints: 0,
-      academicRank: 'Neural Scholar I',
-    );
-  }
-
-  static AnalyticsSummaryEntity _filterAnalyticsByTimeframe(
-    AnalyticsSummaryEntity base,
-    int timeframeIndex,
-  ) {
-    if (timeframeIndex == 0) {
-      // Last 7 Days
-      final recentDays = base.heatMapData.length >= 7
-          ? base.heatMapData.sublist(base.heatMapData.length - 7)
-          : base.heatMapData;
-      final mins = recentDays.fold<int>(0, (sum, d) => sum + d.minutesStudied);
-      final reviewed = recentDays.fold<int>(
-        0,
-        (sum, d) => sum + d.cardsReviewed,
-      );
-      final effectiveMins = mins > 0 ? mins : base.weeklyMinutesStudied;
-      final effectiveMastered = reviewed > 0
-          ? reviewed
-          : (base.totalCardsMastered > 0
-                ? math.max(1, (base.totalCardsMastered * 0.35).round())
-                : 0);
-
-      return AnalyticsSummaryEntity(
-        currentStreakDays: base.currentStreakDays,
-        longestStreakDays: base.longestStreakDays,
-        weeklyMinutesStudied: effectiveMins,
-        overallRetentionRate: base.overallRetentionRate,
-        totalCardsMastered: effectiveMastered,
-        heatMapData: recentDays,
-        xpPoints: (base.xpPoints * 0.25).round(),
-        academicRank: base.academicRank,
-      );
-    } else if (timeframeIndex == 1) {
-      // Last 30 Days
-      final recentDays = base.heatMapData.length >= 28
-          ? base.heatMapData.sublist(base.heatMapData.length - 28)
-          : base.heatMapData;
-      final mins = recentDays.fold<int>(0, (sum, d) => sum + d.minutesStudied);
-      final reviewed = recentDays.fold<int>(
-        0,
-        (sum, d) => sum + d.cardsReviewed,
-      );
-      final effectiveMins = mins > 0 ? mins : (base.weeklyMinutesStudied * 4);
-      final effectiveMastered = reviewed > 0
-          ? reviewed
-          : (base.totalCardsMastered > 0
-                ? math.max(1, (base.totalCardsMastered * 0.85).round())
-                : 0);
-      final effectiveRetention = base.overallRetentionRate > 0
-          ? (base.overallRetentionRate * 0.98).clamp(0.0, 1.0)
-          : 0.0;
-
-      return AnalyticsSummaryEntity(
-        currentStreakDays: base.currentStreakDays,
-        longestStreakDays: base.longestStreakDays,
-        weeklyMinutesStudied: effectiveMins,
-        overallRetentionRate: effectiveRetention,
-        totalCardsMastered: effectiveMastered,
-        heatMapData: recentDays,
-        xpPoints: (base.xpPoints * 0.8).round(),
-        academicRank: base.academicRank,
-      );
-    } else {
-      // All Time
-      final mins = base.heatMapData.fold<int>(
-        0,
-        (sum, d) => sum + d.minutesStudied,
-      );
-      final effectiveMins = mins > 0 ? mins : (base.weeklyMinutesStudied * 8);
-      final effectiveRetention = base.overallRetentionRate > 0
-          ? (base.overallRetentionRate * 0.95).clamp(0.0, 1.0)
-          : 0.0;
-
-      return AnalyticsSummaryEntity(
-        currentStreakDays: base.currentStreakDays,
-        longestStreakDays: base.longestStreakDays,
-        weeklyMinutesStudied: effectiveMins,
-        overallRetentionRate: effectiveRetention,
-        totalCardsMastered: base.totalCardsMastered,
-        heatMapData: base.heatMapData,
-        xpPoints: base.xpPoints,
-        academicRank: base.academicRank,
-      );
-    }
-  }
-}
-
-/// Shimmer Skeleton Loader matching Analytics Page layout
-class _AnalyticsShimmerSkeleton extends StatelessWidget {
-  const _AnalyticsShimmerSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 60),
-      children: const [
-        // Tab bar shimmer
-        ShimmerPlaceholder(height: 42, borderRadius: 21),
-        SizedBox(height: 18),
-
-        // 2x2 KPI Cards Shimmer
-        Row(
-          children: [
-            Expanded(child: ShimmerPlaceholder(height: 120, borderRadius: 18)),
-            SizedBox(width: 12),
-            Expanded(child: ShimmerPlaceholder(height: 120, borderRadius: 18)),
-          ],
-        ),
-        SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(child: ShimmerPlaceholder(height: 120, borderRadius: 18)),
-            SizedBox(width: 12),
-            Expanded(child: ShimmerPlaceholder(height: 120, borderRadius: 18)),
-          ],
-        ),
-        SizedBox(height: 20),
-
-        // Chart Shimmer
-        ShimmerPlaceholder(height: 260, borderRadius: 22),
-        SizedBox(height: 20),
-
-        // Velocity Chart Shimmer
-        ShimmerPlaceholder(height: 180, borderRadius: 22),
-        SizedBox(height: 20),
-
-        // Heatmap Shimmer
-        ShimmerPlaceholder(height: 200, borderRadius: 22),
-      ],
-    );
-  }
-}
-
-/// 4-Card Executive KPI Matrix
-class _ExecutiveKpiGrid extends StatelessWidget {
-  const _ExecutiveKpiGrid({
-    required this.analytics,
-    this.timeframeIndex = 0,
-  });
-
-  final AnalyticsSummaryEntity analytics;
-  final int timeframeIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final isDark = context.isDarkMode;
-
-    final overallRetention = (analytics.overallRetentionRate * 100).toInt();
-    final hasRetention = overallRetention > 0;
-    final hasCards = analytics.totalCardsMastered > 0;
-    final hasStudyTime = analytics.weeklyMinutesStudied > 0;
-    final hasStreak = analytics.currentStreakDays > 0;
-
-    final String retentionSubtitle;
-    if (!hasRetention) {
-      retentionSubtitle = 'No review data yet';
-    } else if (timeframeIndex == 0) {
-      retentionSubtitle = 'Active Recall Rate (7d)';
-    } else if (timeframeIndex == 1) {
-      retentionSubtitle = '30-Day Mean Retention';
-    } else {
-      retentionSubtitle = 'All-Time Recall Index';
-    }
-
-    final String cardsSubtitle;
-    if (!hasCards) {
-      cardsSubtitle = '0 Active Cards';
-    } else if (timeframeIndex == 0) {
-      cardsSubtitle = '${analytics.totalCardsMastered} Active Cards (7d)';
-    } else if (timeframeIndex == 1) {
-      cardsSubtitle = '${analytics.totalCardsMastered} Active (30d)';
-    } else {
-      cardsSubtitle = '${analytics.totalCardsMastered} Total Mastered';
-    }
-
-    final String studyVelocityValue;
-    if (analytics.weeklyMinutesStudied >= 120) {
-      studyVelocityValue =
-          '${(analytics.weeklyMinutesStudied / 60).toStringAsFixed(1)}h';
-    } else {
-      studyVelocityValue = '${analytics.weeklyMinutesStudied}m';
-    }
-
-    final String studyVelocitySubtitle;
-    final weeklyHours = (analytics.weeklyMinutesStudied / 60).toStringAsFixed(
-      1,
-    );
-    if (!hasStudyTime) {
-      studyVelocitySubtitle = timeframeIndex == 0
-          ? '0.0 hrs this week'
-          : (timeframeIndex == 1 ? '0.0 hrs past 30d' : '0.0 hrs all time');
-    } else if (timeframeIndex == 0) {
-      studyVelocitySubtitle = '$weeklyHours hrs this week';
-    } else if (timeframeIndex == 1) {
-      studyVelocitySubtitle = '$weeklyHours hrs past 30d';
-    } else {
-      studyVelocitySubtitle = '$weeklyHours hrs all time';
-    }
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _KpiMetricCard(
-                title: 'Retention Index',
-                value: hasRetention ? '$overallRetention%' : '0%',
-                subtitle: retentionSubtitle,
-                badgeText: hasRetention ? 'Optimal' : 'Baseline',
-                icon: Icons.psychology_rounded,
-                accentColor: colors.success,
-                colors: colors,
-                isDark: isDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _KpiMetricCard(
-                title: 'Cards Mastered',
-                value: '${analytics.totalCardsMastered}',
-                subtitle: cardsSubtitle,
-                badgeText: hasCards ? 'Active' : 'Empty',
-                icon: Icons.style_rounded,
-                accentColor: colors.primary,
-                colors: colors,
-                isDark: isDark,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _KpiMetricCard(
-                title: 'Study Velocity',
-                value: studyVelocityValue,
-                subtitle: studyVelocitySubtitle,
-                badgeText: hasStudyTime ? 'On Track' : 'Idle',
-                icon: Icons.timer_rounded,
-                accentColor: colors.syllabotAccent,
-                colors: colors,
-                isDark: isDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _KpiMetricCard(
-                title: 'Study Streak',
-                value: '${analytics.currentStreakDays} Days 🔥',
-                subtitle: hasStreak
-                    ? 'Record: ${analytics.longestStreakDays} days'
-                    : 'Start a streak today',
-                badgeText: analytics.academicRank.isNotEmpty
-                    ? analytics.academicRank.split(' ').last
-                    : 'Rank I',
-                icon: Icons.local_fire_department_rounded,
-                accentColor: colors.warning,
-                colors: colors,
-                isDark: isDark,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _KpiMetricCard extends StatelessWidget {
-  const _KpiMetricCard({
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    required this.badgeText,
-    required this.icon,
-    required this.accentColor,
-    required this.colors,
-    required this.isDark,
-  });
-
-  final String title;
-  final String value;
-  final String subtitle;
-  final String badgeText;
-  final IconData icon;
-  final Color accentColor;
-  final AppThemeColorsExtension colors;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = context.typography;
-
-    return PlatformHoverBuilder(
-      builder: (context, isHovered, child) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.panel),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-            child: AnimatedContainer(
-              duration: AppMotion.snappy,
-              curve: AppMotion.easeOutCubic,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? (isHovered
-                          ? colors.surfaceSecondary.withAlpha(200)
-                          : colors.surfaceSecondary.withAlpha(160))
-                    : (isHovered
-                          ? colors.surfacePrimary
-                          : colors.surfacePrimary.withAlpha(220)),
-                borderRadius: BorderRadius.circular(AppRadius.panel),
-                border: Border.all(
-                  color: isHovered
-                      ? accentColor.withAlpha(isDark ? 140 : 100)
-                      : (isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(60)
-                            : colors.surfaceBorder.withAlpha(130)),
-                  width: 1.1,
-                ),
-                boxShadow: isHovered
-                    ? [
-                        BoxShadow(
-                          color: colors.black.withAlpha(isDark ? 50 : 15),
-                          blurRadius: 14,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: colors.black.withAlpha(isDark ? 30 : 8),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: accentColor.withAlpha(isDark ? 45 : 25),
-                          borderRadius: BorderRadius.circular(AppRadius.badge),
-                        ),
-                        child: Icon(icon, size: 15, color: accentColor),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: accentColor.withAlpha(isDark ? 35 : 18),
-                          borderRadius: BorderRadius.circular(AppRadius.micro),
-                          border: Border.all(
-                            color: accentColor.withAlpha(isDark ? 70 : 35),
-                            width: 0.6,
-                          ),
-                        ),
-                        child: Text(
-                          badgeText,
-                          style: typography.footnote.bold.copyWith(
-                            color: accentColor,
-                            fontSize: 9.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    style: typography.footnote.medium.copyWith(
-                      color: colors.textSecondary,
-                      fontSize: 11.5,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: typography.title3.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 19,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: typography.footnote.regular.copyWith(
-                      color: colors.textSecondary.withAlpha(180),
-                      fontSize: 10.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _VelocityBarItem {
-  const _VelocityBarItem({
-    required this.label,
-    required this.minutes,
-    required this.isGoalMet,
-  });
-
-  final String label;
-  final int minutes;
-  final bool isGoalMet;
-}
-
-/// Dynamic Study Volume & Velocity Bar Chart
-class _WeeklyVelocityChart extends StatelessWidget {
-  const _WeeklyVelocityChart({
-    required this.analytics,
-    required this.colors,
-    required this.isDark,
-    this.timeframeIndex = 0,
-  });
-
-  final AnalyticsSummaryEntity analytics;
-  final AppThemeColorsExtension colors;
-  final bool isDark;
-  final int timeframeIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = context.typography;
-
-    final String chartTitle;
-    final String summaryText;
-    final List<_VelocityBarItem> barItems;
-    final double maxScale;
-
-    if (timeframeIndex == 0) {
-      // Last 7 Days (daily breakdown)
-      chartTitle = 'Weekly Study Volume';
-      const targetDailyMinutes = 45;
-      const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-      final recentDays = analytics.heatMapData.length >= 7
-          ? analytics.heatMapData.sublist(analytics.heatMapData.length - 7)
-          : analytics.heatMapData;
-
-      barItems = List.generate(7, (i) {
-        final mins = i < recentDays.length ? recentDays[i].minutesStudied : 0;
-        return _VelocityBarItem(
-          label: weekdays[i],
-          minutes: mins,
-          isGoalMet: mins >= targetDailyMinutes,
-        );
-      });
-
-      final totalWeekMins = barItems.fold<int>(
-        0,
-        (sum, item) => sum + item.minutes,
-      );
-      summaryText = totalWeekMins > 0
-          ? 'Total: ${totalWeekMins}m'
-          : 'Goal: ${targetDailyMinutes}m/day';
-      maxScale = 90;
-    } else if (timeframeIndex == 1) {
-      // Last 30 Days (4 weekly blocks)
-      chartTitle = '30-Day Study Volume';
-      const targetWeeklyMinutes = 240;
-      final weeks = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
-      final days = analytics.heatMapData;
-
-      barItems = List.generate(4, (weekIdx) {
-        final start = weekIdx * 7;
-        final end = math.min(start + 7, days.length);
-        var weekMins = 0;
-        if (start < days.length) {
-          for (var i = start; i < end; i++) {
-            weekMins += days[i].minutesStudied;
-          }
-        }
-        if (weekMins == 0 && analytics.weeklyMinutesStudied > 0) {
-          weekMins = (analytics.weeklyMinutesStudied * (0.8 + (weekIdx * 0.15)))
-              .round();
-        }
-        return _VelocityBarItem(
-          label: weeks[weekIdx],
-          minutes: weekMins,
-          isGoalMet: weekMins >= targetWeeklyMinutes,
-        );
-      });
-
-      final total30dMins = barItems.fold<int>(
-        0,
-        (sum, item) => sum + item.minutes,
-      );
-      summaryText = total30dMins > 0
-          ? 'Total: ${(total30dMins / 60).toStringAsFixed(1)}h'
-          : 'Goal: 16h/mo';
-      maxScale = 600;
-    } else {
-      // All Time (4 period blocks)
-      chartTitle = 'All-Time Study Volume';
-      const targetPeriodMinutes = 400;
-      final periods = ['Q1', 'Q2', 'Q3', 'Q4'];
-      final totalMins = analytics.weeklyMinutesStudied;
-
-      barItems = List.generate(4, (periodIdx) {
-        final periodMins = (totalMins * (0.6 + (periodIdx * 0.25)) / 4).round();
-        return _VelocityBarItem(
-          label: periods[periodIdx],
-          minutes: periodMins,
-          isGoalMet: periodMins >= targetPeriodMinutes,
-        );
-      });
-
-      final totalAllTimeMins = barItems.fold<int>(
-        0,
-        (sum, item) => sum + item.minutes,
-      );
-      summaryText = totalAllTimeMins > 0
-          ? 'Total: ${(totalAllTimeMins / 60).toStringAsFixed(1)}h'
-          : 'All-Time Active';
-      maxScale = math.max(600, totalMins / 2);
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.panel),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isDark
-                ? colors.surfaceSecondary.withAlpha(160)
-                : colors.surfacePrimary.withAlpha(220),
-            borderRadius: BorderRadius.circular(AppRadius.panel),
-            border: Border.all(
-              color: isDark
-                  ? colors.surfaceBorderHighlight.withAlpha(70)
-                  : colors.surfaceBorder.withAlpha(140),
-              width: 1.2,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.bar_chart_rounded,
-                        size: 16,
-                        color: colors.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        chartTitle,
-                        style: typography.title3.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    summaryText,
-                    style: typography.caption.medium.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Bar Chart Columns
-              SizedBox(
-                height: 120,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: barItems.map((bar) {
-                    final mins = bar.minutes;
-                    final isGoalMet = bar.isGoalMet;
-                    final heightFactor = (mins / maxScale).clamp(0.08, 1.0);
-                    final minsLabel = mins >= 120
-                        ? '${(mins / 60).toStringAsFixed(1)}h'
-                        : '${mins}m';
-                    final barWidth = timeframeIndex == 0 ? 26.0 : 42.0;
-
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          minsLabel,
-                          style: typography.footnote.bold.copyWith(
-                            color: isGoalMet
-                                ? colors.primary
-                                : colors.textSecondary.withAlpha(160),
-                            fontSize: 9.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          width: barWidth,
-                          height: mins > 0 ? (75 * heightFactor) : 6,
-                          decoration: BoxDecoration(
-                            gradient: mins > 0
-                                ? LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: isGoalMet
-                                        ? [
-                                            colors.primary,
-                                            colors.primary.withAlpha(150),
-                                          ]
-                                        : [
-                                            colors.surfaceBorderHighlight
-                                                .withAlpha(180),
-                                            colors.surfaceBorder.withAlpha(100),
-                                          ],
-                                  )
-                                : null,
-                            color: mins == 0
-                                ? (isDark
-                                      ? colors.surfaceBorderHighlight.withAlpha(
-                                          30,
-                                        )
-                                      : colors.surfaceBorder.withAlpha(60))
-                                : null,
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.micro,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          bar.label,
-                          style: typography.footnote.medium.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Detailed 28-Day Consistency Matrix with Day Inspector
-class _DetailedHeatMapCard extends StatefulWidget {
-  const _DetailedHeatMapCard({
-    required this.analytics,
-    required this.colors,
-    required this.isDark,
-    this.timeframeIndex = 0,
-  });
-
-  final AnalyticsSummaryEntity analytics;
-  final AppThemeColorsExtension colors;
-  final bool isDark;
-  final int timeframeIndex;
-
-  @override
-  State<_DetailedHeatMapCard> createState() => _DetailedHeatMapCardState();
-}
-
-class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
-  HeatMapDayEntity? _selectedDay;
-
-  static bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  static String _dateKey(DateTime d) {
-    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-  }
-
-  List<HeatMapDayEntity> _getNormalizedDays(
-    List<HeatMapDayEntity> input,
-    int timeframeIndex,
-  ) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dataMap = <String, HeatMapDayEntity>{};
-    for (final item in input) {
-      dataMap[_dateKey(item.date)] = item;
-    }
-
-    // timeframeIndex == 0: 1 week (7 days); otherwise 4 weeks (28 days)
-    final weeks = timeframeIndex == 0 ? 1 : 4;
-    final currentMonday = DateTime(
-      today.year,
-      today.month,
-      today.day - (today.weekday - 1),
-    );
-    final startMonday = DateTime(
-      currentMonday.year,
-      currentMonday.month,
-      currentMonday.day - ((weeks - 1) * 7),
-    );
-
-    final totalDays = weeks * 7;
-    return List.generate(totalDays, (i) {
-      final cellDate = DateTime(
-        startMonday.year,
-        startMonday.month,
-        startMonday.day + i,
-      );
-      final key = _dateKey(cellDate);
-      final existing = dataMap[key];
-      if (existing != null) {
-        return existing;
-      }
-      return HeatMapDayEntity(
-        date: cellDate,
-        intensityLevel: 0,
-        cardsReviewed: 0,
-        minutesStudied: 0,
-      );
-    });
-  }
-
-  @override
-  void didUpdateWidget(_DetailedHeatMapCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.timeframeIndex != widget.timeframeIndex) {
-      _selectedDay = null;
-    } else if (_selectedDay != null) {
-      final normalized = _getNormalizedDays(
-        widget.analytics.heatMapData,
-        widget.timeframeIndex,
-      );
-      final match = normalized
-          .where((d) => _isSameDay(d.date, _selectedDay!.date))
-          .firstOrNull;
-      if (match != null) {
-        _selectedDay = match;
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = widget.colors;
-    final typography = context.typography;
-    final isDark = widget.isDark;
-    const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-    final normalizedDays = _getNormalizedDays(
-      widget.analytics.heatMapData,
-      widget.timeframeIndex,
-    );
-    final hasActivity = normalizedDays.any(
-      (d) => d.cardsReviewed > 0 || d.minutesStudied > 0,
-    );
-
-    final String statusLabel;
-    if (widget.timeframeIndex == 0) {
-      statusLabel = hasActivity ? 'Active Week' : 'Last 7 Days';
-    } else if (widget.timeframeIndex == 1) {
-      statusLabel = hasActivity ? 'Active Month' : 'Past 30 Days';
-    } else {
-      statusLabel = hasActivity ? 'Active Habit' : 'All-Time Grid';
-    }
-
-    final rowCount = (normalizedDays.length / 7).ceil();
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.panel),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isDark
-                ? colors.surfaceSecondary.withAlpha(160)
-                : colors.surfacePrimary.withAlpha(220),
-            borderRadius: BorderRadius.circular(AppRadius.panel),
-            border: Border.all(
-              color: isDark
-                  ? colors.surfaceBorderHighlight.withAlpha(70)
-                  : colors.surfaceBorder.withAlpha(140),
-              width: 1.2,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_month_rounded,
-                        size: 16,
-                        color: colors.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Study Consistency Grid',
-                        style: typography.title3.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    statusLabel,
-                    style: typography.caption.bold.copyWith(
-                      color: hasActivity
-                          ? colors.success
-                          : colors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Weekday Headers & Heat Map Matrix
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final cellWidth = ((constraints.maxWidth - (6 * 6)) / 7)
-                      .clamp(16.0, 42.0);
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Weekday labels (Mon..Sun)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: weekdayLabels.map((day) {
-                          return SizedBox(
-                            width: cellWidth,
-                            child: Text(
-                              day,
-                              textAlign: TextAlign.center,
-                              style: typography.footnote.bold.copyWith(
-                                color: colors.textSecondary.withAlpha(160),
-                                fontSize: 9.5,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Rows of 7 days strictly aligned Monday to Sunday
-                      ...List.generate(rowCount, (rowIdx) {
-                        final startIdx = rowIdx * 7;
-                        final rowDays = normalizedDays.sublist(
-                          startIdx,
-                          math.min(startIdx + 7, normalizedDays.length),
-                        );
-
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            bottom: rowIdx < rowCount - 1 ? 6.0 : 0.0,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: rowDays.map((day) {
-                              final isSelected =
-                                  _selectedDay != null &&
-                                  _isSameDay(_selectedDay!.date, day.date);
-                              final color = _getIntensityColor(
-                                day.intensityLevel,
-                                colors,
-                                isDark,
-                              );
-
-                              return InkWell(
-                                onTap: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  setState(() {
-                                    _selectedDay = isSelected ? null : day;
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.micro,
-                                ),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  width: cellWidth,
-                                  height: cellWidth,
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.micro,
-                                    ),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? colors.textPrimary
-                                          : (day.intensityLevel > 0
-                                                ? colors.primary.withAlpha(
-                                                    isDark ? 90 : 50,
-                                                  )
-                                                : colors.transparent),
-                                      width: isSelected ? 1.8 : 0.8,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        );
-                      }),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-
-              // Selected Day Inspector Tooltip
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: _selectedDay != null
-                      ? colors.primary.withAlpha(isDark ? 35 : 15)
-                      : (isDark
-                            ? colors.surfacePrimary.withAlpha(80)
-                            : colors.surfaceSecondary.withAlpha(90)),
-                  borderRadius: BorderRadius.circular(AppRadius.badge),
-                  border: Border.all(
-                    color: _selectedDay != null
-                        ? colors.primary.withAlpha(isDark ? 80 : 40)
-                        : colors.surfaceBorder.withAlpha(isDark ? 40 : 80),
-                    width: 0.8,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (_selectedDay != null) ...[
-                      Flexible(
-                        child: Text(
-                          DateFormat('EEEE, MMM d').format(_selectedDay!.date),
-                          style: typography.footnote.bold.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 11.5,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          '${_selectedDay!.cardsReviewed} cards reviewed • '
-                          '${_selectedDay!.minutesStudied}m studied',
-                          style: typography.footnote.medium.copyWith(
-                            color: colors.primary,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
-                        ),
-                      ),
-                    ] else ...[
-                      Expanded(
-                        child: Text(
-                          hasActivity
-                              ? 'Tap any day to inspect study performance'
-                              : 'No study activity in past 28 days',
-                          style: typography.footnote.regular.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Less',
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textSecondary.withAlpha(160),
-                              fontSize: 9.5,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          ...List.generate(5, (lvl) {
-                            return Container(
-                              width: 8,
-                              height: 8,
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 1.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _getIntensityColor(
-                                  lvl,
-                                  colors,
-                                  isDark,
-                                ),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            );
-                          }),
-                          const SizedBox(width: 4),
-                          Text(
-                            'More',
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textSecondary.withAlpha(160),
-                              fontSize: 9.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _getIntensityColor(
-    int level,
-    AppThemeColorsExtension colors,
-    bool isDark,
-  ) {
-    switch (level) {
-      case 0:
-        return isDark
-            ? colors.surfaceBorderHighlight.withAlpha(30)
-            : colors.surfaceBorder.withAlpha(60);
-      case 1:
-        return colors.primary.withAlpha(isDark ? 60 : 45);
-      case 2:
-        return colors.primary.withAlpha(isDark ? 120 : 90);
-      case 3:
-        return colors.primary.withAlpha(isDark ? 190 : 160);
-      case 4:
-      default:
-        return colors.primary;
-    }
-  }
-}
-
-/// Subject & Syllabus Mastery Breakdown Card
-class _SubjectMasteryCard extends StatelessWidget {
-  const _SubjectMasteryCard({
-    required this.courses,
-    required this.colors,
-    required this.isDark,
-  });
-
-  final List<CuratedCourseEntity> courses;
-  final AppThemeColorsExtension colors;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = context.typography;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.panel),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isDark
-                ? colors.surfaceSecondary.withAlpha(160)
-                : colors.surfacePrimary.withAlpha(220),
-            borderRadius: BorderRadius.circular(AppRadius.panel),
-            border: Border.all(
-              color: isDark
-                  ? colors.surfaceBorderHighlight.withAlpha(70)
-                  : colors.surfaceBorder.withAlpha(140),
-              width: 1.2,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.school_rounded,
-                        size: 16,
-                        color: colors.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Course Mastery Matrix',
-                        style: typography.title3.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '${courses.length} Enrolled',
-                    style: typography.caption.medium.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (courses.isEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  alignment: Alignment.center,
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.library_books_rounded,
-                        size: 28,
-                        color: colors.textSecondary.withAlpha(120),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No enrolled courses yet',
-                        style: typography.footnote.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Import a syllabus or course materials to '
-                        'track mastery',
-                        textAlign: TextAlign.center,
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                ...courses.map((course) {
-                  final percent = (course.syllabusCoverage * 100).toInt();
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.primary.withAlpha(
-                                        isDark ? 40 : 20,
-                                      ),
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.micro,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      course.courseCode,
-                                      style: typography.footnote.bold.copyWith(
-                                        color: colors.primary,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      course.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: typography.footnote.bold.copyWith(
-                                        color: colors.textPrimary,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '$percent%',
-                              style: typography.footnote.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.micro,
-                                ),
-                                child: Container(
-                                  height: 6,
-                                  color: isDark
-                                      ? colors.surfaceBorderHighlight.withAlpha(
-                                          40,
-                                        )
-                                      : colors.surfaceBorder.withAlpha(80),
-                                  child: FractionallySizedBox(
-                                    alignment: Alignment.centerLeft,
-                                    widthFactor: course.syllabusCoverage.clamp(
-                                      0.05,
-                                      1.0,
-                                    ),
-                                    child: Container(color: colors.primary),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              '${course.totalMaterials} materials',
-                              style: typography.footnote.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Syllabot Cognitive Insights & Action Recommendations
-class _SyllabotCognitiveInsightsCard extends StatelessWidget {
-  const _SyllabotCognitiveInsightsCard({
-    required this.insightText,
-    required this.hasData,
-    required this.colors,
-    required this.isDark,
-  });
-
-  final String? insightText;
-  final bool hasData;
-  final AppThemeColorsExtension colors;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = context.typography;
-    final activityService = locator.isRegistered<UserActivityService>()
-        ? locator<UserActivityService>()
-        : null;
-    final breakdown = activityService?.getSubjectBreakdown() ?? const {};
-    final weakEntry = breakdown.entries
-        .where((e) => e.value.avgRetention < 0.80)
-        .firstOrNull;
-    final subscriptionGuard = locator.isRegistered<SubscriptionGuard>()
-        ? locator<SubscriptionGuard>()
-        : SubscriptionGuard();
-    final isPro = subscriptionGuard.canAccessAiDiagnostics();
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.panel),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colors.primary.withAlpha(isDark ? 40 : 20),
-                (isDark ? colors.surfaceSecondary : colors.surfacePrimary)
-                    .withAlpha(isDark ? 160 : 220),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.panel),
-            border: Border.all(
-              color: colors.primary.withAlpha(isDark ? 80 : 50),
-              width: 1.2,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const SyllabotAvatar(size: 26),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Syllabot Cognitive Diagnostics',
-                      style: typography.title3.bold.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                  if (!isPro)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            colors.primary,
-                            colors.primary.withAlpha(200),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                      ),
-                      child: Text(
-                        'PRO',
-                        style: typography.caption.bold.copyWith(
-                          color: Colors.white,
-                          fontSize: 10,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              if (!isPro) ...[
-                _InsightRow(
-                  icon: Icons.psychology_rounded,
-                  iconColor: colors.primary,
-                  title: 'Cognitive Retention Spaced Tracking',
-                  description:
-                      'Daily spaced reviews protect against memory fade and promote long-term recall. '
-                      'Upgrade to Kortex Pro to unlock automated subject decay alerts, personalized cram targets, and deep Ebbinghaus synthesis.',
-                  colors: colors,
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withAlpha(isDark ? 30 : 16),
-                    borderRadius: BorderRadius.circular(AppRadius.badge),
-                    border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 80 : 50),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome_rounded,
-                        color: colors.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Unlock Deep AI Diagnostics',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Targeted subject intervention & exam cram forecasting.',
-                              style: typography.caption.regular.copyWith(
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          AppFeedback.selection();
-                          unawaited(
-                            subscriptionGuard.requirePro(
-                              context,
-                              featureName: 'AI Cognitive Diagnostics',
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.badge,
-                            ),
-                          ),
-                        ),
-                        child: const Text('Unlock'),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                if (insightText != null && insightText!.isNotEmpty) ...[
-                  _InsightRow(
-                    icon: Icons.psychology_rounded,
-                    iconColor: colors.primary,
-                    title: 'Daily AI Synthesis',
-                    description: insightText!,
-                    colors: colors,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (weakEntry != null) ...[
-                  _InsightRow(
-                    icon: Icons.warning_amber_rounded,
-                    iconColor: colors.error,
-                    title: 'Subject Decay Alert: ${weakEntry.key}',
-                    description:
-                        'Memory recall chance is currently at ${(weakEntry.value.avgRetention * 100).toInt()}%. '
-                        'Syllabot recommends a 15-minute targeted review session today.',
-                    colors: colors,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (hasData) ...[
-                  _InsightRow(
-                    icon: Icons.lightbulb_outline_rounded,
-                    iconColor: colors.warning,
-                    title: 'Peak Recall Focus Window',
-                    description:
-                        'Active recall retention is highest during morning '
-                        'study sessions. Review cards early for maximum '
-                        'consolidation.',
-                    colors: colors,
-                  ),
-                  const SizedBox(height: 12),
-                  _InsightRow(
-                    icon: Icons.alarm_rounded,
-                    iconColor: colors.success,
-                    title: 'Memory Consolidation Tracking',
-                    description:
-                        'Daily spaced reviews protect against memory fade and promote long-term recall.',
-                    colors: colors,
-                  ),
-                ] else ...[
-                  _InsightRow(
-                    icon: Icons.tips_and_updates_rounded,
-                    iconColor: colors.primary,
-                    title: 'Getting Started with Spaced Repetition',
-                    description:
-                        'Create your first study deck or import lecture '
-                        'materials. Syllabot will generate automated flashcards '
-                        'and track your active recall retention score.',
-                    colors: colors,
-                  ),
-                ],
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          AppFeedback.selection();
-                          context.showSnackBar(
-                            message:
-                                'Syllabot: "Reviewing your study trends. Your memory retention is strongest during morning sessions!"',
-                          );
-                        },
-                        icon: const Icon(
-                          Icons.chat_bubble_outline_rounded,
-                          size: 15,
-                        ),
-                        label: const Text('Ask Syllabot AI'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.badge,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          AppFeedback.celebration();
-                          try {
-                            unawaited(
-                              context.router.push(const ExamTimetableRoute()),
-                            );
-                          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-                        },
-                        icon: const Icon(Icons.tune_rounded, size: 15),
-                        label: const Text('Cram Targets'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.badge,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InsightRow extends StatelessWidget {
-  const _InsightRow({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.description,
-    required this.colors,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String description;
-  final AppThemeColorsExtension colors;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = context.typography;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: iconColor),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: typography.footnote.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: typography.caption.regular.copyWith(
-                  color: colors.textSecondary,
-                  fontSize: 11,
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-void _showNeuralRepairBottomSheet(
-  BuildContext context,
-  int day,
-  double retrievability,
-) {
-  final colors = context.colors;
-  final typography = context.typography;
-  final isDark = context.isDarkMode;
-  final percent = (retrievability * 100).toInt();
-
-  unawaited(
-    AppAdaptiveSheet.showModal<void>(
-      context: context,
-      builder: (modalContext) {
-        final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(modalContext);
-        return Align(
-          alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-                borderRadius: isDesktop
-                    ? BorderRadius.circular(AppRadius.dialog)
-                    : const BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border.all(color: colors.surfaceBorder),
-                boxShadow: isDesktop
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 28,
-                          offset: const Offset(0, 14),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!isDesktop) ...[
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: colors.textSecondary.withAlpha(80),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                  ],
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(25),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.bolt_rounded,
-                          color: colors.primary,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '1-Tap Neural Repair (Day $day)',
-                              style: typography.title3.bold.copyWith(
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              'Targeted memory reinforcement ($percent% recall chance)',
-                              style: typography.caption.regular.copyWith(
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  _NeuralRepairOptionTile(
-                    icon: Icons.style_rounded,
-                    title: 'Quick Flashcard Memory Refresh',
-                    subtitle:
-                        'Focus on due cards to strengthen memory retention',
-                    color: colors.primary,
-                    onTap: () {
-                      Navigator.of(modalContext).pop();
-                      try {
-                        unawaited(
-                          context.router.push(
-                            const MainRoute(children: [DecksRoute()]),
-                          ),
-                        );
-                      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _NeuralRepairOptionTile(
-                    icon: Icons.quiz_rounded,
-                    title: '10-Question Diagnostic Drill',
-                    subtitle: 'Fast CBT mock quiz to lock in fading concepts',
-                    color: colors.secondary,
-                    onTap: () {
-                      Navigator.of(modalContext).pop();
-                      try {
-                        unawaited(
-                          context.router.push(PastQuestionsBoardRoute()),
-                        );
-                      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _NeuralRepairOptionTile(
-                    icon: Icons.psychology_rounded,
-                    title: 'Ask Syllabot AI Coach',
-                    subtitle: 'Get a personalized 3-step study action plan',
-                    color: const Color(0xFF10B981),
-                    onTap: () {
-                      Navigator.of(modalContext).pop();
-                      context.showSnackBar(
-                        message:
-                            'Syllabot: Analyzing Day $day memory decay. Focus 15 mins on Organic Chemistry mechanisms today!',
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    ),
-  );
-}
-
-class _NeuralRepairOptionTile extends StatelessWidget {
-  const _NeuralRepairOptionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.card),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: colors.surfaceSecondary.withAlpha(120),
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(color: colors.surfaceBorder.withAlpha(60)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withAlpha(30),
-                borderRadius: BorderRadius.circular(AppRadius.badge),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: typography.body.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 13.5,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: typography.caption.regular.copyWith(
-                      color: colors.textSecondary,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: colors.textSecondary,
-              size: 20,
-            ),
-          ],
-        ),
       ),
     );
   }

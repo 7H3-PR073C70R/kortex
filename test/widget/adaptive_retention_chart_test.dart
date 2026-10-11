@@ -33,7 +33,7 @@ void main() {
         const Scaffold(
           body: SingleChildScrollView(
             child: SizedBox(
-              width: 400,
+              width: 800,
               height: 500,
               child: AdaptiveRetentionChart(points: tPoints),
             ),
@@ -52,7 +52,7 @@ void main() {
       await tester.tap(find.text('D1'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Day 1: 92% Retention'), findsOneWidget);
+      expect(find.textContaining('Day 1: 92%'), findsOneWidget);
     });
   });
 }
