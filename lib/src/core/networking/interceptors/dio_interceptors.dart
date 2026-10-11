@@ -241,11 +241,13 @@ class TokenInterceptor extends QueuedInterceptor {
           dioErr.message?.toLowerCase().contains('socket') == true ||
           dioErr.message?.toLowerCase().contains('network is unreachable') == true;
 
+      final isRateLimit = status == 429;
+      final isTimeout = status == 408;
       final isServerError = status != null && status >= 500 && status <= 599;
 
-      if (isConnectionIssue || isServerError) {
+      if (isConnectionIssue || isRateLimit || isTimeout || isServerError) {
         debugPrint(
-          '[TokenInterceptor] Token refresh encountered transient network/server error ($type / $status). Preserving session.',
+          '[TokenInterceptor] Token refresh encountered transient error ($type / status: $status). Preserving session.',
         );
         completer.complete(RefreshTokenResult.transientNetworkError);
         return RefreshTokenResult.transientNetworkError;
@@ -257,6 +259,7 @@ class TokenInterceptor extends QueuedInterceptor {
         if (errStr.contains('invalid_grant') ||
             errStr.contains('invalid refresh token') ||
             errStr.contains('refresh_token_not_found') ||
+            errStr.contains('refresh_token_already_used') ||
             errStr.contains('revoked') ||
             errStr.contains('not found')) {
           debugPrint(
@@ -267,11 +270,12 @@ class TokenInterceptor extends QueuedInterceptor {
         }
       }
 
+      // If status is not an explicit OAuth revocation, treat as transient error to preserve credentials
       debugPrint(
-        '[TokenInterceptor] Token refresh failed with status $status: $dioErr. Treating as invalid session.',
+        '[TokenInterceptor] Token refresh failed with status $status: $dioErr. Defaulting to transient error to preserve credentials.',
       );
-      completer.complete(RefreshTokenResult.invalidSession);
-      return RefreshTokenResult.invalidSession;
+      completer.complete(RefreshTokenResult.transientNetworkError);
+      return RefreshTokenResult.transientNetworkError;
     } on Object catch (e) {
       debugPrint('[TokenInterceptor] Token refresh unexpected error: $e');
       completer.complete(RefreshTokenResult.transientNetworkError);
