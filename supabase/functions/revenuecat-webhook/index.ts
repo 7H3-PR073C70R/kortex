@@ -3,11 +3,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 import { corsHeaders } from "./_shared/cors.ts";
 import {
   timingSafeEqualString,
-  verifyTimestampFreshness,
 } from "../_shared/security_guard.ts";
 
 interface RevenueCatEvent {
   event: {
+    id?: string;
     type:
       | "INITIAL_PURCHASE"
       | "RENEWAL"
@@ -29,7 +29,7 @@ interface RevenueCatEvent {
     expiration_at_ms?: number;
     environment?: "SANDBOX" | "PRODUCTION";
   };
-  api_version: string;
+  api_version?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -74,13 +74,13 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const body: RevenueCatEvent = await req.json();
+    const body: RevenueCatEvent = await req.json().catch(() => ({}));
     const event = body?.event;
 
     if (!event || !event.type || !event.app_user_id) {
       console.warn("[RevenueCat Webhook] Malformed webhook body:", body);
       return new Response(
-        JSON.stringify({ error: "Invalid webhook payload" }),
+        JSON.stringify({ error: "Invalid webhook payload: missing event, type, or app_user_id" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -88,31 +88,35 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const timestampToCheck =
-      event.event_timestamp_ms ?? event.purchased_at_ms;
+    // 1. Store Environment Segregation Guard
+    const isSandbox = event.environment === "SANDBOX";
+    const allowSandbox = Deno.env.get("ALLOW_REVENUECAT_SANDBOX") === "true";
+    const appEnv = Deno.env.get("ENVIRONMENT") || Deno.env.get("DENO_ENV") || "production";
+    const isProduction = appEnv.toLowerCase() === "production";
 
-    if (
-      !timestampToCheck ||
-      !verifyTimestampFreshness(timestampToCheck, 300)
-    ) {
+    if (isSandbox && isProduction && !allowSandbox) {
       console.warn(
-        `[RevenueCat Webhook] Replay attack guard triggered: Event timestamp ${timestampToCheck} is missing or exceeds allowable drift.`
+        `[RevenueCat Webhook] Rejected SANDBOX event in production environment for user: ${event.app_user_id}`
       );
       return new Response(
         JSON.stringify({
-          error: "STALE_OR_MISSING_TIMESTAMP",
-          message: "Event timestamp is missing or exceeds allowable 300s window.",
+          error: "SANDBOX_NOT_ALLOWED",
+          message: "Sandbox events are rejected in production environment without explicit opt-in.",
         }),
         {
-          status: 400,
+          status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
 
-    console.log(
-      `[RevenueCat Webhook] Authenticated ${event.type} for user: ${event.app_user_id}`
-    );
+    // 2. Resolve Event Timestamp & Unique Event ID
+    const timestampToCheck =
+      event.event_timestamp_ms ?? event.purchased_at_ms ?? Date.now();
+
+    const eventId =
+      event.id ||
+      `${event.app_user_id}_${event.type}_${timestampToCheck}`;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey =
@@ -120,7 +124,7 @@ Deno.serve(async (req: Request) => {
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error(
-        "[RevenueCat Webhook] Missing Supabase environment variables"
+        "[RevenueCat Webhook] Missing Supabase service credentials in environment"
       );
       return new Response(
         JSON.stringify({ error: "Internal Server Configuration" }),
@@ -134,7 +138,11 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const userId = event.app_user_id;
 
-    let targetTier: "pro" | "free" | null = null;
+    // 3. Expiration Safety & Tier Mapping
+    let targetTier: "pro" | "free" = "free";
+    let isPro = false;
+    let proUntil: string | null = null;
+    let shouldNotify = false;
 
     switch (event.type) {
       case "INITIAL_PURCHASE":
@@ -142,20 +150,63 @@ Deno.serve(async (req: Request) => {
       case "PRODUCT_CHANGE":
       case "UNCANCELLATION":
         targetTier = "pro";
+        isPro = true;
+        proUntil = event.expiration_at_ms
+          ? new Date(event.expiration_at_ms).toISOString()
+          : null;
+        shouldNotify = true;
         break;
+
+      case "CANCELLATION": {
+        // Expiration Safety: User turned off auto-renew or cancelled renewal.
+        // MUST NOT revoke Pro if paid period has not yet elapsed!
+        const nowMs = Date.now();
+        if (event.expiration_at_ms && event.expiration_at_ms > nowMs) {
+          console.log(
+            `[RevenueCat Webhook] Cancellation received for user ${userId}. Retaining Pro access until expiration: ${new Date(event.expiration_at_ms).toISOString()}`
+          );
+          targetTier = "pro";
+          isPro = true;
+          proUntil = new Date(event.expiration_at_ms).toISOString();
+        } else {
+          targetTier = "free";
+          isPro = false;
+          proUntil = null;
+          shouldNotify = true;
+        }
+        break;
+      }
 
       case "EXPIRATION":
       case "REVOCATION":
-      case "CANCELLATION":
         targetTier = "free";
+        isPro = false;
+        proUntil = null;
+        shouldNotify = true;
         break;
+
+      case "BILLING_ISSUE": {
+        // If still in grace period, maintain access
+        const nowMs = Date.now();
+        if (event.expiration_at_ms && event.expiration_at_ms > nowMs) {
+          targetTier = "pro";
+          isPro = true;
+          proUntil = new Date(event.expiration_at_ms).toISOString();
+        } else {
+          targetTier = "free";
+          isPro = false;
+          proUntil = null;
+          shouldNotify = true;
+        }
+        break;
+      }
 
       default:
         console.log(
-          `[RevenueCat Webhook] Unhandled event type: ${event.type}. Acknowledged.`
+          `[RevenueCat Webhook] Unhandled event type: ${event.type}. Acknowledged without tier modification.`
         );
         return new Response(
-          JSON.stringify({ received: true, status: "ignored" }),
+          JSON.stringify({ received: true, status: "ignored", event_type: event.type }),
           {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -163,45 +214,75 @@ Deno.serve(async (req: Request) => {
         );
     }
 
-    if (targetTier !== null) {
-      const isPro = targetTier === "pro";
-      const proUntil =
-        isPro && event.expiration_at_ms
-          ? new Date(event.expiration_at_ms).toISOString()
-          : null;
+    // 4. Atomic Database Stored Procedure (Idempotency + Monotonic Event Ordering)
+    const eventIsoDate = new Date(timestampToCheck).toISOString();
 
-      const { error: updateErr } = await supabase
-        .from("profiles")
-        .update({
-          subscription_tier: targetTier,
-          is_pro: isPro,
-          pro_until: proUntil,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", userId);
-
-      if (updateErr) {
-        console.error(
-          `[RevenueCat Webhook] Failed to update user ${userId} to ${targetTier}:`,
-          updateErr
-        );
-        return new Response(
-          JSON.stringify({
-            received: true,
-            warning: "Database update failed",
-            details: updateErr.message,
-          }),
-          {
-            status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+    const { data: result, error: rpcErr } = await supabase.rpc(
+      "process_revenuecat_billing_event",
+      {
+        p_event_id: eventId,
+        p_user_id: userId,
+        p_event_type: event.type,
+        p_event_timestamp: eventIsoDate,
+        p_target_tier: targetTier,
+        p_is_pro: isPro,
+        p_pro_until: proUntil,
+        p_environment: event.environment || "PRODUCTION",
       }
+    );
 
-      console.log(
-        `[RevenueCat Webhook] Successfully updated user ${userId} to tier: ${targetTier}`
+    if (rpcErr) {
+      console.error(
+        `[RevenueCat Webhook] RPC process_revenuecat_billing_event failed for user ${userId}:`,
+        rpcErr
       );
+      return new Response(
+        JSON.stringify({
+          error: "DATABASE_RPC_ERROR",
+          details: rpcErr.message,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
+    const status = result?.status ?? "unknown";
+    console.log(
+      `[RevenueCat Webhook] Event ${eventId} processed. Outcome: ${status} for user ${userId}`
+    );
+
+    if (status === "duplicate_ignored") {
+      return new Response(
+        JSON.stringify({
+          received: true,
+          status: "duplicate",
+          message: "Event already processed previously.",
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (status === "out_of_order_discarded") {
+      return new Response(
+        JSON.stringify({
+          received: true,
+          status: "out_of_order",
+          message: "Event timestamp is older than last recorded billing state. Discarded.",
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // 5. Send In-App Lifecycle Notifications on Applied State Changes
+    if (status === "applied" && shouldNotify) {
       try {
         if (targetTier === "pro") {
           await supabase.from("notifications").insert({
@@ -229,12 +310,21 @@ Deno.serve(async (req: Request) => {
           });
         }
       } catch (subNotifErr) {
-        console.warn("[RevenueCat Webhook] Failed to enqueue subscription notification:", subNotifErr);
+        console.warn(
+          "[RevenueCat Webhook] Failed to enqueue subscription notification:",
+          subNotifErr
+        );
       }
     }
 
     return new Response(
-      JSON.stringify({ received: true, tier: targetTier }),
+      JSON.stringify({
+        received: true,
+        status,
+        tier: targetTier,
+        is_pro: isPro,
+        pro_until: proUntil,
+      }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
