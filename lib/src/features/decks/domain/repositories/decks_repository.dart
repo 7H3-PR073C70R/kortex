@@ -23,5 +23,17 @@ abstract class DecksRepository {
     List<FlashcardEntity>? updatedCards,
   });
 
+  Future<Either<Failure, void>> saveGeneratedDeck({
+    required DeckEntity deck,
+    required List<FlashcardEntity> cards,
+  });
+
+  Future<Either<Failure, void>> linkDeckToCourse({
+    required String deckId,
+    required String courseId,
+    String? courseCode,
+    String? subject,
+  });
+
   Future<Either<Failure, void>> deleteDeck(String deckId);
 }

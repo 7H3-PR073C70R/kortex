@@ -7,6 +7,10 @@ import 'package:mocktail/mocktail.dart';
 class MockCrashlyticsService extends Mock implements CrashlyticsService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(StackTrace.current);
+  });
+
   group('AppLogger Unit Test Suite', () {
     late MockCrashlyticsService mockCrashlytics;
 

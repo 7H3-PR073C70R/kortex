@@ -147,6 +147,8 @@ import 'package:kortex/src/features/monetization/domain/use_cases/redeem_promo_c
 import 'package:kortex/src/features/notifications/domain/services/notification_router.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
+import 'package:kortex/src/features/onboarding/data/repositories/onboarding_repository_impl.dart';
+import 'package:kortex/src/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_remote_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_remote_data_source_impl.dart';

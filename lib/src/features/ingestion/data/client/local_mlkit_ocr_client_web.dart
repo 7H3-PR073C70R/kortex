@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/recognized_text_block.dart';
 
 class OcrProcessingException implements Exception {
   const OcrProcessingException(this.message);
@@ -9,24 +10,6 @@ class OcrProcessingException implements Exception {
 
   @override
   String toString() => message;
-}
-
-class RecognizedTextBlock {
-  const RecognizedTextBlock({
-    required this.text,
-    required this.left,
-    required this.top,
-    required this.width,
-    required this.height,
-    this.confidence = 0.95,
-  });
-
-  final String text;
-  final double left;
-  final double top;
-  final double width;
-  final double height;
-  final double confidence;
 }
 
 class LocalMlkitOcrClient {

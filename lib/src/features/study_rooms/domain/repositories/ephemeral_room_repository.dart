@@ -2,6 +2,7 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
 
+
 abstract class EphemeralRoomRepository {
   Future<void> joinRoomPresence({
     required String roomId,

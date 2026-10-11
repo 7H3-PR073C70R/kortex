@@ -26,7 +26,6 @@ import 'package:kortex/src/features/community/presentation/widgets/moderation_fe
 import 'package:kortex/src/features/community/presentation/widgets/voice_note_recorder_widget.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
-import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
@@ -512,24 +511,6 @@ class CreateForumDiscussionPage extends HookWidget {
               generated = buffer.toString().trim();
             } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
           }
-        }
-        if (generated.isEmpty && locator.isRegistered<LocalLlmEngineClient>()) {
-          final localLlm = locator<LocalLlmEngineClient>();
-          try {
-            final buffer = StringBuffer();
-            await localLlm
-                .generate(
-                  prompt: prompt,
-                  systemInstruction:
-                      'Format draft problem into clear LaTeX formulas and concise steps',
-                )
-                .timeout(
-                  const Duration(seconds: 8),
-                  onTimeout: (s) => s.close(),
-                )
-                .forEach(buffer.write);
-            generated = buffer.toString().trim();
-          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
         }
         if (generated.isNotEmpty && context.mounted) {
           contentController.text = generated;

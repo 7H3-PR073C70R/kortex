@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
-import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/whiteboard_stroke.dart';
 import 'package:kortex/src/features/study_rooms/domain/services/whiteboard_compression.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';

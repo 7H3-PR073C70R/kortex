@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/ephemeral_participant.dart';
 
 class CollaborativeEditorBadge extends StatelessWidget {
   const CollaborativeEditorBadge({

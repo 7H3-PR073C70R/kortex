@@ -286,7 +286,7 @@ void _initUseCaseLocator() {
       () => SubmitQuizAnswersUseCase(locator<QuizRepository>()),
     )
     ..registerLazySingleton<ConvertFailedQuizToDeckUseCase>(
-      () => ConvertFailedQuizToDeckUseCase(locator<DecksRemoteDataSource>()),
+      () => ConvertFailedQuizToDeckUseCase(locator<DecksRepository>()),
     )
     ..registerFactory<QuizSessionCubit>(
       () => QuizSessionCubit(

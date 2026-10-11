@@ -2,6 +2,7 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
@@ -62,6 +63,36 @@ class DecksRepositoryImpl implements DecksRepository {
           masteryRate: masteryRate,
           dueCards: dueCards,
           updatedCards: updatedCards?.map(FlashcardModel.fromEntity).toList(),
+        )
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, void>> saveGeneratedDeck({
+    required DeckEntity deck,
+    required List<FlashcardEntity> cards,
+  }) {
+    return _remoteDataSource
+        .saveGeneratedDeck(
+          deck: DeckModel.fromEntity(deck),
+          cards: cards.map(FlashcardModel.fromEntity).toList(),
+        )
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, void>> linkDeckToCourse({
+    required String deckId,
+    required String courseId,
+    String? courseCode,
+    String? subject,
+  }) {
+    return _remoteDataSource
+        .linkDeckToCourse(
+          deckId: deckId,
+          courseId: courseId,
+          courseCode: courseCode,
+          subject: subject,
         )
         .makeRequest();
   }

@@ -18,7 +18,7 @@ import 'package:kortex/src/features/community/presentation/bloc/community_hub_bl
 import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
@@ -1639,7 +1639,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     final convertUseCase =
         locator.isRegistered<ConvertFailedQuizToDeckUseCase>()
         ? locator<ConvertFailedQuizToDeckUseCase>()
-        : ConvertFailedQuizToDeckUseCase(locator<DecksRemoteDataSource>());
+        : ConvertFailedQuizToDeckUseCase(locator<DecksRepository>());
 
     final conversionResult = await convertUseCase(
       result: widget.result,

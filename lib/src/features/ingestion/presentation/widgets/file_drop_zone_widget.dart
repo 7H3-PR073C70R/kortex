@@ -20,7 +20,7 @@ import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
@@ -361,8 +361,8 @@ class FileDropZoneWidget extends HookWidget {
               onPressed: () async {
                 Navigator.of(dialogCtx).pop();
                 AppFeedback.medium();
-                if (locator.isRegistered<DecksRemoteDataSource>()) {
-                  await locator<DecksRemoteDataSource>().linkDeckToCourse(
+                if (locator.isRegistered<DecksRepository>()) {
+                  await locator<DecksRepository>().linkDeckToCourse(
                     deckId: deckId,
                     courseId: courseId!,
                     courseCode: courseCode,

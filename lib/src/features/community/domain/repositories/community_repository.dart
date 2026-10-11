@@ -281,4 +281,13 @@ abstract class CommunityRepository {
 
   /// Flushes any pending offline queued forum actions (posts, replies, votes).
   Future<int> flushPendingForumActions();
+
+  /// Reports abusive, incorrect, or harmful forum content to moderators.
+  Future<Either<Failure, bool>> reportContent({
+    required String contentType,
+    required String contentId,
+    required String reason,
+    String? postId,
+    String? details,
+  });
 }

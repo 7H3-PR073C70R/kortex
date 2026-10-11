@@ -16,7 +16,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/auth_flow_panel.dart';
-import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
+import 'package:kortex/src/features/onboarding/domain/repositories/onboarding_repository.dart';
+import 'package:kortex/src/features/onboarding/presentation/helpers/onboarding_slides_helper.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/animated_page_indicator.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/interactive_rocket_launch_overlay.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_page_view.dart';
@@ -40,7 +41,7 @@ class OnboardingPage extends StatefulWidget {
 
 class _OnboardingPageState extends State<OnboardingPage> {
   late final PageController _pageController;
-  late final OnboardingLocalDataSource _dataSource;
+  late final OnboardingRepository _onboardingRepository;
   int _currentIndex = 0;
   bool _isLaunching = false;
   Timer? _autoScrollTimer;
@@ -49,7 +50,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    _dataSource = locator<OnboardingLocalDataSource>();
+    _onboardingRepository = locator<OnboardingRepository>();
   }
 
   @override
@@ -115,7 +116,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _completeOnboarding() async {
-    await _dataSource.markOnboardingCompleted();
+    await _onboardingRepository.markOnboardingCompleted();
     if (locator.isRegistered<AuthRepository>()) {
       try {
         final profileRes = await locator<AuthRepository>().getUserProfile();
@@ -193,7 +194,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final slides = _dataSource.getOnboardingSlides(context);
+    final slides = OnboardingSlidesHelper.getSlides(context);
     final isLastPage = _currentIndex == slides.length - 1;
     final isWide =
         MediaQuery.sizeOf(context).width >= OnboardingPage.wideBreakpoint;

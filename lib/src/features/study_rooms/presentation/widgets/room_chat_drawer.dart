@@ -10,7 +10,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
-import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/room_chat_message.dart';
 import 'package:kortex/src/features/study_rooms/presentation/bloc/live_room_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';

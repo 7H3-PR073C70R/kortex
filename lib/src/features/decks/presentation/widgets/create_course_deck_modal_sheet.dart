@@ -7,9 +7,9 @@ import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/data/models/deck_model.dart';
-import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_sheet_scaffold.dart';
@@ -96,8 +96,8 @@ class CreateCourseDeckModalSheet extends HookWidget {
       try {
         final deckId = UuidUtils.generate();
 
-        final flashcards = addedCards.value.map<FlashcardModel>((item) {
-          return FlashcardModel(
+        final flashcards = addedCards.value.map<FlashcardEntity>((item) {
+          return FlashcardEntity(
             id: UuidUtils.generate(),
             deckId: deckId,
             front: item['front']!,
@@ -107,7 +107,7 @@ class CreateCourseDeckModalSheet extends HookWidget {
           );
         }).toList();
 
-        final deckModel = DeckModel(
+        final deckEntity = DeckEntity(
           id: deckId,
           title: title,
           subject: courseTitle,
@@ -123,9 +123,9 @@ class CreateCourseDeckModalSheet extends HookWidget {
           courseCode: courseCode,
         );
 
-        if (locator.isRegistered<DecksRemoteDataSource>()) {
-          await locator<DecksRemoteDataSource>().saveGeneratedDeck(
-            deck: deckModel,
+        if (locator.isRegistered<DecksRepository>()) {
+          await locator<DecksRepository>().saveGeneratedDeck(
+            deck: deckEntity,
             cards: flashcards,
           );
         }

@@ -10,8 +10,8 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/services/content_safety_moderation_service.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/data/models/deck_model.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
@@ -82,9 +82,9 @@ class PublishDeckModalSheet extends HookWidget {
     final descriptionController = useTextEditingController();
     final selectedCategory = useState<String>('STEM');
 
-    final userDecks = useState<List<DeckModel>>([]);
+    final userDecks = useState<List<DeckEntity>>([]);
     final isLoadingDecks = useState<bool>(true);
-    final selectedDeck = useState<DeckModel?>(null);
+    final selectedDeck = useState<DeckEntity?>(null);
     final isSubmitting = useState<bool>(false);
 
     const categories = [
@@ -101,12 +101,19 @@ class PublishDeckModalSheet extends HookWidget {
       var isMounted = true;
       Future<void> fetchDecks() async {
         try {
-          if (locator.isRegistered<DecksRemoteDataSource>()) {
-            final decks = await locator<DecksRemoteDataSource>().getUserDecks();
-            if (isMounted) {
-              userDecks.value = decks;
-              isLoadingDecks.value = false;
-            }
+          if (locator.isRegistered<DecksRepository>()) {
+            final res = await locator<DecksRepository>().getUserDecks();
+            res.fold(
+              (_) {
+                if (isMounted) isLoadingDecks.value = false;
+              },
+              (decks) {
+                if (isMounted) {
+                  userDecks.value = decks;
+                  isLoadingDecks.value = false;
+                }
+              },
+            );
           } else {
             if (isMounted) isLoadingDecks.value = false;
           }
@@ -257,7 +264,7 @@ class PublishDeckModalSheet extends HookWidget {
                     ),
                   ),
                   child: DropdownButtonHideUnderline(
-                    child: DropdownButton<DeckModel?>(
+                    child: DropdownButton<DeckEntity?>(
                       value: selectedDeck.value,
                       isExpanded: true,
                       dropdownColor: isDark
@@ -286,7 +293,7 @@ class PublishDeckModalSheet extends HookWidget {
                         color: colors.primary,
                       ),
                       items: [
-                        DropdownMenuItem<DeckModel?>(
+                        DropdownMenuItem<DeckEntity?>(
                           child: Text(
                             '-- Custom / Manual Entry --',
                             style: typography.caption.bold.copyWith(
@@ -295,7 +302,7 @@ class PublishDeckModalSheet extends HookWidget {
                           ),
                         ),
                         ...userDecks.value.map(
-                          (deck) => DropdownMenuItem<DeckModel?>(
+                          (deck) => DropdownMenuItem<DeckEntity?>(
                             value: deck,
                             child: Row(
                               children: [
@@ -440,18 +447,39 @@ class PublishDeckModalSheet extends HookWidget {
                                 try {
                                   var cards = selectedDeck.value!.cards;
                                   if (cards.isEmpty &&
-                                      locator
-                                          .isRegistered<
-                                            DecksRemoteDataSource
-                                          >()) {
-                                    cards =
-                                        await locator<DecksRemoteDataSource>()
-                                            .getDeckCards(
-                                              selectedDeck.value!.id,
-                                            );
+                                      locator.isRegistered<DecksRepository>()) {
+                                    final res = await locator<DecksRepository>()
+                                        .getDeckCards(
+                                          selectedDeck.value!.id,
+                                        );
+                                    res.fold((_) {}, (loadedCards) {
+                                      cards = loadedCards;
+                                    });
                                   }
                                   cardsJson = cards
-                                      .map((c) => c.toJson())
+                                      .map((c) => {
+                                            'id': c.id,
+                                            'deckId': c.deckId,
+                                            'front': c.front,
+                                            'back': c.back,
+                                            if (c.frontLatex != null)
+                                              'frontLatex': c.frontLatex,
+                                            if (c.backLatex != null)
+                                              'backLatex': c.backLatex,
+                                            if (c.imageUrl != null)
+                                              'imageUrl': c.imageUrl,
+                                            'interval': c.interval,
+                                            'repetitions': c.repetitions,
+                                            'easeFactor': c.easeFactor,
+                                            if (c.lastReviewed != null)
+                                              'lastReviewed': c.lastReviewed!
+                                                  .toIso8601String(),
+                                            if (c.nextDueDate != null)
+                                              'nextDueDate': c.nextDueDate!
+                                                  .toIso8601String(),
+                                            if (c.sourceTopic != null)
+                                              'sourceTopic': c.sourceTopic,
+                                          })
                                       .toList();
                                   if (cards.isNotEmpty) {
                                     totalCards = cards.length;

@@ -11,8 +11,11 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
-import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/ephemeral_participant.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/pomodoro_sync_event.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/room_chat_message.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/whiteboard_stroke.dart';
 import 'package:kortex/src/features/study_rooms/domain/repositories/ephemeral_room_repository.dart';
 import 'package:kortex/src/features/study_rooms/domain/services/livekit_audio_service.dart';
 

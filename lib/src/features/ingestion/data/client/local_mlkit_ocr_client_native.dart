@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/recognized_text_block.dart';
 import 'package:path_provider/path_provider.dart';
 
 bool get _isIosSimulator =>
@@ -17,24 +18,6 @@ class OcrProcessingException implements Exception {
 
   @override
   String toString() => message;
-}
-
-class RecognizedTextBlock {
-  const RecognizedTextBlock({
-    required this.text,
-    required this.left,
-    required this.top,
-    required this.width,
-    required this.height,
-    this.confidence = 0.95,
-  });
-
-  final String text;
-  final double left;
-  final double top;
-  final double width;
-  final double height;
-  final double confidence;
 }
 
 class LocalMlkitOcrClient {

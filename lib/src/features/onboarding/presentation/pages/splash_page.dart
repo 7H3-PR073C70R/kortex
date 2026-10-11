@@ -21,7 +21,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/decks/domain/services/fsrs_settings_sync_service.dart';
-import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
+import 'package:kortex/src/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/kortex_logo_assembly_widget.dart';
@@ -119,8 +119,8 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     if (!mounted) return;
 
     // Determine whether user should see intro onboarding slides or auth screen
-    final onboardingLocal = locator<OnboardingLocalDataSource>();
-    final hasCompletedOnboarding = onboardingLocal.hasCompletedOnboarding();
+    final onboardingRepo = locator<OnboardingRepository>();
+    final hasCompletedOnboarding = onboardingRepo.hasCompletedOnboarding();
     final isWebOrDesktop = kIsWeb ||
         defaultTargetPlatform == TargetPlatform.macOS ||
         defaultTargetPlatform == TargetPlatform.windows ||

@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
-import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/recognized_text_block.dart';
 
 abstract class LocalOcrRepository {
   /// Processes live camera frame and returns detected text bounding blocks.

@@ -1,10 +1,9 @@
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/data/models/deck_model.dart';
-import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/services/card_similarity_checker.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
@@ -13,14 +12,14 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart
 /// FSRS spaced repetition practice deck for immediate remediation.
 class ConvertFailedQuizToDeckUseCase {
   const ConvertFailedQuizToDeckUseCase(
-    this._decksDataSource, {
+    this._decksRepository, {
     this.similarityChecker = const CardSimilarityChecker(),
   });
 
-  final DecksRemoteDataSource _decksDataSource;
+  final DecksRepository _decksRepository;
   final CardSimilarityChecker similarityChecker;
 
-  Future<Either<Failure, DeckModel>> call({
+  Future<Either<Failure, DeckEntity>> call({
     required QuizResultEntity result,
     required List<QuizQuestionEntity> questions,
     String? courseId,
@@ -57,14 +56,14 @@ class ConvertFailedQuizToDeckUseCase {
               ? result.weaknesses.first.subTopic
               : 'Quiz Review');
 
-      final cards = <FlashcardModel>[];
+      final cards = <FlashcardEntity>[];
       final createdEntities = <FlashcardEntity>[...?existingDeckCards];
       final now = DateTime.now();
 
       if (questionsToUse.isNotEmpty) {
         for (var i = 0; i < questionsToUse.length; i++) {
           final q = questionsToUse[i];
-          
+
           // Deduplication check using CardSimilarityChecker
           final duplicate = similarityChecker.findDuplicate(
             question: q.prompt,
@@ -82,7 +81,7 @@ class ConvertFailedQuizToDeckUseCase {
               : '';
 
           final cardId = UuidUtils.generate();
-          final card = FlashcardModel(
+          final card = FlashcardEntity(
             id: cardId,
             deckId: deckId,
             front: q.prompt,
@@ -93,14 +92,7 @@ class ConvertFailedQuizToDeckUseCase {
           );
 
           cards.add(card);
-          createdEntities.add(
-            FlashcardEntity(
-              id: cardId,
-              deckId: deckId,
-              front: q.prompt,
-              back: '${q.correctAnswer}$explanationPart',
-            ),
-          );
+          createdEntities.add(card);
         }
       } else {
         for (var i = 0; i < result.weaknesses.length; i++) {
@@ -116,7 +108,7 @@ class ConvertFailedQuizToDeckUseCase {
           if (duplicate != null) continue;
 
           final cardId = UuidUtils.generate();
-          final card = FlashcardModel(
+          final card = FlashcardEntity(
             id: cardId,
             deckId: deckId,
             front: frontText,
@@ -128,18 +120,11 @@ class ConvertFailedQuizToDeckUseCase {
           );
 
           cards.add(card);
-          createdEntities.add(
-            FlashcardEntity(
-              id: cardId,
-              deckId: deckId,
-              front: frontText,
-              back: card.back,
-            ),
-          );
+          createdEntities.add(card);
         }
       }
 
-      final deck = DeckModel(
+      final deck = DeckEntity(
         id: deckId,
         title: deckTitle,
         subject: subject,
@@ -153,12 +138,15 @@ class ConvertFailedQuizToDeckUseCase {
         courseCode: resolvedCourseCode,
       );
 
-      await _decksDataSource.saveGeneratedDeck(
+      final saveResult = await _decksRepository.saveGeneratedDeck(
         deck: deck,
         cards: cards,
       );
 
-      return Right(deck);
+      return saveResult.fold(
+        Left.new,
+        (_) => Right(deck),
+      );
     } on Exception catch (e) {
       return Left(
         ServerFailure(

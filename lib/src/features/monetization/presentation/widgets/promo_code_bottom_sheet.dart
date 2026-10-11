@@ -8,7 +8,7 @@ import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/monetization/data/datasources/promo_code_remote_data_source.dart';
+import 'package:kortex/src/features/monetization/domain/repositories/promo_code_repository.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
@@ -58,29 +58,37 @@ class PromoCodeBottomSheet extends HookWidget {
       errorMessage.value = null;
 
       try {
-        if (locator.isRegistered<PromoCodeRemoteDataSource>()) {
-          final remote = locator<PromoCodeRemoteDataSource>();
-          final res = await remote.redeemPromoCode(code: code);
+        if (locator.isRegistered<PromoCodeRepository>()) {
+          final repository = locator<PromoCodeRepository>();
+          final either = await repository.redeemPromoCode(code: code);
           isValidating.value = false;
 
-          if (res.success) {
-            successMessage.value =
-                res.message ?? 'Successfully redeemed! Kortex Pro unlocked.';
-            if (locator.isRegistered<UserStorageService>()) {
-              await locator<UserStorageService>().saveProStatus(isPro: true);
-            }
-            if (locator.isRegistered<SubscriptionGuard>()) {
-              unawaited(locator<SubscriptionGuard>().isProAuthoritative());
-            }
-            AppFeedback.correct();
-            onCodeRedeemed?.call(code);
-            return;
-          } else {
-            errorMessage.value =
-                res.message ?? 'Invalid or expired promotional code.';
-            AppFeedback.incorrect();
-            return;
-          }
+          await either.fold(
+            (failure) async {
+              errorMessage.value =
+                  failure.message ?? 'Invalid or expired promotional code.';
+              AppFeedback.incorrect();
+            },
+            (res) async {
+              if (res.success) {
+                successMessage.value =
+                    res.message ?? 'Successfully redeemed! Kortex Pro unlocked.';
+                if (locator.isRegistered<UserStorageService>()) {
+                  await locator<UserStorageService>().saveProStatus(isPro: true);
+                }
+                if (locator.isRegistered<SubscriptionGuard>()) {
+                  unawaited(locator<SubscriptionGuard>().isProAuthoritative());
+                }
+                AppFeedback.correct();
+                onCodeRedeemed?.call(code);
+              } else {
+                errorMessage.value =
+                    res.message ?? 'Invalid or expired promotional code.';
+                AppFeedback.incorrect();
+              }
+            },
+          );
+          return;
         }
       } on Object catch (e) {
         isValidating.value = false;

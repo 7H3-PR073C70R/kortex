@@ -9,11 +9,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/core/services/audio_recording_service.dart';
 import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
@@ -31,6 +29,8 @@ import 'package:kortex/src/features/community/presentation/widgets/discussion_th
 import 'package:kortex/src/features/community/presentation/widgets/forum_flashcard_sheets.dart';
 import 'package:kortex/src/features/community/presentation/widgets/forum_media_attachment_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/forum_post_vote_pill.dart';
+import 'package:kortex/src/features/community/presentation/widgets/forum_thread_edit_sheets.dart';
+import 'package:kortex/src/features/community/presentation/widgets/forum_thread_reply_composer_bar.dart';
 import 'package:kortex/src/features/community/presentation/widgets/forum_thread_structured_body.dart';
 import 'package:kortex/src/features/community/presentation/widgets/moderation_feedback_dialog.dart';
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
@@ -39,16 +39,12 @@ import 'package:kortex/src/features/community/presentation/widgets/voice_note_re
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
-import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
-import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
-import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Available sorting modes for forum replies
@@ -185,14 +181,10 @@ class ForumThreadDetailPage extends HookWidget {
             locator.isRegistered<StreamSyllabotResponseUseCase>()
             ? locator<StreamSyllabotResponseUseCase>()
             : null;
-        final localLlmClient = locator.isRegistered<LocalLlmEngineClient>()
-            ? locator<LocalLlmEngineClient>()
-            : null;
 
         final finalHintContent = await ForumSocraticHintService.generateHint(
           post: currentPost.value,
           streamUseCase: streamUseCase,
-          localLlmClient: localLlmClient,
           onHintGenerated: (hint) =>
               repo.saveForumSocraticHint(postId: post.id, hint: hint),
         );
@@ -547,72 +539,11 @@ class ForumThreadDetailPage extends HookWidget {
     }
 
     Future<void> confirmDeletePost(BuildContext context) async {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (dialogCtx) => AlertDialog(
-          backgroundColor: isDark
-              ? colors.surfaceSecondary
-              : colors.surfacePrimary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'Delete Discussion?',
-            style: typography.title3.bold.copyWith(color: colors.textPrimary),
-          ),
-          content: Text(
-            'This action cannot be undone. Are you sure you want to permanently delete this discussion?',
-            style: typography.body.regular.copyWith(
-              color: colors.textSecondary,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(false),
-              child: Text(
-                'Cancel',
-                style: typography.body.medium.copyWith(
-                  color: colors.textSecondary,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.error,
-                foregroundColor: colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () => Navigator.of(dialogCtx).pop(true),
-              child: Text(l10n.commonDelete),
-            ),
-          ],
-        ),
+      await ForumThreadEditSheets.confirmDeletePost(
+        context,
+        postId: currentPost.value.id,
+        repository: repo,
       );
-
-      if (confirmed == true && context.mounted) {
-        final res = await repo.deleteForumPost(post.id);
-        res.fold(
-          (failure) {
-            if (context.mounted) {
-              context.showSnackBar(
-                message: failure.message ?? 'Failed to delete discussion',
-                type: SnackBarType.error,
-              );
-            }
-          },
-          (_) {
-            if (locator.isRegistered<CommunityHubBloc>()) {
-              locator<CommunityHubBloc>().add(DeleteForumPostEvent(post.id));
-            }
-            if (context.mounted) {
-              context.showSnackBar(message: 'Discussion deleted');
-              unawaited(context.router.maybePop());
-            }
-          },
-        );
-      }
     }
 
     void shareThread() {
@@ -628,182 +559,14 @@ class ForumThreadDetailPage extends HookWidget {
     }
 
     Future<void> showEditPostSheet(BuildContext context) async {
-      final titleEditController = TextEditingController(
-        text: currentPost.value.title,
-      );
-      final contentEditController = TextEditingController(
-        text: currentPost.value.content,
-      );
-      final isSubmittingEdit = ValueNotifier<bool>(false);
-
-      await AppAdaptiveSheet.showModal<void>(
-        context: context,
-        builder: (sheetCtx) {
-          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(sheetCtx);
-          return Container(
-            decoration: isDesktop
-                ? BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary
-                        : colors.surfacePrimary,
-                    borderRadius: BorderRadius.circular(AppRadius.dialog),
-                    border: Border.all(
-                      color: colors.surfaceBorder.withValues(alpha: 0.5),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 28,
-                        offset: const Offset(0, 14),
-                      ),
-                    ],
-                  )
-                : null,
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: isDesktop
-                  ? 20
-                  : (MediaQuery.of(sheetCtx).viewInsets.bottom + 16),
-            ),
-            child: ValueListenableBuilder<bool>(
-              valueListenable: isSubmittingEdit,
-              builder: (ctx, isSaving, _) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Edit Discussion',
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: () => Navigator.of(sheetCtx).pop(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: titleEditController,
-                      enabled: !isSaving,
-                      style: typography.body.medium.copyWith(
-                        color: colors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'Title',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: contentEditController,
-                      enabled: !isSaving,
-                      maxLines: 5,
-                      style: typography.body.regular.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'Content',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        foregroundColor: colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: isSaving
-                          ? null
-                          : () async {
-                              final newTitle = titleEditController.text.trim();
-                              final newContent = contentEditController.text
-                                  .trim();
-                              if (newTitle.isEmpty || newContent.isEmpty) {
-                                return;
-                              }
-
-                              const mod = ContentModerationService();
-                              final modRes = mod.validatePost(
-                                title: newTitle,
-                                content: newContent,
-                              );
-                              if (!modRes.isValid) {
-                                unawaited(
-                                  ModerationFeedbackDialog.show(
-                                    context,
-                                    result: modRes,
-                                    contentTarget: 'discussion',
-                                  ),
-                                );
-                                return;
-                              }
-
-                              isSubmittingEdit.value = true;
-                              final res = await repo.updateForumPost(
-                                postId: currentPost.value.id,
-                                title: newTitle,
-                                content: newContent,
-                              );
-                              isSubmittingEdit.value = false;
-
-                              res.fold(
-                                (failure) {
-                                  if (context.mounted) {
-                                    context.showSnackBar(
-                                      message:
-                                          failure.message ??
-                                          'Failed to update discussion',
-                                      type: SnackBarType.error,
-                                    );
-                                  }
-                                },
-                                (updated) {
-                                  currentPost.value = currentPost.value
-                                      .copyWith(
-                                        title: updated.title,
-                                        content: updated.content,
-                                      );
-                                  if (context.mounted) {
-                                    Navigator.of(sheetCtx).pop();
-                                    context.showSnackBar(
-                                      message: 'Discussion updated',
-                                    );
-                                  }
-                                },
-                              );
-                            },
-                      child: isSaving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Save Changes'),
-                    ),
-                  ],
-                );
-              },
-            ),
+      await ForumThreadEditSheets.showEditPostSheet(
+        context,
+        post: currentPost.value,
+        repository: repo,
+        onUpdated: (updated) {
+          currentPost.value = currentPost.value.copyWith(
+            title: updated.title,
+            content: updated.content,
           );
         },
       );
@@ -813,162 +576,19 @@ class ForumThreadDetailPage extends HookWidget {
       BuildContext context,
       ForumReplyEntity reply,
     ) async {
-      final editController = TextEditingController(text: reply.content);
-      final isSubmitting = ValueNotifier<bool>(false);
-
-      await AppAdaptiveSheet.showModal<void>(
-        context: context,
-        builder: (sheetCtx) {
-          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(sheetCtx);
-          return Container(
-            decoration: isDesktop
-                ? BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary
-                        : colors.surfacePrimary,
-                    borderRadius: BorderRadius.circular(AppRadius.dialog),
-                    border: Border.all(
-                      color: colors.surfaceBorder.withValues(alpha: 0.5),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 28,
-                        offset: const Offset(0, 14),
-                      ),
-                    ],
-                  )
-                : null,
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: isDesktop
-                  ? 20
-                  : (MediaQuery.of(sheetCtx).viewInsets.bottom + 16),
-            ),
-            child: ValueListenableBuilder<bool>(
-              valueListenable: isSubmitting,
-              builder: (ctx, isSaving, _) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Edit Reply',
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: () => Navigator.of(sheetCtx).pop(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: editController,
-                      enabled: !isSaving,
-                      maxLines: 4,
-                      style: typography.body.regular.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'Reply',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        foregroundColor: colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: isSaving
-                          ? null
-                          : () async {
-                              final newText = editController.text.trim();
-                              if (newText.isEmpty) return;
-
-                              const mod = ContentModerationService();
-                              final modRes = mod.validateReply(
-                                content: newText,
-                              );
-                              if (!modRes.isValid) {
-                                unawaited(
-                                  ModerationFeedbackDialog.show(
-                                    context,
-                                    result: modRes,
-                                    contentTarget: 'reply',
-                                  ),
-                                );
-                                return;
-                              }
-
-                              isSubmitting.value = true;
-                              final res = await repo.updateForumReply(
-                                replyId: reply.id,
-                                content: newText,
-                              );
-                              isSubmitting.value = false;
-
-                              res.fold(
-                                (failure) {
-                                  if (context.mounted) {
-                                    context.showSnackBar(
-                                      message:
-                                          failure.message ??
-                                          'Failed to update reply',
-                                      type: SnackBarType.error,
-                                    );
-                                  }
-                                },
-                                (updated) {
-                                  localReplies.value = localReplies.value
-                                      .map<ForumReplyEntity>((r) {
-                                        if (r.id == reply.id) {
-                                          return r.copyWith(
-                                            content: updated.content,
-                                          );
-                                        }
-                                        return r;
-                                      })
-                                      .toList();
-                                  if (context.mounted) {
-                                    Navigator.of(sheetCtx).pop();
-                                    context.showSnackBar(
-                                      message: 'Reply updated',
-                                    );
-                                  }
-                                },
-                              );
-                            },
-                      child: isSaving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Save Changes'),
-                    ),
-                  ],
-                );
-              },
-            ),
-          );
+      await ForumThreadEditSheets.showEditReplySheet(
+        context,
+        reply: reply,
+        repository: repo,
+        onUpdated: (updated) {
+          localReplies.value = localReplies.value
+              .map<ForumReplyEntity>((r) {
+                if (r.id == reply.id) {
+                  return r.copyWith(content: updated.content);
+                }
+                return r;
+              })
+              .toList();
         },
       );
     }
@@ -977,79 +597,20 @@ class ForumThreadDetailPage extends HookWidget {
       BuildContext context,
       ForumReplyEntity reply,
     ) async {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (dialogCtx) => AlertDialog(
-          backgroundColor: isDark
-              ? colors.surfaceSecondary
-              : colors.surfacePrimary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'Delete Reply?',
-            style: typography.title3.bold.copyWith(
-              color: colors.textPrimary,
-            ),
-          ),
-          content: Text(
-            'Are you sure you want to permanently delete this reply?',
-            style: typography.body.regular.copyWith(
-              color: colors.textSecondary,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(false),
-              child: Text(
-                'Cancel',
-                style: typography.body.medium.copyWith(
-                  color: colors.textSecondary,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.error,
-                foregroundColor: colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () => Navigator.of(dialogCtx).pop(true),
-              child: const Text('Delete'),
-            ),
-          ],
-        ),
+      await ForumThreadEditSheets.confirmDeleteReply(
+        context,
+        postId: post.id,
+        reply: reply,
+        repository: repo,
+        onDeleted: () {
+          localReplies.value = localReplies.value
+              .where((r) => r.id != reply.id)
+              .toList();
+          currentPost.value = currentPost.value.copyWith(
+            repliesCount: math.max(0, currentPost.value.repliesCount - 1),
+          );
+        },
       );
-
-      if (confirmed == true && context.mounted) {
-        final res = await repo.deleteForumReply(
-          postId: post.id,
-          replyId: reply.id,
-        );
-        res.fold(
-          (failure) {
-            if (context.mounted) {
-              context.showSnackBar(
-                message: failure.message ?? 'Failed to delete reply',
-                type: SnackBarType.error,
-              );
-            }
-          },
-          (_) {
-            localReplies.value = localReplies.value
-                .where((r) => r.id != reply.id)
-                .toList();
-            currentPost.value = currentPost.value.copyWith(
-              repliesCount: math.max(0, currentPost.value.repliesCount - 1),
-            );
-            if (context.mounted) {
-              context.showSnackBar(message: 'Reply deleted');
-            }
-          },
-        );
-      }
     }
 
     void showPostOptionsMenu() {
@@ -1367,6 +928,153 @@ class ForumThreadDetailPage extends HookWidget {
         );
       }
       focusNode.requestFocus();
+    }
+
+    Future<void> submitReply() async {
+      final text = replyController.text.trim();
+      if (text.isEmpty &&
+          replyImages.value.isEmpty &&
+          replyVoiceNoteUrl.value == null) {
+        return;
+      }
+
+      // Content safety & anti-abuse moderation check for replies
+      if (text.isNotEmpty) {
+        const moderation = ContentModerationService();
+        final modResult = moderation.validateReply(content: text);
+        if (!modResult.isValid) {
+          unawaited(
+            ModerationFeedbackDialog.show(
+              context,
+              result: modResult,
+              contentTarget: 'reply',
+            ),
+          );
+          return;
+        }
+      }
+
+      final sanitizedText = ContentModerationService.sanitizeText(text);
+      final targetParentId = replyingToReply.value?.id;
+      isSubmitting.value = true;
+
+      var finalReplyImages = <String>[];
+      if (replyImages.value.isNotEmpty) {
+        if (locator.isRegistered<MediaUploadService>()) {
+          final uploadService = locator<MediaUploadService>();
+          for (final imgPath in replyImages.value) {
+            if (imgPath.startsWith('http://') ||
+                imgPath.startsWith('https://')) {
+              finalReplyImages.add(imgPath);
+            } else {
+              try {
+                final r2Url = await uploadService.uploadMedia(
+                  pathOrUrl: imgPath,
+                  file: kIsWeb ? null : File(imgPath),
+                  mediaType: ForumMediaType.image,
+                );
+                finalReplyImages.add(r2Url);
+              } on Object catch (e, st) {
+                AppLogger.recordNonFatal(e, st);
+              }
+            }
+          }
+        } else {
+          finalReplyImages = replyImages.value;
+        }
+      }
+
+      var finalReplyVoiceNoteUrl = replyVoiceNoteUrl.value;
+      if (finalReplyVoiceNoteUrl != null &&
+          !finalReplyVoiceNoteUrl.startsWith('http://') &&
+          !finalReplyVoiceNoteUrl.startsWith('https://') &&
+          locator.isRegistered<MediaUploadService>()) {
+        final uploadService = locator<MediaUploadService>();
+        try {
+          final r2Url = await uploadService.uploadMedia(
+            pathOrUrl: finalReplyVoiceNoteUrl,
+            file: kIsWeb ? null : File(finalReplyVoiceNoteUrl),
+            mediaType: ForumMediaType.voice,
+          );
+          finalReplyVoiceNoteUrl = r2Url;
+        } on Object catch (e, st) {
+          AppLogger.recordNonFatal(e, st);
+        }
+      }
+
+      final res = await repo.replyToForumPost(
+        postId: currentPost.value.id,
+        content: sanitizedText.isNotEmpty
+            ? sanitizedText
+            : 'Shared media attachment',
+        parentReplyId: targetParentId,
+        mediaUrls: finalReplyImages,
+        voiceNoteUrl: finalReplyVoiceNoteUrl,
+        voiceNoteDurationSeconds: replyVoiceNoteDuration.value > 0
+            ? replyVoiceNoteDuration.value
+            : null,
+        voiceNoteTranscript: replyVoiceTranscript.value.trim().isNotEmpty
+            ? replyVoiceTranscript.value.trim()
+            : null,
+        isAnonymous: isAnonymousReply.value,
+      );
+      isSubmitting.value = false;
+      res.fold(
+        (failure) {
+          if (context.mounted) {
+            context.showSnackBar(
+              message: failure.message ?? failure.toString(),
+              type: SnackBarType.error,
+            );
+          }
+        },
+        (createdReply) {
+          replyController.clear();
+          replyImages.value = [];
+          replyVoiceNoteUrl.value = null;
+          replyVoiceNoteDuration.value = 0;
+          replyingToReply.value = null;
+          isAnonymousReply.value = false;
+          if (!localReplies.value.any((r) => r.id == createdReply.id)) {
+            localReplies.value = [
+              ...localReplies.value,
+              createdReply,
+            ];
+          }
+
+          final vnUrl = createdReply.voiceNoteUrl;
+          if (vnUrl != null &&
+              vnUrl.trim().isNotEmpty &&
+              locator.isRegistered<MediaUploadService>()) {
+            unawaited(
+              locator<MediaUploadService>().triggerVoiceNoteTranscription(
+                audioUrl: vnUrl,
+                replyId: createdReply.id,
+              ),
+            );
+          }
+          if (targetParentId != null) {
+            localReplies.value = localReplies.value.map((r) {
+              if (r.id == targetParentId) {
+                return r.copyWith(repliesCount: r.repliesCount + 1);
+              }
+              return r;
+            }).toList();
+            expandedParentReplyIds.value = {
+              ...expandedParentReplyIds.value,
+              targetParentId,
+            };
+          }
+          if (locator.isRegistered<CommunityHubBloc>()) {
+            locator<CommunityHubBloc>().add(
+              ForumPostRepliesIncrementedEvent(
+                postId: currentPost.value.id,
+                reply: createdReply,
+              ),
+            );
+          }
+        },
+      );
     }
 
     return Scaffold(
@@ -2889,1087 +2597,29 @@ class ForumThreadDetailPage extends HookWidget {
               ),
             ),
 
-            // Sticky Bottom Quick Reply Bar (Transparent container, compact styling tools, mic button)
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 860),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colors.transparent,
-                  ),
-                  child: SafeArea(
-                    top: false,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Active Target Context Banner (Replying to @username)
-                        if (replyingToReply.value != null)
-                          Container(
-                            margin: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceSecondary
-                                  : colors.surfacePrimary,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: colors.primary.withAlpha(50),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.subdirectory_arrow_right_rounded,
-                                  size: 15,
-                                  color: colors.primary,
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    'Replying to @${replyingToReply.value!.authorName}',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.primary,
-                                      fontSize: 12,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                ShrinkableButton(
-                                  onTap: () => replyingToReply.value = null,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(2),
-                                    child: Icon(
-                                      Icons.close_rounded,
-                                      size: 16,
-                                      color: colors.primary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                        // Quick Formatting Tools Strip (Compact: only shows when toggled on)
-                        AnimatedCrossFade(
-                          crossFadeState: showFormattingTools.value
-                              ? CrossFadeState.showFirst
-                              : CrossFadeState.showSecond,
-                          duration: const Duration(milliseconds: 200),
-                          secondChild: const SizedBox.shrink(),
-                          firstChild: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  // 1. Math / Formula Tool Chip (Σ √x Math)
-                                  QuickToolChip(
-                                    label: 'Math',
-                                    prefix: 'Σ √x',
-                                    isHighlighted: true,
-                                    onTap: () {
-                                      unawaited(
-                                        HapticFeedback.selectionClick(),
-                                      );
-                                      _showLatexSnippetDialog(
-                                        context,
-                                        insertIntoComposer,
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(width: 6),
-
-                                  // 2. Syllabot AI Hint Tool Chip (✨ AI Hint)
-                                  QuickToolChip(
-                                    label: 'AI Hint',
-                                    icon: Icons.auto_awesome_rounded,
-                                    isHighlighted: true,
-                                    onTap: isGeneratingAiHint.value
-                                        ? null
-                                        : generateSyllabotHint,
-                                  ),
-                                  const SizedBox(width: 6),
-
-                                  // 3. Code Chip (</> Code)
-                                  QuickToolChip(
-                                    label: 'Code',
-                                    prefix: '</>',
-                                    isHighlighted: true,
-                                    onTap: () {
-                                      unawaited(
-                                        HapticFeedback.selectionClick(),
-                                      );
-                                      applyFormat('`', '`', 'code');
-                                    },
-                                  ),
-                                  const SizedBox(width: 6),
-
-                                  // 4. Symbols Tool Chip (π / θ Symbols)
-                                  QuickToolChip(
-                                    label: 'Symbols',
-                                    prefix: 'π / θ',
-                                    isHighlighted: true,
-                                    onTap: () {
-                                      unawaited(
-                                        HapticFeedback.selectionClick(),
-                                      );
-                                      _showMathSymbolDialog(
-                                        context,
-                                        insertIntoComposer,
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(width: 6),
-
-                                  // 5. Bold Formatting Chip
-                                  QuickToolChip(
-                                    label: 'Bold',
-                                    prefix: 'B',
-                                    isCodeStyle: true,
-                                    onTap: () {
-                                      unawaited(
-                                        HapticFeedback.selectionClick(),
-                                      );
-                                      applyFormat('**', '**', 'bold text');
-                                    },
-                                  ),
-                                  const SizedBox(width: 6),
-
-                                  // 6. Italic Formatting Chip
-                                  QuickToolChip(
-                                    label: 'Italic',
-                                    prefix: 'I',
-                                    isCodeStyle: true,
-                                    onTap: () {
-                                      unawaited(
-                                        HapticFeedback.selectionClick(),
-                                      );
-                                      applyFormat('*', '*', 'italic text');
-                                    },
-                                  ),
-                                  const SizedBox(width: 6),
-
-                                  // 7. Strikethrough Chip
-                                  QuickToolChip(
-                                    label: 'Strike',
-                                    prefix: '~S~',
-                                    isCodeStyle: true,
-                                    onTap: () {
-                                      unawaited(
-                                        HapticFeedback.selectionClick(),
-                                      );
-                                      applyFormat('~~', '~~', 'strikethrough');
-                                    },
-                                  ),
-                                  const SizedBox(width: 6),
-
-                                  // 8. Quote Tool Chip
-                                  QuickToolChip(
-                                    label: 'Quote',
-                                    prefix: '”',
-                                    isCodeStyle: true,
-                                    onTap: () {
-                                      unawaited(
-                                        HapticFeedback.selectionClick(),
-                                      );
-                                      applyFormat('\n> ', '\n', 'quoted text');
-                                    },
-                                  ),
-                                  const SizedBox(width: 6),
-
-                                  // 9. Bullet List Chip
-                                  QuickToolChip(
-                                    label: 'List',
-                                    prefix: '•',
-                                    isCodeStyle: true,
-                                    onTap: () {
-                                      unawaited(
-                                        HapticFeedback.selectionClick(),
-                                      );
-                                      insertIntoComposer('\n- ');
-                                    },
-                                  ),
-                                  const SizedBox(width: 6),
-
-                                  // 10. Code Block Tool Chip
-                                  QuickToolChip(
-                                    label: 'Block',
-                                    prefix: '</>',
-                                    isCodeStyle: true,
-                                    onTap: () {
-                                      unawaited(
-                                        HapticFeedback.selectionClick(),
-                                      );
-                                      insertIntoComposer(
-                                        '\n```\n// Code or equation here\n```\n',
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Recording indicator banner
-                        if (isRecordingReplyVoice.value) ...[
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
-                            ),
-                            child: VoiceRecordingBannerWidget(
-                              isLocked: isReplyVoiceLocked.value,
-                              durationSeconds: replyVoiceNoteDuration.value,
-                              transcriptText: replyVoiceTranscript.value,
-                              amplitudeStream:
-                                  locator.isRegistered<AudioRecordingService>()
-                                  ? locator<AudioRecordingService>()
-                                        .amplitudeStream
-                                  : null,
-                              onCancel: () {
-                                unawaited(replyRecorderController.cancel());
-                              },
-                              onDone: () {
-                                unawaited(replyRecorderController.finish());
-                              },
-                            ),
-                          ),
-                        ],
-
-                        // Reply Voice Note Preview if attached
-                        if (replyVoiceNoteUrl.value != null) ...[
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            child: VoiceNotePlayerWidget(
-                              audioUrl: replyVoiceNoteUrl.value!,
-                              durationSeconds: replyVoiceNoteDuration.value > 0
-                                  ? replyVoiceNoteDuration.value
-                                  : null,
-                              transcript:
-                                  replyVoiceTranscript.value.trim().isNotEmpty
-                                  ? replyVoiceTranscript.value.trim()
-                                  : (replyController.text.trim().isNotEmpty
-                                        ? replyController.text.trim()
-                                        : null),
-                              compact: true,
-                              showTranscript: false,
-                              onDelete: () {
-                                replyVoiceNoteUrl.value = null;
-                                replyVoiceNoteDuration.value = 0;
-                                replyVoiceTranscript.value = '';
-                              },
-                            ),
-                          ),
-                        ],
-
-                        // Reply Image Thumbnails Preview if attached
-                        if (replyImages.value.isNotEmpty) ...[
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            child: SizedBox(
-                              height: 52,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: replyImages.value.length,
-                                separatorBuilder: (context, index) =>
-                                    const SizedBox(width: 8),
-                                itemBuilder: (ctx, idx) {
-                                  final path = replyImages.value[idx];
-                                  return Stack(
-                                    children: [
-                                      AppMultimodalImage(
-                                        imageUrl: path,
-                                        width: 52,
-                                        height: 52,
-                                        fit: BoxFit.cover,
-                                        borderRadius: BorderRadius.circular(8),
-                                        enableZoomOnTap: false,
-                                      ),
-                                      Positioned(
-                                        top: 2,
-                                        right: 2,
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            replyImages.value = replyImages
-                                                .value
-                                                .where((p) => p != path)
-                                                .toList();
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.all(2),
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: colors.black.withAlpha(
-                                                160,
-                                              ),
-                                            ),
-                                            child: Icon(
-                                              Icons.close_rounded,
-                                              size: 10,
-                                              color: colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-
-                        // Input Row & Send Button
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 4, 12, 10),
-                          child: Row(
-                            children: [
-                              // 1. Attach Button -> opens image attachment directly
-                              IconButton(
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 34,
-                                  minHeight: 34,
-                                ),
-                                visualDensity: VisualDensity.compact,
-                                icon: Icon(
-                                  Icons.attach_file_rounded,
-                                  size: 20,
-                                  color: replyImages.value.isNotEmpty
-                                      ? colors.primary
-                                      : colors.textSecondary,
-                                ),
-                                tooltip: l10n.tooltipAttachImage,
-                                onPressed: () async {
-                                  unawaited(HapticFeedback.lightImpact());
-                                  try {
-                                    final photo = await ImagePicker().pickImage(
-                                      source: ImageSource.gallery,
-                                      maxWidth: 1920,
-                                      maxHeight: 1920,
-                                      imageQuality: 85,
-                                    );
-                                    if (photo != null &&
-                                        photo.path.isNotEmpty) {
-                                      replyImages.value = [
-                                        ...replyImages.value,
-                                        photo.path,
-                                      ];
-                                    }
-                                  } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-                                },
-                              ),
-
-                              // 2. Voice Note Recorder (Hold to record, drag up to lock, STT accompanied)
-                              VoiceNoteRecorderWidget(
-                                compact: true,
-                                controller: replyController,
-                                recorderController: replyRecorderController,
-                                onRecordingStateChanged:
-                                    ({
-                                      required isRecording,
-                                      required isLocked,
-                                      required durationSeconds,
-                                      required transcript,
-                                    }) {
-                                      isRecordingReplyVoice.value = isRecording;
-                                      isReplyVoiceLocked.value = isLocked;
-                                      replyVoiceNoteDuration.value =
-                                          durationSeconds;
-                                      replyVoiceTranscript.value = transcript;
-                                    },
-                                onRecordingComplete:
-                                    ({
-                                      required audioUrl,
-                                      required durationSeconds,
-                                      required transcript,
-                                    }) {
-                                      replyVoiceNoteUrl.value = audioUrl;
-                                      replyVoiceNoteDuration.value =
-                                          durationSeconds;
-                                      if (transcript.trim().isNotEmpty) {
-                                        replyVoiceTranscript.value = transcript
-                                            .trim();
-                                      }
-                                    },
-                                onCancel: () {
-                                  replyVoiceNoteUrl.value = null;
-                                  replyVoiceNoteDuration.value = 0;
-                                  replyVoiceTranscript.value = '';
-                                },
-                              ),
-
-                              // 3. Compact Styling Tools Toggle Button
-                              IconButton(
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 34,
-                                  minHeight: 34,
-                                ),
-                                visualDensity: VisualDensity.compact,
-                                icon: Icon(
-                                  showFormattingTools.value
-                                      ? Icons.text_format_rounded
-                                      : Icons.text_fields_rounded,
-                                  size: 19,
-                                  color: showFormattingTools.value
-                                      ? colors.primary
-                                      : colors.textSecondary,
-                                ),
-                                tooltip: showFormattingTools.value
-                                    ? 'Hide tools'
-                                    : 'Writing & Math Tools',
-                                onPressed: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  showFormattingTools.value =
-                                      !showFormattingTools.value;
-                                },
-                              ),
-                              const SizedBox(width: 2),
-
-                              // 3b. Anonymous Reply Mode Toggle
-                              IconButton(
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 34,
-                                  minHeight: 34,
-                                ),
-                                visualDensity: VisualDensity.compact,
-                                icon: Icon(
-                                  isAnonymousReply.value
-                                      ? Icons.visibility_off_rounded
-                                      : Icons.visibility_rounded,
-                                  size: 19,
-                                  color: isAnonymousReply.value
-                                      ? colors.warning
-                                      : colors.textSecondary,
-                                ),
-                                tooltip: isAnonymousReply.value
-                                    ? 'Replying Anonymously (Tap to switch)'
-                                    : 'Reply Anonymously',
-                                onPressed: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  isAnonymousReply.value =
-                                      !isAnonymousReply.value;
-                                },
-                              ),
-                              const SizedBox(width: 4),
-
-                              // 4. Text Field
-                              Expanded(
-                                child: AnimatedContainer(
-                                  duration: AppMotion.snappy,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(22),
-                                    boxShadow: isRecordingReplyVoice.value
-                                        ? [
-                                            BoxShadow(
-                                              color: colors.error.withAlpha(
-                                                isDark ? 80 : 50,
-                                              ),
-                                              blurRadius: 8,
-                                              spreadRadius: 1,
-                                            ),
-                                          ]
-                                        : [],
-                                  ),
-                                  child: TextField(
-                                    controller: replyController,
-                                    focusNode: focusNode,
-                                    maxLines: 4,
-                                    minLines: 1,
-                                    textCapitalization:
-                                        TextCapitalization.sentences,
-                                    decoration: InputDecoration(
-                                      hintText: isRecordingReplyVoice.value
-                                          ? 'Transcribing speech live…'
-                                          : isAnonymousReply.value
-                                          ? (replyingToReply.value != null
-                                                ? 'Reply anonymously to @${replyingToReply.value!.authorName}…'
-                                                : 'Reply anonymously as Anonymous Scholar…')
-                                          : replyingToReply.value != null
-                                          ? 'Reply to @${replyingToReply.value!.authorName}…'
-                                          : 'Add a reply…',
-                                      hintStyle: typography.body.regular
-                                          .copyWith(
-                                            color: isRecordingReplyVoice.value
-                                                ? colors.error.withAlpha(180)
-                                                : colors.textSecondary,
-                                            fontSize: 14,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                      filled: true,
-                                      fillColor: isRecordingReplyVoice.value
-                                          ? colors.error.withAlpha(
-                                              isDark ? 30 : 16,
-                                            )
-                                          : isDark
-                                          ? colors.surfaceSecondary.withAlpha(
-                                              160,
-                                            )
-                                          : colors.surfaceSecondary.withAlpha(
-                                              130,
-                                            ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(22),
-                                        borderSide: BorderSide(
-                                          color: isRecordingReplyVoice.value
-                                              ? colors.error.withAlpha(180)
-                                              : colors.surfaceBorder.withAlpha(
-                                                  isDark ? 60 : 35,
-                                                ),
-                                          width: isRecordingReplyVoice.value
-                                              ? 1.5
-                                              : 1,
-                                        ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(22),
-                                        borderSide: BorderSide(
-                                          color: isRecordingReplyVoice.value
-                                              ? colors.error.withAlpha(180)
-                                              : colors.surfaceBorder.withAlpha(
-                                                  isDark ? 60 : 35,
-                                                ),
-                                          width: isRecordingReplyVoice.value
-                                              ? 1.5
-                                              : 1,
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(22),
-                                        borderSide: BorderSide(
-                                          color: isRecordingReplyVoice.value
-                                              ? colors.error
-                                              : colors.primary.withAlpha(160),
-                                          width: 1.8,
-                                        ),
-                                      ),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 10,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-
-                              // 5. Send Button
-                              PlatformHoverBuilder(
-                                builder: (context, isHovered, child) {
-                                  return AnimatedScale(
-                                    scale: isHovered ? 1.06 : 1,
-                                    duration: AppMotion.snappy,
-                                    curve: AppMotion.easeOutCubic,
-                                    child: child,
-                                  );
-                                },
-                                child: ShrinkableButton(
-                                  onTap: isSubmitting.value
-                                      ? null
-                                      : () async {
-                                          final text = replyController.text
-                                              .trim();
-                                          if (text.isEmpty &&
-                                              replyImages.value.isEmpty &&
-                                              replyVoiceNoteUrl.value == null) {
-                                            return;
-                                          }
-
-                                          // Content safety & anti-abuse moderation check for replies
-                                          if (text.isNotEmpty) {
-                                            const moderation =
-                                                ContentModerationService();
-                                            final modResult = moderation
-                                                .validateReply(content: text);
-                                            if (!modResult.isValid) {
-                                              unawaited(
-                                                ModerationFeedbackDialog.show(
-                                                  context,
-                                                  result: modResult,
-                                                  contentTarget: 'reply',
-                                                ),
-                                              );
-                                              return;
-                                            }
-                                          }
-
-                                          final sanitizedText =
-                                              ContentModerationService.sanitizeText(
-                                                text,
-                                              );
-
-                                          final targetParentId =
-                                              replyingToReply.value?.id;
-                                          isSubmitting.value = true;
-
-                                          var finalReplyImages = <String>[];
-                                          if (replyImages.value.isNotEmpty) {
-                                            if (locator
-                                                .isRegistered<
-                                                  MediaUploadService
-                                                >()) {
-                                              final uploadService =
-                                                  locator<MediaUploadService>();
-                                              for (final imgPath
-                                                  in replyImages.value) {
-                                                if (imgPath.startsWith(
-                                                      'http://',
-                                                    ) ||
-                                                    imgPath.startsWith(
-                                                      'https://',
-                                                    )) {
-                                                  finalReplyImages.add(imgPath);
-                                                } else {
-                                                  try {
-                                                    final r2Url =
-                                                        await uploadService
-                                                            .uploadMedia(
-                                                              pathOrUrl: imgPath,
-                                                              file: kIsWeb
-                                                                  ? null
-                                                                  : File(imgPath),
-                                                              mediaType:
-                                                                  ForumMediaType
-                                                                      .image,
-                                                            );
-                                                    finalReplyImages.add(r2Url);
-                                                  } on Object catch (_) {
-                                                    finalReplyImages.add(imgPath);
-                                                  }
-                                                }
-                                              }
-                                            } else {
-                                              finalReplyImages =
-                                                  replyImages.value;
-                                            }
-                                          }
-
-                                          var finalReplyVoiceNoteUrl =
-                                              replyVoiceNoteUrl.value;
-                                          if (finalReplyVoiceNoteUrl != null &&
-                                              !finalReplyVoiceNoteUrl
-                                                  .startsWith('http://') &&
-                                              !finalReplyVoiceNoteUrl
-                                                  .startsWith('https://') &&
-                                              locator
-                                                  .isRegistered<
-                                                    MediaUploadService
-                                                  >()) {
-                                            final uploadService =
-                                                locator<MediaUploadService>();
-                                            try {
-                                              final r2Url = await uploadService
-                                                  .uploadMedia(
-                                                    pathOrUrl:
-                                                        finalReplyVoiceNoteUrl,
-                                                    file: kIsWeb
-                                                        ? null
-                                                        : File(
-                                                          finalReplyVoiceNoteUrl,
-                                                        ),
-                                                    mediaType:
-                                                        ForumMediaType.voice,
-                                                  );
-                                              finalReplyVoiceNoteUrl = r2Url;
-                                            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-                                          }
-
-                                          final res = await repo
-                                              .replyToForumPost(
-                                                postId: currentPost.value.id,
-                                                content:
-                                                    sanitizedText.isNotEmpty
-                                                    ? sanitizedText
-                                                    : 'Shared media attachment',
-                                                parentReplyId: targetParentId,
-                                                mediaUrls: finalReplyImages,
-                                                voiceNoteUrl:
-                                                    finalReplyVoiceNoteUrl,
-                                                voiceNoteDurationSeconds:
-                                                    replyVoiceNoteDuration
-                                                            .value >
-                                                        0
-                                                    ? replyVoiceNoteDuration
-                                                          .value
-                                                    : null,
-                                                voiceNoteTranscript:
-                                                    replyVoiceTranscript.value
-                                                        .trim()
-                                                        .isNotEmpty
-                                                    ? replyVoiceTranscript.value
-                                                          .trim()
-                                                    : null,
-                                                isAnonymous:
-                                                    isAnonymousReply.value,
-                                              );
-                                          isSubmitting.value = false;
-                                          res.fold(
-                                            (failure) {
-                                              if (context.mounted) {
-                                                context.showSnackBar(
-                                                  message:
-                                                      failure.message ??
-                                                      failure.toString(),
-                                                  type: SnackBarType.error,
-                                                );
-                                              }
-                                            },
-                                            (createdReply) {
-                                              replyController.clear();
-                                              replyImages.value = [];
-                                              replyVoiceNoteUrl.value = null;
-                                              replyVoiceNoteDuration.value = 0;
-                                              replyingToReply.value = null;
-                                              isAnonymousReply.value = false;
-                                              if (!localReplies.value.any(
-                                                (r) => r.id == createdReply.id,
-                                              )) {
-                                                localReplies.value = [
-                                                  ...localReplies.value,
-                                                  createdReply,
-                                                ];
-                                              }
-
-                                              // Fire-and-forget server-side Groq transcription via Supabase Edge Function.
-                                              // The edge function calls Groq Whisper on the R2 audio URL and patches
-                                              // voice_note_transcript in the DB — transcripts are viewer-only, never
-                                              // shown to the person who recorded the voice note.
-                                              final vnUrl =
-                                                  createdReply.voiceNoteUrl;
-                                              if (vnUrl != null &&
-                                                  vnUrl.trim().isNotEmpty &&
-                                                  locator
-                                                      .isRegistered<
-                                                        MediaUploadService
-                                                      >()) {
-                                                unawaited(
-                                                  locator<MediaUploadService>()
-                                                      .triggerVoiceNoteTranscription(
-                                                        audioUrl: vnUrl,
-                                                        replyId:
-                                                            createdReply.id,
-                                                      ),
-                                                );
-                                              }
-                                              if (targetParentId != null) {
-                                                localReplies.value =
-                                                    localReplies.value.map((r) {
-                                                      if (r.id ==
-                                                          targetParentId) {
-                                                        return r.copyWith(
-                                                          repliesCount:
-                                                              r.repliesCount +
-                                                              1,
-                                                        );
-                                                      }
-                                                      return r;
-                                                    }).toList();
-                                                expandedParentReplyIds.value = {
-                                                  ...expandedParentReplyIds
-                                                      .value,
-                                                  targetParentId,
-                                                };
-                                              }
-                                              if (locator
-                                                  .isRegistered<
-                                                    CommunityHubBloc
-                                                  >()) {
-                                                locator<CommunityHubBloc>().add(
-                                                  ForumPostRepliesIncrementedEvent(
-                                                    postId:
-                                                        currentPost.value.id,
-                                                    reply: createdReply,
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                          );
-                                        },
-                                  child: Container(
-                                    width: 38,
-                                    height: 38,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: colors.primary,
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: AnimatedSwitcher(
-                                      duration: AppMotion.snappy,
-                                      switchInCurve: AppMotion.easeOutCubic,
-                                      child: isSubmitting.value
-                                          ? AppLogoLoader(
-                                              key: const ValueKey(
-                                                'submitting_loader',
-                                              ),
-                                              size: 16,
-                                              color: colors.white,
-                                              showMessage: false,
-                                            )
-                                          : Icon(
-                                              Icons.send_rounded,
-                                              key: const ValueKey(
-                                                'send_icon',
-                                              ),
-                                              color: colors.white,
-                                              size: 18,
-                                            ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            // Sticky Bottom Quick Reply Bar (Modularized widget)
+            ForumThreadReplyComposerBar(
+              replyController: replyController,
+              focusNode: focusNode,
+              replyRecorderController: replyRecorderController,
+              replyingToReply: replyingToReply,
+              showFormattingTools: showFormattingTools,
+              isRecordingReplyVoice: isRecordingReplyVoice,
+              isReplyVoiceLocked: isReplyVoiceLocked,
+              replyVoiceNoteDuration: replyVoiceNoteDuration,
+              replyVoiceTranscript: replyVoiceTranscript,
+              replyVoiceNoteUrl: replyVoiceNoteUrl,
+              replyImages: replyImages,
+              isAnonymousReply: isAnonymousReply,
+              isSubmitting: isSubmitting,
+              isGeneratingAiHint: isGeneratingAiHint,
+              onApplyFormat: applyFormat,
+              onInsertSnippet: insertIntoComposer,
+              onGenerateAiHint: generateSyllabotHint,
+              onSubmitReply: submitReply,
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showLatexSnippetDialog(
-    BuildContext context,
-    void Function(String snippet) onInsert,
-  ) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    final snippets = [
-      {'label': 'Fraction', 'snippet': r'$\frac{a}{b}$'},
-      {'label': 'Square Root', 'snippet': r'$\sqrt{x}$'},
-      {'label': 'Exponent', 'snippet': r'$x^{2}$'},
-      {'label': 'Integral', 'snippet': r'$\int_{a}^{b} f(x) dx$'},
-      {'label': 'Summation', 'snippet': r'$\sum_{i=1}^{n} x_i$'},
-      {'label': 'Limit', 'snippet': r'$\lim_{x \to \infty}$'},
-      {
-        'label': 'Matrix 2x2',
-        'snippet': r'$$\begin{pmatrix} a & b \\ c & d \end{pmatrix}$$',
-      },
-    ];
-
-    unawaited(
-      AppAdaptiveSheet.showModal<void>(
-        context: context,
-        maxWidth: 480,
-        builder: (ctx) {
-          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
-          return SafeArea(
-            child: Container(
-              decoration: isDesktop
-                  ? BoxDecoration(
-                      color: isDark
-                          ? colors.surfaceSecondary
-                          : colors.surfacePrimary,
-                      borderRadius: BorderRadius.circular(AppRadius.dialog),
-                      border: Border.all(
-                        color: colors.surfaceBorder.withValues(alpha: 0.5),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 28,
-                          offset: const Offset(0, 14),
-                        ),
-                      ],
-                    )
-                  : null,
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Insert LaTeX Formula',
-                    style: typography.headline.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: snippets.map((s) {
-                      return ShrinkableButton(
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onInsert(s['snippet']!);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(isDark ? 30 : 15),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(50),
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                s['label']!,
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                s['snippet']!,
-                                style: typography.caption.regular.copyWith(
-                                  color: colors.textSecondary,
-                                  fontFamily: 'monospace',
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showMathSymbolDialog(
-    BuildContext context,
-    void Function(String symbol) onInsert,
-  ) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    final symbols = [
-      'π',
-      'θ',
-      'Δ',
-      'α',
-      'β',
-      'γ',
-      'λ',
-      'μ',
-      'σ',
-      'ω',
-      '≈',
-      '≠',
-      '≤',
-      '≥',
-      '±',
-      '×',
-      '÷',
-      '∞',
-      '√',
-      '∫',
-    ];
-
-    unawaited(
-      AppAdaptiveSheet.showModal<void>(
-        context: context,
-        maxWidth: 480,
-        builder: (ctx) {
-          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
-          return SafeArea(
-            child: Container(
-              decoration: isDesktop
-                  ? BoxDecoration(
-                      color: isDark
-                          ? colors.surfaceSecondary
-                          : colors.surfacePrimary,
-                      borderRadius: BorderRadius.circular(AppRadius.dialog),
-                      border: Border.all(
-                        color: colors.surfaceBorder.withValues(alpha: 0.5),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 28,
-                          offset: const Offset(0, 14),
-                        ),
-                      ],
-                    )
-                  : null,
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Insert Math & Greek Symbol',
-                    style: typography.headline.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 5,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                          childAspectRatio: 1.5,
-                        ),
-                    itemCount: symbols.length,
-                    itemBuilder: (ctx, idx) {
-                      final sym = symbols[idx];
-                      return ShrinkableButton(
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onInsert(sym);
-                        },
-                        child: Container(
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(isDark ? 25 : 12),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(40),
-                            ),
-                          ),
-                          child: Text(
-                            sym,
-                            style: typography.title3.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
       ),
     );
   }

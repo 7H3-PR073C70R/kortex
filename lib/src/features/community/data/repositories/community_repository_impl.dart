@@ -1114,6 +1114,25 @@ class CommunityRepositoryImpl implements CommunityRepository {
     return _remoteDataSource.getFollowedTopics().makeRequest();
   }
 
+  @override
+  Future<Either<Failure, bool>> reportContent({
+    required String contentType,
+    required String contentId,
+    required String reason,
+    String? postId,
+    String? details,
+  }) {
+    return _remoteDataSource
+        .reportContent(
+          contentType: contentType,
+          contentId: contentId,
+          reason: reason,
+          postId: postId,
+          details: details,
+        )
+        .makeRequest();
+  }
+
   Future<void> dispose() async {
     await _connectivitySub?.cancel();
   }

@@ -13,9 +13,9 @@ import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/data/models/deck_model.dart';
-import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
@@ -271,7 +271,7 @@ class _OfflineFlashcardGenerationPageState
         final explanationText = c.explanation.trim().isNotEmpty
             ? '\n\n💡 Explanation:\n${c.explanation.trim()}'
             : '';
-        return FlashcardModel(
+        return FlashcardEntity(
           id: UuidUtils.generate(),
           deckId: deckId,
           front: c.front,
@@ -281,7 +281,7 @@ class _OfflineFlashcardGenerationPageState
         );
       }).toList();
 
-      final deckModel = DeckModel(
+      final deckEntity = DeckEntity(
         id: deckId,
         title: title,
         subject: subject,
@@ -293,9 +293,9 @@ class _OfflineFlashcardGenerationPageState
         cards: flashcards,
       );
 
-      if (locator.isRegistered<DecksRemoteDataSource>()) {
-        await locator<DecksRemoteDataSource>().saveGeneratedDeck(
-          deck: deckModel,
+      if (locator.isRegistered<DecksRepository>()) {
+        await locator<DecksRepository>().saveGeneratedDeck(
+          deck: deckEntity,
           cards: flashcards,
         );
       }

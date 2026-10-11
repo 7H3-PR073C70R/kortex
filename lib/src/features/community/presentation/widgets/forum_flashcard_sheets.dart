@@ -13,9 +13,7 @@ import 'package:kortex/src/core/themes/typography/typography_theme_extension.dar
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/data/models/deck_model.dart';
-import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
+
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
@@ -719,7 +717,7 @@ class ForumGenerateDeckSheet extends HookWidget {
         final deckId = UuidUtils.generate();
         final flashcards = cards
             .map(
-              (c) => FlashcardModel(
+              (c) => FlashcardEntity(
                 id: UuidUtils.generate(),
                 deckId: deckId,
                 front: c.front,
@@ -733,7 +731,7 @@ class ForumGenerateDeckSheet extends HookWidget {
         final deckTitle =
             titleRaw.length > 40 ? '${titleRaw.substring(0, 40)}…' : titleRaw;
 
-        final deck = DeckModel(
+        final deck = DeckEntity(
           id: deckId,
           title: deckTitle,
           subject: topicTag.isNotEmpty ? topicTag : 'General',
@@ -747,8 +745,8 @@ class ForumGenerateDeckSheet extends HookWidget {
           lastStudied: DateTime.now(),
         );
 
-        if (locator.isRegistered<DecksRemoteDataSource>()) {
-          await locator<DecksRemoteDataSource>().saveGeneratedDeck(
+        if (locator.isRegistered<DecksRepository>()) {
+          await locator<DecksRepository>().saveGeneratedDeck(
             deck: deck,
             cards: flashcards,
           );

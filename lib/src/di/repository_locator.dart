@@ -129,5 +129,10 @@ void _initRepositoryLocator() {
       () => AppVersionRepositoryImpl(
         remoteDataSource: locator<AppVersionRemoteDataSource>(),
       ),
+    )
+    ..registerLazySingleton<OnboardingRepository>(
+      () => OnboardingRepositoryImpl(
+        localDataSource: locator<OnboardingLocalDataSource>(),
+      ),
     );
 }
