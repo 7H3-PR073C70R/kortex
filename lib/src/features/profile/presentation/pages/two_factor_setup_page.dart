@@ -1,32 +1,32 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
-import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_enroll_result_entity.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/two_factor/two_factor_backup_codes_sheet.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/two_factor/two_factor_error_view.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/two_factor/two_factor_qr_code_card.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/two_factor/two_factor_secret_key_card.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/two_factor/two_factor_shimmer_skeleton.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/two_factor/two_factor_verify_card.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
-import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
-import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
-import 'package:kortex/src/shared/widgets/app_text_field.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+
+export '../widgets/two_factor/two_factor_backup_codes_sheet.dart';
+export '../widgets/two_factor/two_factor_error_view.dart';
+export '../widgets/two_factor/two_factor_qr_code_card.dart';
+export '../widgets/two_factor/two_factor_secret_key_card.dart';
+export '../widgets/two_factor/two_factor_shimmer_skeleton.dart';
+export '../widgets/two_factor/two_factor_verify_card.dart';
 
 @RoutePage()
 class TwoFactorSetupPage extends HookWidget {
@@ -37,6 +37,9 @@ class TwoFactorSetupPage extends HookWidget {
     this.initialFactorId,
     this.initialTotpUri,
     this.issuer = 'Kortexify',
+    this.userStorageService,
+    this.enrollMfaTotpUseCase,
+    this.verifyMfaTotpUseCase,
   });
 
   final String? email;
@@ -44,30 +47,64 @@ class TwoFactorSetupPage extends HookWidget {
   final String? initialFactorId;
   final String? initialTotpUri;
   final String issuer;
+  final UserStorageService? userStorageService;
+  final EnrollMfaTotpUseCase? enrollMfaTotpUseCase;
+  final VerifyMfaTotpUseCase? verifyMfaTotpUseCase;
+
+  UserStorageService? get _effectiveUserStorage {
+    if (userStorageService != null) return userStorageService;
+    try {
+      if (locator.isRegistered<UserStorageService>()) {
+        return locator<UserStorageService>();
+      }
+    } on Object {
+      // Ignored
+    }
+    return null;
+  }
+
+  EnrollMfaTotpUseCase? get _effectiveEnrollUseCase {
+    if (enrollMfaTotpUseCase != null) return enrollMfaTotpUseCase;
+    try {
+      if (locator.isRegistered<EnrollMfaTotpUseCase>()) {
+        return locator<EnrollMfaTotpUseCase>();
+      }
+    } on Object {
+      // Ignored
+    }
+    return null;
+  }
+
+  VerifyMfaTotpUseCase? get _effectiveVerifyUseCase {
+    if (verifyMfaTotpUseCase != null) return verifyMfaTotpUseCase;
+    try {
+      if (locator.isRegistered<VerifyMfaTotpUseCase>()) {
+        return locator<VerifyMfaTotpUseCase>();
+      }
+    } on Object {
+      // Ignored
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
-    final isDark = context.isDarkMode;
 
     final resolvedEmail = useMemoized(() {
       if (email != null && email!.trim().isNotEmpty) {
         return email!.trim();
       }
-      try {
-        if (locator.isRegistered<UserStorageService>()) {
-          final userStorage = locator<UserStorageService>();
-          final storedEmail = userStorage.getUserEmail();
-          if (storedEmail != null && storedEmail.trim().isNotEmpty) {
-            return storedEmail.trim();
-          }
+      final storage = _effectiveUserStorage;
+      if (storage != null) {
+        final storedEmail = storage.getUserEmail();
+        if (storedEmail != null && storedEmail.trim().isNotEmpty) {
+          return storedEmail.trim();
         }
-      } on Object {
-        // Fallback below
       }
       return 'scholar@kortexify.com';
-    }, [email]);
+    }, [email, _effectiveUserStorage]);
 
     final secretState = useState<String>(initialSecret ?? '');
     final factorIdState = useState<String?>(initialFactorId);
@@ -91,9 +128,13 @@ class TwoFactorSetupPage extends HookWidget {
       isEnrolling.value = true;
       enrollmentErrorState.value = null;
       try {
-        final result = await locator<EnrollMfaTotpUseCase>()(
-          const NoParams(),
-        );
+        final enrollUseCase = _effectiveEnrollUseCase;
+        if (enrollUseCase == null) {
+          enrollmentErrorState.value =
+              'Authentication service unavailable. Please try again.';
+          return;
+        }
+        final result = await enrollUseCase(const NoParams());
         if (result.isRight) {
           final enrollRes =
               (result as Right<Failure, MfaEnrollResultEntity>).value;
@@ -125,6 +166,69 @@ class TwoFactorSetupPage extends HookWidget {
       return null;
     }, const []);
 
+    Future<void> handleVerify() async {
+      final code = codeController.text.trim();
+      if (code.length < 6) {
+        AppFeedback.heavy();
+        context.showSnackBar(
+          message: 'Please enter the full 6-digit code.',
+          type: SnackBarType.error,
+        );
+        return;
+      }
+
+      final factorId = factorIdState.value;
+      if (factorId == null || factorId.isEmpty) {
+        AppFeedback.heavy();
+        context.showSnackBar(
+          message: '2FA factor not initialized. Please retry enrollment.',
+          type: SnackBarType.error,
+        );
+        return;
+      }
+
+      final verifyUseCase = _effectiveVerifyUseCase;
+      if (verifyUseCase == null) {
+        context.showSnackBar(
+          message: 'Verification service unavailable.',
+          type: SnackBarType.error,
+        );
+        return;
+      }
+
+      isVerifying.value = true;
+      AppFeedback.medium();
+
+      final result = await verifyUseCase(
+        VerifyMfaTotpParams(
+          factorId: factorId,
+          code: code,
+        ),
+      );
+
+      isVerifying.value = false;
+
+      if (result.isRight) {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Two-Factor Authentication enabled!',
+            type: SnackBarType.success,
+          );
+          await TwoFactorBackupCodesSheet.show(context);
+        }
+      } else {
+        final failure = (result as Left<Failure, void>).value;
+        if (context.mounted) {
+          context.showSnackBar(
+            message:
+                failure.message ??
+                'Invalid verification code. Please check your authenticator clock.',
+            type: SnackBarType.error,
+          );
+        }
+      }
+    }
+
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
       appBar: AppAdaptiveAppBar(
@@ -140,920 +244,48 @@ class TwoFactorSetupPage extends HookWidget {
       ),
       body: SafeArea(
         child: isEnrolling.value
-            ? _buildShimmerLoadingSkeleton(colors, isDark)
+            ? const TwoFactorShimmerSkeleton()
             : (enrollmentErrorState.value != null && secretState.value.isEmpty)
-            ? _buildErrorView(
-                context,
-                colors,
-                typography,
-                isDark,
-                enrollmentErrorState.value!,
-                () => unawaited(enroll()),
-              )
-            : Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 680),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Protect your Kortexify scholar account and study notes '
-                          'by enabling two-factor authentication (TOTP).',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 12.5,
-                            height: 1.35,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Step 1: QR Code Card
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceSecondary,
-                            borderRadius: AppRadius.radiusDialog,
-                            border: Border.all(
-                              color: colors.surfaceBorder.withAlpha(90),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: colors.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '1',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.white,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      'Scan QR Code with Authenticator App',
-                                      style: typography.body.bold.copyWith(
-                                        color: colors.textPrimary,
-                                        fontSize: 13.5,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: colors.white,
-                                  borderRadius: AppRadius.radiusPanel,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: colors.black.withAlpha(20),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: totpUriState.value.isNotEmpty
-                                    ? QrImageView(
-                                        data: totpUriState.value,
-                                        size: 190,
-                                        gapless: false,
-                                        errorStateBuilder: (cxt, err) {
-                                          return const SizedBox(
-                                            height: 190,
-                                            child: Center(
-                                              child: Text(
-                                                'Could not generate QR',
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      )
-                                    : const SizedBox(
-                                        height: 190,
-                                        child: Center(
-                                          child: AppLogoLoader(size: 48),
-                                        ),
-                                      ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Compatible with Google Authenticator, Authy, '
-                                '1Password, Microsoft Authenticator',
-                                textAlign: TextAlign.center,
-                                style: typography.caption.regular.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        // Step 2: Copy Key Manually Card
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceSecondary,
-                            borderRadius: AppRadius.radiusDialog,
-                            border: Border.all(
-                              color: colors.surfaceBorder.withAlpha(90),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: colors.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '2',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.white,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      'Or Copy Secret Key Manually',
-                                      style: typography.body.bold.copyWith(
-                                        color: colors.textPrimary,
-                                        fontSize: 13.5,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.surfacePrimary,
-                                  borderRadius: AppRadius.radiusCard,
-                                  border: Border.all(
-                                    color: colors.primary.withAlpha(
-                                      isDark ? 80 : 50,
-                                    ),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: SelectableText(
-                                        secretState.value.isNotEmpty
-                                            ? secretState.value
-                                            : 'Generating secret key...',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.primary,
-                                          fontSize: 13.5,
-                                          letterSpacing: 1.2,
-                                          fontFamily: 'monospace',
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    PlatformHoverBuilder(
-                                      builder: (context, isHovered, child) {
-                                        return AnimatedScale(
-                                          scale: isHovered ? 1.04 : 1.0,
-                                          duration: AppMotion.snappy,
-                                          curve: Curves.easeOutCubic,
-                                          child: child,
-                                        );
-                                      },
-                                      child: ShrinkableButton(
-                                        onTap: secretState.value.isEmpty
-                                            ? () {}
-                                            : () {
-                                                AppFeedback.selection();
-                                                unawaited(
-                                                  Clipboard.setData(
-                                                    ClipboardData(
-                                                      text: secretState.value,
-                                                    ),
-                                                  ),
-                                                );
-                                                context.showSnackBar(
-                                                  message:
-                                                      'Secret key copied to clipboard!',
-                                                  type: SnackBarType.success,
-                                                );
-                                              },
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: colors.primary.withAlpha(25),
-                                            borderRadius: AppRadius.radiusBadge,
-                                            border: Border.all(
-                                              color: colors.primary.withAlpha(
-                                                70,
-                                              ),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.copy_rounded,
-                                                size: 14,
-                                                color: colors.primary,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                'Copy',
-                                                style: typography.caption.bold
-                                                    .copyWith(
-                                                      color: colors.primary,
-                                                      fontSize: 11.5,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        // Step 3: Enter 6-Digit Code Card
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceSecondary,
-                            borderRadius: AppRadius.radiusDialog,
-                            border: Border.all(
-                              color: colors.surfaceBorder.withAlpha(90),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: colors.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '3',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.white,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      'Enter 6-Digit Code from Authenticator',
-                                      style: typography.body.bold.copyWith(
-                                        color: colors.textPrimary,
-                                        fontSize: 13.5,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
-                              AppTextField(
-                                controller: codeController,
-                                hintText: '123456',
-                                keyboardType: TextInputType.number,
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Verify & Enable Action Button
-                        PlatformHoverBuilder(
-                          builder: (context, isHovered, child) {
-                            return AnimatedScale(
-                              scale: isHovered ? 1.02 : 1.0,
-                              duration: AppMotion.snappy,
-                              curve: Curves.easeOutCubic,
-                              child: child,
-                            );
-                          },
-                          child: ShrinkableButton(
-                            onTap: isVerifying.value
-                                ? () {}
-                                : () async {
-                                    final code = codeController.text.trim();
-                                    if (code.length < 6) {
-                                      AppFeedback.heavy();
-                                      context.showSnackBar(
-                                        message:
-                                            'Please enter the full 6-digit code.',
-                                        type: SnackBarType.error,
-                                      );
-                                      return;
-                                    }
-
-                                    final factorId = factorIdState.value;
-                                    if (factorId == null || factorId.isEmpty) {
-                                      AppFeedback.heavy();
-                                      context.showSnackBar(
-                                        message:
-                                            '2FA factor not initialized. Please retry enrollment.',
-                                        type: SnackBarType.error,
-                                      );
-                                      return;
-                                    }
-
-                                    isVerifying.value = true;
-                                    AppFeedback.medium();
-
-                                    final result =
-                                        await locator<VerifyMfaTotpUseCase>()(
-                                          VerifyMfaTotpParams(
-                                            factorId: factorId,
-                                            code: code,
-                                          ),
-                                        );
-
-                                    isVerifying.value = false;
-
-                                    if (result.isRight) {
-                                      if (context.mounted) {
-                                        context.showSnackBar(
-                                          message:
-                                              'Two-Factor Authentication enabled!',
-                                          type: SnackBarType.success,
-                                        );
-                                        await _showBackupCodesDialog(
-                                          context,
-                                          colors,
-                                          typography,
-                                          isDark,
-                                        );
-                                      }
-                                    } else {
-                                      final failure =
-                                          (result as Left<Failure, void>).value;
-                                      if (context.mounted) {
-                                        context.showSnackBar(
-                                          message:
-                                              failure.message ??
-                                              'Invalid verification code. Please '
-                                                  'check your authenticator clock.',
-                                          type: SnackBarType.error,
-                                        );
-                                      }
-                                    }
-                                  },
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    colors.primary,
-                                    colors.syllabotAccent,
-                                  ],
-                                ),
-                                borderRadius: AppRadius.radiusPanel,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.black.withAlpha(
-                                      isDark ? 60 : 25,
-                                    ),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: isVerifying.value
-                                    ? AppLogoLoader(
-                                        size: 20,
-                                        color: colors.white,
-                                        showMessage: false,
-                                      )
-                                    : Text(
-                                        'Verify & Enable 2FA',
-                                        style: typography.body.bold.copyWith(
-                                          color: colors.white,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-      ),
-    );
-  }
-
-  Widget _buildErrorView(
-    BuildContext context,
-    AppThemeColorsExtension colors,
-    TypographyThemeExtension typography,
-    bool isDark,
-    String errorMessage,
-    VoidCallback onRetry,
-  ) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 680),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: colors.surfaceSecondary,
-              borderRadius: AppRadius.radiusDialog,
-              border: Border.all(
-                color: colors.surfaceBorder.withAlpha(90),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: colors.error.withAlpha(30),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.shield_outlined,
-                    color: colors.error,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Could Not Initialize 2FA',
-                  style: typography.title3.bold.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  errorMessage,
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary,
-                    fontSize: 12.5,
-                    height: 1.4,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return AnimatedScale(
-                      scale: isHovered ? 1.02 : 1.0,
-                      duration: AppMotion.snappy,
-                      curve: Curves.easeOutCubic,
-                      child: child,
-                    );
-                  },
-                  child: ShrinkableButton(
-                    onTap: onRetry,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [colors.primary, colors.syllabotAccent],
-                        ),
-                        borderRadius: AppRadius.radiusCard,
-                      ),
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                ? TwoFactorErrorView(
+                    errorMessage: enrollmentErrorState.value!,
+                    onRetry: () => unawaited(enroll()),
+                  )
+                : Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 680),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.refresh_rounded,
-                              size: 16,
-                              color: colors.white,
-                            ),
-                            const SizedBox(width: 8),
                             Text(
-                              'Retry Enrollment',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.white,
-                                fontSize: 13,
+                              'Protect your Kortexify scholar account and study notes '
+                              'by enabling two-factor authentication (TOTP).',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 12.5,
+                                height: 1.35,
                               ),
+                            ),
+                            const SizedBox(height: 20),
+                            TwoFactorQrCodeCard(
+                              totpUri: totpUriState.value,
+                            ),
+                            const SizedBox(height: 18),
+                            TwoFactorSecretKeyCard(
+                              secretKey: secretState.value,
+                            ),
+                            const SizedBox(height: 18),
+                            TwoFactorVerifyCard(
+                              codeController: codeController,
+                              isVerifying: isVerifying.value,
+                              onVerify: handleVerify,
                             ),
                           ],
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildShimmerLoadingSkeleton(
-    AppThemeColorsExtension colors,
-    bool isDark,
-  ) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 680),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header description skeleton
-              const ShimmerPlaceholder(height: 14, width: 280, borderRadius: 6),
-              const SizedBox(height: 6),
-              const ShimmerPlaceholder(height: 14, width: 200, borderRadius: 6),
-              const SizedBox(height: 20),
-
-              // Step 1: QR Code Card Skeleton
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: colors.surfaceSecondary,
-                  borderRadius: AppRadius.radiusDialog,
-                  border: Border.all(
-                    color: colors.surfaceBorder.withAlpha(90),
-                  ),
-                ),
-                child: const Column(
-                  children: [
-                    Row(
-                      children: [
-                        ShimmerPlaceholder(
-                          height: 24,
-                          width: 24,
-                          borderRadius: 12,
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: ShimmerPlaceholder(
-                            height: 16,
-                            width: 200,
-                            borderRadius: 6,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 18),
-                    ShimmerPlaceholder(
-                      height: 190,
-                      width: 190,
-                      borderRadius: 16,
-                    ),
-                    SizedBox(height: 14),
-                    ShimmerPlaceholder(
-                      height: 12,
-                      width: 220,
-                      borderRadius: 6,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // Step 2: Copy Secret Key Skeleton
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: colors.surfaceSecondary,
-                  borderRadius: AppRadius.radiusDialog,
-                  border: Border.all(
-                    color: colors.surfaceBorder.withAlpha(90),
-                  ),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        ShimmerPlaceholder(
-                          height: 24,
-                          width: 24,
-                          borderRadius: 12,
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: ShimmerPlaceholder(
-                            height: 16,
-                            width: 180,
-                            borderRadius: 6,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 14),
-                    ShimmerPlaceholder(height: 48, borderRadius: 14),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // Step 3: Verify Code Skeleton
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: colors.surfaceSecondary,
-                  borderRadius: AppRadius.radiusDialog,
-                  border: Border.all(
-                    color: colors.surfaceBorder.withAlpha(90),
-                  ),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        ShimmerPlaceholder(
-                          height: 24,
-                          width: 24,
-                          borderRadius: 12,
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: ShimmerPlaceholder(
-                            height: 16,
-                            width: 160,
-                            borderRadius: 6,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 14),
-                    ShimmerPlaceholder(height: 50, borderRadius: 14),
-                    SizedBox(height: 16),
-                    ShimmerPlaceholder(height: 52, borderRadius: 16),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showBackupCodesDialog(
-    BuildContext context,
-    AppThemeColorsExtension colors,
-    TypographyThemeExtension typography,
-    bool isDark,
-  ) async {
-    final random = math.Random();
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final backupCodes = List.generate(8, (_) {
-      final part1 = List.generate(4, (_) => chars[random.nextInt(chars.length)]).join();
-      final part2 = List.generate(4, (_) => chars[random.nextInt(chars.length)]).join();
-      return '$part1-$part2';
-    });
-
-    final formattedText = 'KORTEXIFY 2FA BACKUP CODES\n'
-        'Keep these 8-character recovery codes in a safe place. Each code can only be used once.\n\n'
-        '${backupCodes.join("\n")}';
-
-    await AppAdaptiveSheet.showModal<void>(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      builder: (ctx) => Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 580),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: colors.surfacePrimary,
-                borderRadius: AppRadius.radiusDialog,
-                border: Border.all(color: colors.surfaceBorder.withAlpha(90)),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.black.withAlpha(isDark ? 80 : 30),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colors.warning.withAlpha(30),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.key_rounded,
-                          color: colors.warning,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Save 8-Character Recovery Codes',
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 16.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'If you lose access to your authenticator app, these recovery codes are '
-                    'the only way to log back into your account.',
-                    style: typography.caption.regular.copyWith(
-                      color: colors.textSecondary,
-                      fontSize: 12,
-                      height: 1.35,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 8-Code Grid
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceSecondary,
-                      borderRadius: AppRadius.radiusCard,
-                      border: Border.all(color: colors.surfaceBorder.withAlpha(60)),
-                    ),
-                    child: GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 3.2,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 8,
-                      ),
-                      itemCount: backupCodes.length,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: colors.surfacePrimary,
-                            borderRadius: AppRadius.radiusMicro,
-                            border: Border.all(color: colors.surfaceBorder.withAlpha(40)),
-                          ),
-                          child: Center(
-                            child: SelectableText(
-                              backupCodes[index],
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 13,
-                                fontFamily: 'monospace',
-                                letterSpacing: 1.1,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // Action Buttons: Copy & Download
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ShrinkableButton(
-                          onTap: () {
-                            AppFeedback.selection();
-                            unawaited(
-                              Clipboard.setData(ClipboardData(text: formattedText)),
-                            );
-                            ctx.showSnackBar(
-                              message: 'Recovery codes copied to clipboard!',
-                              type: SnackBarType.success,
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: colors.surfaceSecondary,
-                              borderRadius: AppRadius.radiusCard,
-                              border: Border.all(color: colors.primary.withAlpha(70)),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.copy_rounded, size: 16, color: colors.primary),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Copy All Codes',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.primary,
-                                    fontSize: 12.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Done Button
-                  ShrinkableButton(
-                    onTap: () {
-                      AppFeedback.correct();
-                      Navigator.of(ctx).pop();
-                      Navigator.of(context).pop(true);
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [colors.primary, colors.syllabotAccent],
-                        ),
-                        borderRadius: AppRadius.radiusPanel,
-                      ),
-                      child: Center(
-                        child: Text(
-                          'I Have Saved My Recovery Codes',
-                          style: typography.body.bold.copyWith(
-                            color: colors.white,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -5,11 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/pages/nested/deck_detail_page.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
@@ -17,29 +15,41 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_list_tile_card.dart';
-import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/decks/deck_creation_action_sheet.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/decks/deck_filter_chip.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/decks/decks_empty_state_view.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/decks/decks_shimmer_skeleton.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/decks/decks_today_hero_banner.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
-import 'package:kortex/src/shared/widgets/app_empty_state.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
-import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+
+export 'package:kortex/src/features/decks/presentation/widgets/decks/deck_creation_action_sheet.dart';
+export 'package:kortex/src/features/decks/presentation/widgets/decks/deck_filter_chip.dart';
+export 'package:kortex/src/features/decks/presentation/widgets/decks/decks_empty_state_view.dart';
+export 'package:kortex/src/features/decks/presentation/widgets/decks/decks_shimmer_skeleton.dart';
+export 'package:kortex/src/features/decks/presentation/widgets/decks/decks_today_hero_banner.dart';
 
 @RoutePage()
 class DecksPage extends HookWidget {
-  const DecksPage({super.key});
+  const DecksPage({
+    this.decksBloc,
+    super.key,
+  });
+
+  final DecksBloc? decksBloc;
 
   @override
   Widget build(BuildContext context) {
-    final decksBloc = locator<DecksBloc>();
+    final effectiveDecksBloc = decksBloc ?? locator<DecksBloc>();
 
     useEffect(() {
-      decksBloc.add(const DecksStarted());
+      effectiveDecksBloc.add(const DecksStarted());
       return null;
-    }, const []);
+    }, [effectiveDecksBloc]);
 
     return BlocProvider<DecksBloc>.value(
-      value: decksBloc,
+      value: effectiveDecksBloc,
       child: const _DecksView(),
     );
   }
@@ -49,141 +59,7 @@ class _DecksView extends HookWidget {
   const _DecksView();
 
   void _showDeckCreationSheet(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    unawaited(
-      AppAdaptiveSheet.showActionMenu<void>(
-        context: context,
-        builder: (bottomSheetContext) {
-          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(bottomSheetContext);
-          return SafeArea(
-            top: false,
-            child: Align(
-              alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
-              heightFactor: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary
-                        : colors.surfacePrimary,
-                    borderRadius: isDesktop
-                        ? BorderRadius.circular(AppRadius.dialog)
-                        : const BorderRadius.vertical(
-                            top: Radius.circular(AppRadius.dialog),
-                          ),
-                    boxShadow: isDesktop
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 28,
-                              offset: const Offset(0, 14),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 20,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (!isDesktop) ...[
-                        Center(
-                          child: Container(
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: colors.surfaceBorder,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.micro,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                      ],
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            context.l10n.decksCreateSheetTitle,
-                            style: typography.title3.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                          if (isDesktop)
-                            IconButton(
-                              icon: const Icon(Icons.close_rounded, size: 20),
-                              tooltip: 'Close',
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 28,
-                                minHeight: 28,
-                              ),
-                              onPressed: () =>
-                                  Navigator.of(bottomSheetContext).pop(),
-                              color: colors.textSecondary,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        context.l10n.decksCreateSheetSubtitle,
-                        style: typography.footnote.regular.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Option 0: Dedicated Study Deck Creation Page
-                      _ActionOptionTile(
-                        icon: Icons.layers_rounded,
-                        iconColor: colors.primary,
-                        title: 'Create Study Deck',
-                        subtitle:
-                            'Upload past questions or create flashcards manually',
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-                          unawaited(
-                            context.router.push(
-                              CreateDeckRoute(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Option 2: Upload Documents
-                      _ActionOptionTile(
-                        icon: Icons.document_scanner_rounded,
-                        iconColor: colors.primary,
-                        title: context.l10n.decksUploadDocTitle,
-                        subtitle: context.l10n.decksUploadDocSubtitle,
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-                          unawaited(
-                            context.router.push(
-                              DocumentIngestionRoute(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
+    unawaited(DeckCreationActionSheet.show(context));
   }
 
   @override
@@ -250,18 +126,15 @@ class _DecksView extends HookWidget {
                         child: BlocBuilder<DecksBloc, DecksState>(
                           builder: (context, state) {
                             if (state.isLoading && state.allDecks.isEmpty) {
-                              return _buildDecksShimmerSkeleton(
-                                colors,
-                                isDark,
-                              );
+                              return const DecksShimmerSkeleton();
                             }
 
                             return RefreshIndicator(
                               onRefresh: () async {
                                 final completer = Completer<void>();
                                 context.read<DecksBloc>().add(
-                                  const DecksRefreshed(),
-                                );
+                                      const DecksRefreshed(),
+                                    );
                                 Timer(
                                   const Duration(milliseconds: 600),
                                   completer.complete,
@@ -295,19 +168,19 @@ class _DecksView extends HookWidget {
                                               l10n.decksTitle,
                                               style: typography.largeTitle.bold
                                                   .copyWith(
-                                                    color: colors.textPrimary,
-                                                    fontSize: 26,
-                                                  ),
+                                                color: colors.textPrimary,
+                                                fontSize: 26,
+                                              ),
                                             ),
                                             const SizedBox(height: 6),
                                             Text(
                                               l10n.decksSubtitle,
                                               style: typography.footnote.regular
                                                   .copyWith(
-                                                    color: colors.textSecondary,
-                                                    fontSize: 13,
-                                                    height: 1.3,
-                                                  ),
+                                                color: colors.textSecondary,
+                                                fontSize: 13,
+                                                height: 1.3,
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -345,10 +218,22 @@ class _DecksView extends HookWidget {
                                       ),
                                     ],
                                   ),
-                                  if (state.filteredDecks.isEmpty) ...[
+                                  const SizedBox(height: 16),
+
+                                  // 2. Today Review Hero Banner
+                                  DecksTodayHeroBanner(
+                                    allDecks: state.allDecks,
+                                    onBrowseAll: () {
+                                      context.read<DecksBloc>().add(
+                                            const DecksFilterChanged('all'),
+                                          );
+                                    },
+                                  ),
+                                  if (state.allDecks.isNotEmpty)
                                     const SizedBox(height: 16),
 
-                                    // 4. Search Field - Unified full-width text field
+                                  // 3. Search Field - Unified full-width text field
+                                  if (state.allDecks.isNotEmpty) ...[
                                     TextField(
                                       controller: searchController,
                                       style: typography.body.medium.copyWith(
@@ -360,9 +245,9 @@ class _DecksView extends HookWidget {
                                         hintText: l10n.decksSearchHint,
                                         hintStyle: typography.body.regular
                                             .copyWith(
-                                              color: colors.textMuted,
-                                              fontSize: 13.5,
-                                            ),
+                                          color: colors.textMuted,
+                                          fontSize: 13.5,
+                                        ),
                                         prefixIcon: Icon(
                                           Icons.search_rounded,
                                           color: colors.textSecondary,
@@ -373,70 +258,58 @@ class _DecksView extends HookWidget {
                                             : Semantics(
                                                 button: true,
                                                 label: l10n.decksClearSearch,
-                                                child:
-                                                    IconButton(
-                                                          icon: Icon(
-                                                            Icons.close_rounded,
-                                                            color: colors
-                                                                .textSecondary,
-                                                            size: 18,
+                                                child: IconButton(
+                                                  icon: Icon(
+                                                    Icons.close_rounded,
+                                                    color:
+                                                        colors.textSecondary,
+                                                    size: 18,
+                                                  ),
+                                                  onPressed: () {
+                                                    searchController.clear();
+                                                    searchQueryEmpty.value =
+                                                        true;
+                                                    context
+                                                        .read<DecksBloc>()
+                                                        .add(
+                                                          const DecksSearchQueryChanged(
+                                                            '',
                                                           ),
-                                                          onPressed: () {
-                                                            searchController
-                                                                .clear();
-                                                            searchQueryEmpty
-                                                                    .value =
-                                                                true;
-                                                            context
-                                                                .read<
-                                                                  DecksBloc
-                                                                >()
-                                                                .add(
-                                                                  const DecksSearchQueryChanged(
-                                                                    '',
-                                                                  ),
-                                                                );
-                                                          },
-                                                        )
-                                                        .animate(
-                                                          delay: 60.ms,
-                                                        )
-                                                        .fadeIn(
-                                                          duration: 140.ms,
-                                                        )
-                                                        .scale(
-                                                          begin: const Offset(
-                                                            0.5,
-                                                            0.5,
-                                                          ),
-                                                          end: const Offset(
-                                                            1,
-                                                            1,
-                                                          ),
-                                                          duration: 180.ms,
-                                                          curve: AppMotion
-                                                              .snappyCurve,
-                                                        ),
+                                                        );
+                                                  },
+                                                )
+                                                    .animate(delay: 60.ms)
+                                                    .fadeIn(duration: 140.ms)
+                                                    .scale(
+                                                      begin: const Offset(
+                                                        0.5,
+                                                        0.5,
+                                                      ),
+                                                      end: const Offset(1, 1),
+                                                      duration: 180.ms,
+                                                      curve: AppMotion
+                                                          .snappyCurve,
+                                                    ),
                                               ),
                                         filled: true,
                                         fillColor: isDark
-                                            ? colors.surfaceSecondary.withAlpha(
-                                                200,
-                                              )
+                                            ? colors.surfaceSecondary
+                                                .withAlpha(200)
                                             : colors.surfacePrimary,
                                         contentPadding:
                                             const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: 12,
-                                            ),
+                                          horizontal: 14,
+                                          vertical: 12,
+                                        ),
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
                                             AppRadius.card,
                                           ),
                                           borderSide: BorderSide(
                                             color: isDark
-                                                ? colors.surfaceBorderHighlight
-                                                      .withAlpha(90)
+                                                ? colors
+                                                    .surfaceBorderHighlight
+                                                    .withAlpha(90)
                                                 : colors.surfaceBorder,
                                             width: 1.2,
                                           ),
@@ -447,8 +320,9 @@ class _DecksView extends HookWidget {
                                           ),
                                           borderSide: BorderSide(
                                             color: isDark
-                                                ? colors.surfaceBorderHighlight
-                                                      .withAlpha(90)
+                                                ? colors
+                                                    .surfaceBorderHighlight
+                                                    .withAlpha(90)
                                                 : colors.surfaceBorder,
                                             width: 1.2,
                                           ),
@@ -466,33 +340,35 @@ class _DecksView extends HookWidget {
                                       onChanged: (query) {
                                         searchQueryEmpty.value = query.isEmpty;
                                         context.read<DecksBloc>().add(
-                                          DecksSearchQueryChanged(query),
-                                        );
+                                              DecksSearchQueryChanged(query),
+                                            );
                                       },
                                     ),
+                                    const SizedBox(height: 16),
                                   ],
-                                  const SizedBox(height: 16),
 
-                                  // 5. Filter Category Pills
+                                  // 4. Filter Category Pills
                                   SingleChildScrollView(
                                     key: AppTourKeys.decksFilterChipKey,
                                     scrollDirection: Axis.horizontal,
                                     physics: const ClampingScrollPhysics(),
                                     child: Row(
                                       children: [
-                                        _FilterChip(
+                                        DeckFilterChip(
                                           label: l10n.decksFilterAll,
                                           count: state.allDecks.length,
                                           isSelected:
                                               state.activeFilter == 'all',
                                           onTap: () {
                                             context.read<DecksBloc>().add(
-                                              const DecksFilterChanged('all'),
-                                            );
+                                                  const DecksFilterChanged(
+                                                    'all',
+                                                  ),
+                                                );
                                           },
                                         ),
                                         const SizedBox(width: 8),
-                                        _FilterChip(
+                                        DeckFilterChip(
                                           label: l10n.decksFilterDue,
                                           count: state.allDecks
                                               .where((d) => d.dueCards > 0)
@@ -505,21 +381,23 @@ class _DecksView extends HookWidget {
                                               state.activeFilter == 'due',
                                           onTap: () {
                                             context.read<DecksBloc>().add(
-                                              const DecksFilterChanged('due'),
-                                            );
+                                                  const DecksFilterChanged(
+                                                    'due',
+                                                  ),
+                                                );
                                           },
                                         ),
                                         const SizedBox(width: 8),
-                                        _FilterChip(
+                                        DeckFilterChip(
                                           label: l10n.decksFilterMastered,
                                           isSelected:
                                               state.activeFilter == 'mastered',
                                           onTap: () {
                                             context.read<DecksBloc>().add(
-                                              const DecksFilterChanged(
-                                                'mastered',
-                                              ),
-                                            );
+                                                  const DecksFilterChanged(
+                                                    'mastered',
+                                                  ),
+                                                );
                                           },
                                         ),
                                       ],
@@ -527,108 +405,43 @@ class _DecksView extends HookWidget {
                                   ),
                                   const SizedBox(height: 20),
 
-                                  // 6. Decks List / Empty State
+                                  // 5. Decks List / Empty State
                                   if (state.filteredDecks.isEmpty)
-                                    if (state.activeFilter == 'due')
-                                      AppEmptyState(
-                                        isHappy: true,
-                                        title: 'All Caught Up! 🎉',
-                                        subtitle: state.allDecks.isEmpty
-                                            ? 'You have no due study decks for today. Create a new deck or import course materials to start practicing!'
-                                            : "Awesome job! You've crushed all your spaced repetition reviews scheduled for today. Keep up the streak!",
-                                        primaryActionLabel:
-                                            state.allDecks.isEmpty
-                                            ? l10n.decksCreateDeckButton
-                                            : 'Review All Decks',
-                                        onPrimaryAction: () {
-                                          if (state.allDecks.isEmpty) {
-                                            _showDeckCreationSheet(context);
-                                          } else {
-                                            context.read<DecksBloc>().add(
-                                              const DecksFilterChanged('all'),
-                                            );
-                                          }
-                                        },
-                                        secondaryActionLabel:
-                                            state.allDecks.isEmpty
-                                            ? l10n.decksUploadDocTitle
-                                            : 'Practice with Syllabot AI',
-                                        onSecondaryAction: () {
-                                          if (state.allDecks.isEmpty) {
-                                            unawaited(
-                                              context.router.push(
-                                                DocumentIngestionRoute(),
+                                    DecksEmptyStateView(
+                                      activeFilter: state.activeFilter,
+                                      allDecks: state.allDecks,
+                                      onCreateDeckTap: () =>
+                                          _showDeckCreationSheet(context),
+                                      onResetFilterToAll: () =>
+                                          context.read<DecksBloc>().add(
+                                                const DecksFilterChanged('all'),
                                               ),
-                                            );
-                                          } else {
-                                            unawaited(
-                                              context.router.push(
-                                                SyllabotChatRoute(
-                                                  initialPrompt:
-                                                      'Give me a 5-question Socratic review drill across my active subjects.',
-                                                  initialMode:
-                                                      SocraticMode.examSim,
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                      )
-                                    else if (state.activeFilter == 'mastered')
-                                      AppEmptyState(
-                                        title: 'No Mastered Decks Yet 🎯',
-                                        subtitle:
-                                            'Keep reviewing your flashcards with smart spaced repetition. As your memory retention reaches 90%+, mastered decks will appear here.',
-                                        primaryActionLabel: 'Review All Decks',
-                                        onPrimaryAction: () =>
-                                            context.read<DecksBloc>().add(
-                                              const DecksFilterChanged('all'),
-                                            ),
-                                        secondaryActionLabel:
-                                            l10n.decksCreateDeckButton,
-                                        onSecondaryAction: () =>
-                                            _showDeckCreationSheet(context),
-                                      )
-                                    else
-                                      AppEmptyState(
-                                        title: l10n.decksEmptyStateTitle,
-                                        subtitle: l10n.decksEmptyStateSubtitle,
-                                        primaryActionLabel:
-                                            l10n.decksCreateDeckButton,
-                                        onPrimaryAction: () =>
-                                            _showDeckCreationSheet(context),
-                                        secondaryActionLabel:
-                                            l10n.decksUploadDocTitle,
-                                        onSecondaryAction: () => unawaited(
-                                          context.router.push(
-                                            DocumentIngestionRoute(),
-                                          ),
-                                        ),
-                                      )
+                                    )
                                   else
                                     LayoutBuilder(
                                       builder: (context, gridConstraints) {
                                         final columnCount =
                                             switch (gridConstraints.maxWidth) {
-                                              >= 1400 => 4,
-                                              >= 900 => 3,
-                                              >= 640 => 2,
-                                              _ => 1,
-                                            };
+                                          >= 1400 => 4,
+                                          >= 900 => 3,
+                                          >= 640 => 2,
+                                          _ => 1,
+                                        };
                                         if (columnCount > 1) {
                                           final itemWidth =
                                               (gridConstraints.maxWidth -
-                                                  (14 * (columnCount - 1))) /
-                                              columnCount;
+                                                      (14 *
+                                                          (columnCount - 1))) /
+                                                  columnCount;
                                           return Wrap(
                                             spacing: 14,
                                             runSpacing: 14,
                                             children: [
-                                              for (
-                                                var index = 0;
-                                                index <
-                                                    state.filteredDecks.length;
-                                                index++
+                                              for (var index = 0;
+                                                  index <
+                                                      state
+                                                          .filteredDecks.length;
+                                                  index++
                                               )
                                                 SizedBox(
                                                   width: itemWidth,
@@ -647,11 +460,10 @@ class _DecksView extends HookWidget {
                                         }
                                         return Column(
                                           children: [
-                                            for (
-                                              var index = 0;
-                                              index <
-                                                  state.filteredDecks.length;
-                                              index++
+                                            for (var index = 0;
+                                                index <
+                                                    state.filteredDecks.length;
+                                                index++
                                             )
                                               _buildDeckTile(
                                                 context,
@@ -701,9 +513,6 @@ class _DecksView extends HookWidget {
     );
   }
 
-  /// Deck tiles enter with a short stagger (first 8 only) so the list feels
-  /// assembled rather than popped. Keyed by deck id so filtering or search
-  /// re-renders never replay the entrance for already-visible tiles.
   Widget _buildDeckTile(
     BuildContext context,
     DeckEntity deck,
@@ -713,10 +522,9 @@ class _DecksView extends HookWidget {
     ValueNotifier<DeckEntity?>? selectedDesktopDeck,
   }) {
     Widget tile = Padding(
-      key: index == 0 ? AppTourKeys.decksTodayHeroKey : ValueKey<String>(deck.id),
+      key: ValueKey<String>(deck.id),
       padding: const EdgeInsets.only(bottom: 14),
       child: DeckListTileCard(
-        key: index == 0 ? AppTourKeys.decksHeroStartBtnKey : null,
         deck: deck,
         isSelected: selectedDesktopDeck?.value?.id == deck.id,
         onSelectDeck: isDesktop && selectedDesktopDeck != null
@@ -739,314 +547,5 @@ class _DecksView extends HookWidget {
           );
     }
     return tile;
-  }
-
-  Widget _buildDecksShimmerSkeleton(
-    AppThemeColorsExtension colors,
-    bool isDark,
-  ) {
-    return ListView(
-      physics: const ClampingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
-      children: [
-        // 1. Header Shimmer
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ShimmerPlaceholder(width: 140, height: 26, borderRadius: 8),
-                SizedBox(height: 6),
-                ShimmerPlaceholder(width: 220, height: 14, borderRadius: 6),
-              ],
-            ),
-            ShimmerPlaceholder(width: 40, height: 40, borderRadius: 20),
-          ],
-        ),
-        const SizedBox(height: 20),
-
-        // 2. Today Hero Shimmer
-        const ShimmerPlaceholder(
-          width: double.infinity,
-          height: 132,
-          borderRadius: 16,
-        ),
-        const SizedBox(height: 16),
-
-        // 3. Search Bar Shimmer
-        const ShimmerPlaceholder(
-          width: double.infinity,
-          height: 48,
-          borderRadius: 16,
-        ),
-        const SizedBox(height: 16),
-
-        // 4. Filter Category Pills Shimmer
-        const SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: NeverScrollableScrollPhysics(),
-          child: Row(
-            children: [
-              ShimmerPlaceholder(width: 80, height: 32, borderRadius: 16),
-              SizedBox(width: 8),
-              ShimmerPlaceholder(width: 95, height: 32, borderRadius: 16),
-              SizedBox(width: 8),
-              ShimmerPlaceholder(width: 85, height: 32, borderRadius: 16),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // 5. Responsive Deck Card Skeletons (matches loaded grid breakpoints)
-        LayoutBuilder(
-          builder: (context, gridConstraints) {
-            final columnCount = switch (gridConstraints.maxWidth) {
-              >= 1400 => 4,
-              >= 900 => 3,
-              >= 640 => 2,
-              _ => 1,
-            };
-
-            if (columnCount > 1) {
-              final itemWidth =
-                  (gridConstraints.maxWidth - (14 * (columnCount - 1))) /
-                  columnCount;
-              final skeletonCount = columnCount * 2;
-              return Wrap(
-                spacing: 14,
-                runSpacing: 14,
-                children: [
-                  for (var i = 0; i < skeletonCount; i++)
-                    SizedBox(
-                      width: itemWidth,
-                      child: const ShimmerPlaceholder(
-                        width: double.infinity,
-                        height: 120,
-                        borderRadius: 20,
-                      ),
-                    ),
-                ],
-              );
-            }
-
-            return const Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(bottom: 14),
-                  child: ShimmerPlaceholder(
-                    width: double.infinity,
-                    height: 120,
-                    borderRadius: 20,
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(bottom: 14),
-                  child: ShimmerPlaceholder(
-                    width: double.infinity,
-                    height: 120,
-                    borderRadius: 20,
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(bottom: 14),
-                  child: ShimmerPlaceholder(
-                    width: double.infinity,
-                    height: 120,
-                    borderRadius: 20,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _ActionOptionTile extends StatelessWidget {
-  const _ActionOptionTile({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    return ShrinkableButton(
-      onTap: () {
-        unawaited(HapticFeedback.lightImpact());
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.panel),
-          color: isDark
-              ? colors.surfaceSecondary.withAlpha(150)
-              : colors.surfacePrimary.withAlpha(200),
-          border: Border.all(
-            color: isDark
-                ? colors.surfaceBorderHighlight.withAlpha(50)
-                : colors.surfaceBorder.withAlpha(100),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                color: iconColor.withAlpha(isDark ? 40 : 25),
-              ),
-              child: Icon(icon, color: iconColor, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: typography.body.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 14.5,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: typography.footnote.regular.copyWith(
-                      color: colors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: colors.textMuted,
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.count,
-    this.isDueBadge = false,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final int? count;
-  final bool isDueBadge;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    return Semantics(
-      selected: isSelected,
-      button: true,
-      label: label,
-      child: ShrinkableButton(
-        onTap: () {
-          unawaited(HapticFeedback.lightImpact());
-          onTap();
-        },
-        child: AnimatedContainer(
-          duration: AppMotion.snappy,
-          curve: AppMotion.snappyCurve,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? colors.primary
-                : (isDark
-                      ? colors.surfaceSecondary.withAlpha(150)
-                      : colors.surfacePrimary.withAlpha(200)),
-            borderRadius: BorderRadius.circular(AppRadius.badge),
-            border: Border.all(
-              color: isSelected
-                  ? colors.primary
-                  : (isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(70)
-                        : colors.surfaceBorder.withAlpha(120)),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: typography.caption.bold.copyWith(
-                  color: isSelected ? colors.white : colors.textPrimary,
-                  fontSize: 12,
-                ),
-              ),
-              if (count != null && count! > 0) ...[
-                const SizedBox(width: 6),
-                AnimatedSwitcher(
-                  duration: AppMotion.snappy,
-                  switchInCurve: AppMotion.snappyCurve,
-                  switchOutCurve: AppMotion.exitCurve,
-                  transitionBuilder: (child, animation) =>
-                      ScaleTransition(scale: animation, child: child),
-                  child: Container(
-                    key: ValueKey('$count-$isDueBadge-$isSelected'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDueBadge
-                          ? colors.error
-                          : (isSelected
-                                ? colors.white.withAlpha(40)
-                                : colors.primary.withAlpha(30)),
-                      borderRadius: BorderRadius.circular(AppRadius.micro),
-                    ),
-                    child: Text(
-                      '$count',
-                      style: typography.footnote.bold.copyWith(
-                        color: colors.white,
-                        fontSize: 10.5,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

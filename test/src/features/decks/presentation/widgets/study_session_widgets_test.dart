@@ -112,7 +112,7 @@ void main() {
   });
 
   group('StudySessionRatingDock Tests', () {
-    final sampleCard = FlashcardEntity(
+    const sampleCard = FlashcardEntity(
       id: 'card-1',
       deckId: 'deck-1',
       front: 'What is Mitochondria?',
@@ -142,6 +142,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Feynman Active Recall'), findsOneWidget);
+      expect(flipToggled, isFalse);
     });
 
     testWidgets('renders FSRS rating buttons and cohort bounty when flipped', (tester) async {
