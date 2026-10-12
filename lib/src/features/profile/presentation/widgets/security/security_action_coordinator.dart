@@ -207,15 +207,15 @@ class SecurityActionCoordinator {
   }
 
   Future<void> handleBiometricLockChanged(
-    BuildContext context,
-    bool val,
-    ValueNotifier<bool> biometricLockEnabled,
-  ) async {
+    BuildContext context, {
+    required bool enabled,
+    required ValueNotifier<bool> biometricLockEnabled,
+  }) async {
     AppFeedback.selection();
     final biometricService = _biometrics;
     if (biometricService == null) return;
 
-    if (val) {
+    if (enabled) {
       final canAuth = await biometricService.canAuthenticate();
       if (!canAuth) {
         if (context.mounted) {
@@ -276,13 +276,13 @@ class SecurityActionCoordinator {
   }
 
   Future<void> handleTwoFactorChanged(
-    BuildContext context,
-    bool val,
-    ValueNotifier<bool> twoFactorEnabled,
-    ValueNotifier<String?> activeTotpFactorId,
-  ) async {
+    BuildContext context, {
+    required bool enabled,
+    required ValueNotifier<bool> twoFactorEnabled,
+    required ValueNotifier<String?> activeTotpFactorId,
+  }) async {
     AppFeedback.selection();
-    if (val) {
+    if (enabled) {
       final email = context.read<AuthBloc>().state.userProfile?.email ??
           context.read<AuthBloc>().state.user?.email ??
           (userStorageService?.getUserEmail() ??
