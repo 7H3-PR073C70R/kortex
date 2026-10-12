@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/utils/latex_ast_cache.dart';
 import 'package:kortex/src/features/quiz/domain/logic/formula_aware_text_formatter.dart';
 import 'package:kortex/src/shared/widgets/app_code_block_viewer.dart';
@@ -810,28 +811,16 @@ class LatexRichViewer extends StatelessWidget {
       // 4. Inline Code: `text` (group 8)
       else if (match.group(8) != null) {
         final inner = match.group(8) ?? '';
+        final primaryColor = Theme.of(context).extension<AppThemeColorsExtension>()?.primary ?? Theme.of(context).colorScheme.primary;
         spans.add(
-          WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: context.colors.primary.withAlpha(context.isDarkMode ? 45 : 22),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: context.colors.primary.withAlpha(context.isDarkMode ? 80 : 40),
-                ),
-              ),
-              child: Text(
-                inner,
-                style: baseStyle.copyWith(
-                  fontFamily: 'monospace',
-                  fontSize: (baseStyle.fontSize ?? 14) * 0.90,
-                  fontWeight: FontWeight.w600,
-                  color: context.colors.primary,
-                ),
-              ),
+          TextSpan(
+            text: ' $inner ',
+            style: baseStyle.copyWith(
+              fontFamily: 'monospace',
+              fontSize: (baseStyle.fontSize ?? 14) * 0.92,
+              fontWeight: FontWeight.w600,
+              color: primaryColor,
+              backgroundColor: primaryColor.withAlpha((Theme.of(context).brightness == Brightness.dark) ? 45 : 22),
             ),
           ),
         );

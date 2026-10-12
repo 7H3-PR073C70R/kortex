@@ -68,6 +68,29 @@ class _FakeDecksRepository implements DecksRepository {
   Future<Either<Failure, void>> deleteDeck(String deckId) async {
     return const Right(null);
   }
+
+  @override
+  Future<Either<Failure, void>> saveGeneratedDeck({
+    required DeckEntity deck,
+    required List<FlashcardEntity> cards,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> linkDeckToCourse({
+    required String deckId,
+    required String courseId,
+    String? courseCode,
+    String? subject,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> enqueueReviewLog(FsrsReviewLog log) async {
+    return const Right(null);
+  }
 }
 
 class _FakeLocalStorageService implements LocalStorageService {

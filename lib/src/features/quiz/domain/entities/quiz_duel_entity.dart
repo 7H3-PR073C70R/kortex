@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:equatable/equatable.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 
@@ -257,6 +259,13 @@ class QuizDuelMatch extends Equatable {
   bool get isMatchOver => status == QuizDuelStatus.finished;
 
   bool get isForfeit => forfeitUserId != null && forfeitUserId!.isNotEmpty;
+
+  /// Generates a clean 6-character room code for direct student challenges.
+  static String generateRoomCode([Random? random]) {
+    final rng = random ?? Random();
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
+  }
 
   Map<String, dynamic> toJson() {
     return {

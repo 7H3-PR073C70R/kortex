@@ -2,6 +2,7 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 
 abstract class DecksRepository {
   Future<Either<Failure, List<DeckEntity>>> getUserDecks();
@@ -36,4 +37,6 @@ abstract class DecksRepository {
   });
 
   Future<Either<Failure, void>> deleteDeck(String deckId);
+
+  Future<Either<Failure, void>> enqueueReviewLog(FsrsReviewLog log);
 }

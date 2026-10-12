@@ -1,25 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/data/models/deck_model.dart';
+import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to_deck_use_case.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockDecksRemoteDataSource extends Mock implements DecksRemoteDataSource {}
-class FakeDeckModel extends Fake implements DeckModel {}
+class MockDecksRepository extends Mock implements DecksRepository {}
+class FakeDeckEntity extends Fake implements DeckEntity {}
+class FakeFlashcardEntity extends Fake implements FlashcardEntity {}
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(FakeDeckModel());
+    registerFallbackValue(FakeDeckEntity());
+    registerFallbackValue(FakeFlashcardEntity());
   });
 
-  late MockDecksRemoteDataSource mockDecksDataSource;
+  late MockDecksRepository mockDecksRepository;
   late ConvertFailedQuizToDeckUseCase useCase;
 
   setUp(() {
-    mockDecksDataSource = MockDecksRemoteDataSource();
-    useCase = ConvertFailedQuizToDeckUseCase(mockDecksDataSource);
+    mockDecksRepository = MockDecksRepository();
+    useCase = ConvertFailedQuizToDeckUseCase(mockDecksRepository);
   });
 
   const tQuestions = [
@@ -65,11 +69,11 @@ void main() {
 
   test('successfully converts failed questions into a practice flashcard deck', () async {
     when(
-      () => mockDecksDataSource.saveGeneratedDeck(
+      () => mockDecksRepository.saveGeneratedDeck(
         deck: any(named: 'deck'),
         cards: any(named: 'cards'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) async => const Right(null));
 
     final either = await useCase(
       result: tResult,
@@ -89,7 +93,7 @@ void main() {
     expect(deck.cards.first.back, contains('💡 Explanation:'));
 
     verify(
-      () => mockDecksDataSource.saveGeneratedDeck(
+      () => mockDecksRepository.saveGeneratedDeck(
         deck: any(named: 'deck'),
         cards: any(named: 'cards'),
       ),
@@ -113,7 +117,7 @@ void main() {
 
     expect(either.isLeft, isTrue);
     verifyNever(
-      () => mockDecksDataSource.saveGeneratedDeck(
+      () => mockDecksRepository.saveGeneratedDeck(
         deck: any(named: 'deck'),
         cards: any(named: 'cards'),
       ),

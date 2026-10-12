@@ -26,11 +26,8 @@ class QuizDuelWebSocketClient {
   final Duration matchmakingTimeout;
 
   /// Generates a clean 6-character room code for direct student challenges.
-  static String generateRoomCode([Random? random]) {
-    final rng = random ?? Random();
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
-  }
+  static String generateRoomCode([Random? random]) =>
+      QuizDuelMatch.generateRoomCode(random);
 
   final RealtimeClient _realtimeClient;
   final Random _random;

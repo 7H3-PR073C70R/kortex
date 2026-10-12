@@ -1,17 +1,23 @@
+import 'dart:async';
+
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 
 class DecksRepositoryImpl implements DecksRepository {
-  const DecksRepositoryImpl(this._remoteDataSource);
+  const DecksRepositoryImpl(this._remoteDataSource, [this._cardSyncQueue]);
 
   final DecksRemoteDataSource _remoteDataSource;
+  final CardSyncQueue? _cardSyncQueue;
 
   @override
   Future<Either<Failure, List<DeckEntity>>> getUserDecks() {
@@ -100,5 +106,21 @@ class DecksRepositoryImpl implements DecksRepository {
   @override
   Future<Either<Failure, void>> deleteDeck(String deckId) {
     return _remoteDataSource.deleteDeck(deckId).makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, void>> enqueueReviewLog(FsrsReviewLog log) async {
+    try {
+      final queue = _cardSyncQueue ??
+          (locator.isRegistered<CardSyncQueue>()
+              ? locator<CardSyncQueue>()
+              : null);
+      if (queue != null) {
+        unawaited(queue.enqueueReview(log));
+      }
+      return const Right(null);
+    } on Object catch (e) {
+      return Left(CacheFailure(message: e.toString()));
+    }
   }
 }

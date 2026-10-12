@@ -10,6 +10,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.d
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
@@ -78,6 +79,29 @@ class _FakeDecksRepository implements DecksRepository {
 
   @override
   Future<Either<Failure, void>> deleteDeck(String deckId) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> saveGeneratedDeck({
+    required DeckEntity deck,
+    required List<FlashcardEntity> cards,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> linkDeckToCourse({
+    required String deckId,
+    required String courseId,
+    String? courseCode,
+    String? subject,
+  }) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> enqueueReviewLog(FsrsReviewLog log) async {
     return const Right(null);
   }
 }
