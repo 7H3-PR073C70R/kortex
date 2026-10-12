@@ -35,7 +35,7 @@ void main() {
 
     testWidgets('renders shimmer skeleton when loading without feed', (tester) async {
       when(() => mockDashboardBloc.state).thenReturn(
-        const DashboardState(status: DashboardStatus.loading, feed: null),
+        const DashboardState(status: DashboardStatus.loading),
       );
 
       await tester.pumpWidget(
@@ -52,7 +52,6 @@ void main() {
     testWidgets('renders KPI cards and retention sections when feed is loaded', (tester) async {
       const feed = DashboardFeedEntity(
         calibrationProfile: CalibrationProfile(
-          focus: AcademicFocus.higherEducation,
           isCalibrated: true,
         ),
         analyticsSummary: AnalyticsSummaryEntity(

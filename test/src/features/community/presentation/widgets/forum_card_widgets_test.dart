@@ -39,11 +39,10 @@ void main() {
     repliesCount: 5,
     isQuestion: true,
     isVerifiedSolution: true,
-    isAnonymous: false,
     syllabusTag: 'Nuclear Physics',
     tags: const ['radioactivity', 'isotopes'],
     karmaBounty: 150,
-    latexContent: r'E = mc^2',
+    latexContent: 'E = mc^2',
   );
 
   final anonymousPost = ForumPostEntity(
@@ -56,10 +55,7 @@ void main() {
     createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
     upvotes: 8,
     downvotes: 1,
-    userVote: 0,
-    repliesCount: 0,
     isQuestion: true,
-    isVerifiedSolution: false,
     isAnonymous: true,
   );
 

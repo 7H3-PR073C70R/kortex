@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/presentation/widgets/discussion_thread_group_card.dart';
@@ -28,7 +27,6 @@ void main() {
     content: 'This is a verified solution explaining heat engines and entropy.',
     createdAt: DateTime.now().subtract(const Duration(minutes: 45)),
     upvotes: 12,
-    downvotes: 0,
     userVote: 1,
     repliesCount: 2,
     isVerifiedSolution: true,
@@ -43,22 +41,18 @@ void main() {
     content: 'Thanks for the explanation! What about the Carnot efficiency?',
     createdAt: DateTime.now().subtract(const Duration(minutes: 20)),
     upvotes: 3,
-    downvotes: 0,
-    userVote: 0,
-    repliesCount: 0,
   );
 
   group('Thread Group Sub-Widgets Unit & Widget Tests', () {
     testWidgets('ParentReplyAuthorHeader renders author, time, and scholar badge',
         (tester) async {
-      var editCalled = false;
       await tester.pumpWidget(
         createTestWidget(
           ParentReplyAuthorHeader(
             parentReply: sampleParentReply,
             isAiReply: false,
             isOp: false,
-            onEditReply: () => editCalled = true,
+            onEditReply: () {},
           ),
         ),
       );
@@ -140,7 +134,7 @@ void main() {
             opAuthorName: 'OriginalPoster',
             onToggleExpand: () => toggleExpandCalled = true,
             onLoadMoreChildren: () {},
-            onChildVote: (_, __) {},
+            onChildVote: (_, _) {},
             onChildReplyTap: (_) {},
           ),
         ),
@@ -169,7 +163,7 @@ void main() {
             opAuthorName: 'OriginalPoster',
             onToggleExpand: () => toggleCollapseCalled = true,
             onLoadMoreChildren: () {},
-            onChildVote: (_, __) {},
+            onChildVote: (_, _) {},
             onChildReplyTap: (_) {},
           ),
         ),
@@ -236,7 +230,7 @@ void main() {
             onToggleExpand: () {},
             onLoadMoreChildren: () {},
             onVote: (_) {},
-            onChildVote: (_, __) {},
+            onChildVote: (_, _) {},
             onReplyTap: () {},
             onChildReplyTap: (_) {},
             onVerifySolution: () {},
