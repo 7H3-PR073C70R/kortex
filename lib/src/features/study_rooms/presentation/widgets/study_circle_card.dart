@@ -332,33 +332,39 @@ class StudyCircleCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Pod Member Avatars stack
-                    Row(
-                      children: [
-                        for (
-                          var i = 0;
-                          i < circle.members.take(4).length;
-                          i++
-                        )
-                          Align(
-                            widthFactor: 0.7,
-                            child: AppAvatar(
-                              name: circle.members[i].userName,
-                              size: AppAvatarSize.small,
-                              customDimension: 26,
-                              borderColor: isDark
-                                  ? colors.surfaceSecondary
-                                  : colors.surfacePrimary,
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (
+                            var i = 0;
+                            i < circle.members.take(4).length;
+                            i++
+                          )
+                            Align(
+                              widthFactor: 0.7,
+                              child: AppAvatar(
+                                name: circle.members[i].userName,
+                                size: AppAvatarSize.small,
+                                customDimension: 26,
+                                borderColor: isDark
+                                    ? colors.surfaceSecondary
+                                    : colors.surfacePrimary,
+                              ),
                             ),
-                          ),
-                        if (circle.members.isEmpty)
-                          Text(
-                            l10n.firstToJoinCircle,
-                            style: typography.caption.medium.copyWith(
-                              color: colors.textSecondary,
-                              fontStyle: FontStyle.italic,
+                          if (circle.members.isEmpty)
+                            Flexible(
+                              child: Text(
+                                l10n.firstToJoinCircle,
+                                style: typography.caption.medium.copyWith(
+                                  color: colors.textSecondary,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
 
                     // Join / Details Action Button

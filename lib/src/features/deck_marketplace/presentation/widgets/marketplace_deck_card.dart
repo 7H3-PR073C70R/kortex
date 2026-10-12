@@ -231,34 +231,40 @@ class MarketplaceDeckCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.style_outlined,
-                          size: 16,
-                          color: colors.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${deck.totalCards} cards',
-                          style: typography.caption.medium.copyWith(
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.style_outlined,
+                            size: 16,
                             color: colors.textSecondary,
                           ),
-                        ),
-                        const SizedBox(width: 14),
-                        Icon(
-                          Icons.download_rounded,
-                          size: 16,
-                          color: colors.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${deck.downloadsCount}',
-                          style: typography.caption.medium.copyWith(
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '${deck.totalCards} cards',
+                              style: typography.caption.medium.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Icon(
+                            Icons.download_rounded,
+                            size: 16,
                             color: colors.textSecondary,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Text(
+                            '${deck.downloadsCount}',
+                            style: typography.caption.medium.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     if (isAlreadyCloned)
                       Container(

@@ -129,56 +129,66 @@ class _StudyCirclePodPulseCardState extends State<StudyCirclePodPulseCard> {
                 children: [
                   Row(
                     children: [
-                      AppPulsingBeacon(
-                        color: neural.emerald,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.podPulseTitle,
-                        style: typography.caption.bold.copyWith(
-                          color: neural.emerald400,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.6,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: neural.emerald.withAlpha(38),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: neural.emerald.withAlpha(77),
-                          ),
-                        ),
+                      Flexible(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 5,
-                              height: 5,
-                              decoration: BoxDecoration(
-                                color: neural.emerald,
-                                shape: BoxShape.circle,
+                            AppPulsingBeacon(
+                              color: neural.emerald,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                l10n.podPulseTitle,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.caption.bold.copyWith(
+                                  color: neural.emerald400,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.6,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'LIVE SYNC',
-                              style: typography.caption.bold.copyWith(
-                                color: neural.emerald400,
-                                fontSize: 9,
-                                letterSpacing: 0.8,
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: neural.emerald.withAlpha(38),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: neural.emerald.withAlpha(77),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 5,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: neural.emerald,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'LIVE SYNC',
+                                    style: typography.caption.bold.copyWith(
+                                      color: neural.emerald400,
+                                      fontSize: 9,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       InkWell(
                         onTap: () {
                           unawaited(HapticFeedback.lightImpact());
@@ -258,34 +268,44 @@ class _StudyCirclePodPulseCardState extends State<StudyCirclePodPulseCard> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Row(
                 children: [
-                  Text(
-                    'AVAILABLE STUDY PODS',
-                    style: typography.caption.bold.copyWith(
-                      color: neural.slate400,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.2,
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'AVAILABLE STUDY PODS',
+                            overflow: TextOverflow.ellipsis,
+                            style: typography.caption.bold.copyWith(
+                              color: neural.slate400,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: neural.obsidian800,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${circles.length}',
+                            style: typography.caption.bold.copyWith(
+                              color: neural.slate200,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: neural.obsidian800,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${circles.length}',
-                      style: typography.caption.bold.copyWith(
-                        color: neural.slate200,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   ShrinkableButton(
                     onTap: () {
                       unawaited(HapticFeedback.lightImpact());
@@ -733,14 +753,18 @@ class PodMetricChip extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 14, color: iconColor),
               const SizedBox(width: 4),
-              Text(
-                value,
-                style: typography.caption.bold.copyWith(
-                  color: valueColor ?? neural.slate300,
-                  fontSize: 12,
+              Flexible(
+                child: Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.caption.bold.copyWith(
+                    color: valueColor ?? neural.slate300,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],

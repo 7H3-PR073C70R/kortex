@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
-import 'package:kortex/src/core/constants/app_spacing.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -16,9 +16,6 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
-import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -34,55 +31,134 @@ import 'package:kortex/src/features/profile/domain/use_cases/send_password_reset
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_password_use_case.dart';
 import 'package:kortex/src/features/profile/presentation/widgets/active_sessions_list_widget.dart';
-import 'package:kortex/src/l10n/l10n.dart';
-
+import 'package:kortex/src/features/profile/presentation/widgets/security/security_account_credentials_section.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/security/security_biometrics_and_mfa_section.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/security/security_danger_zone_card.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/security/security_data_portability_section.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/security/security_deck_picker_dialog.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/security/security_password_section.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/security/security_section_container.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/security/security_storage_cache_section.dart';
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
-import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
-import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
-import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
-import 'package:kortex/src/shared/widgets/app_text_field.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Consolidated Account & Security management page.
-///
-/// Features tabbed controls to manage:
-/// - Security & Access: Password change, Biometric App Lock, Supabase MFA 2FA,
-///   active session invalidation, and Danger Zone account purge.
-/// - Account & Data: Scholar credentials, Anki/CSV/PDF deck portability,
-///   and local storage/image cache management.
 @RoutePage()
 class SecuritySettingsPage extends StatelessWidget {
   const SecuritySettingsPage({
     super.key,
     this.initialTabIndex = 0,
+    this.authBloc,
+    this.localStorageService,
+    this.biometricAuthService,
+    this.userActivityService,
+    this.userStorageService,
+    this.updatePasswordUseCase,
+    this.sendPasswordResetEmailUseCase,
+    this.listMfaFactorsUseCase,
+    this.unenrollMfaTotpUseCase,
+    this.signOutOtherSessionsUseCase,
+    this.updateDisplayNameUseCase,
+    this.getUserDecksUseCase,
+    this.getDeckCardsUseCase,
   });
 
   final int initialTabIndex;
+  final AuthBloc? authBloc;
+  final LocalStorageService? localStorageService;
+  final BiometricAuthService? biometricAuthService;
+  final UserActivityService? userActivityService;
+  final UserStorageService? userStorageService;
+  final UpdatePasswordUseCase? updatePasswordUseCase;
+  final SendPasswordResetEmailUseCase? sendPasswordResetEmailUseCase;
+  final ListMfaFactorsUseCase? listMfaFactorsUseCase;
+  final UnenrollMfaTotpUseCase? unenrollMfaTotpUseCase;
+  final SignOutOtherSessionsUseCase? signOutOtherSessionsUseCase;
+  final UpdateDisplayNameUseCase? updateDisplayNameUseCase;
+  final GetUserDecksUseCase? getUserDecksUseCase;
+  final GetDeckCardsUseCase? getDeckCardsUseCase;
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<AuthBloc>.value(
-      value: locator<AuthBloc>(),
-      child: _SecuritySettingsView(initialTabIndex: initialTabIndex),
+    final effectiveAuthBloc = authBloc ??
+        (locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null);
+
+    final view = SecuritySettingsView(
+      initialTabIndex: initialTabIndex,
+      localStorageService: localStorageService,
+      biometricAuthService: biometricAuthService,
+      userActivityService: userActivityService,
+      userStorageService: userStorageService,
+      updatePasswordUseCase: updatePasswordUseCase,
+      sendPasswordResetEmailUseCase: sendPasswordResetEmailUseCase,
+      listMfaFactorsUseCase: listMfaFactorsUseCase,
+      unenrollMfaTotpUseCase: unenrollMfaTotpUseCase,
+      signOutOtherSessionsUseCase: signOutOtherSessionsUseCase,
+      updateDisplayNameUseCase: updateDisplayNameUseCase,
+      getUserDecksUseCase: getUserDecksUseCase,
+      getDeckCardsUseCase: getDeckCardsUseCase,
     );
+
+    if (effectiveAuthBloc != null) {
+      return BlocProvider<AuthBloc>.value(
+        value: effectiveAuthBloc,
+        child: view,
+      );
+    }
+
+    return view;
   }
 }
 
-class _SecuritySettingsView extends HookWidget {
-  const _SecuritySettingsView({required this.initialTabIndex});
+class SecuritySettingsView extends HookWidget {
+  const SecuritySettingsView({
+    required this.initialTabIndex,
+    this.localStorageService,
+    this.biometricAuthService,
+    this.userActivityService,
+    this.userStorageService,
+    this.updatePasswordUseCase,
+    this.sendPasswordResetEmailUseCase,
+    this.listMfaFactorsUseCase,
+    this.unenrollMfaTotpUseCase,
+    this.signOutOtherSessionsUseCase,
+    this.updateDisplayNameUseCase,
+    this.getUserDecksUseCase,
+    this.getDeckCardsUseCase,
+    super.key,
+  });
 
   final int initialTabIndex;
+  final LocalStorageService? localStorageService;
+  final BiometricAuthService? biometricAuthService;
+  final UserActivityService? userActivityService;
+  final UserStorageService? userStorageService;
+  final UpdatePasswordUseCase? updatePasswordUseCase;
+  final SendPasswordResetEmailUseCase? sendPasswordResetEmailUseCase;
+  final ListMfaFactorsUseCase? listMfaFactorsUseCase;
+  final UnenrollMfaTotpUseCase? unenrollMfaTotpUseCase;
+  final SignOutOtherSessionsUseCase? signOutOtherSessionsUseCase;
+  final UpdateDisplayNameUseCase? updateDisplayNameUseCase;
+  final GetUserDecksUseCase? getUserDecksUseCase;
+  final GetDeckCardsUseCase? getDeckCardsUseCase;
+
+  LocalStorageService? get _storage =>
+      localStorageService ??
+      (locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null);
+
+  BiometricAuthService? get _biometrics =>
+      biometricAuthService ??
+      (locator.isRegistered<BiometricAuthService>()
+          ? locator<BiometricAuthService>()
+          : null);
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
     final selectedTabIndex = useState<int>(initialTabIndex);
 
     final currentPasswordController = useTextEditingController();
@@ -95,31 +171,38 @@ class _SecuritySettingsView extends HookWidget {
     final twoFactorEnabled = useState<bool>(false);
     final activeTotpFactorId = useState<String?>(null);
 
-    final storage = locator<LocalStorageService>();
-
     useEffect(() {
-      final savedBiometric =
-          storage.getPreference(key: '__biometric_lock_enabled') == 'true';
-      biometricLockEnabled.value = savedBiometric;
+      final storage = _storage;
+      if (storage != null) {
+        final savedBiometric =
+            storage.getPreference(key: '__biometric_lock_enabled') == 'true';
+        biometricLockEnabled.value = savedBiometric;
 
-      final savedTimeoutStr = storage.getPreference(
-        key: '__biometric_lock_timeout_seconds',
-      );
-      if (savedTimeoutStr != null) {
-        final parsed = int.tryParse(savedTimeoutStr);
-        if (parsed != null && parsed >= 0) {
-          backgroundLockTimeoutSeconds.value = parsed;
+        final savedTimeoutStr = storage.getPreference(
+          key: '__biometric_lock_timeout_seconds',
+        );
+        if (savedTimeoutStr != null) {
+          final parsed = int.tryParse(savedTimeoutStr);
+          if (parsed != null && parsed >= 0) {
+            backgroundLockTimeoutSeconds.value = parsed;
+          }
         }
       }
 
       Future<void> loadMfa() async {
-        final result = await locator<ListMfaFactorsUseCase>()(const NoParams());
-        if (result.isRight) {
-          final factors =
-              (result as Right<Failure, List<MfaFactorEntity>>).value;
-          if (factors.isNotEmpty) {
-            twoFactorEnabled.value = true;
-            activeTotpFactorId.value = factors.first.id;
+        final useCase = listMfaFactorsUseCase ??
+            (locator.isRegistered<ListMfaFactorsUseCase>()
+                ? locator<ListMfaFactorsUseCase>()
+                : null);
+        if (useCase != null) {
+          final result = await useCase(const NoParams());
+          if (result.isRight) {
+            final factors =
+                (result as Right<Failure, List<MfaFactorEntity>>).value;
+            if (factors.isNotEmpty) {
+              twoFactorEnabled.value = true;
+              activeTotpFactorId.value = factors.first.id;
+            }
           }
         }
       }
@@ -128,7 +211,6 @@ class _SecuritySettingsView extends HookWidget {
       return null;
     }, const []);
 
-    // Password strength evaluator
     final newPasswordText = useValueListenable(newPasswordController).text;
     final hasMinLength = newPasswordText.length >= 8;
     final hasNumber = newPasswordText.contains(RegExp('[0-9]'));
@@ -139,8 +221,7 @@ class _SecuritySettingsView extends HookWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final profile = state.userProfile;
-        final displayName =
-            profile?.displayName ??
+        final displayName = profile?.displayName ??
             state.user?.displayName ??
             'Kortexify Scholar';
         final email =
@@ -193,9 +274,6 @@ class _SecuritySettingsView extends HookWidget {
                             ? _buildSecurityTab(
                                 context: context,
                                 email: email,
-                                colors: colors,
-                                typography: typography,
-                                isDark: isDark,
                                 currentPasswordController:
                                     currentPasswordController,
                                 newPasswordController: newPasswordController,
@@ -215,8 +293,6 @@ class _SecuritySettingsView extends HookWidget {
                                 context: context,
                                 displayName: displayName,
                                 email: email,
-                                colors: colors,
-                                typography: typography,
                               ),
                       ),
                     ),
@@ -230,16 +306,9 @@ class _SecuritySettingsView extends HookWidget {
     );
   }
 
-  // ==========================================
-  // TAB 1: SECURITY & ACCESS
-  // ==========================================
-
   Widget _buildSecurityTab({
     required BuildContext context,
     required String email,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-    required bool isDark,
     required TextEditingController currentPasswordController,
     required TextEditingController newPasswordController,
     required TextEditingController confirmPasswordController,
@@ -259,473 +328,53 @@ class _SecuritySettingsView extends HookWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Password Change Card
-          _buildSectionContainer(
-            title: 'Password & Authentication',
-            subtitle: 'Update your account password or request a reset link',
-            colors: colors,
-            typography: typography,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppTextField(
-                  controller: currentPasswordController,
-                  hintText: 'Current Password',
-                  isPassword: true,
-                ),
-                const SizedBox(height: 12),
-                AppTextField(
-                  controller: newPasswordController,
-                  hintText: 'New Password (min. 8 characters)',
-                  isPassword: true,
-                ),
-                const SizedBox(height: 12),
-                AppTextField(
-                  controller: confirmPasswordController,
-                  hintText: 'Confirm New Password',
-                  isPassword: true,
-                ),
-                const SizedBox(height: 12),
-
-                // Password Strength Indicators
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    _buildStrengthTag(
-                      label: '8+ Chars',
-                      isValid: hasMinLength,
-                      colors: colors,
-                      typography: typography,
-                    ),
-                    _buildStrengthTag(
-                      label: 'Number (0-9)',
-                      isValid: hasNumber,
-                      colors: colors,
-                      typography: typography,
-                    ),
-                    _buildStrengthTag(
-                      label: 'Special Symbol',
-                      isValid: hasSpecial,
-                      colors: colors,
-                      typography: typography,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Action Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: PlatformHoverBuilder(
-                        builder: (context, isHovered, child) {
-                          return AnimatedScale(
-                            scale: isHovered ? 1.02 : 1.0,
-                            duration: AppMotion.snappy,
-                            curve: Curves.easeOutCubic,
-                            child: child,
-                          );
-                        },
-                        child: ShrinkableButton(
-                          onTap: () async {
-                            final newPass = newPasswordController.text.trim();
-                            final confirmPass = confirmPasswordController.text
-                                .trim();
-
-                            if (newPass.length < 8) {
-                              AppFeedback.heavy();
-                              context.showSnackBar(
-                                message: 'Password must be at least 8 chars.',
-                                type: SnackBarType.error,
-                              );
-                              return;
-                            }
-
-                            if (newPass != confirmPass) {
-                              AppFeedback.heavy();
-                              context.showSnackBar(
-                                message: 'Passwords do not match.',
-                                type: SnackBarType.error,
-                              );
-                              return;
-                            }
-
-                            isUpdatingPassword.value = true;
-                            final result =
-                                await locator<UpdatePasswordUseCase>()(newPass);
-                            isUpdatingPassword.value = false;
-
-                            if (result.isLeft) {
-                              final failure =
-                                  (result as Left<Failure, void>).value;
-                              AppFeedback.heavy();
-                              if (context.mounted) {
-                                context.showSnackBar(
-                                  message:
-                                      'Failed to update: '
-                                      '${failure.message ?? "Error"}',
-                                  type: SnackBarType.error,
-                                );
-                              }
-                            } else {
-                              AppFeedback.light();
-                              if (context.mounted) {
-                                context.showSnackBar(
-                                  message: 'Password updated successfully!',
-                                  type: SnackBarType.success,
-                                );
-                                currentPasswordController.clear();
-                                newPasswordController.clear();
-                                confirmPasswordController.clear();
-                              }
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              borderRadius: AppRadius.radiusCard,
-                            ),
-                            child: Center(
-                              child: isUpdatingPassword.value
-                                  ? AppLogoLoader(
-                                      size: 18,
-                                      color: colors.white,
-                                      showMessage: false,
-                                    )
-                                  : Text(
-                                      'Update Password',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.white,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    PlatformHoverBuilder(
-                      builder: (context, isHovered, child) {
-                        return AnimatedScale(
-                          scale: isHovered ? 1.02 : 1.0,
-                          duration: AppMotion.snappy,
-                          curve: Curves.easeOutCubic,
-                          child: child,
-                        );
-                      },
-                      child: ShrinkableButton(
-                        onTap: () async {
-                          AppFeedback.selection();
-                          final result =
-                              await locator<SendPasswordResetEmailUseCase>()(
-                                email,
-                              );
-                          if (result.isLeft) {
-                            final failure =
-                                (result as Left<Failure, void>).value;
-                            if (context.mounted) {
-                              context.showSnackBar(
-                                message:
-                                    'Failed to send reset link: '
-                                    '${failure.message ?? "Error"}',
-                                type: SnackBarType.error,
-                              );
-                            }
-                          } else {
-                            if (context.mounted) {
-                              context.showSnackBar(
-                                message: 'Reset link sent to $email',
-                                type: SnackBarType.success,
-                              );
-                            }
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.surfacePrimary,
-                            borderRadius: AppRadius.radiusCard,
-                            border: Border.all(
-                              color: colors.surfaceBorder.withAlpha(90),
-                            ),
-                          ),
-                          child: Text(
-                            'Send Reset Email',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          SecurityPasswordSection(
+            currentPasswordController: currentPasswordController,
+            newPasswordController: newPasswordController,
+            confirmPasswordController: confirmPasswordController,
+            hasMinLength: hasMinLength,
+            hasNumber: hasNumber,
+            hasSpecial: hasSpecial,
+            isUpdatingPassword: isUpdatingPassword.value,
+            onUpdatePassword: () => _handleUpdatePassword(
+              context,
+              newPasswordController: newPasswordController,
+              confirmPasswordController: confirmPasswordController,
+              currentPasswordController: currentPasswordController,
+              isUpdatingPassword: isUpdatingPassword,
             ),
+            onSendResetEmail: () => _handleSendResetEmail(context, email),
           ),
           const SizedBox(height: 20),
 
           // 2. Biometric Lock & 2FA
-          _buildSectionContainer(
-            title: 'App Lock & Two-Factor Authentication',
-            subtitle:
-                'Protect your study notes with biometrics & '
-                'Authenticator App (TOTP)',
-            colors: colors,
-            typography: typography,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Biometric App Lock',
-                          style: typography.body.medium.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 13.5,
-                          ),
-                        ),
-                        Text(
-                          'Require Face ID / Fingerprint on launch',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Switch.adaptive(
-                      value: biometricLockEnabled.value,
-                      activeTrackColor: colors.primary,
-                      onChanged: (val) async {
-                        AppFeedback.selection();
-                        final biometricService =
-                            locator<BiometricAuthService>();
-                        if (val) {
-                          final canAuth = await biometricService
-                              .canAuthenticate();
-                          if (!canAuth) {
-                            if (context.mounted) {
-                              context.showSnackBar(
-                                message:
-                                    'Biometrics is not available or enrolled on this device.',
-                                type: SnackBarType.error,
-                              );
-                            }
-                            return;
-                          }
-                          final authenticated = await biometricService
-                              .authenticate(
-                                localizedReason:
-                                    'Confirm biometrics to enable App Lock',
-                              );
-                          if (!authenticated) {
-                            if (context.mounted) {
-                              context.showSnackBar(
-                                message:
-                                    'Biometric verification was not completed.',
-                                type: SnackBarType.error,
-                              );
-                            }
-                            return;
-                          }
-                          await biometricService.setBiometricLockEnabled(
-                            enabled: true,
-                          );
-                          biometricLockEnabled.value = true;
-                          if (context.mounted) {
-                            context.showSnackBar(
-                              message:
-                                  'Biometric App Lock enabled! Kortexify '
-                                  'will require authentication on launch.',
-                              type: SnackBarType.success,
-                            );
-                          }
-                        } else {
-                          await biometricService.setBiometricLockEnabled(
-                            enabled: false,
-                          );
-                          biometricLockEnabled.value = false;
-                          if (context.mounted) {
-                            context.showSnackBar(
-                              message: 'Biometric App Lock disabled.',
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                if (biometricLockEnabled.value) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.surfacePrimary,
-                      borderRadius: AppRadius.radiusCard,
-                      border: Border.all(
-                        color: colors.surfaceBorder.withAlpha(70),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Auto-Lock Timeout',
-                              style: typography.body.medium.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 13,
-                              ),
-                            ),
-                            Text(
-                              'Re-arm lock when backgrounded',
-                              style: typography.caption.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                        DropdownButton<int>(
-                          value:
-                              const [
-                                0,
-                                15,
-                                30,
-                                60,
-                                300,
-                              ].contains(backgroundLockTimeoutSeconds.value)
-                              ? backgroundLockTimeoutSeconds.value
-                              : 30,
-                          underline: const SizedBox.shrink(),
-                          dropdownColor: colors.surfacePrimary,
-                          icon: Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: colors.textSecondary,
-                            size: 18,
-                          ),
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 12,
-                          ),
-                          onChanged: (newSeconds) async {
-                            if (newSeconds == null) return;
-                            AppFeedback.selection();
-                            backgroundLockTimeoutSeconds.value = newSeconds;
-                            await locator<BiometricAuthService>()
-                                .setBackgroundLockTimeout(
-                                  Duration(seconds: newSeconds),
-                                );
-                            if (context.mounted) {
-                              context.showSnackBar(
-                                message: 'Auto-lock timeout updated.',
-                              );
-                            }
-                          },
-                          items: [
-                            DropdownMenuItem(
-                              value: 0,
-                              child: Text(context.l10n.securityTimeoutImmediately),
-                            ),
-                            DropdownMenuItem(
-                              value: 15,
-                              child: Text(context.l10n.securityTimeout15s),
-                            ),
-                            DropdownMenuItem(
-                              value: 30,
-                              child: Text(context.l10n.securityTimeout30sDefault),
-                            ),
-                            DropdownMenuItem(
-                              value: 60,
-                              child: Text(context.l10n.securityTimeout1m),
-                            ),
-                            DropdownMenuItem(
-                              value: 300,
-                              child: Text(context.l10n.securityTimeout5m),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const Divider(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Two-Factor Auth (TOTP)',
-                          style: typography.body.medium.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 13.5,
-                          ),
-                        ),
-                        Text(
-                          twoFactorEnabled.value
-                              ? 'Active • Authenticator linked'
-                              : 'Require 6-digit TOTP code on login',
-                          style: typography.caption.regular.copyWith(
-                            color: twoFactorEnabled.value
-                                ? colors.success
-                                : colors.textSecondary,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Switch.adaptive(
-                      value: twoFactorEnabled.value,
-                      activeTrackColor: colors.primary,
-                      onChanged: (val) async {
-                        AppFeedback.selection();
-                        if (val) {
-                          await _enrollTotp(
-                            context,
-                            twoFactorEnabled,
-                            activeTotpFactorId,
-                            colors,
-                            typography,
-                          );
-                        } else {
-                          await _unenrollTotp(
-                            context,
-                            twoFactorEnabled,
-                            activeTotpFactorId,
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ],
+          SecurityBiometricsAndMfaSection(
+            biometricLockEnabled: biometricLockEnabled.value,
+            backgroundLockTimeoutSeconds: backgroundLockTimeoutSeconds.value,
+            twoFactorEnabled: twoFactorEnabled.value,
+            onBiometricLockChanged: (val) => _handleBiometricLockChanged(
+              context,
+              val,
+              biometricLockEnabled,
+            ),
+            onTimeoutChanged: (val) => _handleTimeoutChanged(
+              context,
+              val,
+              backgroundLockTimeoutSeconds,
+            ),
+            onTwoFactorChanged: (val) => _handleTwoFactorChanged(
+              context,
+              val,
+              twoFactorEnabled,
+              activeTotpFactorId,
             ),
           ),
           const SizedBox(height: 20),
 
           // 3. Active Sessions & Device Management
-          _buildSectionContainer(
+          SecuritySectionContainer(
             title: 'Active Sessions & Device Management',
             subtitle: 'Review authorized devices connected to your account',
-            colors: colors,
-            typography: typography,
             child: ActiveSessionsListWidget(
               sessions: [
                 DeviceSession(
@@ -750,115 +399,24 @@ class _SecuritySettingsView extends HookWidget {
                   isCurrentDevice: true,
                 ),
               ],
-              onRevokeAllOthers: () async {
-                AppFeedback.medium();
-                final result = await locator<SignOutOtherSessionsUseCase>()(
-                  const NoParams(),
-                );
-                if (result.isLeft) {
-                  final failure = (result as Left<Failure, void>).value;
-                  if (context.mounted) {
-                    context.showSnackBar(
-                      message: failure.message ?? 'Sign out failed',
-                      type: SnackBarType.error,
-                    );
-                  }
-                } else {
-                  if (context.mounted) {
-                    context.showSnackBar(
-                      message: 'Signed out of all other active sessions!',
-                      type: SnackBarType.success,
-                    );
-                  }
-                }
-              },
+              onRevokeAllOthers: () => _handleRevokeAllOthers(context),
             ),
           ),
-
           const SizedBox(height: 20),
 
           // 4. Danger Zone: Delete Account
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colors.error.withAlpha(isDark ? 25 : 12),
-              borderRadius: AppRadius.radiusDialog,
-              border: Border.all(
-                color: colors.error.withAlpha(isDark ? 90 : 60),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Danger Zone',
-                  style: typography.body.bold.copyWith(
-                    color: colors.error,
-                    fontSize: 14.5,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Permanently delete your account, synced flashcard '
-                  'decks, and Syllabot conversation history.',
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary,
-                    fontSize: 11.5,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return AnimatedScale(
-                      scale: isHovered ? 1.02 : 1.0,
-                      duration: AppMotion.snappy,
-                      curve: Curves.easeOutCubic,
-                      child: child,
-                    );
-                  },
-                  child: ShrinkableButton(
-                    onTap: () => _confirmAccountDeletion(
-                      context,
-                      colors,
-                      typography,
-                    ),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: colors.error,
-                        borderRadius: AppRadius.radiusCard,
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Delete Account & Purge Data',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.white,
-                            fontSize: 12.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          SecurityDangerZoneCard(
+            onDeleteAccount: () => _handleDeleteAccount(context),
           ),
         ],
       ),
     );
   }
 
-  // ==========================================
-  // TAB 2: ACCOUNT & DATA
-  // ==========================================
-
   Widget _buildAccountDataTab({
     required BuildContext context,
     required String displayName,
     required String email,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
   }) {
     return SingleChildScrollView(
       key: const ValueKey('account_data_tab'),
@@ -867,463 +425,347 @@ class _SecuritySettingsView extends HookWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Account Credentials
-          _buildSectionContainer(
-            title: 'Account Credentials',
-            subtitle: 'Your identity across devices and cloud sync',
-            colors: colors,
-            typography: typography,
-            child: Column(
-              children: [
-                _buildAccountRow(
-                  label: 'Display Name',
-                  value: displayName,
-                  actionLabel: 'Edit',
-                  onAction: () => _showEditNameDialog(
-                    context,
-                    displayName,
-                  ),
-                  colors: colors,
-                  typography: typography,
-                ),
-                const Divider(height: 20),
-                _buildAccountRow(
-                  label: 'Email Address',
-                  value: email,
-                  actionLabel: 'Verified',
-                  isVerified: true,
-                  colors: colors,
-                  typography: typography,
-                ),
-              ],
+          SecurityAccountCredentialsSection(
+            displayName: displayName,
+            email: email,
+            onSaveDisplayName: (newName) => _handleSaveDisplayName(
+              context,
+              newName,
             ),
           ),
           const SizedBox(height: 20),
 
           // 2. Data Portability & Export (Anki, PDF, CSV)
-          _buildSectionContainer(
-            title: 'Data Portability & Export',
-            subtitle: 'Export your flashcard decks and study notes',
-            colors: colors,
-            typography: typography,
-            child: Column(
-              children: [
-                _buildExportOption(
-                  icon: Icons.ios_share_rounded,
-                  title: 'Export Study Decks (Anki, CSV, PDF)',
-                  subtitle: 'Export active decks with full SRS intervals',
-                  onTap: () => _exportDeckFlow(context),
-                  colors: colors,
-                  typography: typography,
-                ),
-                const Divider(height: 1),
-                _buildExportOption(
-                  icon: Icons.download_for_offline_outlined,
-                  title: 'Export Account Data (GDPR JSON Bundle)',
-                  subtitle: 'Download complete structured JSON archive of all study progress',
-                  onTap: () => _exportGdprDataBundle(context),
-                  colors: colors,
-                  typography: typography,
-                ),
-              ],
-            ),
+          SecurityDataPortabilitySection(
+            onExportDecks: () => _handleExportDeckFlow(context),
+            onExportGdprBundle: () => _handleExportGdprDataBundle(context),
           ),
           const SizedBox(height: 20),
 
           // 3. Storage & AI Cache Management
-          _buildSectionContainer(
-            title: 'Storage & AI Cache Management',
-            subtitle: 'Free up local device memory without losing study data',
-            colors: colors,
-            typography: typography,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Syllabot & Image Cache',
-                        style: typography.body.medium.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                      Text(
-                        'Temporary audio, token & image buffers',
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                AppSpacing.horizontalSpaceSmall,
-                PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return AnimatedScale(
-                      scale: isHovered ? 1.04 : 1.0,
-                      duration: AppMotion.snappy,
-                      curve: Curves.easeOutCubic,
-                      child: child,
-                    );
-                  },
-                  child: ShrinkableButton(
-                    onTap: () {
-                      AppFeedback.light();
-                      PaintingBinding.instance.imageCache.clear();
-                      PaintingBinding.instance.imageCache.clearLiveImages();
-                      context.showSnackBar(
-                        message: 'Local memory and image cache cleared!',
-                        type: SnackBarType.success,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(25),
-                        borderRadius: AppRadius.radiusBadge,
-                        border: Border.all(
-                          color: colors.primary.withAlpha(80),
-                        ),
-                      ),
-                      child: Text(
-                        'Clear Cache',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const SecurityStorageCacheSection(),
         ],
       ),
     );
   }
 
   // ==========================================
-  // SHARED SECTION CONTAINERS & HELPERS
+  // ACTION HANDLERS
   // ==========================================
 
-  Widget _buildSectionContainer({
-    required String title,
-    required String subtitle,
-    required Widget child,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 6, bottom: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title.toUpperCase(),
-                style: typography.headline.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 14,
-                ),
-              ),
-              if (subtitle.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary.withAlpha(200),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colors.surfacePrimary,
-            borderRadius: AppRadius.radiusDialog,
-            border: Border.all(
-              color: colors.surfaceBorder.withAlpha(80),
-            ),
-          ),
-          child: child,
-        ),
-      ],
-    );
-  }
+  Future<void> _handleUpdatePassword(
+    BuildContext context, {
+    required TextEditingController newPasswordController,
+    required TextEditingController confirmPasswordController,
+    required TextEditingController currentPasswordController,
+    required ValueNotifier<bool> isUpdatingPassword,
+  }) async {
+    final newPass = newPasswordController.text.trim();
+    final confirmPass = confirmPasswordController.text.trim();
 
-  Widget _buildAccountRow({
-    required String label,
-    required String value,
-    required String actionLabel,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-    VoidCallback? onAction,
-    bool isVerified = false,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: typography.caption.regular.copyWith(
-                color: colors.textSecondary,
-                fontSize: 11,
-              ),
-            ),
-            const SizedBox(height: 1),
-            Text(
-              value,
-              style: typography.body.bold.copyWith(
-                color: colors.textPrimary,
-                fontSize: 13.5,
-              ),
-            ),
-          ],
-        ),
-        if (isVerified)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: colors.success.withAlpha(25),
-              borderRadius: AppRadius.radiusBadge,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: colors.success,
-                  size: 13,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  actionLabel,
-                  style: typography.caption.bold.copyWith(
-                    color: colors.success,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          ShrinkableButton(
-            onTap: onAction ?? () {},
-            child: Text(
-              actionLabel,
-              style: typography.caption.bold.copyWith(
-                color: colors.primary,
-                fontSize: 12.5,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+    if (newPass.length < 8) {
+      AppFeedback.heavy();
+      context.showSnackBar(
+        message: 'Password must be at least 8 chars.',
+        type: SnackBarType.error,
+      );
+      return;
+    }
 
-  Widget _buildExportOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-  }) {
-    return PlatformHoverBuilder(
-      builder: (context, isHovered, child) {
-        return AnimatedContainer(
-          duration: AppMotion.snappy,
-          curve: Curves.easeOutCubic,
-          transform: isHovered
-              ? Matrix4.translationValues(0, -2, 0)
-              : Matrix4.identity(),
-          child: child,
+    if (newPass != confirmPass) {
+      AppFeedback.heavy();
+      context.showSnackBar(
+        message: 'Passwords do not match.',
+        type: SnackBarType.error,
+      );
+      return;
+    }
+
+    isUpdatingPassword.value = true;
+    final useCase = updatePasswordUseCase ??
+        (locator.isRegistered<UpdatePasswordUseCase>()
+            ? locator<UpdatePasswordUseCase>()
+            : null);
+
+    if (useCase == null) {
+      isUpdatingPassword.value = false;
+      return;
+    }
+
+    final result = await useCase(newPass);
+    isUpdatingPassword.value = false;
+
+    if (result.isLeft) {
+      final failure = (result as Left<Failure, void>).value;
+      AppFeedback.heavy();
+      if (context.mounted) {
+        context.showSnackBar(
+          message: 'Failed to update: ${failure.message ?? "Error"}',
+          type: SnackBarType.error,
         );
-      },
-      child: ShrinkableButton(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: colors.surfacePrimary,
-            borderRadius: AppRadius.radiusCard,
-            border: Border.all(
-              color: colors.surfaceBorder.withAlpha(80),
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(25),
-                  borderRadius: AppRadius.radiusCard,
-                ),
-                child: Icon(icon, color: colors.primary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: typography.body.bold.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 13,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: typography.caption.regular.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: colors.textSecondary,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+      }
+    } else {
+      AppFeedback.light();
+      if (context.mounted) {
+        context.showSnackBar(
+          message: 'Password updated successfully!',
+          type: SnackBarType.success,
+        );
+        currentPasswordController.clear();
+        newPasswordController.clear();
+        confirmPasswordController.clear();
+      }
+    }
   }
 
-  Widget _buildStrengthTag({
-    required String label,
-    required bool isValid,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isValid ? colors.success.withAlpha(25) : colors.surfacePrimary,
-        borderRadius: AppRadius.radiusBadge,
-        border: Border.all(
-          color: isValid
-              ? colors.success.withAlpha(90)
-              : colors.surfaceBorder.withAlpha(80),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isValid
-                ? Icons.check_circle_rounded
-                : Icons.radio_button_unchecked_rounded,
-            size: 13,
-            color: isValid
-                ? colors.success
-                : colors.textSecondary.withAlpha(120),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: typography.caption.bold.copyWith(
-              color: isValid ? colors.success : colors.textSecondary,
-              fontSize: 10.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // ACTION FLOWS & DIALOGS
-  // ==========================================
-
-  void _showEditNameDialog(BuildContext context, String currentName) {
-    final controller = TextEditingController(text: currentName);
+  Future<void> _handleSendResetEmail(
+    BuildContext context,
+    String email,
+  ) async {
     AppFeedback.selection();
-    unawaited(
-      AppDialog.show(
-        context: context,
-        title: 'Edit Display Name',
-        content: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: AppTextField(
-            controller: controller,
-            hintText: 'Enter your scholar alias',
-          ),
-        ),
-        primaryActionText: 'Save',
-        onPrimaryAction: () async {
-          final newName = controller.text.trim();
-          if (newName.isNotEmpty) {
-            Navigator.of(context).pop();
-            context.read<AuthBloc>().add(AuthDisplayNameUpdated(newName));
-            final result = await locator<UpdateDisplayNameUseCase>()(newName);
-            result.fold(
-              (failure) {
-                if (context.mounted) {
-                  context.showSnackBar(
-                    message: 'Failed to update name: ${failure.message}',
-                    type: SnackBarType.error,
-                  );
-                }
-              },
-              (_) {
-                AppFeedback.light();
-                if (context.mounted) {
-                  context.read<AuthBloc>().add(
-                    const AuthProfileFetchRequested(),
-                  );
-                  context.showSnackBar(
-                    message: 'Display name updated to $newName',
-                    type: SnackBarType.success,
-                  );
-                }
-              },
-            );
+    final useCase = sendPasswordResetEmailUseCase ??
+        (locator.isRegistered<SendPasswordResetEmailUseCase>()
+            ? locator<SendPasswordResetEmailUseCase>()
+            : null);
+    if (useCase == null) return;
+
+    final result = await useCase(email);
+    if (result.isLeft) {
+      final failure = (result as Left<Failure, void>).value;
+      if (context.mounted) {
+        context.showSnackBar(
+          message: 'Failed to send reset link: ${failure.message ?? "Error"}',
+          type: SnackBarType.error,
+        );
+      }
+    } else {
+      if (context.mounted) {
+        context.showSnackBar(
+          message: 'Reset link sent to $email',
+          type: SnackBarType.success,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleBiometricLockChanged(
+    BuildContext context,
+    bool val,
+    ValueNotifier<bool> biometricLockEnabled,
+  ) async {
+    AppFeedback.selection();
+    final biometricService = _biometrics;
+    if (biometricService == null) return;
+
+    if (val) {
+      final canAuth = await biometricService.canAuthenticate();
+      if (!canAuth) {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Biometrics is not available or enrolled on this device.',
+            type: SnackBarType.error,
+          );
+        }
+        return;
+      }
+      final authenticated = await biometricService.authenticate(
+        localizedReason: 'Confirm biometrics to enable App Lock',
+      );
+      if (!authenticated) {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Biometric verification was not completed.',
+            type: SnackBarType.error,
+          );
+        }
+        return;
+      }
+      await biometricService.setBiometricLockEnabled(enabled: true);
+      biometricLockEnabled.value = true;
+      if (context.mounted) {
+        context.showSnackBar(
+          message:
+              'Biometric App Lock enabled! Kortexify will require authentication on launch.',
+          type: SnackBarType.success,
+        );
+      }
+    } else {
+      await biometricService.setBiometricLockEnabled(enabled: false);
+      biometricLockEnabled.value = false;
+      if (context.mounted) {
+        context.showSnackBar(message: 'Biometric App Lock disabled.');
+      }
+    }
+  }
+
+  Future<void> _handleTimeoutChanged(
+    BuildContext context,
+    int? newSeconds,
+    ValueNotifier<int> backgroundLockTimeoutSeconds,
+  ) async {
+    if (newSeconds == null) return;
+    AppFeedback.selection();
+    backgroundLockTimeoutSeconds.value = newSeconds;
+    final biometricService = _biometrics;
+    if (biometricService != null) {
+      await biometricService.setBackgroundLockTimeout(
+        Duration(seconds: newSeconds),
+      );
+    }
+    if (context.mounted) {
+      context.showSnackBar(message: 'Auto-lock timeout updated.');
+    }
+  }
+
+  Future<void> _handleTwoFactorChanged(
+    BuildContext context,
+    bool val,
+    ValueNotifier<bool> twoFactorEnabled,
+    ValueNotifier<String?> activeTotpFactorId,
+  ) async {
+    AppFeedback.selection();
+    if (val) {
+      final email = context.read<AuthBloc>().state.userProfile?.email ??
+          context.read<AuthBloc>().state.user?.email ??
+          (userStorageService?.getUserEmail() ??
+              (locator.isRegistered<UserStorageService>()
+                  ? locator<UserStorageService>().getUserEmail()
+                  : null));
+      final success = await context.router.push<bool>(
+        TwoFactorSetupRoute(email: email),
+      );
+      if (success == true) {
+        twoFactorEnabled.value = true;
+      } else {
+        twoFactorEnabled.value = false;
+      }
+    } else {
+      final factorId = activeTotpFactorId.value;
+      if (factorId != null) {
+        final useCase = unenrollMfaTotpUseCase ??
+            (locator.isRegistered<UnenrollMfaTotpUseCase>()
+                ? locator<UnenrollMfaTotpUseCase>()
+                : null);
+        if (useCase != null) {
+          final result = await useCase(factorId);
+          if (result.isLeft) {
+            final failure = (result as Left<Failure, void>).value;
+            if (context.mounted) {
+              context.showSnackBar(
+                message: 'Could not disable 2FA: ${failure.message ?? "Error"}',
+                type: SnackBarType.error,
+              );
+            }
+          } else {
+            twoFactorEnabled.value = false;
+            activeTotpFactorId.value = null;
+            if (context.mounted) {
+              context.showSnackBar(
+                message: 'Two-Factor Authentication disabled.',
+              );
+            }
           }
-        },
-      ),
+        }
+      } else {
+        twoFactorEnabled.value = false;
+      }
+    }
+  }
+
+  Future<void> _handleRevokeAllOthers(BuildContext context) async {
+    AppFeedback.medium();
+    final useCase = signOutOtherSessionsUseCase ??
+        (locator.isRegistered<SignOutOtherSessionsUseCase>()
+            ? locator<SignOutOtherSessionsUseCase>()
+            : null);
+    if (useCase == null) return;
+
+    final result = await useCase(const NoParams());
+    if (result.isLeft) {
+      final failure = (result as Left<Failure, void>).value;
+      if (context.mounted) {
+        context.showSnackBar(
+          message: failure.message ?? 'Sign out failed',
+          type: SnackBarType.error,
+        );
+      }
+    } else {
+      if (context.mounted) {
+        context.showSnackBar(
+          message: 'Signed out of all other active sessions!',
+          type: SnackBarType.success,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeleteAccount(BuildContext context) async {
+    context.read<AuthBloc>().add(const AuthAccountDeleteRequested());
+    await context.router.root.replaceAll([const AuthRoute()]);
+    if (context.mounted) {
+      context.showSnackBar(
+        message: 'Your account and data have been completely purged.',
+        type: SnackBarType.success,
+      );
+    }
+  }
+
+  Future<void> _handleSaveDisplayName(
+    BuildContext context,
+    String newName,
+  ) async {
+    context.read<AuthBloc>().add(AuthDisplayNameUpdated(newName));
+    final useCase = updateDisplayNameUseCase ??
+        (locator.isRegistered<UpdateDisplayNameUseCase>()
+            ? locator<UpdateDisplayNameUseCase>()
+            : null);
+    if (useCase == null) return;
+
+    final result = await useCase(newName);
+    result.fold(
+      (failure) {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Failed to update name: ${failure.message}',
+            type: SnackBarType.error,
+          );
+        }
+      },
+      (_) {
+        AppFeedback.light();
+        if (context.mounted) {
+          context.read<AuthBloc>().add(const AuthProfileFetchRequested());
+          context.showSnackBar(
+            message: 'Display name updated to $newName',
+            type: SnackBarType.success,
+          );
+        }
+      },
     );
   }
 
-  Future<void> _exportGdprDataBundle(BuildContext context) async {
+  Future<void> _handleExportGdprDataBundle(BuildContext context) async {
     AppFeedback.medium();
-    final userProfile = locator.isRegistered<AuthBloc>()
-        ? locator<AuthBloc>().state.userProfile
-        : null;
-    final user = locator.isRegistered<AuthBloc>()
-        ? locator<AuthBloc>().state.user
-        : null;
+    final authState = context.read<AuthBloc>().state;
+    final userProfile = authState.userProfile;
+    final user = authState.user;
 
-    final analyticsSummary = locator.isRegistered<UserActivityService>()
-        ? locator<UserActivityService>().getAnalyticsSummary()
-        : null;
-    final heatMapData = locator.isRegistered<UserActivityService>()
-        ? locator<UserActivityService>().getHeatMapData()
-        : null;
+    final activityService = userActivityService ??
+        (locator.isRegistered<UserActivityService>()
+            ? locator<UserActivityService>()
+            : null);
+
+    final analyticsSummary = activityService?.getAnalyticsSummary();
+    final heatMapData = activityService?.getHeatMapData();
 
     var decks = <DeckEntity>[];
-    if (locator.isRegistered<GetUserDecksUseCase>()) {
-      final decksRes = await locator<GetUserDecksUseCase>()();
+    final decksUseCase = getUserDecksUseCase ??
+        (locator.isRegistered<GetUserDecksUseCase>()
+            ? locator<GetUserDecksUseCase>()
+            : null);
+
+    if (decksUseCase != null) {
+      final decksRes = await decksUseCase();
       decksRes.fold((_) {}, (list) => decks = list);
     }
 
@@ -1379,15 +821,21 @@ class _SecuritySettingsView extends HookWidget {
 
     if (context.mounted) {
       context.showSnackBar(
-        message: 'GDPR Data Bundle copied to Clipboard (${jsonString.length} bytes)',
+        message:
+            'GDPR Data Bundle copied to Clipboard (${jsonString.length} bytes)',
         type: SnackBarType.success,
       );
     }
   }
 
-  Future<void> _exportDeckFlow(BuildContext context) async {
+  Future<void> _handleExportDeckFlow(BuildContext context) async {
     AppFeedback.light();
-    if (!locator.isRegistered<GetUserDecksUseCase>()) {
+    final decksUseCase = getUserDecksUseCase ??
+        (locator.isRegistered<GetUserDecksUseCase>()
+            ? locator<GetUserDecksUseCase>()
+            : null);
+
+    if (decksUseCase == null) {
       context.showSnackBar(
         message: 'Deck export service unavailable',
         type: SnackBarType.error,
@@ -1395,12 +843,9 @@ class _SecuritySettingsView extends HookWidget {
       return;
     }
 
-    final decksRes = await locator<GetUserDecksUseCase>()();
+    final decksRes = await decksUseCase();
     var decks = <DeckEntity>[];
-    decksRes.fold(
-      (_) {},
-      (list) => decks = list,
-    );
+    decksRes.fold((_) {}, (list) => decks = list);
 
     if (decks.isEmpty) {
       if (context.mounted) {
@@ -1418,112 +863,22 @@ class _SecuritySettingsView extends HookWidget {
       return;
     }
 
-    final colors = context.colors;
-    final typography = context.typography;
-
-    await AppAdaptiveSheet.showModal<void>(
+    await SecurityDeckPickerDialog.show(
       context: context,
-      maxWidth: 600,
-      builder: (sheetContext) {
-        final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(sheetContext);
-        final isDark = sheetContext.isDarkMode;
-        return Align(
-          alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Container(
-              decoration: BoxDecoration(
-                color: sheetContext.colors.surfacePrimary,
-                borderRadius: isDesktop
-                    ? BorderRadius.circular(AppRadius.dialog)
-                    : const BorderRadius.vertical(
-                        top: Radius.circular(AppRadius.dialog),
-                      ),
-                boxShadow: isDesktop
-                    ? [
-                        BoxShadow(
-                          color: colors.black.withAlpha(isDark ? 80 : 30),
-                          blurRadius: 32,
-                          offset: const Offset(0, 12),
-                        ),
-                      ]
-                    : null,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Select Deck to Export',
-                        style: typography.title3.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      if (isDesktop)
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: () => Navigator.of(sheetContext).pop(),
-                          color: colors.textMuted,
-                          tooltip: 'Close',
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Flexible(
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: decks.length,
-                      separatorBuilder: (_, index) => const Divider(height: 1),
-                      itemBuilder: (_, index) {
-                        final d = decks[index];
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.style_rounded,
-                            color: colors.primary,
-                          ),
-                          title: Text(
-                            d.title,
-                            style: typography.body.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${d.totalCards} cards • ${d.subject}',
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                          trailing: Icon(
-                            Icons.chevron_right_rounded,
-                            color: colors.textSecondary,
-                          ),
-                          onTap: () {
-                            Navigator.of(sheetContext).pop();
-                            unawaited(_openExportSheet(context, d));
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      decks: decks,
+      onSelectDeck: (deck) => unawaited(_openExportSheet(context, deck)),
     );
   }
 
   Future<void> _openExportSheet(BuildContext context, DeckEntity deck) async {
     var populatedDeck = deck;
-    if (populatedDeck.cards.isEmpty &&
-        locator.isRegistered<GetDeckCardsUseCase>()) {
-      final res = await locator<GetDeckCardsUseCase>()(deck.id);
+    final cardsUseCase = getDeckCardsUseCase ??
+        (locator.isRegistered<GetDeckCardsUseCase>()
+            ? locator<GetDeckCardsUseCase>()
+            : null);
+
+    if (populatedDeck.cards.isEmpty && cardsUseCase != null) {
+      final res = await cardsUseCase(deck.id);
       res.fold((_) {}, (cards) {
         populatedDeck = populatedDeck.copyWith(cards: cards);
       });
@@ -1531,123 +886,5 @@ class _SecuritySettingsView extends HookWidget {
     if (context.mounted) {
       await ExportDeckModalSheet.show(context, deck: populatedDeck);
     }
-  }
-
-  Future<void> _enrollTotp(
-    BuildContext context,
-    ValueNotifier<bool> twoFactorEnabled,
-    ValueNotifier<String?> activeTotpFactorId,
-    AppThemeColorsExtension colors,
-    TypographyThemeExtension typography,
-  ) async {
-    final email =
-        context.read<AuthBloc>().state.userProfile?.email ??
-        context.read<AuthBloc>().state.user?.email ??
-        (locator.isRegistered<UserStorageService>()
-            ? locator<UserStorageService>().getUserEmail()
-            : null);
-    final success = await context.router.push<bool>(
-      TwoFactorSetupRoute(email: email),
-    );
-    if (success == true) {
-      twoFactorEnabled.value = true;
-    } else {
-      twoFactorEnabled.value = false;
-    }
-  }
-
-  Future<void> _unenrollTotp(
-    BuildContext context,
-    ValueNotifier<bool> twoFactorEnabled,
-    ValueNotifier<String?> activeTotpFactorId,
-  ) async {
-    final factorId = activeTotpFactorId.value;
-    if (factorId != null) {
-      final result = await locator<UnenrollMfaTotpUseCase>()(factorId);
-      if (result.isLeft) {
-        final failure = (result as Left<Failure, void>).value;
-        if (context.mounted) {
-          context.showSnackBar(
-            message: 'Could not disable 2FA: ${failure.message ?? "Error"}',
-            type: SnackBarType.error,
-          );
-        }
-      } else {
-        twoFactorEnabled.value = false;
-        activeTotpFactorId.value = null;
-        if (context.mounted) {
-          context.showSnackBar(
-            message: 'Two-Factor Authentication disabled.',
-          );
-        }
-      }
-    } else {
-      twoFactorEnabled.value = false;
-    }
-  }
-
-  void _confirmAccountDeletion(
-    BuildContext context,
-    AppThemeColorsExtension colors,
-    TypographyThemeExtension typography,
-  ) {
-    AppFeedback.heavy();
-    unawaited(
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: colors.surfaceSecondary,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.radiusDialog,
-          ),
-          title: Text(
-            'Delete Account Permanently?',
-            style: typography.title3.bold.copyWith(
-              color: colors.error,
-            ),
-          ),
-          content: Text(
-            'This action is irreversible. All your study streak data, '
-            'flashcard decks, and AI notes will be completely purged from '
-            'our servers.',
-            style: typography.body.regular.copyWith(
-              color: colors.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
-                'Cancel',
-                style: context.typography.body.regular.copyWith(
-                  color: colors.textSecondary,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                context.read<AuthBloc>().add(const AuthAccountDeleteRequested());
-                await context.router.root.replaceAll([const AuthRoute()]);
-                if (context.mounted) {
-                  context.showSnackBar(
-                    message: 'Your account and data have been completely purged.',
-                    type: SnackBarType.success,
-                  );
-                }
-              },
-              child: Text(
-                'Delete Forever',
-                style: context.typography.body.regular.copyWith(
-                  color: colors.error,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

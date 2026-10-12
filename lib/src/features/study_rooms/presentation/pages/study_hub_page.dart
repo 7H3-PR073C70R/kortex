@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -11,256 +10,105 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
-import 'package:kortex/src/features/community/presentation/pages/create_forum_discussion_page.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_filter_bottom_sheet.dart';
-import 'package:kortex/src/features/community/presentation/widgets/community_forum_feed_list.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_headers.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_shimmer.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/entities/shared_deck_entity.dart';
-import 'package:kortex/src/features/deck_marketplace/domain/services/deck_cloned_checker.dart';
 import 'package:kortex/src/features/deck_marketplace/presentation/pages/deck_marketplace_detail_page.dart';
-import 'package:kortex/src/features/deck_marketplace/presentation/widgets/marketplace_deck_card.dart';
-import 'package:kortex/src/features/deck_marketplace/presentation/widgets/publish_deck_modal_sheet.dart';
-import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
-import 'package:kortex/src/features/study_rooms/presentation/widgets/create_study_circle_sheet.dart';
-import 'package:kortex/src/features/study_rooms/presentation/widgets/create_study_room_sheet.dart';
-import 'package:kortex/src/features/study_rooms/presentation/widgets/live_focus_room_card.dart';
-import 'package:kortex/src/features/study_rooms/presentation/widgets/study_circle_card.dart';
-import 'package:kortex/src/features/study_rooms/presentation/widgets/study_circle_detail_sheet.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/study_hub/study_hub_deck_marketplace_tab.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/study_hub/study_hub_forum_tab.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/study_hub/study_hub_header_action_button.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/study_hub/study_hub_live_rooms_tab.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/study_hub/study_hub_study_circles_tab.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class StudyHubPage extends HookWidget {
-  const StudyHubPage({super.key});
+  const StudyHubPage({
+    this.decksBloc,
+    this.communityHubBloc,
+    this.autoCommunityCubit,
+    this.notificationsCubit,
+    this.dashboardBloc,
+    super.key,
+  });
+
+  final DecksBloc? decksBloc;
+  final CommunityHubBloc? communityHubBloc;
+  final AutoCommunityCubit? autoCommunityCubit;
+  final NotificationsCubit? notificationsCubit;
+  final DashboardBloc? dashboardBloc;
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        if (locator.isRegistered<DecksBloc>())
-          BlocProvider<DecksBloc>.value(
-            value: locator<DecksBloc>(),
-          ),
-        BlocProvider<CommunityHubBloc>.value(
-          value:
-              locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
-        ),
+    final resolvedDecksBloc = decksBloc ??
+        (locator.isRegistered<DecksBloc>() ? locator<DecksBloc>() : null);
+    final resolvedCommunityHubBloc = communityHubBloc ??
+        (locator.isRegistered<CommunityHubBloc>()
+            ? (locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()))
+            : null);
+    final resolvedAutoCommunityCubit = autoCommunityCubit ??
+        (locator.isRegistered<AutoCommunityCubit>()
+            ? locator<AutoCommunityCubit>()
+            : null);
+    final resolvedNotificationsCubit = notificationsCubit ??
+        (locator.isRegistered<NotificationsCubit>()
+            ? locator<NotificationsCubit>()
+            : NotificationsCubit());
+    final resolvedDashboardBloc = dashboardBloc ??
+        (locator.isRegistered<DashboardBloc>()
+            ? locator<DashboardBloc>()
+            : null);
+
+    final providers = <BlocProvider>[
+      if (resolvedDecksBloc != null)
+        BlocProvider<DecksBloc>.value(value: resolvedDecksBloc),
+      if (resolvedCommunityHubBloc != null)
+        BlocProvider<CommunityHubBloc>.value(value: resolvedCommunityHubBloc),
+      if (resolvedAutoCommunityCubit != null)
         BlocProvider<AutoCommunityCubit>.value(
-          value: locator<AutoCommunityCubit>(),
+          value: resolvedAutoCommunityCubit,
         ),
-        BlocProvider<NotificationsCubit>.value(
-          value: locator.isRegistered<NotificationsCubit>()
-              ? locator<NotificationsCubit>()
-              : NotificationsCubit(),
-        ),
-      ],
-      child: const _StudyHubView(),
+      BlocProvider<NotificationsCubit>.value(value: resolvedNotificationsCubit),
+    ];
+
+    final view = _StudyHubView(
+      decksBloc: resolvedDecksBloc,
+      dashboardBloc: resolvedDashboardBloc,
+    );
+
+    if (providers.isEmpty) {
+      return view;
+    }
+
+    return MultiBlocProvider(
+      providers: providers,
+      child: view,
     );
   }
 }
 
-Widget _buildHeaderActionButton(
-  BuildContext context, {
-  required StudyHubSubTab subTab,
-  required bool isWide,
-  required String? targetTrack,
-}) {
-  final colors = context.colors;
-  final typography = context.typography;
-  final l10n = context.l10n;
-  final isDark = context.isDarkMode;
-
-  IconData icon;
-  String label;
-  VoidCallback onTap;
-
-  switch (subTab) {
-    case StudyHubSubTab.forum:
-      icon = Icons.edit_note_rounded;
-      label = 'Post Thread';
-      onTap = () async {
-        unawaited(HapticFeedback.lightImpact());
-        final hubBloc = context.read<CommunityHubBloc>();
-        final initialTrack = targetTrack ?? hubBloc.state.selectedTrack;
-        final created = await Navigator.of(context).push<bool>(
-          MaterialPageRoute(
-            builder: (_) => BlocProvider.value(
-              value: hubBloc,
-              child: CreateForumDiscussionPage(
-                initialTrack: initialTrack.isNotEmpty ? initialTrack : 'WAEC',
-              ),
-            ),
-          ),
-        );
-        if (created == true) {
-          hubBloc.add(
-            ChangeForumSortFilterEvent(hubBloc.state.selectedForumFilter),
-          );
-        }
-      };
-    case StudyHubSubTab.liveRooms:
-      icon = Icons.add_rounded;
-      label = l10n.newRoomAction;
-      onTap = () {
-        unawaited(HapticFeedback.lightImpact());
-        unawaited(
-          CreateStudyRoomSheet.show(
-            context,
-            onSubmit: ({
-              required title,
-              required subject,
-              required category,
-              required pomodoroMinutes,
-              ambientSoundTrack = 'Lo-Fi Beats',
-              activeGoal,
-              isSilentFocus = true,
-            }) {
-              context.read<CommunityHubBloc>().add(
-                CreateRoomEvent(
-                  title: title,
-                  subject: subject,
-                  category: category,
-                  pomodoroMinutes: pomodoroMinutes,
-                  ambientSoundTrack: ambientSoundTrack,
-                  activeGoal: activeGoal,
-                  isSilentFocus: isSilentFocus,
-                ),
-              );
-              context.showSnackBar(
-                message: '✨ Launching Live Focus Room "$title"...',
-                type: SnackBarType.success,
-              );
-            },
-          ),
-        );
-      };
-    case StudyHubSubTab.studyCircles:
-      icon = Icons.groups_rounded;
-      label = 'Start Pod';
-      onTap = () {
-        unawaited(HapticFeedback.lightImpact());
-        unawaited(
-          CreateStudyCircleSheet.show(
-            context,
-            initialTrack: targetTrack ?? 'General',
-            onSubmit: ({
-              required name,
-              required track,
-              required targetWeeklyMinutes,
-            }) {
-              context.read<CommunityHubBloc>().add(
-                CreateStudyCircleEvent(
-                  name: name,
-                  track: track,
-                  targetWeeklyMinutes: targetWeeklyMinutes,
-                ),
-              );
-              context.showSnackBar(
-                message: '🎉 Study Pod "$name" created successfully!',
-                type: SnackBarType.success,
-              );
-            },
-          ),
-        );
-      };
-    case StudyHubSubTab.marketplace:
-      icon = Icons.publish_rounded;
-      label = 'Publish Deck';
-      onTap = () {
-        unawaited(HapticFeedback.lightImpact());
-        unawaited(
-          PublishDeckModalSheet.show(
-            context,
-            onSubmit: ({
-              required title,
-              required subject,
-              required description,
-              required category,
-              syllabusTag = 'General',
-              totalCards = 10,
-              cardsJson = const [],
-            }) {
-              context.read<CommunityHubBloc>().add(
-                PublishDeckEvent(
-                  title: title,
-                  subject: subject,
-                  description: description,
-                  category: category,
-                  syllabusTag: syllabusTag,
-                  totalCards: totalCards,
-                  cardsJson: cardsJson,
-                ),
-              );
-            },
-          ),
-        );
-      };
-  }
-
-  return PlatformHoverBuilder(
-    builder: (context, isHovered, child) => AnimatedScale(
-      scale: isHovered ? 1.03 : 1,
-      duration: AppMotion.snappy,
-      curve: AppMotion.easeOutCubic,
-      child: ShrinkableButton(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: AppMotion.snappy,
-          curve: AppMotion.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(
-            color: isHovered
-                ? colors.primary.withAlpha(isDark ? 65 : 45)
-                : colors.primary.withAlpha(isDark ? 40 : 25),
-            borderRadius: AppRadius.radiusBadge,
-            border: Border.all(
-              color: isHovered
-                  ? colors.primary
-                  : colors.primary.withAlpha(isDark ? 80 : 50),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: colors.primary, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: typography.caption.bold.copyWith(
-                  color: colors.primary,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-/// Breakpoint at which Hub tabs switch from a single-column list to a 2-column grid.
-/// Used for tablet, landscape phone, and desktop layouts.
-const double _kHubGridBreakpoint = 600;
-
 class _StudyHubView extends HookWidget {
-  const _StudyHubView();
+  const _StudyHubView({
+    this.decksBloc,
+    this.dashboardBloc,
+  });
+
+  final DecksBloc? decksBloc;
+  final DashboardBloc? dashboardBloc;
 
   @override
   Widget build(BuildContext context) {
@@ -292,7 +140,6 @@ class _StudyHubView extends HookWidget {
         }
       }
 
-      // Handlers receive a logical StudyHubSubTab index (enum order).
       void handler(int logicalIndex) {
         if (logicalIndex < 0 ||
             logicalIndex >= StudyHubSubTab.values.length) {
@@ -458,8 +305,7 @@ class _StudyHubView extends HookWidget {
                     ],
                     Padding(
                       padding: const EdgeInsets.only(right: 16),
-                      child: _buildHeaderActionButton(
-                        context,
+                      child: StudyHubHeaderActionButton(
                         subTab: activeSubTab,
                         isWide: isWide,
                         targetTrack: targetTrack,
@@ -501,12 +347,18 @@ class _StudyHubView extends HookWidget {
                 prev.lastClonedDeckId != curr.lastClonedDeckId,
             listener: (context, state) {
               if (state.lastClonedDeckId != null) {
-                if (locator.isRegistered<DecksBloc>()) {
-                  locator<DecksBloc>().add(const DecksRefreshed());
-                }
-                if (locator.isRegistered<DashboardBloc>()) {
-                  locator<DashboardBloc>().add(const DashboardRefreshed());
-                }
+                final targetDecksBloc = decksBloc ??
+                    (locator.isRegistered<DecksBloc>()
+                        ? locator<DecksBloc>()
+                        : null);
+                targetDecksBloc?.add(const DecksRefreshed());
+
+                final targetDashboardBloc = dashboardBloc ??
+                    (locator.isRegistered<DashboardBloc>()
+                        ? locator<DashboardBloc>()
+                        : null);
+                targetDashboardBloc?.add(const DashboardRefreshed());
+
                 context.showSnackBar(
                   message: l10n.deckClonedSuccessNotice,
                 );
@@ -531,26 +383,28 @@ class _StudyHubView extends HookWidget {
                 children: [
                   for (final subTab in hubSubTabs)
                     switch (subTab) {
-                      StudyHubSubTab.forum => _ForumTab(
+                      StudyHubSubTab.forum => StudyHubForumTab(
                           state: state,
                           targetTrack: targetTrack,
                         ),
-                      StudyHubSubTab.liveRooms => _LiveRoomsTab(
+                      StudyHubSubTab.liveRooms => StudyHubLiveRoomsTab(
                           key: AppTourKeys.liveRoomsCardKey,
                           state: state,
                           targetTrack: targetTrack,
                           hasSelectedDeck: hasSelectedDeck,
                         ),
-                      StudyHubSubTab.studyCircles => _StudyCirclesTab(
+                      StudyHubSubTab.studyCircles => StudyHubStudyCirclesTab(
                           state: state,
                           targetTrack: targetTrack,
                           hasSelectedDeck: hasSelectedDeck,
                         ),
-                      StudyHubSubTab.marketplace => _DeckMarketplaceTab(
+                      StudyHubSubTab.marketplace =>
+                        StudyHubDeckMarketplaceTab(
                           key: AppTourKeys.marketplaceCardKey,
                           state: state,
                           selectedDeckId: selectedDesktopDeck.value?.id,
                           hasSelectedDeck: hasSelectedDeck,
+                          decksBloc: decksBloc,
                           onDeckSelected: (deck) {
                             if (isWide) {
                               selectedDesktopDeck.value = deck;
@@ -607,1404 +461,6 @@ class _StudyHubView extends HookWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _LiveRoomsTab extends StatefulWidget {
-  const _LiveRoomsTab({
-    required this.state,
-    required this.targetTrack,
-    this.hasSelectedDeck = false,
-    super.key,
-  });
-
-  final CommunityState state;
-  final String? targetTrack;
-  final bool hasSelectedDeck;
-
-  @override
-  State<_LiveRoomsTab> createState() => _LiveRoomsTabState();
-}
-
-class _LiveRoomsTabState extends State<_LiveRoomsTab> {
-  late String _selectedFilter;
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedFilter = 'All';
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
-    final isDark = context.isDarkMode;
-
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isGrid = screenWidth >= _kHubGridBreakpoint;
-    final isDesktop = screenWidth >= 1024;
-    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
-
-    final userTrack = widget.targetTrack?.trim();
-
-    final filteredRooms = widget.state.studyRooms.where((room) {
-      if (_selectedFilter != 'All') {
-        final filter = _selectedFilter.toLowerCase();
-        final title = room.title.toLowerCase();
-        final subject = room.subject.toLowerCase();
-        final category = room.category.toLowerCase();
-        if (!title.contains(filter) && !subject.contains(filter) && !category.contains(filter)) {
-          return false;
-        }
-      }
-
-      if (_searchQuery.trim().isNotEmpty) {
-        final q = _searchQuery.trim().toLowerCase();
-        final title = room.title.toLowerCase();
-        final subject = room.subject.toLowerCase();
-        final category = room.category.toLowerCase();
-        final goal = (room.activeGoal ?? '').toLowerCase();
-        final ambient = room.ambientSoundTrack.toLowerCase();
-        return title.contains(q) ||
-            subject.contains(q) ||
-            category.contains(q) ||
-            goal.contains(q) ||
-            ambient.contains(q);
-      }
-
-      return true;
-    }).toList();
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        context.read<CommunityHubBloc>().add(const LoadCommunityHubEvent());
-      },
-      color: colors.primary,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: widget.hasSelectedDeck ? 520 : (isDesktop ? 1400 : 860),
-          ),
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              // Live Pomodoro Rooms Section Header
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: colors.error,
-                        ),
-                      )
-                          .animate(onPlay: (c) => c.repeat(reverse: true))
-                          .fadeIn(duration: 800.ms)
-                          .scaleXY(begin: 0.85, end: 1, duration: 800.ms),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Live Focus Rooms',
-                        style: typography.subhead.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${filteredRooms.length} active',
-                        style: typography.caption.medium.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Search Bar
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                  child: Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-                      borderRadius: AppRadius.radiusBadge,
-                      border: Border.all(
-                        color: colors.surfaceBorder.withAlpha(isDark ? 50 : 35),
-                      ),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (val) {
-                        setState(() {
-                          _searchQuery = val;
-                        });
-                      },
-                      style: typography.caption.medium.copyWith(color: colors.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Search live focus rooms, topics, goals...',
-                        hintStyle: typography.caption.regular.copyWith(color: colors.textSecondary),
-                        prefixIcon: Icon(Icons.search_rounded, size: 18, color: colors.textSecondary),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.close_rounded, size: 16),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() {
-                                    _searchQuery = '';
-                                  });
-                                },
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Multi-Track Filter Chips Bar
-              SliverToBoxAdapter(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                  child: Row(
-                    children: [
-                      _buildFilterChip(
-                        label: '🌐 All Tracks',
-                        isSelected: _selectedFilter == 'All',
-                        onTap: () {
-                          unawaited(HapticFeedback.selectionClick());
-                          setState(() {
-                            _selectedFilter = 'All';
-                          });
-                        },
-                      ),
-                      if (userTrack != null && userTrack.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        _buildFilterChip(
-                          label: '🎯 My Track ($userTrack)',
-                          isSelected: _selectedFilter.toLowerCase() == userTrack.toLowerCase(),
-                          onTap: () {
-                            unawaited(HapticFeedback.selectionClick());
-                            setState(() {
-                              _selectedFilter = userTrack;
-                            });
-                          },
-                        ),
-                      ],
-                      const SizedBox(width: 6),
-                      _buildFilterChip(
-                        label: '📚 WAEC',
-                        isSelected: _selectedFilter == 'WAEC',
-                        onTap: () => setState(() => _selectedFilter = 'WAEC'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildFilterChip(
-                        label: '🇳🇬 JAMB',
-                        isSelected: _selectedFilter == 'JAMB',
-                        onTap: () => setState(() => _selectedFilter = 'JAMB'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildFilterChip(
-                        label: '🇳🇬 NECO',
-                        isSelected: _selectedFilter == 'NECO',
-                        onTap: () => setState(() => _selectedFilter = 'NECO'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildFilterChip(
-                        label: '🇳🇬 JUPEB',
-                        isSelected: _selectedFilter == 'JUPEB',
-                        onTap: () => setState(() => _selectedFilter = 'JUPEB'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildFilterChip(
-                        label: '🎓 SAT',
-                        isSelected: _selectedFilter == 'SAT',
-                        onTap: () => setState(() => _selectedFilter = 'SAT'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildFilterChip(
-                        label: '🧬 STEM',
-                        isSelected: _selectedFilter == 'STEM',
-                        onTap: () => setState(() => _selectedFilter = 'STEM'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildFilterChip(
-                        label: '🏛️ University',
-                        isSelected: _selectedFilter == 'University',
-                        onTap: () => setState(() => _selectedFilter = 'University'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildFilterChip(
-                        label: '📖 General',
-                        isSelected: _selectedFilter == 'General',
-                        onTap: () => setState(() => _selectedFilter = 'General'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              if (filteredRooms.isEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 48),
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: colors.surfacePrimary,
-                        borderRadius: AppRadius.radiusCard,
-                        border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(isDark ? 40 : 20),
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.school_rounded,
-                            size: 44,
-                            color: colors.primary.withAlpha(160),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _selectedFilter == 'All'
-                                ? l10n.noActiveRooms
-                                : 'No active focus rooms for "$_selectedFilter"',
-                            style: typography.subhead.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _selectedFilter == 'All'
-                                ? 'Launch a new room to start studying with peers.'
-                                : 'Be the first scholar in your $_selectedFilter track to start a Silent Focus Room! Peers in your track will be notified.',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textSecondary,
-                              height: 1.35,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 18),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 8,
-                            alignment: WrapAlignment.center,
-                            children: [
-                              ShrinkableButton(
-                                onTap: () {
-                                  unawaited(HapticFeedback.lightImpact());
-                                  final activeTrackName = _selectedFilter == 'All'
-                                      ? (userTrack ?? 'General')
-                                      : _selectedFilter;
-                                  unawaited(
-                                    CreateStudyRoomSheet.show(
-                                      context,
-                                      initialTitle: '$activeTrackName Silent Focus Hub',
-                                      initialSubject: '$activeTrackName-STUDY-HUB',
-                                      initialCategory: activeTrackName,
-                                      onSubmit: ({
-                                        required title,
-                                        required subject,
-                                        required category,
-                                        required pomodoroMinutes,
-                                        ambientSoundTrack = 'lofi',
-                                        activeGoal,
-                                        isSilentFocus = true,
-                                      }) {
-                                        context.read<CommunityHubBloc>().add(
-                                              CreateRoomEvent(
-                                                title: title,
-                                                subject: subject,
-                                                category: category,
-                                                pomodoroMinutes: pomodoroMinutes,
-                                                ambientSoundTrack: ambientSoundTrack,
-                                                activeGoal: activeGoal,
-                                                isSilentFocus: isSilentFocus,
-                                              ),
-                                            );
-                                        context.showSnackBar(
-                                          message: '✨ Launching Live Focus Room "$title"...',
-                                          type: SnackBarType.success,
-                                        );
-                                      },
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.primary,
-                                    borderRadius: AppRadius.radiusCard,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.add_rounded,
-                                        color: colors.white,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        'Launch $_selectedFilter Room',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              if (_selectedFilter != 'All')
-                                OutlinedButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _selectedFilter = 'All';
-                                    });
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: colors.textPrimary,
-                                    side: BorderSide(color: colors.surfaceBorder),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: AppRadius.radiusCard,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 10,
-                                    ),
-                                  ),
-                                  child: Text(l10n.studyHubViewAllTracks),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              else if (isGrid)
-                // 2-column grid layout for tablet / landscape / desktop
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 440,
-                      mainAxisExtent: 168,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final room = filteredRooms[index];
-                        return LiveFocusRoomCard(
-                          room: room,
-                          onJoinTap: () {
-                            unawaited(
-                              context.router.push(
-                                LiveStudyRoomRoute(room: room),
-                              ),
-                            );
-                          },
-                        )
-                            .animate(
-                              delay: (index < 6 ? index * 45 : 0).ms,
-                            )
-                            .fadeIn(duration: 200.ms)
-                            .slideY(
-                              begin: 0.04,
-                              end: 0,
-                              curve: Curves.easeOutCubic,
-                            );
-                      },
-                      childCount: filteredRooms.length,
-                    ),
-                  ),
-                )
-              else
-                // Single-column list for compact / portrait phone
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final room = filteredRooms[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: LiveFocusRoomCard(
-                            room: room,
-                            onJoinTap: () {
-                              unawaited(
-                                context.router.push(
-                                  LiveStudyRoomRoute(room: room),
-                                ),
-                              );
-                            },
-                          ),
-                        )
-                            .animate(
-                              delay: (index < 6 ? index * 45 : 0).ms,
-                            )
-                            .fadeIn(duration: 200.ms)
-                            .slideY(
-                              begin: 0.04,
-                              end: 0,
-                              curve: Curves.easeOutCubic,
-                            );
-                      },
-                      childCount: filteredRooms.length,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterChip({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: AppMotion.snappy,
-        curve: AppMotion.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colors.primary.withAlpha(isDark ? 60 : 35)
-              : colors.surfacePrimary,
-          borderRadius: AppRadius.radiusBadge,
-          border: Border.all(
-            color: isSelected
-                ? colors.primary
-                : colors.surfaceBorder.withAlpha(isDark ? 50 : 35),
-            width: isSelected ? 1.5 : 1.0,
-          ),
-        ),
-        child: Text(
-          label,
-          style: typography.caption.medium.copyWith(
-            color: isSelected ? colors.primary : colors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            fontSize: 12,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StudyCirclesTab extends StatefulWidget {
-  const _StudyCirclesTab({
-    required this.state,
-    required this.targetTrack,
-    this.hasSelectedDeck = false,
-  });
-
-  final CommunityState state;
-  final String? targetTrack;
-  final bool hasSelectedDeck;
-
-  @override
-  State<_StudyCirclesTab> createState() => _StudyCirclesTabState();
-}
-
-class _StudyCirclesTabState extends State<_StudyCirclesTab> {
-  String _selectedFilter = 'All';
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-
-    final isDark = context.isDarkMode;
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isDesktop = screenWidth >= 1024;
-    final isGrid = !widget.hasSelectedDeck && (screenWidth >= _kHubGridBreakpoint);
-    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
-    final userTrack = widget.targetTrack?.trim();
-
-    final filteredCircles = widget.state.studyCircles.where((circle) {
-      if (_selectedFilter != 'All') {
-        final filter = _selectedFilter.toLowerCase();
-        final track = circle.track.toLowerCase();
-        final name = circle.name.toLowerCase();
-        if (!track.contains(filter) && !name.contains(filter)) {
-          return false;
-        }
-      }
-
-      if (_searchQuery.trim().isNotEmpty) {
-        final q = _searchQuery.trim().toLowerCase();
-        final name = circle.name.toLowerCase();
-        final track = circle.track.toLowerCase();
-        return name.contains(q) || track.contains(q);
-      }
-
-      return true;
-    }).toList();
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        context.read<CommunityHubBloc>().add(const LoadCommunityHubEvent());
-      },
-      color: colors.primary,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: widget.hasSelectedDeck ? 520 : (isDesktop ? 1400 : 860),
-          ),
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              // Study Circles Onboarding Explainer Banner
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(isDark ? 28 : 14),
-                      borderRadius: AppRadius.radiusCard,
-                      border: Border.all(
-                        color: colors.primary.withAlpha(isDark ? 45 : 25),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.groups_rounded,
-                              size: 20,
-                              color: colors.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'What are Study Pods?',
-                              style: typography.subhead.bold.copyWith(
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Study Pods are small peer study groups of up to 6 scholars taking the same track. Join a pod to commit to a collective weekly focus target, monitor contributions, and send instant nudges to keep each other accountable.',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                            height: 1.35,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            _buildFeatureChip(
-                              context,
-                              Icons.people_outline_rounded,
-                              'Max 6 Scholars',
-                            ),
-                            _buildFeatureChip(
-                              context,
-                              Icons.timer_outlined,
-                              'Weekly Quests',
-                            ),
-                            _buildFeatureChip(
-                              context,
-                              Icons.bolt_rounded,
-                              'Instant Nudges',
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // Study Circles Section Header
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.diversity_3_rounded,
-                        size: 20,
-                        color: colors.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Peer Study Pods',
-                        style: typography.subhead.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${filteredCircles.length} ${filteredCircles.length == 1 ? 'Pod' : 'Pods'}',
-                        style: typography.caption.medium.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Search Bar
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                  child: Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-                      borderRadius: AppRadius.radiusBadge,
-                      border: Border.all(
-                        color: colors.surfaceBorder.withAlpha(isDark ? 50 : 35),
-                      ),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (val) {
-                        setState(() {
-                          _searchQuery = val;
-                        });
-                      },
-                      style: typography.caption.medium.copyWith(color: colors.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Search study pods, tracks, goals...',
-                        hintStyle: typography.caption.regular.copyWith(color: colors.textSecondary),
-                        prefixIcon: Icon(Icons.search_rounded, size: 18, color: colors.textSecondary),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.close_rounded, size: 16),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() {
-                                    _searchQuery = '';
-                                  });
-                                },
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Multi-Track Filter Chips Bar
-              SliverToBoxAdapter(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                  child: Row(
-                    children: [
-                      _buildPodFilterChip(
-                        label: '🌐 All Tracks',
-                        isSelected: _selectedFilter == 'All',
-                        onTap: () {
-                          unawaited(HapticFeedback.selectionClick());
-                          setState(() {
-                            _selectedFilter = 'All';
-                          });
-                        },
-                      ),
-                      if (userTrack != null && userTrack.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        _buildPodFilterChip(
-                          label: '🎯 My Track ($userTrack)',
-                          isSelected: _selectedFilter.toLowerCase() == userTrack.toLowerCase(),
-                          onTap: () {
-                            unawaited(HapticFeedback.selectionClick());
-                            setState(() {
-                              _selectedFilter = userTrack;
-                            });
-                          },
-                        ),
-                      ],
-                      const SizedBox(width: 6),
-                      _buildPodFilterChip(
-                        label: '📚 WAEC',
-                        isSelected: _selectedFilter == 'WAEC',
-                        onTap: () => setState(() => _selectedFilter = 'WAEC'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildPodFilterChip(
-                        label: '🇳🇬 JAMB',
-                        isSelected: _selectedFilter == 'JAMB',
-                        onTap: () => setState(() => _selectedFilter = 'JAMB'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildPodFilterChip(
-                        label: '🇳🇬 NECO',
-                        isSelected: _selectedFilter == 'NECO',
-                        onTap: () => setState(() => _selectedFilter = 'NECO'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildPodFilterChip(
-                        label: '🇳🇬 JUPEB',
-                        isSelected: _selectedFilter == 'JUPEB',
-                        onTap: () => setState(() => _selectedFilter = 'JUPEB'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildPodFilterChip(
-                        label: '🎓 SAT',
-                        isSelected: _selectedFilter == 'SAT',
-                        onTap: () => setState(() => _selectedFilter = 'SAT'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildPodFilterChip(
-                        label: '🧬 STEM',
-                        isSelected: _selectedFilter == 'STEM',
-                        onTap: () => setState(() => _selectedFilter = 'STEM'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildPodFilterChip(
-                        label: '🏛️ University',
-                        isSelected: _selectedFilter == 'University',
-                        onTap: () => setState(() => _selectedFilter = 'University'),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildPodFilterChip(
-                        label: '📖 General',
-                        isSelected: _selectedFilter == 'General',
-                        onTap: () => setState(() => _selectedFilter = 'General'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              if (filteredCircles.isEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 48,
-                    ),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.groups_outlined,
-                            size: 44,
-                            color: colors.textSecondary.withAlpha(120),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            _selectedFilter == 'All' && _searchQuery.isEmpty
-                                ? 'No study circles available yet.'
-                                : 'No study pods match your search/filter.',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              else if (isGrid)
-                // 2-column grid layout for tablet / desktop viewports
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: isDesktop ? 650 : 540,
-                      mainAxisExtent: 295,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final circle = filteredCircles[index];
-                        return StudyCircleCard(
-                          circle: circle,
-                          margin: EdgeInsets.zero,
-                          onTapDetails: () {
-                            unawaited(
-                              StudyCircleDetailSheet.show(context, circle),
-                            );
-                          },
-                          onJoinTap: () {
-                            context.read<CommunityHubBloc>().add(
-                              JoinStudyCircleEvent(circle.id),
-                            );
-                          },
-                        )
-                            .animate(
-                              delay: (index < 6 ? index * 45 : 0).ms,
-                            )
-                            .fadeIn(duration: 200.ms)
-                            .slideY(
-                              begin: 0.04,
-                              end: 0,
-                              curve: Curves.easeOutCubic,
-                            );
-                      },
-                      childCount: filteredCircles.length,
-                    ),
-                  ),
-                )
-              else
-                // Single-column list layout for narrow mobile viewports
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final circle = filteredCircles[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: StudyCircleCard(
-                            circle: circle,
-                            onTapDetails: () {
-                              unawaited(
-                                StudyCircleDetailSheet.show(context, circle),
-                              );
-                            },
-                            onJoinTap: () {
-                              context.read<CommunityHubBloc>().add(
-                                JoinStudyCircleEvent(circle.id),
-                              );
-                            },
-                          ),
-                        )
-                            .animate(
-                              delay: (index < 6 ? index * 45 : 0).ms,
-                            )
-                            .fadeIn(duration: 200.ms)
-                            .slideY(
-                              begin: 0.04,
-                              end: 0,
-                              curve: Curves.easeOutCubic,
-                            );
-                      },
-                      childCount: filteredCircles.length,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPodFilterChip({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: AppMotion.snappy,
-        curve: AppMotion.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colors.primary.withAlpha(isDark ? 60 : 35)
-              : colors.surfacePrimary,
-          borderRadius: AppRadius.radiusBadge,
-          border: Border.all(
-            color: isSelected
-                ? colors.primary
-                : colors.surfaceBorder.withAlpha(isDark ? 50 : 35),
-            width: isSelected ? 1.5 : 1.0,
-          ),
-        ),
-        child: Text(
-          label,
-          style: typography.caption.medium.copyWith(
-            color: isSelected ? colors.primary : colors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            fontSize: 12,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureChip(BuildContext context, IconData icon, String label) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark
-            ? colors.surfaceSecondary.withAlpha(160)
-            : colors.surfacePrimary,
-        borderRadius: AppRadius.radiusBadge,
-        border: Border.all(
-          color: colors.primary.withAlpha(isDark ? 30 : 15),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: colors.primary),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: typography.caption.bold.copyWith(
-              color: colors.textSecondary,
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DeckMarketplaceTab extends HookWidget {
-  const _DeckMarketplaceTab({
-    required this.state,
-    this.selectedDeckId,
-    this.hasSelectedDeck = false,
-    this.onDeckSelected,
-    super.key,
-  });
-
-  final CommunityState state;
-  final String? selectedDeckId;
-  final bool hasSelectedDeck;
-  final ValueChanged<SharedDeckEntity>? onDeckSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isDesktop = screenWidth >= 1024;
-    final isGrid = !hasSelectedDeck && (screenWidth >= _kHubGridBreakpoint);
-    final gridCrossAxisCount = isDesktop && !hasSelectedDeck ? 3 : (isGrid ? 2 : 1);
-    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
-
-    final selectedCategory = useState<String>('All');
-    final searchQuery = useState<String>('');
-    final searchController = useTextEditingController();
-
-    final decksState = context.watch<DecksBloc?>()?.state;
-    final userDecks = decksState?.allDecks ??
-        (locator.isRegistered<DecksBloc>()
-            ? locator<DecksBloc>().state.allDecks
-            : const <DeckEntity>[]);
-
-    const categories = [
-      'All',
-      'WAEC',
-      'JAMB',
-      'SAT',
-      'STEM',
-      'University',
-    ];
-
-    final filteredDecks = useMemoized(() {
-      return state.sharedDecks.where((deck) {
-        final matchesCat = selectedCategory.value == 'All' ||
-            deck.category.toLowerCase() == selectedCategory.value.toLowerCase() ||
-            deck.syllabusTag.toLowerCase().contains(selectedCategory.value.toLowerCase());
-        final query = searchQuery.value.trim().toLowerCase();
-        final matchesSearch = query.isEmpty ||
-            deck.title.toLowerCase().contains(query) ||
-            deck.subject.toLowerCase().contains(query) ||
-            (deck.description?.toLowerCase().contains(query) ?? false);
-        return matchesCat && matchesSearch;
-      }).toList();
-    }, [state.sharedDecks, selectedCategory.value, searchQuery.value]);
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        context.read<CommunityHubBloc>().add(const LoadCommunityHubEvent());
-      },
-      color: colors.primary,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: hasSelectedDeck ? 520 : (isDesktop ? 1400 : 860),
-          ),
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              // Header & Search Filter Bar
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.storefront_rounded,
-                                size: 20,
-                                color: colors.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Community Deck Marketplace',
-                                style: typography.subhead.bold.copyWith(
-                                  color: colors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            '${filteredDecks.length} Decks',
-                            style: typography.caption.medium.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Search Input
-                      Container(
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colors.surfaceSecondary
-                              : colors.surfaceSecondary.withAlpha(140),
-                          borderRadius: AppRadius.radiusSheet,
-                          border: Border.all(
-                            color: colors.primary.withAlpha(isDark ? 60 : 35),
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.search_rounded,
-                              size: 18,
-                              color: colors.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextField(
-                                controller: searchController,
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 13,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Search decks, subjects, syllabus tags...',
-                                  hintStyle: typography.caption.regular.copyWith(
-                                    color: colors.textSecondary.withAlpha(160),
-                                  ),
-                                  border: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  isDense: true,
-                                  fillColor: Colors.transparent,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                onChanged: (val) {
-                                  searchQuery.value = val;
-                                },
-                              ),
-                            ),
-                            if (searchQuery.value.isNotEmpty)
-                              GestureDetector(
-                                onTap: () {
-                                  searchController.clear();
-                                  searchQuery.value = '';
-                                },
-                                child: Icon(
-                                  Icons.close_rounded,
-                                  size: 16,
-                                  color: colors.textSecondary,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Category Filter Pills
-                      SizedBox(
-                        height: 32,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: categories.length,
-                          separatorBuilder: (context, index) => const SizedBox(width: 6),
-                          itemBuilder: (context, index) {
-                            final cat = categories[index];
-                            final isSelected = selectedCategory.value == cat;
-                            return PlatformHoverBuilder(
-                              builder: (context, isHovered, child) =>
-                                  ShrinkableButton(
-                                onTap: () {
-                                  unawaited(HapticFeedback.lightImpact());
-                                  selectedCategory.value = cat;
-                                },
-                                child: AnimatedContainer(
-                                  duration: AppMotion.snappy,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? colors.primary
-                                        : (isHovered
-                                              ? colors.primary.withAlpha(
-                                                  isDark ? 50 : 30,
-                                                )
-                                              : (isDark
-                                                    ? colors.surfaceSecondary
-                                                    : colors.surfaceSecondary
-                                                        .withAlpha(160))),
-                                    borderRadius: AppRadius.radiusBadge,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? colors.primary
-                                          : colors.primary.withAlpha(
-                                              isDark ? 40 : 20,
-                                            ),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    cat,
-                                    style: typography.caption.bold.copyWith(
-                                      color: isSelected
-                                          ? colors.white
-                                          : colors.textSecondary,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              if (filteredDecks.isEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 48,
-                    ),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.style_outlined,
-                            size: 44,
-                            color: colors.textSecondary.withAlpha(120),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            searchQuery.value.isNotEmpty
-                                ? 'No decks found matching "${searchQuery.value}".'
-                                : 'No community decks published yet.',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              else if (gridCrossAxisCount > 1)
-                // Multi-column grid layout for desktop / tablet when 3rd panel is hidden
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: gridCrossAxisCount,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                      mainAxisExtent: 205,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final deck = filteredDecks[index];
-                        final isSelected = selectedDeckId == deck.id;
-                        final isCloned = isDeckAlreadyCloned(deck, userDecks: userDecks);
-                        return MarketplaceDeckCard(
-                          deck: deck,
-                          isSelected: isSelected,
-                          isAlreadyCloned: isCloned,
-                          onCloneTap: isCloned
-                              ? null
-                              : () {
-                                  context.read<CommunityHubBloc>().add(
-                                    CloneDeckEvent(deck.id),
-                                  );
-                                },
-                          onTap: () {
-                            if (onDeckSelected != null) {
-                              onDeckSelected!(deck);
-                            } else {
-                              unawaited(
-                                context.router.push(
-                                  DeckMarketplaceDetailRoute(deck: deck),
-                                ),
-                              );
-                            }
-                          },
-                        )
-                            .animate(
-                              delay: (index < 6 ? index * 45 : 0).ms,
-                            )
-                            .fadeIn(duration: 200.ms)
-                            .slideY(
-                              begin: 0.04,
-                              end: 0,
-                              curve: Curves.easeOutCubic,
-                            );
-                      },
-                      childCount: filteredDecks.length,
-                    ),
-                  ),
-                )
-              else
-                // Single-column list when 3rd panel is open or phone compact view
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final deck = filteredDecks[index];
-                        final isSelected = selectedDeckId == deck.id;
-                        final isCloned = isDeckAlreadyCloned(deck, userDecks: userDecks);
-                        return MarketplaceDeckCard(
-                          deck: deck,
-                          isSelected: isSelected,
-                          isAlreadyCloned: isCloned,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          onCloneTap: isCloned
-                              ? null
-                              : () {
-                                  context.read<CommunityHubBloc>().add(
-                                    CloneDeckEvent(deck.id),
-                                  );
-                                },
-                          onTap: () {
-                            if (onDeckSelected != null) {
-                              onDeckSelected!(deck);
-                            } else {
-                              unawaited(
-                                context.router.push(
-                                  DeckMarketplaceDetailRoute(deck: deck),
-                                ),
-                              );
-                            }
-                          },
-                        )
-                            .animate(
-                              delay: (index < 6 ? index * 45 : 0).ms,
-                            )
-                            .fadeIn(duration: 200.ms)
-                            .slideY(
-                              begin: 0.04,
-                              end: 0,
-                              curve: Curves.easeOutCubic,
-                            );
-                      },
-                      childCount: filteredDecks.length,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Forum feed shown as a Hub sub-tab on compact layouts, where the
-/// 4-item dock has no dedicated Forum destination.
-class _ForumTab extends StatelessWidget {
-  const _ForumTab({
-    required this.state,
-    required this.targetTrack,
-  });
-
-  final CommunityState state;
-  final String? targetTrack;
-
-  @override
-  Widget build(BuildContext context) {
-    final track = targetTrack?.trim();
-    final effectiveTrack =
-        (track != null && track.isNotEmpty && track != 'General')
-            ? track
-            : 'WAEC';
-
-    return CommunityForumFeedList(
-      state: state,
-      searchQuery: state.forumSearchQuery,
-      availableTracks: getAvailableTracks(targetTrack),
-      effectiveTrack: effectiveTrack,
     );
   }
 }

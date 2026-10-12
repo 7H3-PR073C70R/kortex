@@ -128,13 +128,20 @@ class LiveFocusRoomCard extends StatelessWidget {
                                         color: colors.primary,
                                       ),
                                       const SizedBox(width: 3),
-                                      Text(
-                                        room.ambientSoundTrack,
-                                        style: typography.caption.medium
-                                            .copyWith(
-                                              color: colors.textSecondary,
-                                              fontSize: 10,
-                                            ),
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 80,
+                                        ),
+                                        child: Text(
+                                          room.ambientSoundTrack,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: typography.caption.medium
+                                              .copyWith(
+                                                color: colors.textSecondary,
+                                                fontSize: 10,
+                                              ),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -295,10 +302,13 @@ class LiveFocusRoomCard extends StatelessWidget {
             color: colors.textSecondary,
           ),
           const SizedBox(width: 6),
-          Text(
-            context.l10n.activeParticipantsCount(totalCount),
-            style: typography.footnote.medium.copyWith(
-              color: colors.textSecondary,
+          Flexible(
+            child: Text(
+              context.l10n.activeParticipantsCount(totalCount),
+              style: typography.footnote.medium.copyWith(
+                color: colors.textSecondary,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
