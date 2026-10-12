@@ -1,61 +1,81 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
-import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/camera_scanner_overlay.dart';
-import 'package:kortex/src/features/ingestion/presentation/widgets/file_drop_zone_widget.dart';
-import 'package:kortex/src/features/ingestion/presentation/widgets/synthesis_mode_toggle.dart';
-import 'package:kortex/src/features/ingestion/presentation/widgets/upload_progress_card.dart';
+import 'package:kortex/src/features/ingestion/presentation/widgets/ingestion/document_upload_control_section.dart';
+import 'package:kortex/src/features/ingestion/presentation/widgets/ingestion/recent_documents_section.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 @RoutePage()
 class DocumentIngestionPage extends StatelessWidget {
-  const DocumentIngestionPage({
+  DocumentIngestionPage({
     this.courseId,
     this.courseCode,
     this.courseTitle,
+    IngestionBloc? ingestionBloc,
+    SubscriptionGuard? subscriptionGuard,
+    GenerateDocumentEmbeddingsUseCase? generateDocumentEmbeddingsUseCase,
+    LocalStorageService? localStorageService,
     super.key,
-  });
+  })  : _ingestionBloc = ingestionBloc ??
+            (locator.isRegistered<IngestionBloc>()
+                ? locator<IngestionBloc>()
+                : null),
+        _subscriptionGuard = subscriptionGuard ??
+            (locator.isRegistered<SubscriptionGuard>()
+                ? locator<SubscriptionGuard>()
+                : SubscriptionGuard()),
+        _generateDocumentEmbeddingsUseCase =
+            generateDocumentEmbeddingsUseCase ??
+                (locator.isRegistered<GenerateDocumentEmbeddingsUseCase>()
+                    ? locator<GenerateDocumentEmbeddingsUseCase>()
+                    : null),
+        _localStorageService = localStorageService ??
+            (locator.isRegistered<LocalStorageService>()
+                ? locator<LocalStorageService>()
+                : null);
 
   final String? courseId;
   final String? courseCode;
   final String? courseTitle;
+  final IngestionBloc? _ingestionBloc;
+  final SubscriptionGuard _subscriptionGuard;
+  final GenerateDocumentEmbeddingsUseCase? _generateDocumentEmbeddingsUseCase;
+  final LocalStorageService? _localStorageService;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveBloc = _ingestionBloc ?? locator<IngestionBloc>();
+
     return BlocProvider<IngestionBloc>.value(
-      value: locator<IngestionBloc>()
+      value: effectiveBloc
         ..add(const FetchUserDocumentsEvent())
         ..add(const CheckPendingIngestionJobEvent()),
       child: _DocumentIngestionView(
         courseId: courseId,
         courseCode: courseCode,
         courseTitle: courseTitle,
+        subscriptionGuard: _subscriptionGuard,
+        generateDocumentEmbeddingsUseCase: _generateDocumentEmbeddingsUseCase,
+        localStorageService: _localStorageService,
       ),
     );
   }
@@ -63,14 +83,20 @@ class DocumentIngestionPage extends StatelessWidget {
 
 class _DocumentIngestionView extends HookWidget {
   const _DocumentIngestionView({
+    required this.subscriptionGuard,
     this.courseId,
     this.courseCode,
     this.courseTitle,
+    this.generateDocumentEmbeddingsUseCase,
+    this.localStorageService,
   });
 
   final String? courseId;
   final String? courseCode;
   final String? courseTitle;
+  final SubscriptionGuard subscriptionGuard;
+  final GenerateDocumentEmbeddingsUseCase? generateDocumentEmbeddingsUseCase;
+  final LocalStorageService? localStorageService;
 
   @override
   Widget build(BuildContext context) {
@@ -79,17 +105,15 @@ class _DocumentIngestionView extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final guard = useMemoized(
-      () => locator.isRegistered<SubscriptionGuard>()
-          ? locator<SubscriptionGuard>()
-          : SubscriptionGuard(),
+    final remainingQuota = useState<int>(
+      subscriptionGuard.getRemainingAiSmartGenCount(),
     );
-    final remainingQuota = useState<int>(guard.getRemainingAiSmartGenCount());
 
     useEffect(() {
       unawaited(
-        guard.fetchAiSmartGenQuota().then((_) {
-          remainingQuota.value = guard.getRemainingAiSmartGenCount();
+        subscriptionGuard.fetchAiSmartGenQuota().then((_) {
+          remainingQuota.value =
+              subscriptionGuard.getRemainingAiSmartGenCount();
         }),
       );
       return null;
@@ -103,8 +127,8 @@ class _DocumentIngestionView extends HookWidget {
           isScanningCamera.value = false;
           if (images.isNotEmpty) {
             context.read<IngestionBloc>().add(
-              ProcessCameraImagesEvent(images: images),
-            );
+                  ProcessCameraImagesEvent(images: images),
+                );
           }
         },
         onClose: () => isScanningCamera.value = false,
@@ -123,16 +147,15 @@ class _DocumentIngestionView extends HookWidget {
                 state.generatedDeck != null &&
                 state.snippets.isEmpty) {
               context.showSnackBar(
-                message:
-                    (state.stageMessage != null &&
+                message: (state.stageMessage != null &&
                         state.stageMessage!.isNotEmpty)
                     ? state.stageMessage!
                     : l10n.dedupExistingDeckAssigned,
                 type: SnackBarType.success,
               );
               context.read<IngestionBloc>().add(
-                const ResetIngestionStateEvent(),
-              );
+                    const ResetIngestionStateEvent(),
+                  );
             } else if (state.snippets.isNotEmpty &&
                 state.currentDocument != null) {
               if (state.wasDeduplicated) {
@@ -151,14 +174,14 @@ class _DocumentIngestionView extends HookWidget {
 
               // Reset BLoC state so tab switching or reloads won't re-trigger navigation
               context.read<IngestionBloc>().add(
-                const ResetIngestionStateEvent(),
-              );
+                    const ResetIngestionStateEvent(),
+                  );
 
               // Background pgvector RAG auto-chunking & embeddings generation
               if (snippets.isNotEmpty &&
-                  locator.isRegistered<GenerateDocumentEmbeddingsUseCase>()) {
+                  generateDocumentEmbeddingsUseCase != null) {
                 unawaited(
-                  locator<GenerateDocumentEmbeddingsUseCase>()(
+                  generateDocumentEmbeddingsUseCase!(
                     documentId: doc.id,
                     snippets: snippets,
                     metadata: {
@@ -230,491 +253,73 @@ class _DocumentIngestionView extends HookWidget {
                   builder: (context, constraints) {
                     final isDesktop = constraints.maxWidth >= 1024;
 
-                    final uploadSection =
-                        Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (state.pendingInterruptedJob != null &&
-                                    state.status == ProcessingStatus.idle) ...[
-                                  _InterruptedUploadBanner(
-                                    job: state.pendingInterruptedJob!,
-                                    onDismiss: () => context
-                                        .read<IngestionBloc>()
-                                        .add(const DismissPendingIngestionJobEvent()),
-                                    isDark: isDark,
-                                  ),
-                                  const SizedBox(height: 16),
-                                ],
-
-                                // Synthesis mode toggle (Fast Local vs AI Smart)
-                                SynthesisModeToggle(
-                                  currentMode: state.synthesisMode,
-                                  isPro: guard.isPro,
-                                  remainingAiSmartCount:
-                                      guard.isPro ? remainingQuota.value : null,
-                                  onModeSelected: (mode) async {
-                                    if (mode == SynthesisMode.aiSmart) {
-                                      if (!guard.isPro) {
-                                        final upgraded =
-                                            await guard.requirePro(
-                                              context,
-                                              featureName: 'AI Smart Gen',
-                                            );
-                                        if (!upgraded && !guard.isPro) {
-                                          return;
-                                        }
-                                        remainingQuota.value =
-                                            guard.getRemainingAiSmartGenCount();
-                                      }
-                                      // Authoritative database check
-                                      await guard.fetchAiSmartGenQuota();
-                                      remainingQuota.value =
-                                          guard.getRemainingAiSmartGenCount();
-
-                                      if (!guard.canUseAiSmartGen()) {
-                                        if (context.mounted) {
-                                          context.showSnackBar(
-                                            message:
-                                                'Daily AI Smart Gen cap reached (${SubscriptionGuard.proDailyAiSmartLimit}/${SubscriptionGuard.proDailyAiSmartLimit}). Switching to uncapped Fast Local synthesis.',
-                                          );
-                                        }
-                                        return;
-                                      }
-                                    }
-                                    if (context.mounted) {
-                                      context.read<IngestionBloc>().add(
-                                        SetSynthesisModeEvent(mode),
-                                      );
-                                    }
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-
-                                // File drop zone
-                                FileDropZoneWidget(
-                                  courseId: courseId,
-                                  courseCode: courseCode,
-                                  courseTitle: courseTitle,
-                                  onFilePicked:
-                                      ({
-                                        required filename,
-                                        required fileType,
-                                        required fileBytes,
-                                      }) async {
-                                        var mode = state.synthesisMode;
-                                        if (mode == SynthesisMode.aiSmart) {
-                                          if (!guard.isPro) {
-                                            final upgraded =
-                                                await guard.requirePro(
-                                                  context,
-                                                  featureName: 'AI Smart Gen',
-                                                );
-                                            if (!upgraded && !guard.isPro) {
-                                              mode = SynthesisMode.fastLocal;
-                                              if (context.mounted) {
-                                                context
-                                                    .read<IngestionBloc>()
-                                                    .add(
-                                                      const SetSynthesisModeEvent(
-                                                        SynthesisMode.fastLocal,
-                                                      ),
-                                                    );
-                                              }
-                                            }
-                                          } else {
-                                            await guard.fetchAiSmartGenQuota();
-                                            if (!guard.canUseAiSmartGen()) {
-                                              mode = SynthesisMode.fastLocal;
-                                              if (context.mounted) {
-                                                context
-                                                    .read<IngestionBloc>()
-                                                    .add(
-                                                      const SetSynthesisModeEvent(
-                                                        SynthesisMode.fastLocal,
-                                                      ),
-                                                    );
-                                                context.showSnackBar(
-                                                  message:
-                                                      'Daily AI Smart Gen limit reached (${SubscriptionGuard.proDailyAiSmartLimit}/${SubscriptionGuard.proDailyAiSmartLimit}). Synthesizing with uncapped Fast Local mode.',
-                                                );
-                                              }
-                                            }
-                                          }
-                                        }
-
-                                        if (context.mounted) {
-                                          context.read<IngestionBloc>().add(
-                                            PickAndUploadFileEvent(
-                                              filename: filename,
-                                              fileType: fileType,
-                                              fileBytes: fileBytes,
-                                              courseId: courseId,
-                                              courseCode: courseCode,
-                                              courseTitle: courseTitle,
-                                            ),
-                                          );
-                                        }
-                                      },
-                                  onCameraScanTap: () =>
-                                      isScanningCamera.value = true,
-                                ),
-                                const SizedBox(height: 20),
-
-                                // Progress card if active
-                                if (state.status != ProcessingStatus.idle)
-                                  UploadProgressCard(
-                                        filename:
-                                            state.currentDocument?.filename ??
-                                            'Selected Document',
-                                        status: state.status,
-                                        progress: state.uploadProgress,
-                                        stageMessage: state.stageMessage,
-                                        wasDeduplicated: state.wasDeduplicated,
-                                        errorMessage: state.errorMessage,
-                                        onRetry: () {
-                                          context.read<IngestionBloc>().add(
-                                            const ResetIngestionStateEvent(),
-                                          );
-                                        },
-                                      )
-                                      .animate()
-                                      .fadeIn(duration: 400.ms)
-                                      .slideY(
-                                        begin: 0.1,
-                                        end: 0,
-                                        curve: Curves.easeOutCubic,
-                                      ),
-                              ],
-                            )
-                            .animate()
-                            .fadeIn(duration: 400.ms)
-                            .slideY(
-                              begin: 0.05,
-                              end: 0,
-                              curve: Curves.easeOutCubic,
+                    final uploadSection = DocumentUploadControlSection(
+                      state: state,
+                      guard: subscriptionGuard,
+                      remainingQuota: remainingQuota.value,
+                      onUpdateQuota: (quota) => remainingQuota.value = quota,
+                      onModeSelected: (mode) {
+                        context.read<IngestionBloc>().add(
+                              SetSynthesisModeEvent(mode),
                             );
-
-                    final recentDocsSection = Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 6, bottom: 8),
-                          child: Text(
-                            'RECENTLY INGESTED DOCUMENTS',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textSecondary.withAlpha(170),
-                              fontSize: 11,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ),
-                        if (state.userDocuments.isEmpty)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceSecondary
-                                  : colors.surfacePrimary,
-                              borderRadius: AppRadius.radiusPanel,
-                              border: Border.all(
-                                color: colors.primary.withAlpha(
-                                  isDark ? 40 : 20,
-                                ),
+                      },
+                      onFilePicked: ({
+                        required filename,
+                        required fileType,
+                        required fileBytes,
+                      }) {
+                        context.read<IngestionBloc>().add(
+                              PickAndUploadFileEvent(
+                                filename: filename,
+                                fileType: fileType,
+                                fileBytes: fileBytes,
+                                courseId: courseId,
+                                courseCode: courseCode,
+                                courseTitle: courseTitle,
                               ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'No documents ingested yet. '
-                                'Upload lecture notes above to start.',
-                                textAlign: TextAlign.center,
-                                style: typography.footnote.regular.copyWith(
-                                  color: colors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          )
-                        else
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: state.userDocuments.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              final doc = state.userDocuments[index];
-                              final kbSize = (doc.fileSizeBytes / 1024)
-                                  .toStringAsFixed(1);
-                              final hasCourseContext =
-                                  (courseCode != null &&
-                                      courseCode!.isNotEmpty) ||
-                                  (courseId != null && courseId!.isNotEmpty);
-                              final baseName = doc.filename
-                                  .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
-                                  .toLowerCase()
-                                  .trim();
-                              final isAlreadyAttached =
-                                  hasCourseContext &&
-                                  (state.attachedDocumentIds.contains(doc.id) ||
-                                      (courseCode != null &&
-                                          (state.attachedDocumentIds.contains(
-                                                '${doc.id}_$courseCode',
-                                              ) ||
-                                              state.attachedDocumentIds.contains(
-                                                '${doc.contentHash}_$courseCode',
-                                              ) ||
-                                              state.attachedDocumentIds
-                                                  .contains(
-                                                    '${baseName}_$courseCode',
-                                                  ))) ||
-                                      (courseId != null &&
-                                          (state.attachedDocumentIds.contains(
-                                                '${doc.id}_$courseId',
-                                              ) ||
-                                              state.attachedDocumentIds.contains(
-                                                '${doc.contentHash}_$courseId',
-                                              ) ||
-                                              state.attachedDocumentIds
-                                                  .contains(
-                                                    '${baseName}_$courseId',
-                                                  ))) ||
-                                      _checkIsDocAttachedLocally(
-                                        doc: doc,
-                                        courseId: courseId,
-                                        courseCode: courseCode,
-                                      ));
+                            );
+                      },
+                      onCameraScanTap: () => isScanningCamera.value = true,
+                      onDismissPendingJob: () {
+                        context.read<IngestionBloc>().add(
+                              const DismissPendingIngestionJobEvent(),
+                            );
+                      },
+                      onRetryProgress: () {
+                        context.read<IngestionBloc>().add(
+                              const ResetIngestionStateEvent(),
+                            );
+                      },
+                      isDark: isDark,
+                      courseId: courseId,
+                      courseCode: courseCode,
+                      courseTitle: courseTitle,
+                    );
 
-                              return Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? colors.surfaceSecondary
-                                      : colors.surfacePrimary,
-                                  borderRadius: AppRadius.radiusCard,
-                                  border: Border.all(
-                                    color: colors.primary.withAlpha(
-                                      isDark ? 50 : 25,
-                                    ),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.description_outlined,
-                                          color: colors.primary,
-                                          size: 24,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                doc.filename,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: typography.body.bold
-                                                    .copyWith(
-                                                      color: colors.textPrimary,
-                                                    ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                '${doc.fileType.toUpperCase()} • '
-                                                '$kbSize KB',
-                                                style: typography.caption.medium
-                                                    .copyWith(
-                                                      color:
-                                                          colors.textSecondary,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: colors.success.withAlpha(25),
-                                            borderRadius: AppRadius.radiusBadge,
-                                          ),
-                                          child: Text(
-                                            'Ready',
-                                            style: typography.caption.bold
-                                                .copyWith(
-                                                  color: colors.success,
-                                                  fontSize: 10,
-                                                ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        PlatformHoverBuilder(
-                                          builder: (context, isHovered, child) {
-                                            return AnimatedScale(
-                                              scale: isHovered ? 1.12 : 1.0,
-                                              duration: AppMotion.snappy,
-                                              curve: AppMotion.easeOutCubic,
-                                              child: child,
-                                            );
-                                          },
-                                          child: IconButton(
-                                            icon: Icon(
-                                              Icons.delete_outline_rounded,
-                                              color: colors.textSecondary
-                                                  .withAlpha(
-                                                    180,
-                                                  ),
-                                              size: 20,
-                                            ),
-                                            tooltip: 'Delete Document',
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(
-                                              minWidth: 32,
-                                              minHeight: 32,
-                                            ),
-                                            onPressed: () =>
-                                                _confirmDeleteDocument(
-                                                  context: context,
-                                                  doc: doc,
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (hasCourseContext) ...[
-                                      const SizedBox(height: 10),
-                                      Align(
-                                        alignment: Alignment.centerRight,
-                                        child: isAlreadyAttached
-                                            ? Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 10,
-                                                      vertical: 6,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: colors.primary
-                                                      .withAlpha(
-                                                        20,
-                                                      ),
-                                                  borderRadius:
-                                                      AppRadius.radiusBadge,
-                                                  border: Border.all(
-                                                    color: colors.primary
-                                                        .withAlpha(
-                                                          60,
-                                                        ),
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      Icons
-                                                          .check_circle_rounded,
-                                                      color: colors.primary,
-                                                      size: 14,
-                                                    ),
-                                                    const SizedBox(width: 5),
-                                                    Text(
-                                                      'Attached to ${courseCode ?? "Course"}',
-                                                      style: typography
-                                                          .caption
-                                                          .bold
-                                                          .copyWith(
-                                                            color:
-                                                                colors.primary,
-                                                            fontSize: 11,
-                                                          ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              )
-                                            : PlatformHoverBuilder(
-                                                builder:
-                                                    (
-                                                      context,
-                                                      isHovered,
-                                                      child,
-                                                    ) {
-                                                      return AnimatedScale(
-                                                        scale: isHovered
-                                                            ? 1.03
-                                                            : 1.0,
-                                                        duration:
-                                                            AppMotion.snappy,
-                                                        curve: AppMotion
-                                                            .easeOutCubic,
-                                                        child: child,
-                                                      );
-                                                    },
-                                                child: OutlinedButton.icon(
-                                                  style: OutlinedButton.styleFrom(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 12,
-                                                          vertical: 6,
-                                                        ),
-                                                    side: BorderSide(
-                                                      color: colors.primary
-                                                          .withAlpha(80),
-                                                    ),
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              AppRadius
-                                                                  .radiusBadge,
-                                                        ),
-                                                  ),
-                                                  onPressed: () {
-                                                    context
-                                                        .read<IngestionBloc>()
-                                                        .add(
-                                                          AttachDocumentToCourseEvent(
-                                                            doc: doc,
-                                                            courseId: courseId,
-                                                            courseCode:
-                                                                courseCode,
-                                                            courseTitle:
-                                                                courseTitle,
-                                                          ),
-                                                        );
-                                                  },
-                                                  icon: Icon(
-                                                    Icons.bookmark_add_outlined,
-                                                    color: colors.primary,
-                                                    size: 14,
-                                                  ),
-                                                  label: Text(
-                                                    'Attach to ${courseCode ?? "Course"}',
-                                                    style: typography
-                                                        .caption
-                                                        .bold
-                                                        .copyWith(
-                                                          color: colors.primary,
-                                                          fontSize: 11,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                      ],
-                    ).animate().fadeIn(duration: 400.ms, delay: 150.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic);
+                    final recentDocsSection = RecentDocumentsSection(
+                      userDocuments: state.userDocuments,
+                      attachedDocumentIds: state.attachedDocumentIds,
+                      courseId: courseId,
+                      courseCode: courseCode,
+                      courseTitle: courseTitle,
+                      isDark: isDark,
+                      localStorageService: localStorageService,
+                      onAttachDocument: (doc) {
+                        context.read<IngestionBloc>().add(
+                              AttachDocumentToCourseEvent(
+                                doc: doc,
+                                courseId: courseId,
+                                courseCode: courseCode,
+                                courseTitle: courseTitle,
+                              ),
+                            );
+                      },
+                      onDeleteDocument: (doc) {
+                        context.read<IngestionBloc>().add(
+                              DeleteUserDocumentEvent(doc.id),
+                            );
+                      },
+                    );
 
                     if (isDesktop) {
                       return Center(
@@ -757,179 +362,6 @@ class _DocumentIngestionView extends HookWidget {
             ],
           );
         },
-      ),
-    );
-  }
-
-  bool _checkIsDocAttachedLocally({
-    required DocumentUploadEntity doc,
-    required String? courseId,
-    required String? courseCode,
-  }) {
-    final storage = locator.isRegistered<LocalStorageService>()
-        ? locator<LocalStorageService>()
-        : null;
-    if (storage == null) return false;
-
-    final baseName = doc.filename
-        .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
-        .toLowerCase()
-        .trim();
-
-    for (final key in [
-      'extracted_doc_${doc.contentHash}',
-      'extracted_doc_${doc.id}',
-      'extracted_doc_$baseName',
-    ]) {
-      final raw = storage.getPreference(key: key);
-      if (raw != null && raw.isNotEmpty) {
-        try {
-          final map = jsonDecode(raw) as Map<String, dynamic>;
-          final cId = map['courseId'] as String?;
-          final cCode = map['courseCode'] as String?;
-          if (courseId != null && courseId.isNotEmpty && cId == courseId) {
-            return true;
-          }
-          if (courseCode != null &&
-              courseCode.isNotEmpty &&
-              cCode?.toLowerCase() == courseCode.toLowerCase()) {
-            return true;
-          }
-        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-      }
-    }
-    return false;
-  }
-
-  Future<void> _confirmDeleteDocument({
-    required BuildContext context,
-    required DocumentUploadEntity doc,
-  }) async {
-    final colors = context.colors;
-    final typography = context.typography;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.isDarkMode
-            ? colors.surfaceSecondary
-            : colors.surfacePrimary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Delete Document?',
-          style: typography.headline.bold.copyWith(color: colors.textPrimary),
-        ),
-        content: Text(
-          'Are you sure you want to remove "${doc.filename}" from recently ingested documents?',
-          style: typography.body.regular.copyWith(color: colors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(
-              'Cancel',
-              style: typography.body.bold.copyWith(color: colors.textSecondary),
-            ),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.error,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(context.l10n.commonDelete),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      context.read<IngestionBloc>().add(DeleteUserDocumentEvent(doc.id));
-      context.showSnackBar(
-        message: '"${doc.filename}" removed from ingested documents.',
-        type: SnackBarType.success,
-      );
-    }
-  }
-}
-
-class _InterruptedUploadBanner extends StatelessWidget {
-  const _InterruptedUploadBanner({
-    required this.job,
-    required this.onDismiss,
-    required this.isDark,
-  });
-
-  final Map<String, dynamic> job;
-  final VoidCallback onDismiss;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final filename = job['filename'] as String? ?? 'Document';
-    final progress =
-        ((job['uploadProgress'] as num?)?.toDouble() ?? 0.0) * 100;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: colors.warning.withAlpha(isDark ? 30 : 20),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colors.warning.withAlpha(isDark ? 80 : 50),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: colors.warning.withAlpha(30),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.restore_page_rounded,
-              color: colors.warning,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Interrupted Upload Detected',
-                  style: typography.body.bold.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '$filename was interrupted at ${progress.toStringAsFixed(0)}% uploaded. Please re-select the file to resume.',
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary,
-                    fontSize: 11,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: Icon(Icons.close_rounded, size: 18, color: colors.textMuted),
-            tooltip: 'Dismiss',
-            onPressed: onDismiss,
-          ),
-        ],
       ),
     );
   }

@@ -644,11 +644,13 @@ class FileDropZoneWidget extends HookWidget {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    'Free Daily Uploads',
-                                    style: typography.caption.medium.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 11,
+                                  Expanded(
+                                    child: Text(
+                                      'Free Daily Uploads',
+                                      style: typography.caption.medium.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ),
                                   Text(
