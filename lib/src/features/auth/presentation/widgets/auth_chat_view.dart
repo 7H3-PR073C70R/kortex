@@ -1,112 +1,23 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:math' as math;
-import 'dart:ui';
-
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
-import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
-import 'package:kortex/src/core/services/social_auth_service.dart';
-import 'package:kortex/src/core/services/user_storage_service.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
-import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
-import 'package:kortex/src/core/utils/app_logger.dart';
-import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/chat_auth_message.dart';
-import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
-import 'package:kortex/src/features/auth/presentation/widgets/auth_shell.dart';
-import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
-import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
-import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/chat/auth_chat_action_controls.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/chat/auth_chat_bubbles.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/chat/auth_chat_flow_coordinator.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/chat/auth_chat_flow_step.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/chat/auth_chat_input_bar.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/chat/auth_post_login_coordinator.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
-import 'package:kortex/src/shared/widgets/typewriter_text.dart';
-
-enum _ChatFlowStep {
-  initial,
-  signUpName,
-  signUpEmail,
-  signUpPassword,
-  signUpPromoCode,
-  loginEmail,
-  loginPassword,
-  forgotPasswordEmail,
-  needsEmailConfirmation,
-  accountActive,
-  submitting,
-}
-
-const List<({String author, String quote})> _motivationalQuotes = [
-  (
-    quote:
-        'The beautiful thing about learning is that no one can '
-        'take it away from you.',
-    author: 'B.B. King',
-  ),
-  (
-    quote:
-        'Live as if you were to die tomorrow. '
-        'Learn as if you were to live forever.',
-    author: 'Mahatma Gandhi',
-  ),
-  (
-    quote:
-        'Education is the most powerful weapon which you can '
-        'use to change the world.',
-    author: 'Nelson Mandela',
-  ),
-  (
-    quote: 'The mind is not a vessel to be filled, but a fire to be kindled.',
-    author: 'Plutarch',
-  ),
-  (
-    quote: 'An investment in knowledge pays the best interest.',
-    author: 'Benjamin Franklin',
-  ),
-  (
-    quote:
-        'Develop a passion for learning. If you do, you will '
-        'never cease to grow.',
-    author: "Anthony J. D'Angelo",
-  ),
-  (
-    quote:
-        'The capacity to learn is a gift; the ability to learn is a skill; '
-        'the willingness to learn is a choice.',
-    author: 'Brian Herbert',
-  ),
-  (
-    quote:
-        'Wisdom is not a product of schooling but of the lifelong '
-        'attempt to acquire it.',
-    author: 'Albert Einstein',
-  ),
-  (
-    quote:
-        'Tell me and I forget. Teach me and I remember. '
-        'Involve me and I learn.',
-    author: 'Benjamin Franklin',
-  ),
-  (
-    quote: 'There is no substitute for hard work and curious minds.',
-    author: 'Thomas Edison',
-  ),
-];
 
 /// Conversational AI Chat authentication view with randomized quotes,
 /// live auto-scrolling, full-width actions, and synchronized draft state.
@@ -115,16 +26,14 @@ class AuthChatView extends HookWidget {
     required this.onGooglePressed,
     required this.onForgotPassword,
     this.onApplePressed,
+    this.postLoginCoordinator,
     super.key,
   });
 
   final VoidCallback onGooglePressed;
   final VoidCallback onForgotPassword;
   final VoidCallback? onApplePressed;
-
-  static final RegExp _emailRegex = RegExp(
-    r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
-  );
+  final AuthPostLoginCoordinator? postLoginCoordinator;
 
   @override
   Widget build(BuildContext context) {
@@ -132,9 +41,9 @@ class AuthChatView extends HookWidget {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
-    final inputBorderColor = isDark
-        ? colors.surfaceBorderHighlight.withAlpha(80)
-        : colors.surfaceBorder.withAlpha(140);
+
+    final coordinator =
+        postLoginCoordinator ?? const AuthPostLoginCoordinator();
 
     final draftCubit = context.read<AuthDraftCubit>();
     final draftState = context.watch<AuthDraftCubit>().state;
@@ -154,16 +63,8 @@ class AuthChatView extends HookWidget {
     final lastRetryAction = useState<VoidCallback?>(null);
     final lastRetryDescription = useState<String>('');
 
-    final currentFlow = useState<_ChatFlowStep>(_ChatFlowStep.initial);
-
-    final initialGreeting = useMemoized(() {
-      final randomIndex = math.Random().nextInt(_motivationalQuotes.length);
-      final item = _motivationalQuotes[randomIndex];
-      return 'Hi Stranger! 👋 Welcome to Kortexify.\n\n'
-          '✨ "${item.quote}" — ${item.author}\n\n'
-          "I'm Syllabot, your AI study partner. "
-          'How would you like to get started today?';
-    });
+    final currentFlow = useState<ChatFlowStep>(ChatFlowStep.initial);
+    final initialGreeting = useMemoized(generateAuthChatInitialGreeting);
 
     useEffect(
       () {
@@ -201,7 +102,8 @@ class AuthChatView extends HookWidget {
                 ),
               );
             } else {
-              scrollController.jumpTo(scrollController.position.maxScrollExtent);
+              scrollController
+                  .jumpTo(scrollController.position.maxScrollExtent);
             }
           }
         });
@@ -271,7 +173,7 @@ class AuthChatView extends HookWidget {
     }
 
     void submitRegistration({String? promoOverride}) {
-      currentFlow.value = _ChatFlowStep.submitting;
+      currentFlow.value = ChatFlowStep.submitting;
 
       isThinking.value = true;
       thinkingLabel.value = 'Creating your Kortexify neural profile...';
@@ -292,19 +194,9 @@ class AuthChatView extends HookWidget {
                   : draftState.promoCode))
           .trim();
 
-      if (regName.trim().isNotEmpty &&
-          locator.isRegistered<UserStorageService>()) {
-        unawaited(
-          locator<UserStorageService>().saveUserDisplayName(regName.trim()),
-        );
-      }
+      unawaited(coordinator.saveUserDisplayName(regName));
 
-      lastRetryDescription.value = 'Sign Up';
-      lastRetryAction.value = () {
-        currentFlow.value = _ChatFlowStep.submitting;
-        isThinking.value = true;
-        thinkingLabel.value = 'Creating your Kortexify neural profile...';
-        scrollToBottom(animate: true);
+      void dispatchRegister() {
         context.read<AuthBloc>().add(
           AuthRegisterRequested(
             email: regEmail,
@@ -313,353 +205,82 @@ class AuthChatView extends HookWidget {
             promoCode: regPromo.isNotEmpty ? regPromo : null,
           ),
         );
+      }
+
+      lastRetryDescription.value = 'Sign Up';
+      lastRetryAction.value = () {
+        currentFlow.value = ChatFlowStep.submitting;
+        isThinking.value = true;
+        thinkingLabel.value = 'Creating your Kortexify neural profile...';
+        scrollToBottom(animate: true);
+        dispatchRegister();
       };
 
-      context.read<AuthBloc>().add(
-        AuthRegisterRequested(
-          email: regEmail,
-          password: regPassword,
-          displayName: regName.isNotEmpty ? regName : null,
-          promoCode: regPromo.isNotEmpty ? regPromo : null,
-        ),
-      );
+      dispatchRegister();
     }
 
     void handleSend() {
       final input = textController.text.trim();
-      if (input.isEmpty || isThinking.value || isTyping.value) return;
+      if (input.isEmpty) return;
 
-      unawaited(HapticFeedback.lightImpact());
+      textController.clear();
+      hasInputText.value = false;
 
-      switch (currentFlow.value) {
-        case _ChatFlowStep.initial:
-          break;
-
-        case _ChatFlowStep.signUpName:
-          if (input.length < 2) {
-            addUserMessage(input);
-            textController.clear();
-            simulateBotReply(
-              l10n.authChatNameTooShort,
-              isError: true,
-              thinkingText: l10n.authValidatingName,
-            );
-            return;
-          }
-
-          addUserMessage(input);
-          draftCubit.updateDisplayName(input);
-          if (locator.isRegistered<UserStorageService>()) {
-            unawaited(
-              locator<UserStorageService>().saveUserDisplayName(input.trim()),
-            );
-          }
-          context.read<AuthModeCubit>().setFormType(AuthFormType.register);
-          textController.clear();
-          currentFlow.value = _ChatFlowStep.signUpEmail;
-
-          simulateBotReply(
-            l10n.authChatGreetingWithName(input),
-            thinkingText: l10n.authPreparingProfileSetup,
-          );
-
-        case _ChatFlowStep.signUpEmail:
-          if (!_emailRegex.hasMatch(input)) {
-            addUserMessage(input);
-            textController.clear();
-            simulateBotReply(
-              'That does not look like a valid email address. '
-              'Please check and try again (e.g. name@university.edu).',
-              isError: true,
-              thinkingText: 'Checking email format...',
-            );
-            return;
-          }
-
-          addUserMessage(input);
-          draftCubit.updateEmail(input);
-          textController.clear();
-          currentFlow.value = _ChatFlowStep.signUpPassword;
-
-          simulateBotReply(
-            'Almost there! Set a secure password '
-            '(at least 8 characters).',
-            step: ChatAuthStep.askPassword,
-            thinkingText: 'Configuring credentials...',
-          );
-
-        case _ChatFlowStep.signUpPassword:
-          if (input.length < 8) {
-            addUserMessage(input, isPassword: true);
-            textController.clear();
-            simulateBotReply(
-              'Password must be at least 8 characters long for security. '
-              'Please try again.',
-              isError: true,
-              thinkingText: 'Checking password security...',
-            );
-            return;
-          }
-
-          addUserMessage(input, isPassword: true);
-          draftCubit.updatePassword(input);
-          textController.clear();
-
-          if (draftState.promoCode.isNotEmpty) {
-            submitRegistration();
-          } else {
-            currentFlow.value = _ChatFlowStep.signUpPromoCode;
-            simulateBotReply(
-              'Got a promo or referral code? Enter it below, or tap "Skip & Register" to finish creating your account.',
-              thinkingText: 'Checking for promo code...',
-            );
-          }
-
-        case _ChatFlowStep.signUpPromoCode:
-          addUserMessage(input);
-          draftCubit.updatePromoCode(input);
-          textController.clear();
-          submitRegistration(promoOverride: input);
-
-        case _ChatFlowStep.loginEmail:
-          if (!_emailRegex.hasMatch(input)) {
-            addUserMessage(input);
-            textController.clear();
-            simulateBotReply(
-              'Please enter a valid email address (e.g. student@mit.edu).',
-              isError: true,
-              thinkingText: 'Validating email format...',
-            );
-            return;
-          }
-
-          addUserMessage(input);
-          draftCubit.updateEmail(input);
-          context.read<AuthModeCubit>().setFormType(AuthFormType.login);
-          textController.clear();
-          currentFlow.value = _ChatFlowStep.loginPassword;
-
-          simulateBotReply(
-            'Please enter your password to sign in.',
-            thinkingText: 'Finding account...',
-          );
-
-        case _ChatFlowStep.loginPassword:
-          addUserMessage(input, isPassword: true);
-          draftCubit.updatePassword(input);
-          textController.clear();
-          currentFlow.value = _ChatFlowStep.submitting;
-
-          isThinking.value = true;
-          thinkingLabel.value = 'Authenticating credentials with AI...';
-          scrollToBottom(animate: true);
-
-          final logEmail = draftState.email.isNotEmpty
-              ? draftState.email
-              : input;
-          final logPassword = input;
-
-          lastRetryDescription.value = 'Sign In';
-          lastRetryAction.value = () {
-            currentFlow.value = _ChatFlowStep.submitting;
-            isThinking.value = true;
-            thinkingLabel.value = 'Authenticating credentials with AI...';
-            scrollToBottom(animate: true);
-            context.read<AuthBloc>().add(
-              AuthLoginRequested(
-                email: logEmail,
-                password: logPassword,
-              ),
-            );
-          };
-
-          context.read<AuthBloc>().add(
-            AuthLoginRequested(
-              email: logEmail,
-              password: logPassword,
-            ),
-          );
-
-        case _ChatFlowStep.forgotPasswordEmail:
-          if (!_emailRegex.hasMatch(input)) {
-            addUserMessage(input);
-            textController.clear();
-            simulateBotReply(
-              'Please enter a valid registered email address.',
-              isError: true,
-              thinkingText: 'Validating email...',
-            );
-            return;
-          }
-
-          addUserMessage(input);
-          draftCubit.updateEmail(input);
-          context.read<AuthModeCubit>().setFormType(AuthFormType.login);
-          textController.clear();
-          currentFlow.value = _ChatFlowStep.submitting;
-
-          isThinking.value = true;
-          thinkingLabel.value = 'Dispatching password reset link...';
-          scrollToBottom(animate: true);
-
-          final resetEmail = input;
-          lastRetryDescription.value = 'Reset Password';
-          lastRetryAction.value = () {
-            currentFlow.value = _ChatFlowStep.submitting;
-            isThinking.value = true;
-            thinkingLabel.value = 'Dispatching password reset link...';
-            scrollToBottom(animate: true);
-            context.read<AuthBloc>().add(
-              AuthResetPasswordRequested(email: resetEmail),
-            );
-          };
-
-          context.read<AuthBloc>().add(
-            AuthResetPasswordRequested(email: resetEmail),
-          );
-
-        case _ChatFlowStep.needsEmailConfirmation:
-          final otp = input.replaceAll(RegExp('[^0-9]'), '');
-          if (otp.length != 6) {
-            addUserMessage(input);
-            textController.clear();
-            simulateBotReply(
-              'Please enter a valid 6-digit verification code.',
-              isError: true,
-              thinkingText: 'Checking verification code...',
-            );
-            return;
-          }
-
-          addUserMessage(otp);
-          textController.clear();
-          currentFlow.value = _ChatFlowStep.submitting;
-
-          isThinking.value = true;
-          thinkingLabel.value = 'Verifying your 6-digit code...';
-          scrollToBottom(animate: true);
-
-          final verifyEmail = draftState.email.isNotEmpty
-              ? draftState.email
-              : (authState.user?.email ?? '');
-
-          lastRetryDescription.value = 'Verify OTP';
-          lastRetryAction.value = () {
-            currentFlow.value = _ChatFlowStep.submitting;
-            isThinking.value = true;
-            thinkingLabel.value = 'Verifying your 6-digit code...';
-            scrollToBottom(animate: true);
-            context.read<AuthBloc>().add(
-              AuthVerifyOtpRequested(
-                email: verifyEmail,
-                token: otp,
-              ),
-            );
-          };
-
-          context.read<AuthBloc>().add(
-            AuthVerifyOtpRequested(
-              email: verifyEmail,
-              token: otp,
-            ),
-          );
-
-        case _ChatFlowStep.accountActive:
-        case _ChatFlowStep.submitting:
-          break;
-      }
+      AuthChatFlowCoordinator(
+        context: context,
+        currentFlow: currentFlow,
+        coordinator: coordinator,
+        onAddUserMessage: addUserMessage,
+        onSimulateBotReply: simulateBotReply,
+        onSubmitRegistration: submitRegistration,
+        isThinking: isThinking,
+        thinkingLabel: thinkingLabel,
+        lastRetryAction: lastRetryAction,
+        lastRetryDescription: lastRetryDescription,
+        onScrollToBottom: () => scrollToBottom(animate: true),
+        fallbackEmail: authState.user?.email ?? '',
+      ).handleInput(input);
     }
-
-    final isInputNeeded =
-        !isThinking.value &&
-        !isTyping.value &&
-        !authState.isLoading &&
-        currentFlow.value != _ChatFlowStep.submitting;
-
-    final isTextFieldVisible =
-        isInputNeeded &&
-        currentFlow.value != _ChatFlowStep.initial &&
-        currentFlow.value != _ChatFlowStep.accountActive;
-
-    String getHintText() {
-      switch (currentFlow.value) {
-        case _ChatFlowStep.signUpName:
-          return 'Enter your full name';
-        case _ChatFlowStep.signUpEmail:
-          return 'Enter your email address';
-        case _ChatFlowStep.signUpPassword:
-          return 'Enter secure password (min. 8 chars)';
-        case _ChatFlowStep.signUpPromoCode:
-          return 'Enter promo code (optional)';
-        case _ChatFlowStep.loginEmail:
-          return 'Enter your registered email';
-        case _ChatFlowStep.loginPassword:
-          return 'Enter your password';
-        case _ChatFlowStep.forgotPasswordEmail:
-          return 'Enter your registered email';
-        case _ChatFlowStep.needsEmailConfirmation:
-          return 'Enter 6-digit code (e.g. 123456)';
-        case _ChatFlowStep.accountActive:
-          return 'Choose an option below...';
-        case _ChatFlowStep.initial:
-          return 'Choose an option below...';
-        case _ChatFlowStep.submitting:
-          return 'Processing...';
-      }
-    }
-
-    final isPasswordField =
-        currentFlow.value == _ChatFlowStep.signUpPassword ||
-        currentFlow.value == _ChatFlowStep.loginPassword;
 
     return BlocListener<AuthBloc, AuthState>(
-      listenWhen: (previous, current) =>
-          previous.status != current.status ||
-          (current.status == AuthStatus.error &&
-              current.errorMessage != previous.errorMessage) ||
-          (current.isResetSent && !previous.isResetSent),
       listener: (context, state) async {
-        if (state.status == AuthStatus.error) {
+        if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
           isThinking.value = false;
           isTyping.value = false;
-          currentFlow.value = _ChatFlowStep.initial;
-          final retryCallback = lastRetryAction.value;
-          final err =
-              state.errorMessage ??
-              'Unable to connect to the study servers. '
-                  'Please check your internet connection and try again.';
-          final actionDesc = lastRetryDescription.value.isNotEmpty
-              ? lastRetryDescription.value
-              : 'request';
+          currentFlow.value = ChatFlowStep.initial;
+
           addBotMessage(
-            'Unable to complete $actionDesc:\n$err\n\n'
-            'Tap "Retry Request" below to try again without re-typing.',
+            '⚠️ ${state.errorMessage}',
             isError: true,
-            onRetry: retryCallback != null
+            onRetry: lastRetryAction.value != null
                 ? () {
-                    addUserMessage('🔄 Retry ${lastRetryDescription.value}');
-                    retryCallback();
+                    final retry = lastRetryAction.value;
+                    if (retry != null) {
+                      addUserMessage(
+                        '🔄 Retry ${lastRetryDescription.value}',
+                      );
+                      retry();
+                    }
                   }
                 : null,
           );
         } else if (state.status == AuthStatus.needsEmailVerification) {
           isThinking.value = false;
           isTyping.value = false;
-          currentFlow.value = _ChatFlowStep.needsEmailConfirmation;
-          final name =
-              state.user?.displayName ??
-              (draftState.displayName.isNotEmpty
-                  ? draftState.displayName
-                  : 'Scholar');
-          final email =
-              state.user?.email ??
+          lastRetryAction.value = null;
+          lastRetryDescription.value = '';
+          currentFlow.value = ChatFlowStep.needsEmailConfirmation;
+          final email = state.user?.email ??
               (draftState.email.isNotEmpty
                   ? draftState.email
                   : 'your email address');
+          final name = state.user?.displayName ??
+              (draftState.displayName.isNotEmpty
+                  ? draftState.displayName
+                  : 'Scholar');
           addBotMessage(
             '🎉 Welcome to Kortexify, $name!\n\n'
-            'Enter the 6-digit code sent to **$email** to activate '
-            'your account.',
+            'Enter the 6-digit code sent to **$email** to activate your account.',
           );
         } else if (state.status == AuthStatus.needsOnboarding &&
             state.user != null) {
@@ -667,25 +288,18 @@ class AuthChatView extends HookWidget {
           isTyping.value = false;
           lastRetryAction.value = null;
           lastRetryDescription.value = '';
-          currentFlow.value = _ChatFlowStep.accountActive;
+          currentFlow.value = ChatFlowStep.accountActive;
           final name = state.user?.displayName ?? 'Scholar';
-          final isNewlyRegistered =
-              locator.isRegistered<LocalStorageService>() &&
-              locator<LocalStorageService>().getPreference(
-                    key: PrefKeys.isNewlyRegistered,
-                  ) ==
-                  'true';
-          if (isNewlyRegistered) {
+          final newlyRegistered = coordinator.isNewlyRegistered();
+          if (newlyRegistered) {
             addBotMessage(
               '🎉 Welcome to Kortexify, **$name**! Your account is active.\n\n'
-              "Let's calibrate your academic track and study profile to "
-              'personalize your learning engine.',
+              "Let's calibrate your academic track and study profile to personalize your learning engine.",
             );
           } else {
             addBotMessage(
               '👋 Welcome back, **$name**!\n\n'
-              "Let's calibrate your academic track and study profile to "
-              'personalize your learning engine.',
+              "Let's calibrate your academic track and study profile to personalize your learning engine.",
             );
           }
         } else if (state.status == AuthStatus.authenticated &&
@@ -696,84 +310,9 @@ class AuthChatView extends HookWidget {
           lastRetryDescription.value = '';
           final name = state.user?.displayName ?? 'Scholar';
 
-          // Multi-fallback onboarding check for returning users
-          var serverSaysOnboarded = state.userProfile?.isOnboarded ?? false;
-          if (!serverSaysOnboarded && locator.isRegistered<AuthRepository>()) {
-            try {
-              final profileRes = await locator<AuthRepository>().getUserProfile();
-              profileRes.fold(
-                (_) {},
-                (profile) {
-                  if (profile.isOnboarded) {
-                    serverSaysOnboarded = true;
-                  }
-                },
-              );
-            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-          }
-          var localSaysOnboarded = false;
-          try {
-            final storage = locator<LocalStorageService>();
-            localSaysOnboarded =
-                storage.getPreference(key: PrefKeys.hasCompletedOnboarding) ==
-                'true';
-          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-
-          var calibSaysOnboarded = false;
-          if (!serverSaysOnboarded && !localSaysOnboarded) {
-            final calibRepo = locator<CalibrationRepository>();
-            final calibResult = await calibRepo.getCalibrationProfile();
-            calibSaysOnboarded = calibResult.fold(
-              (_) => false,
-              (profile) => profile?.isCalibrated ?? false,
-            );
-          }
-
-          // Remote/local curated courses check for new device logins
-          var coursesSayOnboarded = false;
-          if (!serverSaysOnboarded &&
-              !localSaysOnboarded &&
-              !calibSaysOnboarded) {
-            try {
-              final storage = locator<LocalStorageService>();
-              final rawCourses = storage.getPreference(
-                key: PrefKeys.userCuratedCourses,
-              );
-              if (rawCourses != null && rawCourses.isNotEmpty) {
-                final list = jsonDecode(rawCourses) as List<dynamic>;
-                if (list.isNotEmpty) coursesSayOnboarded = true;
-              }
-            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-
-            if (!coursesSayOnboarded &&
-                locator.isRegistered<DashboardRepository>()) {
-              try {
-                final dashRepo = locator<DashboardRepository>();
-                final coursesRes = await dashRepo.getUserCuratedCourses();
-                coursesSayOnboarded = coursesRes.fold(
-                  (_) => false,
-                  (courses) => courses.isNotEmpty,
-                );
-              } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-            }
-          }
-
-          final isCalibrated =
-              serverSaysOnboarded ||
-              localSaysOnboarded ||
-              calibSaysOnboarded ||
-              coursesSayOnboarded;
+          final isCalibrated = await coordinator.checkIsCalibrated(state);
 
           if (isCalibrated) {
-            try {
-              final storage = locator<LocalStorageService>();
-              unawaited(
-                storage.savePreference(
-                  key: PrefKeys.hasCompletedOnboarding,
-                  data: 'true',
-                ),
-              );
-            } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
             addBotMessage(
               '✨ Welcome back, **$name**! Redirecting to your Dashboard...',
             );
@@ -783,20 +322,18 @@ class AuthChatView extends HookWidget {
               }
             });
           } else {
-            currentFlow.value = _ChatFlowStep.accountActive;
+            currentFlow.value = ChatFlowStep.accountActive;
             addBotMessage(
               '✨ Welcome back, **$name**! Signed in successfully.\n\n'
-              "Let's calibrate your academic track and study profile to "
-              'personalize your learning engine.',
+              "Let's calibrate your academic track and study profile to personalize your learning engine.",
             );
           }
         } else if (state.isResetSent) {
           isThinking.value = false;
           isTyping.value = false;
-          currentFlow.value = _ChatFlowStep.initial;
+          currentFlow.value = ChatFlowStep.initial;
           addBotMessage(
-            '📧 A password reset link has been dispatched to your email '
-            'address!\n\n'
+            '📧 A password reset link has been dispatched to your email address!\n\n'
             'Please check your inbox to create a new password, then sign in.',
           );
         }
@@ -817,17 +354,16 @@ class AuthChatView extends HookWidget {
                         horizontal: 20,
                         vertical: 12,
                       ),
-                      itemCount:
-                          messages.value.length +
+                      itemCount: messages.value.length +
                           (isThinking.value ||
                                   (authState.isLoading &&
                                       currentFlow.value ==
-                                          _ChatFlowStep.submitting)
+                                          ChatFlowStep.submitting)
                               ? 1
                               : 0),
                       itemBuilder: (context, index) {
                         if (index == messages.value.length) {
-                          return _ThinkingBubble(
+                          return AuthThinkingBubble(
                             statusText: authState.isLoading
                                 ? 'Connecting to Kortexify neural engine...'
                                 : thinkingLabel.value,
@@ -836,21 +372,19 @@ class AuthChatView extends HookWidget {
 
                         final msg = messages.value[index];
                         final isBot = msg.sender == ChatAuthSender.syllabot;
-                        final isStreaming =
-                            isBot &&
+                        final isStreaming = isBot &&
                             msg.id == latestBotMsgId.value &&
                             isTyping.value;
 
                         if (isBot) {
-                          return _BotMessageBubble(
+                          return AuthBotMessageBubble(
                             message: msg,
                             colors: colors,
                             typography: typography,
                             isDark: isDark,
                             isStreaming: isStreaming,
-                            livePasswordText:
-                                currentFlow.value ==
-                                    _ChatFlowStep.signUpPassword
+                            livePasswordText: currentFlow.value ==
+                                    ChatFlowStep.signUpPassword
                                 ? rawInputText.value
                                 : null,
                             onStreamingTick: scrollToBottom,
@@ -860,7 +394,7 @@ class AuthChatView extends HookWidget {
                             },
                           );
                         } else {
-                          return _UserMessageBubble(
+                          return AuthUserMessageBubble(
                             message: msg,
                             colors: colors,
                             typography: typography,
@@ -871,1187 +405,54 @@ class AuthChatView extends HookWidget {
                   ),
 
                   // 2. Floating Full-Width Action Controls
-                  // (re-reveals on every flow step so options feel alive)
-                  if (isInputNeeded)
-                    RevealOnMount(
-                      key: ValueKey(currentFlow.value),
-                      durationMs: 360,
-                      slideY: 0.08,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (currentFlow.value == _ChatFlowStep.initial) ...[
-                              // If last request failed, show 1-tap Retry Pill
-                              if (lastRetryAction.value != null) ...[
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _ActionChipButton(
-                                        icon: Icons.refresh_rounded,
-                                        label:
-                                            'Retry ${lastRetryDescription.value}',
-                                        isPrimary: true,
-                                        onTap: () {
-                                          final retry = lastRetryAction.value;
-                                          if (retry != null) {
-                                            addUserMessage(
-                                              '🔄 Retry '
-                                              '${lastRetryDescription.value}',
-                                            );
-                                            retry();
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _ActionChipButton(
-                                        icon: Icons.restart_alt_rounded,
-                                        label: 'Start Over',
-                                        onTap: () {
-                                          lastRetryAction.value = null;
-                                          addUserMessage('Start Over');
-                                          currentFlow.value =
-                                              _ChatFlowStep.initial;
-                                          simulateBotReply(
-                                            'Sure! How would you like to '
-                                            'proceed?',
-                                            thinkingText: 'Resetting flow...',
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                              ],
-
-                              // Row 1: Create Account & Sign In across 50/50 full width
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _ActionChipButton(
-                                      icon: Icons.person_add_rounded,
-                                      label: 'Create Account',
-                                      isPrimary: lastRetryAction.value == null,
-                                      onTap: () {
-                                        lastRetryAction.value = null;
-                                        addUserMessage('Create Account');
-                                        draftCubit.updateDisplayName('');
-                                        context
-                                            .read<AuthModeCubit>()
-                                            .setFormType(
-                                              AuthFormType.register,
-                                            );
-                                        currentFlow.value =
-                                            _ChatFlowStep.signUpName;
-                                        simulateBotReply(
-                                          "Let's set up your personalized "
-                                          'workspace! What is your full name?',
-                                          thinkingText:
-                                              'Initializing signup...',
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: _ActionChipButton(
-                                      icon: Icons.login_rounded,
-                                      label: 'Sign In',
-                                      onTap: () {
-                                        lastRetryAction.value = null;
-                                        addUserMessage('Sign In');
-                                        context
-                                            .read<AuthModeCubit>()
-                                            .setFormType(
-                                              AuthFormType.login,
-                                            );
-                                        currentFlow.value =
-                                            _ChatFlowStep.loginEmail;
-                                        simulateBotReply(
-                                          'Welcome back! What is your '
-                                          'registered email address?',
-                                          thinkingText: 'Opening login...',
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
+                  AuthChatActionControls(
+                    currentFlow: currentFlow.value,
+                    isInputNeeded: currentFlow.value.isInputNeeded,
+                    lastRetryAction: lastRetryAction,
+                    lastRetryDescription: lastRetryDescription,
+                    isAuthLoading: authState.isLoading,
+                    userEmail: authState.user?.email ??
+                        (draftState.email.isNotEmpty
+                            ? draftState.email
+                            : 'your email address'),
+                    onGooglePressed: onGooglePressed,
+                    onApplePressed: onApplePressed ??
+                        () async {
+                          final result = await coordinator.signInWithApple();
+                          if (result != null && context.mounted) {
+                            context.read<AuthBloc>().add(
+                              AuthSocialLoginRequested(
+                                provider: result.provider,
+                                idToken: result.idToken,
+                                rawNonce: result.rawNonce,
                               ),
-                              const SizedBox(height: 8),
-
-                              // Row 2: Full-width Forgot Password button
-                              _ActionChipButton(
-                                icon: Icons.lock_reset_rounded,
-                                label: l10n.authChipForgotPassword,
-                                isFullWidth: true,
-                                onTap: () {
-                                  lastRetryAction.value = null;
-                                  addUserMessage('Forgot Password');
-                                  context.read<AuthModeCubit>().setFormType(
-                                    AuthFormType.login,
-                                  );
-                                  currentFlow.value =
-                                      _ChatFlowStep.forgotPasswordEmail;
-                                  simulateBotReply(
-                                    'No worries! Enter your email address '
-                                    'and '
-                                    "I'll send you a password reset link.",
-                                    thinkingText: 'Preparing password reset...',
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 10),
-
-                              // Row 3: Social Auth Bar
-                              SocialAuthBar(
-                                isLoading: authState.isLoading,
-                                onGooglePressed: onGooglePressed,
-                                onApplePressed:
-                                    onApplePressed ??
-                                    () async {
-                                      try {
-                                        final result =
-                                            await locator<SocialAuthService>()
-                                                .signInWithApple();
-                                        if (result != null && context.mounted) {
-                                          context.read<AuthBloc>().add(
-                                            AuthSocialLoginRequested(
-                                              provider: result.provider,
-                                              idToken: result.idToken,
-                                              rawNonce: result.rawNonce,
-                                            ),
-                                          );
-                                        }
-                                      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-                                    },
-                              ),
-                              const SizedBox(height: 4),
-                            ] else if (currentFlow.value ==
-                                _ChatFlowStep.signUpPromoCode) ...[
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _ActionChipButton(
-                                      icon: Icons.card_giftcard_rounded,
-                                      label: '🎁 Have Promo Code',
-                                      isPrimary: true,
-                                      onTap: () {
-                                        simulateBotReply(
-                                          'Please type your promo code in the text field below and press Send.',
-                                          thinkingText: 'Awaiting promo code...',
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: _ActionChipButton(
-                                      icon: Icons.rocket_launch_rounded,
-                                      label: 'Skip & Register 🚀',
-                                      onTap: () {
-                                        addUserMessage('Skip Promo Code');
-                                        submitRegistration(promoOverride: '');
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              _ActionChipButton(
-                                icon: Icons.arrow_back_rounded,
-                                label: 'Start Over / Choose Other Option',
-                                isFullWidth: true,
-                                onTap: () {
-                                  lastRetryAction.value = null;
-                                  addUserMessage('Start Over');
-                                  currentFlow.value = _ChatFlowStep.initial;
-                                  simulateBotReply(
-                                    'No problem! How would you like to '
-                                    'get started?',
-                                    thinkingText: 'Resetting...',
-                                  );
-                                },
-                              ),
-                            ] else if (currentFlow.value ==
-                                _ChatFlowStep.needsEmailConfirmation) ...[
-                              // 1. Resend 6-Digit Code
-                              _ActionChipButton(
-                                icon: Icons.mark_email_read_rounded,
-                                label: 'Resend 6-Digit Code',
-                                isFullWidth: true,
-                                onTap: () {
-                                  lastRetryAction.value = null;
-                                  addUserMessage('Resend 6-Digit Code');
-                                  final email =
-                                      authState.user?.email ??
-                                      (draftState.email.isNotEmpty
-                                          ? draftState.email
-                                          : 'your email address');
-                                  simulateBotReply(
-                                    '📬 A fresh 6-digit code has been '
-                                    'dispatched to $email! Enter the code below.',
-                                    thinkingText: 'Dispatching new code...',
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 8),
-
-                              // 2. Reset / Start Over
-                              _ActionChipButton(
-                                icon: Icons.arrow_back_rounded,
-                                label: 'Start Over / Use Different Email',
-                                isFullWidth: true,
-                                onTap: () {
-                                  lastRetryAction.value = null;
-                                  addUserMessage('Start Over');
-                                  currentFlow.value = _ChatFlowStep.initial;
-                                  simulateBotReply(
-                                    'No problem! How would you like to '
-                                    'get started?',
-                                    thinkingText: 'Resetting...',
-                                  );
-                                },
-                              ),
-                            ] else if (currentFlow.value ==
-                                _ChatFlowStep.accountActive) ...[
-                              // 1. Calibrate Study Profile
-                              _ActionChipButton(
-                                icon: Icons.rocket_launch_rounded,
-                                label: '🚀 Calibrate Study Profile',
-                                isPrimary: true,
-                                isFullWidth: true,
-                                onTap: () {
-                                  addUserMessage(
-                                    "Let's calibrate my study profile",
-                                  );
-                                  unawaited(
-                                    context.router.replace(
-                                      const OnboardingCalibrationRoute(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 8),
-
-                              // 2. Go to Dashboard
-                              _ActionChipButton(
-                                icon: Icons.dashboard_customize_rounded,
-                                label: '🎯 Go to Dashboard',
-                                isFullWidth: true,
-                                onTap: () {
-                                  addUserMessage('Go to Dashboard');
-                                  unawaited(
-                                    context.router.replace(
-                                      const DashboardRoute(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ] else ...[
-                              _ActionChipButton(
-                                icon: Icons.arrow_back_rounded,
-                                label: 'Start Over / Choose Other Option',
-                                isFullWidth: true,
-                                onTap: () {
-                                  lastRetryAction.value = null;
-                                  addUserMessage('Start Over');
-                                  currentFlow.value = _ChatFlowStep.initial;
-                                  simulateBotReply(
-                                    'No problem! How would you like to '
-                                    'get started?',
-                                    thinkingText: 'Resetting...',
-                                  );
-                                },
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
+                            );
+                          }
+                        },
+                    onAddUserMessage: addUserMessage,
+                    onSimulateBotReply: simulateBotReply,
+                    onSubmitRegistration: submitRegistration,
+                    onSetFormType: context.read<AuthModeCubit>().setFormType,
+                    onUpdateDisplayName: draftCubit.updateDisplayName,
+                    onSetFlowStep: (step) => currentFlow.value = step,
+                  ),
 
                   // 3. Dynamic Bottom Chat Input Bar
-                  // (Floating Glassmorphic Pill)
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: isTextFieldVisible
-                        ? Builder(
-                            builder: (context) {
-                              final isObscured = isPasswordObscured.value;
-                              final borderHighlight = isDark
-                                  ? colors.surfaceBorderHighlight.withAlpha(60)
-                                  : colors.surfaceBorderHighlight.withAlpha(90);
-                              final eyeIcon = isObscured
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined;
-                              final eyeTooltip = isObscured
-                                  ? 'Show password'
-                                  : 'Hide password';
-                              final side = BorderSide(
-                                color: inputBorderColor,
-                                width: 1.2,
-                              );
-                              final pillRadius = BorderRadius.circular(24);
-
-                              return Padding(
-                                key: ValueKey(currentFlow.value),
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  4,
-                                  16,
-                                  16,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Semantics(
-                                        textField: true,
-                                        label: l10n.authChatInputSemantics,
-                                        hint: getHintText(),
-                                        child: ClipRRect(
-                                          borderRadius: pillRadius,
-                                          child: BackdropFilter(
-                                            filter: ImageFilter.blur(
-                                              sigmaX: 16,
-                                              sigmaY: 16,
-                                            ),
-                                            child: TextField(
-                                              controller: textController,
-                                              autofocus: true,
-                                              textCapitalization:
-                                                  currentFlow.value ==
-                                                      _ChatFlowStep.signUpName
-                                                  ? TextCapitalization.words
-                                                  : TextCapitalization.none,
-                                              keyboardType: isPasswordField
-                                                  ? TextInputType
-                                                        .visiblePassword
-                                                  : (currentFlow.value ==
-                                                            _ChatFlowStep
-                                                                .signUpName
-                                                        ? TextInputType.name
-                                                        : TextInputType
-                                                              .emailAddress),
-                                              obscureText:
-                                                  isPasswordField && isObscured,
-                                              style: typography.callout.regular
-                                                  .copyWith(
-                                                    color: colors.textPrimary,
-                                                  ),
-                                              decoration: InputDecoration(
-                                                hintText: getHintText(),
-                                                hintStyle: typography
-                                                    .footnote
-                                                    .regular
-                                                    .copyWith(
-                                                      color: colors.textMuted,
-                                                      fontSize: 13,
-                                                    ),
-                                                filled: true,
-                                                fillColor: isDark
-                                                    ? colors.surfaceSecondary
-                                                          .withAlpha(190)
-                                                    : colors.surfacePrimary
-                                                          .withAlpha(220),
-                                                contentPadding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 18,
-                                                      vertical: 12,
-                                                    ),
-                                                suffixIcon: isPasswordField
-                                                    ? IconButton(
-                                                        tooltip: eyeTooltip,
-                                                        icon: Icon(
-                                                          eyeIcon,
-                                                          size: 19,
-                                                          color:
-                                                              colors.textMuted,
-                                                        ),
-                                                        onPressed: () {
-                                                          isPasswordObscured
-                                                                  .value =
-                                                              !isObscured;
-                                                        },
-                                                      )
-                                                    : null,
-                                                border: OutlineInputBorder(
-                                                  borderRadius: pillRadius,
-                                                  borderSide: side,
-                                                ),
-                                                enabledBorder:
-                                                    OutlineInputBorder(
-                                                      borderRadius: pillRadius,
-                                                      borderSide: side,
-                                                    ),
-                                                focusedBorder:
-                                                    OutlineInputBorder(
-                                                      borderRadius: pillRadius,
-                                                      borderSide: BorderSide(
-                                                        color: colors.primary,
-                                                        width: 1.6,
-                                                      ),
-                                                    ),
-                                              ),
-                                              onSubmitted: (_) => handleSend(),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Semantics(
-                                      button: true,
-                                      label: l10n.authChatSendSemantics,
-                                      child: ShrinkableButton(
-                                        onTap: hasInputText.value
-                                            ? handleSend
-                                            : null,
-                                        child: AnimatedContainer(
-                                          duration: const Duration(
-                                            milliseconds: 200,
-                                          ),
-                                          width: 44,
-                                          height: 44,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: hasInputText.value
-                                                ? colors.primary
-                                                : borderHighlight,
-                                            boxShadow: hasInputText.value
-                                                ? [
-                                                    BoxShadow(
-                                                      color: colors.black
-                                                          .withAlpha(
-                                                            isDark ? 50 : 25,
-                                                          ),
-                                                      blurRadius: 8,
-                                                      offset: const Offset(
-                                                        0,
-                                                        2,
-                                                      ),
-                                                    ),
-                                                  ]
-                                                : null,
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Icon(
-                                            Icons.arrow_upward_rounded,
-                                            color: hasInputText.value
-                                                ? colors.white
-                                                : colors.textMuted.withAlpha(
-                                                    140,
-                                                  ),
-                                            size: 20,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          )
-                        : const SizedBox.shrink(),
+                  AuthChatInputBar(
+                    isTextFieldVisible: currentFlow.value.isTextFieldVisible,
+                    currentFlow: currentFlow.value,
+                    textController: textController,
+                    isPasswordObscured: isPasswordObscured,
+                    hasInputText: hasInputText,
+                    isPasswordField: currentFlow.value.isPasswordField,
+                    hintText: currentFlow.value.hintText,
+                    onSend: handleSend,
                   ),
                 ],
               ),
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _BotMessageBubble extends StatelessWidget {
-  const _BotMessageBubble({
-    required this.message,
-    required this.colors,
-    required this.typography,
-    required this.isDark,
-    this.isStreaming = false,
-    this.livePasswordText,
-    this.onStreamingTick,
-    this.onStreamingComplete,
-  });
-
-  final ChatAuthMessage message;
-  final AppThemeColorsExtension colors;
-  final TypographyThemeExtension typography;
-  final bool isDark;
-  final bool isStreaming;
-  final String? livePasswordText;
-  final VoidCallback? onStreamingTick;
-  final VoidCallback? onStreamingComplete;
-
-  @override
-  Widget build(BuildContext context) {
-    final isError = message.isError;
-
-    return Semantics(
-      container: true,
-      label: isError
-          ? 'Syllabot alert: ${message.text}'
-          : 'Syllabot message: ${message.text}',
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SyllabotAvatar(
-              size: 36,
-              isError: isError,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                  bottomLeft: Radius.circular(4),
-                  bottomRight: Radius.circular(20),
-                ),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isError
-                          ? colors.error.withAlpha(isDark ? 55 : 30)
-                          : (isDark
-                                ? colors.surfaceSecondary.withAlpha(170)
-                                : colors.surfacePrimary.withAlpha(220)),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                        bottomLeft: Radius.circular(4),
-                        bottomRight: Radius.circular(20),
-                      ),
-                      border: Border.all(
-                        color: isError
-                            ? colors.error
-                            : (isDark
-                                  ? colors.surfaceBorderHighlight.withAlpha(70)
-                                  : colors.surfaceBorder.withAlpha(140)),
-                        width: isError ? 1.5 : 1.0,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.black.withAlpha(
-                            isError ? (isDark ? 60 : 25) : (isDark ? 40 : 10),
-                          ),
-                          blurRadius: isError ? 12 : 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (isError) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.error,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.error_outline_rounded,
-                                  size: 13,
-                                  color: colors.white,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Syllabot Alert',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                        ],
-                        TypewriterText(
-                          text: message.text,
-                          isStreaming: isStreaming,
-                          onTick: onStreamingTick,
-                          onComplete: onStreamingComplete,
-                          style: typography.callout.regular.copyWith(
-                            color: isError ? colors.error : colors.textPrimary,
-                            fontWeight: isError
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                            fontSize: 14,
-                            height: 1.35,
-                          ),
-                        ),
-                        if (message.step == ChatAuthStep.askPassword ||
-                            message.text.contains(
-                              'Almost there! Set a secure password',
-                            )) ...[
-                          _VerticalPasswordRequirementsList(
-                            password: livePasswordText ?? '',
-                            colors: colors,
-                            typography: typography,
-                            isDark: isDark,
-                          ),
-                        ],
-                        if (isError && message.onRetry != null) ...[
-                          const SizedBox(height: 10),
-                          Semantics(
-                            button: true,
-                            label: 'Retry last request',
-                            child: Material(
-                              color: colors.transparent,
-                              child: InkWell(
-                                onTap: message.onRetry,
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 7,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.error.withAlpha(
-                                      isDark ? 60 : 30,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: colors.error.withAlpha(
-                                        140,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.refresh_rounded,
-                                        size: 15,
-                                        color: colors.error,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        'Retry Request',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.error,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _UserMessageBubble extends HookWidget {
-  const _UserMessageBubble({
-    required this.message,
-    required this.colors,
-    required this.typography,
-  });
-
-  final ChatAuthMessage message;
-  final AppThemeColorsExtension colors;
-  final TypographyThemeExtension typography;
-
-  @override
-  Widget build(BuildContext context) {
-    final isObscured = useState<bool>(message.isPasswordInput);
-    final isPassword = message.isPasswordInput;
-    final rawText = message.sensitiveValue ?? message.text;
-    final displayText = isPassword && isObscured.value ? '••••••••' : rawText;
-
-    return Semantics(
-      container: true,
-      label: 'Your response: ${isPassword ? "Password entered" : displayText}',
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Flexible(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.primary,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(18),
-                    topRight: Radius.circular(18),
-                    bottomLeft: Radius.circular(18),
-                    bottomRight: Radius.circular(4),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.black.withAlpha(
-                        context.isDarkMode ? 40 : 12,
-                      ),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        displayText,
-                        style: typography.callout.regular.copyWith(
-                          color: colors.white,
-                          fontSize: 14,
-                          height: 1.35,
-                        ),
-                      ),
-                    ),
-                    if (isPassword) ...[
-                      const SizedBox(width: 8),
-                      Semantics(
-                        button: true,
-                        label: isObscured.value
-                            ? 'Show password'
-                            : 'Hide password',
-                        child: GestureDetector(
-                          onTap: () {
-                            unawaited(HapticFeedback.lightImpact());
-                            isObscured.value = !isObscured.value;
-                          },
-                          child: Icon(
-                            isObscured.value
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            size: 16,
-                            color: colors.white.withAlpha(200),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ThinkingBubble extends HookWidget {
-  const _ThinkingBubble({
-    required this.statusText,
-  });
-
-  final String statusText;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    final controller = useAnimationController(
-      duration: const Duration(milliseconds: 1200),
-    );
-
-    useEffect(
-      () {
-        unawaited(controller.repeat());
-        return null;
-      },
-      const [],
-    );
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SyllabotAvatar(
-            size: 36,
-          ),
-          const SizedBox(width: 10),
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
-              bottomLeft: Radius.circular(4),
-              bottomRight: Radius.circular(18),
-            ),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colors.surfaceSecondary.withAlpha(160)
-                      : colors.surfacePrimary.withAlpha(220),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(18),
-                    topRight: Radius.circular(18),
-                    bottomLeft: Radius.circular(4),
-                    bottomRight: Radius.circular(18),
-                  ),
-                  border: Border.all(
-                    color: isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(70)
-                        : colors.surfaceBorder.withAlpha(140),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.black.withAlpha(isDark ? 40 : 8),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ...List.generate(3, (i) {
-                      return AnimatedBuilder(
-                        animation: controller,
-                        builder: (context, child) {
-                          final delay = i * 0.2;
-                          final t = (controller.value - delay) % 1.0;
-                          final curveValue = math.sin(t * math.pi);
-                          final scale =
-                              0.6 + (0.4 * (curveValue > 0 ? curveValue : 0));
-                          final opacity =
-                              0.4 + (0.6 * (curveValue > 0 ? curveValue : 0));
-
-                          return Transform.scale(
-                            scale: scale,
-                            child: Opacity(
-                              opacity: opacity.clamp(0.2, 1.0),
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 2.5,
-                                ),
-                                width: 6.5,
-                                height: 6.5,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: i == 1
-                                      ? colors.syllabotAccent
-                                      : colors.primary,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    }),
-                    const SizedBox(width: 10),
-                    Text(
-                      statusText,
-                      style: typography.footnote.medium.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionChipButton extends StatelessWidget {
-  const _ActionChipButton({
-    required this.label,
-    required this.onTap,
-    this.icon,
-    this.isPrimary = false,
-    this.isFullWidth = false,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-  final IconData? icon;
-  final bool isPrimary;
-  final bool isFullWidth;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    return Semantics(
-      button: true,
-      label: 'Action: $label',
-      child: PlatformHoverBuilder(
-        builder: (context, isHovered, child) {
-          return ShrinkableButton(
-            onTap: () {
-              unawaited(HapticFeedback.lightImpact());
-              onTap();
-            },
-            child: ClipRRect(
-              borderRadius: AppRadius.radiusPanel,
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                child: AnimatedContainer(
-                  duration: AppMotion.snappy,
-                  curve: AppMotion.easeOutCubic,
-                  height: 48,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: AppRadius.radiusPanel,
-                    color: isPrimary
-                        ? (isHovered
-                              ? colors.primary
-                              : colors.primary.withAlpha(isDark ? 220 : 240))
-                        : (isHovered
-                              ? (isDark
-                                    ? colors.surfaceSecondary.withAlpha(220)
-                                    : colors.surfacePrimary)
-                              : (isDark
-                                    ? colors.surfaceSecondary.withAlpha(170)
-                                    : colors.surfacePrimary.withAlpha(220))),
-                    border: Border.all(
-                      color: isPrimary
-                          ? (isHovered
-                                ? colors.white.withAlpha(80)
-                                : colors.primary)
-                          : (isHovered
-                                ? colors.primary.withAlpha(150)
-                                : (isDark
-                                      ? colors.surfaceBorderHighlight.withAlpha(
-                                          80,
-                                        )
-                                      : colors.surfaceBorder.withAlpha(140))),
-                      width: isHovered && !isPrimary ? 1.4 : 1.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.black.withAlpha(
-                          isDark
-                              ? (isHovered ? 70 : 40)
-                              : (isHovered ? 25 : 10),
-                        ),
-                        blurRadius: isHovered ? 12 : 8,
-                        offset: Offset(0, isHovered ? 3 : 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (icon != null) ...[
-                        Icon(
-                          icon,
-                          size: 16,
-                          color: isPrimary ? colors.white : colors.primary,
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      Flexible(
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: typography.caption.semiBold.copyWith(
-                            color: isPrimary
-                                ? colors.white
-                                : colors.textPrimary,
-                            fontSize: 13.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Animated vertical checklist card displaying real-time password requirements
-/// inside the chat bubble right below the password prompt message.
-class _VerticalPasswordRequirementsList extends StatelessWidget {
-  const _VerticalPasswordRequirementsList({
-    required this.password,
-    required this.colors,
-    required this.typography,
-    required this.isDark,
-  });
-
-  final String password;
-  final AppThemeColorsExtension colors;
-  final TypographyThemeExtension typography;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasMinLength = password.length >= 8;
-    final hasNumber = RegExp('[0-9]').hasMatch(password);
-    final hasUppercase = RegExp('[A-Z]').hasMatch(password);
-    final hasSpecial = RegExp(
-      r'[!@#$%^&*(),.?":{}|<>/_+\-=\[\]\\;`~]',
-    ).hasMatch(password);
-
-    return Container(
-      margin: const EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark
-            ? colors.surfacePrimary.withAlpha(140)
-            : colors.surfaceSecondary.withAlpha(180),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark
-              ? colors.surfaceBorderHighlight.withAlpha(50)
-              : colors.surfaceBorder.withAlpha(100),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _PasswordRequirementItem(
-            isMet: hasMinLength,
-            label: '8+ characters',
-            colors: colors,
-            typography: typography,
-          ),
-          const SizedBox(height: 6),
-          _PasswordRequirementItem(
-            isMet: hasNumber,
-            label: 'Includes number (0-9)',
-            colors: colors,
-            typography: typography,
-          ),
-          const SizedBox(height: 6),
-          _PasswordRequirementItem(
-            isMet: hasUppercase,
-            label: 'Uppercase letter (A-Z)',
-            colors: colors,
-            typography: typography,
-          ),
-          const SizedBox(height: 6),
-          _PasswordRequirementItem(
-            isMet: hasSpecial,
-            label: 'Special character (!@#...)',
-            colors: colors,
-            typography: typography,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Individual requirement row item with a round check animating from an
-/// empty circle to a filled circle and label transitioning to success color.
-class _PasswordRequirementItem extends StatelessWidget {
-  const _PasswordRequirementItem({
-    required this.isMet,
-    required this.label,
-    required this.colors,
-    required this.typography,
-  });
-
-  final bool isMet;
-  final String label;
-  final AppThemeColorsExtension colors;
-  final TypographyThemeExtension typography;
-
-  @override
-  Widget build(BuildContext context) {
-    final successColor = colors.success;
-    final textColor = isMet ? successColor : colors.textMuted;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isMet ? successColor : colors.transparent,
-              border: Border.all(
-                color: isMet ? successColor : colors.surfaceBorderHighlight,
-                width: 1.4,
-              ),
-            ),
-            child: isMet
-                ? Center(
-                    child: Icon(
-                      Icons.check,
-                      size: 10,
-                      color: colors.white,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 6),
-          AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            style: typography.caption.medium.copyWith(
-              color: textColor,
-              fontSize: 12,
-              fontWeight: isMet ? FontWeight.w600 : null,
-            ),
-            child: Text(label),
-          ),
-        ],
       ),
     );
   }
