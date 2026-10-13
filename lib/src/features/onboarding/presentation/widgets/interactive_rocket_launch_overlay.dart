@@ -1,73 +1,21 @@
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:kortex/src/features/onboarding/presentation/widgets/rocket/cosmic_flight_painter.dart';
+import 'package:kortex/src/features/onboarding/presentation/widgets/rocket/rocket_flight_models.dart';
+import 'package:kortex/src/features/onboarding/presentation/widgets/rocket/rocket_launch_hud_bar.dart';
+import 'package:kortex/src/features/onboarding/presentation/widgets/rocket/rocket_ship_painter.dart';
 
-/// Interactive Cosmic Knowledge Orb collected during flight
-class _KnowledgeOrb {
-  _KnowledgeOrb({
-    required this.symbol,
-    required this.label,
-    required this.xRatio,
-    required this.y,
-    required this.color,
-  });
+export 'rocket/cosmic_flight_painter.dart';
+export 'rocket/rocket_flight_models.dart';
+export 'rocket/rocket_launch_hud_bar.dart';
+export 'rocket/rocket_ship_painter.dart';
 
-  final String symbol;
-  final String label;
-  final double xRatio; // 0.0 to 1.0 of screen width
-  final Color color;
-  double y; // pixels from top
-  bool isCollected = false;
-}
-
-/// Dynamic particle emitted by rocket thrusters or explosions
-class _FlightParticle {
-  _FlightParticle({
-    required this.x,
-    required this.y,
-    required this.vx,
-    required this.vy,
-    required this.radius,
-    required this.color,
-    required this.maxLife,
-  }) : life = maxLife;
-
-  double x;
-  double y;
-  double vx;
-  double vy;
-  double radius;
-  Color color;
-  double life;
-  final double maxLife;
-
-  bool get isDead => life <= 0;
-}
-
-/// Floating score / popup text
-class _FloatingScore {
-  _FloatingScore({
-    required this.text,
-    required this.x,
-    required this.y,
-    required this.color,
-  });
-
-  final String text;
-  final double x;
-  final Color color;
-  double y;
-  double opacity = 1;
-}
-
-/// Interactive Rocket Launch Animation Overlay
+/// Interactive Rocket Launch Animation Overlay.
+///
 /// Gives users an exhilarating, gamified space flight experience with
 /// physics steering, turbo boosts, collectible knowledge orbs, and warp jump.
 class InteractiveRocketLaunchOverlay extends StatefulWidget {
@@ -103,9 +51,9 @@ class _InteractiveRocketLaunchOverlayState
   bool _hasCompleted = false;
 
   // Particle systems
-  final List<_FlightParticle> _particles = [];
-  final List<_KnowledgeOrb> _orbs = [];
-  final List<_FloatingScore> _scores = [];
+  final List<FlightParticle> _particles = [];
+  final List<KnowledgeOrb> _orbs = [];
+  final List<FloatingScore> _scores = [];
 
   // Starfield
   final List<Offset> _stars = [];
@@ -189,7 +137,7 @@ class _InteractiveRocketLaunchOverlayState
       for (var i = 0; i < symbols.length; i++) {
         final item = symbols[i];
         _orbs.add(
-          _KnowledgeOrb(
+          KnowledgeOrb(
             symbol: item.$1,
             label: item.$2,
             xRatio: 0.15 + (_random.nextDouble() * 0.7),
@@ -247,7 +195,7 @@ class _InteractiveRocketLaunchOverlayState
           : (_random.nextBool() ? colors.syllabotAccent : colors.primary);
 
       _particles.add(
-        _FlightParticle(
+        FlightParticle(
           x: _rocketX + spread,
           y: _rocketY + 38,
           vx: spread * 0.25,
@@ -290,7 +238,7 @@ class _InteractiveRocketLaunchOverlayState
             final angle = _random.nextDouble() * 2 * math.pi;
             final spd = 2.0 + (_random.nextDouble() * 5);
             _particles.add(
-              _FlightParticle(
+              FlightParticle(
                 x: orbX,
                 y: orb.y,
                 vx: math.cos(angle) * spd,
@@ -304,7 +252,7 @@ class _InteractiveRocketLaunchOverlayState
 
           // Spawn floating score chip
           _scores.add(
-            _FloatingScore(
+            FloatingScore(
               text: '+150 ${orb.label}!',
               x: orbX - 30,
               y: orb.y - 20,
@@ -351,7 +299,7 @@ class _InteractiveRocketLaunchOverlayState
       final angle = _random.nextDouble() * 2 * math.pi;
       final speed = 6.0 + (_random.nextDouble() * 9);
       _particles.add(
-        _FlightParticle(
+        FlightParticle(
           x: _rocketX,
           y: _rocketY + 30,
           vx: math.cos(angle) * speed,
@@ -364,7 +312,7 @@ class _InteractiveRocketLaunchOverlayState
     }
 
     _scores.add(
-      _FloatingScore(
+      FloatingScore(
         text: 'TURBO BOOST! ⚡',
         x: _rocketX - 45,
         y: _rocketY - 50,
@@ -399,7 +347,6 @@ class _InteractiveRocketLaunchOverlayState
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
-    final l10n = context.l10n;
     final size = MediaQuery.sizeOf(context);
 
     return Scaffold(
@@ -425,7 +372,7 @@ class _InteractiveRocketLaunchOverlayState
             // 1. Dynamic Space / Hyperspace Canvas
             CustomPaint(
               size: Size(size.width, size.height),
-              painter: _CosmicFlightPainter(
+              painter: CosmicFlightPainter(
                 stars: _stars,
                 particles: _particles,
                 machSpeed: _machSpeed,
@@ -503,7 +450,7 @@ class _InteractiveRocketLaunchOverlayState
                   width: 64,
                   height: 96,
                   child: CustomPaint(
-                    painter: _RocketShipPainter(
+                    painter: RocketShipPainter(
                       primaryColor: colors.primary,
                       accentColor: colors.syllabotAccent,
                       whiteColor: colors.white,
@@ -516,384 +463,15 @@ class _InteractiveRocketLaunchOverlayState
             ),
 
             // 5. Futuristic HUD & Telemetry Bar
-            SafeArea(
-              child: AnimatedOpacity(
-                duration: AppMotion.snappy,
-                opacity: _isWarping ? 0.0 : 1.0,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 680),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Mach Speed & Orbit Telemetry
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.surfaceSecondary.withAlpha(200),
-                                  borderRadius: AppRadius.radiusPanel,
-                                  border: Border.all(
-                                    color: colors.primary.withAlpha(90),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.speed_rounded,
-                                      size: 18,
-                                      color: colors.syllabotAccent,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _isWarping
-                                          ? l10n.warpDriveEngaged
-                                          : l10n.launchMachSpeed(
-                                              _machSpeed.toStringAsFixed(1),
-                                            ),
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.white,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              // Score / Synapse Mastery Counter
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.surfaceSecondary.withAlpha(200),
-                                  borderRadius: AppRadius.radiusPanel,
-                                  border: Border.all(
-                                    color: colors.warning.withAlpha(90),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.bolt_rounded,
-                                      size: 18,
-                                      color: colors.warning,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '$_score XP',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.warning,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              // Skip Button
-                              PlatformHoverBuilder(
-                                builder: (context, isHovered, child) {
-                                  return ShrinkableButton(
-                                    onTap: _onSkip,
-                                    child: AnimatedContainer(
-                                      duration: AppMotion.snappy,
-                                      curve: AppMotion.easeOutCubic,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isHovered
-                                            ? colors.surfaceSecondary.withAlpha(
-                                                220,
-                                              )
-                                            : colors.surfaceSecondary.withAlpha(
-                                                150,
-                                              ),
-                                        borderRadius: AppRadius.radiusPanel,
-                                        border: Border.all(
-                                          color: isHovered
-                                              ? colors.surfaceBorderHighlight
-                                              : colors.transparent,
-                                          width: 0.8,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'Skip',
-                                        style: typography.caption.medium
-                                            .copyWith(
-                                              color: isHovered
-                                                  ? colors.textPrimary
-                                                  : colors.textSecondary,
-                                            ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          // Interactive Steering & Tap Hint
-                          if (!_isWarping)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.primary.withAlpha(35),
-                                borderRadius: AppRadius.radiusDialog,
-                                border: Border.all(
-                                  color: colors.primary.withAlpha(80),
-                                ),
-                              ),
-                              child: Text(
-                                l10n.launchSteerHint,
-                                style: typography.caption.medium.copyWith(
-                                  color: colors.syllabotAccent,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            RocketLaunchHudBar(
+              machSpeed: _machSpeed,
+              score: _score,
+              isWarping: _isWarping,
+              onSkip: _onSkip,
             ),
           ],
         ),
       ),
     );
   }
-}
-
-/// Custom Canvas Painter for Starfield, Speed Streaks, and Thruster Particles
-class _CosmicFlightPainter extends CustomPainter {
-  _CosmicFlightPainter({
-    required this.stars,
-    required this.particles,
-    required this.machSpeed,
-    required this.isWarping,
-    required this.warpProgress,
-    required this.primaryColor,
-    required this.accentColor,
-    required this.warningColor,
-    required this.whiteColor,
-    required this.surfaceColor,
-  });
-
-  final List<Offset> stars;
-  final List<_FlightParticle> particles;
-  final double machSpeed;
-  final bool isWarping;
-  final double warpProgress;
-  final Color primaryColor;
-  final Color accentColor;
-  final Color warningColor;
-  final Color whiteColor;
-  final Color surfaceColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Deep cosmic background gradient
-    final bgPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          surfaceColor,
-          surfaceColor.withAlpha(240),
-          primaryColor.withAlpha(isWarping ? 80 : 35),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
-
-    final starPaint = Paint()..color = whiteColor;
-    final streakPaint = Paint()
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    final streakLength = isWarping
-        ? 80.0 + (warpProgress * 200)
-        : machSpeed * 3.5;
-
-    // Draw Starfield & Warp Streaks
-    for (final star in stars) {
-      final sx = star.dx * size.width;
-      final sy = star.dy * size.height;
-
-      if (streakLength > 6) {
-        streakPaint
-          ..strokeWidth = isWarping ? 2.5 : 1.5
-          ..color = (isWarping ? accentColor : whiteColor).withAlpha(
-            (140 + (warpProgress * 115)).toInt().clamp(0, 255),
-          );
-        canvas.drawLine(
-          Offset(sx, sy),
-          Offset(sx, sy + streakLength),
-          streakPaint,
-        );
-      } else {
-        canvas.drawCircle(
-          Offset(sx, sy),
-          1.2,
-          starPaint..color = whiteColor.withAlpha(160),
-        );
-      }
-    }
-
-    // Draw Thruster Particles
-    for (final p in particles) {
-      final alpha = ((p.life / p.maxLife) * 255).toInt().clamp(0, 255);
-      final pPaint = Paint()..color = p.color.withAlpha(alpha);
-      canvas.drawCircle(Offset(p.x, p.y), p.radius, pPaint);
-    }
-
-    // Warp Shockwave Expanding Rings
-    if (isWarping) {
-      final center = Offset(size.width / 2, size.height / 2);
-      final ringPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.0
-        ..color = accentColor.withAlpha(
-          ((1 - warpProgress) * 220).toInt().clamp(0, 255),
-        );
-
-      final radius = warpProgress * size.height * 0.9;
-      canvas.drawCircle(center, radius, ringPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _CosmicFlightPainter oldDelegate) => true;
-}
-
-/// Custom Vector Painter for Sleek Spaceship with Dynamic Thruster Plumes
-class _RocketShipPainter extends CustomPainter {
-  _RocketShipPainter({
-    required this.primaryColor,
-    required this.accentColor,
-    required this.whiteColor,
-    required this.warningColor,
-    required this.isTurbo,
-  });
-
-  final Color primaryColor;
-  final Color accentColor;
-  final Color whiteColor;
-  final Color warningColor;
-  final bool isTurbo;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-
-    // 1. Dynamic Flame Nozzle
-    final flameHeight = isTurbo ? 42.0 : 28.0;
-    final flamePath = Path()
-      ..moveTo(cx - 8, size.height * 0.75)
-      ..quadraticBezierTo(
-        cx,
-        size.height * 0.75 + flameHeight,
-        cx + 8,
-        size.height * 0.75,
-      )
-      ..close();
-
-    final flamePaint = Paint()
-      ..shader =
-          LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              warningColor,
-              accentColor,
-              accentColor.withAlpha(0),
-            ],
-          ).createShader(
-            Rect.fromLTWH(cx - 12, size.height * 0.75, 24, flameHeight),
-          );
-    canvas.drawPath(flamePath, flamePaint);
-
-    // 2. Aerodynamic Wings / Fins
-    final wingPath = Path()
-      // Left wing
-      ..moveTo(cx - 10, size.height * 0.52)
-      ..lineTo(cx - 28, size.height * 0.74)
-      ..lineTo(cx - 10, size.height * 0.70)
-      // Right wing
-      ..moveTo(cx + 10, size.height * 0.52)
-      ..lineTo(cx + 28, size.height * 0.74)
-      ..lineTo(cx + 10, size.height * 0.70)
-      ..close();
-
-    final wingPaint = Paint()..color = accentColor;
-    canvas.drawPath(wingPath, wingPaint);
-
-    // 3. Rocket Fuselage Body
-    final bodyPath = Path()
-      ..moveTo(cx, size.height * 0.08) // Nose cone tip
-      ..cubicTo(
-        cx + 18,
-        size.height * 0.30,
-        cx + 16,
-        size.height * 0.65,
-        cx + 12,
-        size.height * 0.74,
-      )
-      ..lineTo(cx - 12, size.height * 0.74)
-      ..cubicTo(
-        cx - 16,
-        size.height * 0.65,
-        cx - 18,
-        size.height * 0.30,
-        cx,
-        size.height * 0.08,
-      )
-      ..close();
-
-    final bodyPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          whiteColor,
-          whiteColor.withAlpha(230),
-          primaryColor.withAlpha(120),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawPath(bodyPath, bodyPaint);
-
-    // 4. Cockpit Windshield Visor
-    final visorPaint = Paint()..color = primaryColor;
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(cx, size.height * 0.35),
-        width: 12,
-        height: 18,
-      ),
-      visorPaint,
-    );
-
-    // Visor Glass Glare
-    final glarePaint = Paint()..color = whiteColor.withAlpha(180);
-    canvas.drawCircle(Offset(cx - 2, size.height * 0.32), 2.5, glarePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _RocketShipPainter oldDelegate) => true;
 }

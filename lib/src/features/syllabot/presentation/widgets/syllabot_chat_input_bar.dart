@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
@@ -8,10 +7,11 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/input/syllabot_input_mode_pills.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/input/syllabot_socratic_mode_sheet.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/input/syllabot_voice_send_action.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
-import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -234,216 +234,13 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
 
   void _showSocraticModeSheet() {
     unawaited(HapticFeedback.selectionClick());
-    final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
-
     unawaited(
-      AppAdaptiveSheet.showActionMenu<void>(
+      SyllabotSocraticModeSheet.show(
         context: context,
-        builder: (ctx) {
-          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
-          return SafeArea(
-            top: isDesktop,
-            bottom: false,
-            child: Align(
-              alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colors.surfacePrimary,
-                    borderRadius: isDesktop
-                        ? BorderRadius.circular(AppRadius.dialog)
-                        : const BorderRadius.vertical(
-                            top: Radius.circular(AppRadius.dialog),
-                          ),
-                    boxShadow: isDesktop
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 28,
-                              offset: const Offset(0, 14),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  padding: EdgeInsets.only(
-                    left: 20,
-                    right: 20,
-                    top: 16,
-                    bottom: isDesktop ? 16 : MediaQuery.paddingOf(ctx).bottom + 16,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (!isDesktop) ...[
-                        Center(
-                          child: Container(
-                            width: 36,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: colors.textSecondary.withAlpha(80),
-                              borderRadius: AppRadius.radiusMicro,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            l10n.socraticModeSheetTitle,
-                            style: typography.title3.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                          if (isDesktop)
-                            IconButton(
-                              icon: const Icon(Icons.close_rounded, size: 20),
-                              tooltip: 'Close',
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 28,
-                                minHeight: 28,
-                              ),
-                              onPressed: () => Navigator.of(ctx).pop(),
-                              color: colors.textSecondary,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        l10n.socraticModeSheetSubtitle,
-                        style: typography.caption.medium.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ...SocraticMode.values.map((mode) {
-                        final isSelected = mode == widget.socraticMode;
-                        final (icon, title, desc) = _getModeDetails(mode, l10n);
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: ShrinkableButton(
-                            onTap: () {
-                              widget.onModeChanged(mode);
-                              Navigator.of(ctx).pop();
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? colors.primary.withAlpha(25)
-                                    : colors.surfaceSecondary,
-                                borderRadius: AppRadius.radiusCard,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? colors.primary
-                                      : colors.surfaceBorder.withAlpha(80),
-                                  width: isSelected ? 1.5 : 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    icon,
-                                    style: context.typography.body.regular.copyWith(fontSize: 20),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          title,
-                                          style: typography.body.bold.copyWith(
-                                            color: isSelected
-                                                ? colors.primary
-                                                : colors.textPrimary,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          desc,
-                                          style: typography.caption.regular
-                                              .copyWith(
-                                                color: colors.textSecondary,
-                                                fontSize: 12,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (isSelected)
-                                    Icon(
-                                      Icons.check_circle_rounded,
-                                      color: colors.primary,
-                                      size: 20,
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+        currentMode: widget.socraticMode,
+        onModeChanged: widget.onModeChanged,
       ),
     );
-  }
-
-  (String icon, String title, String desc) _getModeDetails(
-    SocraticMode mode,
-    AppLocalizations l10n,
-  ) {
-    return switch (mode) {
-      SocraticMode.stepByStep => (
-        '🪜',
-        l10n.socraticModeStepByStepLabel,
-        l10n.socraticModeStepByStepDesc,
-      ),
-      SocraticMode.directAnswer => (
-        '⚡',
-        l10n.socraticModeDirectAnswerLabel,
-        l10n.socraticModeDirectAnswerDesc,
-      ),
-      SocraticMode.examSim => (
-        '🎯',
-        l10n.socraticModeExamSimLabel,
-        l10n.socraticModeExamSimDesc,
-      ),
-      SocraticMode.deepResearch => (
-        '🔬',
-        l10n.socraticModeDeepResearchLabel,
-        l10n.socraticModeDeepResearchDesc,
-      ),
-      SocraticMode.feynmanTeachBack => (
-        '🧠',
-        'Feynman Teach-Back',
-        'Explain simply to Syllabot; AI diagnoses missing concepts and jargon',
-      ),
-    };
-  }
-
-  String _getModeShortLabel(SocraticMode mode, AppLocalizations l10n) {
-    return switch (mode) {
-      SocraticMode.stepByStep => l10n.socraticModeStepByStepShort,
-      SocraticMode.directAnswer => l10n.socraticModeDirectAnswerShort,
-      SocraticMode.examSim => l10n.socraticModeExamSimShort,
-      SocraticMode.deepResearch => l10n.socraticModeDeepResearchShort,
-      SocraticMode.feynmanTeachBack => 'Feynman Mode',
-    };
   }
 
   @override
@@ -469,7 +266,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                 borderRadius: AppRadius.radiusDialog,
                 border: Border.all(
                   color: isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(70)
+                       ? colors.surfaceBorderHighlight.withAlpha(70)
                       : colors.surfaceBorder,
                   width: 1.1,
                 ),
@@ -559,196 +356,16 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                       const SizedBox(width: 6),
 
                       // Morphing Trailing Action: Voice Mic vs Send
-                      // When actively listening, keep the mic/stop button visible so the user
-                      // can see the pulse and tap to stop listening.
-                      // Once listening finishes and text is present, show the Send button.
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 220),
-                        transitionBuilder: (child, anim) => ScaleTransition(
-                          scale: anim,
-                          child: child,
-                        ),
-                        child: ((_hasInput && !_isListening) ||
-                                (!SpeechToTextHandler.isPlatformSupported &&
-                                    !widget.isAiSpeaking))
-                            ? PlatformHoverBuilder(
-                                key: const ValueKey('send_action'),
-                                builder: (context, isHovered, child) {
-                                  return ShrinkableButton(
-                                    onTap: _handleSend,
-                                    child: Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: colors.primary,
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: colors.black.withAlpha(
-                                              isHovered ? 50 : 25,
-                                            ),
-                                            blurRadius: isHovered ? 12 : 8,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: widget.isLoading
-                                          ? Center(
-                                              child: AppLogoLoader(
-                                                size: 18,
-                                                color: colors.white,
-                                                showMessage: false,
-                                              ),
-                                            )
-                                          : Icon(
-                                              Icons.arrow_upward_rounded,
-                                              color: colors.white,
-                                              size: 20,
-                                            ),
-                                    ),
-                                  );
-                                },
-                              )
-                            : AnimatedBuilder(
-                                key: const ValueKey('voice_action_builder'),
-                                animation: _micPulseController,
-                                builder: (context, _) {
-                                  final pulse = _micPulseController.value;
-                                  final isAiSpeaking = widget.isAiSpeaking;
-                                  return Tooltip(
-                                    message: isAiSpeaking
-                                        ? 'Syllabot is speaking • Tap to interrupt'
-                                        : (_isListening
-                                              ? 'Listening... Tap to stop'
-                                              : (widget.onVoiceDialogueTap !=
-                                                        null
-                                                    ? 'Voice Dialogue • Tap to start conversation'
-                                                    : 'Voice Input • Tap to dictate')),
-                                    child: PlatformHoverBuilder(
-                                      key: ValueKey(
-                                        isAiSpeaking
-                                            ? 'ai_speaking_action'
-                                            : (_isListening
-                                                  ? 'mic_listening_action'
-                                                  : 'voice_action'),
-                                      ),
-                                      builder: (context, isHovered, child) {
-                                        return ShrinkableButton(
-                                          onTap: _onMicTap,
-                                          onLongPress: _onMicLongPress,
-                                          child: Stack(
-                                            alignment: Alignment.center,
-                                            children: [
-                                              if (_isListening || isAiSpeaking)
-                                                Container(
-                                                  width: 36 + (pulse * 12),
-                                                  height: 36 + (pulse * 12),
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: isAiSpeaking
-                                                        ? colors.syllabotAccent
-                                                              .withAlpha(
-                                                                (70 * (1 - pulse))
-                                                                    .toInt(),
-                                                              )
-                                                        : colors.error.withAlpha(
-                                                            (90 * (1 - pulse))
-                                                                .toInt(),
-                                                          ),
-                                                  ),
-                                                ),
-                                              Container(
-                                                width: 36,
-                                                height: 36,
-                                                decoration: BoxDecoration(
-                                                  color: isAiSpeaking
-                                                      ? colors.syllabotAccent
-                                                            .withAlpha(45)
-                                                      : (_isListening
-                                                            ? colors.error
-                                                            : (isHovered
-                                                                  ? colors
-                                                                        .primary
-                                                                        .withAlpha(
-                                                                          20,
-                                                                        )
-                                                                  : colors
-                                                                        .surfaceSecondary)),
-                                                  shape: BoxShape.circle,
-                                                  boxShadow:
-                                                      (isAiSpeaking ||
-                                                          _isListening)
-                                                      ? [
-                                                          BoxShadow(
-                                                            color: colors.black
-                                                                .withAlpha(
-                                                                  isDark
-                                                                      ? 50
-                                                                      : 20,
-                                                                ),
-                                                            blurRadius: 10,
-                                                            offset:
-                                                                const Offset(
-                                                                  0,
-                                                                  3,
-                                                                ),
-                                                          ),
-                                                        ]
-                                                      : null,
-                                                  border: Border.all(
-                                                    color: isAiSpeaking
-                                                        ? colors.syllabotAccent
-                                                        : (_isListening
-                                                              ? colors.white
-                                                                    .withAlpha(
-                                                                      180,
-                                                                    )
-                                                              : (isHovered
-                                                                    ? colors
-                                                                          .primary
-                                                                          .withAlpha(
-                                                                            120,
-                                                                          )
-                                                                    : colors
-                                                                          .surfaceBorder
-                                                                          .withAlpha(
-                                                                            80,
-                                                                          ))),
-                                                    width: isAiSpeaking
-                                                        ? 1.5
-                                                        : 1,
-                                                  ),
-                                                ),
-                                                child: Icon(
-                                                  isAiSpeaking
-                                                      ? Icons.graphic_eq_rounded
-                                                      : (_isListening
-                                                            ? Icons.stop_rounded
-                                                            : (isHovered
-                                                                  ? Icons
-                                                                        .mic_rounded
-                                                                  : Icons
-                                                                        .mic_none_rounded)),
-                                                  color: isAiSpeaking
-                                                      ? colors.syllabotAccent
-                                                      : (_isListening
-                                                            ? colors.white
-                                                            : (isHovered
-                                                                  ? colors
-                                                                        .primary
-                                                                  : colors
-                                                                        .textSecondary)),
-                                                  size: 20,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
+                      SyllabotVoiceSendAction(
+                        hasInput: _hasInput,
+                        isListening: _isListening,
+                        isAiSpeaking: widget.isAiSpeaking,
+                        isLoading: widget.isLoading,
+                        micPulseController: _micPulseController,
+                        onSend: _handleSend,
+                        onMicTap: _onMicTap,
+                        onMicLongPress: _onMicLongPress,
+                        hasVoiceDialogue: widget.onVoiceDialogueTap != null,
                       ),
                     ],
                   ),
@@ -758,148 +375,11 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                   // -------------------------------------------------------------
                   // ROW 2: Mode Selector Pill & AI Engine Switcher Pill
                   // -------------------------------------------------------------
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // 1. Socratic Mode Selector Pill
-                      Flexible(
-                        child: PlatformHoverBuilder(
-                          builder: (context, isHovered, child) {
-                            return ShrinkableButton(
-                              onTap: _showSocraticModeSheet,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isHovered
-                                      ? colors.primary.withAlpha(20)
-                                      : colors.surfaceSecondary,
-                                  borderRadius: AppRadius.radiusBadge,
-                                  border: Border.all(
-                                    color: isHovered
-                                        ? colors.primary.withAlpha(120)
-                                        : colors.surfaceBorder.withAlpha(90),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      _getModeDetails(
-                                        widget.socraticMode,
-                                        l10n,
-                                      ).$1,
-                                      style: context.typography.body.regular.copyWith(fontSize: 13),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        _getModeShortLabel(
-                                          widget.socraticMode,
-                                          l10n,
-                                        ),
-                                        style: typography.caption.bold.copyWith(
-                                          color: isHovered
-                                              ? colors.primary
-                                              : colors.textPrimary,
-                                          fontSize: 11.5,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.keyboard_arrow_down_rounded,
-                                      color: isHovered
-                                          ? colors.primary
-                                          : colors.textSecondary,
-                                      size: 15,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // 2. Interactive AI Engine Pill (Cloud AI / On-Device AI)
-                      PlatformHoverBuilder(
-                        builder: (context, isHovered, child) {
-                          return ShrinkableButton(
-                            onTap: () {
-                              if (kIsWeb) {
-                                context.showSnackBar(
-                                  message:
-                                      'On-Device AI is available on Kortex Mobile apps (Android & iOS).',
-                                );
-                                return;
-                              }
-                              unawaited(HapticFeedback.lightImpact());
-                              final nextEngine =
-                                  widget.engineType ==
-                                      ExecutionEngineType.cloudRemote
-                                  ? ExecutionEngineType.localOnDevice
-                                  : ExecutionEngineType.cloudRemote;
-                              widget.onEngineChanged(nextEngine);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isHovered
-                                    ? colors.primary.withAlpha(20)
-                                    : colors.surfaceSecondary,
-                                borderRadius: AppRadius.radiusBadge,
-                                border: Border.all(
-                                  color: isHovered
-                                      ? colors.primary.withAlpha(120)
-                                      : colors.surfaceBorder.withAlpha(90),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color:
-                                          widget.engineType ==
-                                              ExecutionEngineType.cloudRemote
-                                          ? colors.success
-                                          : colors.primary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    widget.engineType ==
-                                            ExecutionEngineType.cloudRemote
-                                        ? l10n.engineCloudSupabase
-                                        : l10n.engineLocalOnDevice,
-                                    style: typography.caption.bold.copyWith(
-                                      color: isHovered
-                                          ? colors.primary
-                                          : colors.textPrimary,
-                                      fontSize: 11.5,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                  SyllabotInputModePills(
+                    socraticMode: widget.socraticMode,
+                    engineType: widget.engineType,
+                    onOpenModeSheet: _showSocraticModeSheet,
+                    onEngineChanged: widget.onEngineChanged,
                   ),
                 ],
               ),
