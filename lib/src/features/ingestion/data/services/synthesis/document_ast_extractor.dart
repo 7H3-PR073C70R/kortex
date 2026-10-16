@@ -1,5 +1,8 @@
 import 'dart:collection';
 
+import 'package:kortex/src/features/ingestion/data/services/block_isolation_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/dehyphenation_service.dart';
+
 /// Represents the type of artifact isolated from document text.
 enum ArtifactType {
   code,
@@ -515,6 +518,34 @@ class DocumentAstExtractor {
         continue;
       }
 
+      if (BlockIsolationService.isCaptionLine(trimmed)) {
+        flushProse();
+        nodes.add(
+          ListItemNode(
+            rawText: trimmed,
+            bulletPrefix: '•',
+            content: trimmed,
+            headingContext: currentHeading,
+          ),
+        );
+        i++;
+        continue;
+      }
+
+      if (BlockIsolationService.isTableRowLine(trimmed)) {
+        flushProse();
+        nodes.add(
+          ListItemNode(
+            rawText: trimmed,
+            bulletPrefix: '•',
+            content: trimmed,
+            headingContext: currentHeading,
+          ),
+        );
+        i++;
+        continue;
+      }
+
       // Normal prose line
       accumulatedProse.add(line);
       i++;
@@ -540,18 +571,47 @@ class DocumentAstExtractor {
       }
 
       final prev = buffer.toString();
-      // Handle line-end hyphenation (only for lowercase word continuations)
-      if (RegExp(r'[a-z]-$').hasMatch(prev) &&
-          RegExp('^[a-z]').hasMatch(current)) {
-        final withoutHyphen = prev.substring(0, prev.length - 1);
-        buffer
-          ..clear()
-          ..write(withoutHyphen)
-          ..write(current);
-      } else if (RegExp(r'\d-$').hasMatch(prev) &&
-          RegExp(r'^\d').hasMatch(current)) {
-        // Number range like 20- 40 -> 20-40
-        buffer.write(current);
+      final hyphenMatch =
+          RegExp(r'([A-Za-z0-9]+)\s*[-–—]\s*$').firstMatch(prev);
+      if (hyphenMatch != null && RegExp('^[A-Za-z0-9]').hasMatch(current)) {
+        final precedingWord = hyphenMatch.group(1)!;
+        final nextWords = current.trim().split(RegExp(r'\s+'));
+        final nextWord = nextWords.isNotEmpty
+            ? nextWords.first.replaceAll(RegExp('[^A-Za-z0-9]'), '')
+            : '';
+
+        // Numeric ranges like "20-" and "40" -> "20-40"
+        final isNumericRange = RegExp(r'^\d+$').hasMatch(precedingWord) &&
+            RegExp(r'^\d+').hasMatch(nextWord);
+
+        final prefix = prev.substring(0, hyphenMatch.start);
+        if (isNumericRange) {
+          buffer
+            ..clear()
+            ..write(prefix)
+            ..write('$precedingWord-')
+            ..write(current);
+          continue;
+        }
+
+        final action = DehyphenationService.evaluate(
+          precedingWord: precedingWord,
+          nextWord: nextWord,
+        );
+
+        if (action == DehyphenationAction.preserveHyphen) {
+          buffer
+            ..clear()
+            ..write(prefix)
+            ..write('$precedingWord-')
+            ..write(current);
+        } else {
+          buffer
+            ..clear()
+            ..write(prefix)
+            ..write(precedingWord)
+            ..write(current);
+        }
       } else {
         buffer
           ..write(' ')

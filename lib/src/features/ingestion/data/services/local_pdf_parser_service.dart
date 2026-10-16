@@ -5,7 +5,11 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
+import 'package:kortex/src/features/ingestion/data/services/block_isolation_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/dehyphenation_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/html_entity_decoder.dart';
+import 'package:kortex/src/features/ingestion/data/services/oov_word_splitter.dart';
 import 'package:kortex/src/features/ingestion/data/services/pdf_figure_extractor.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ingestion_cancellation_token.dart';
@@ -50,8 +54,11 @@ class PdfLineLayout {
 
   factory PdfLineLayout.fromTextLine(TextLine line) {
     final isBold = line.fontStyle.toString().toLowerCase().contains('bold');
+    final reconstructed = LocalPdfParserService.reconstructLineText(line);
+    final repairedText = LocalPdfParserService.repairHeadingQuoteArtifact(reconstructed);
+    final cleanedText = HtmlEntityDecoder.decode(repairedText);
     return PdfLineLayout(
-      text: line.text,
+      text: cleanedText,
       bounds: line.bounds,
       fontSize: line.fontSize,
       fontName: line.fontName,
@@ -64,6 +71,49 @@ class PdfLineLayout {
   final double fontSize;
   final String fontName;
   final bool isBold;
+}
+
+/// Structured representation of an extracted PDF page layout with explicit
+/// 1-based page index, sanitized text, line geometries, and spatial dimensions.
+class PageLayout {
+  const PageLayout({
+    required this.pageIndex,
+    required this.text,
+    this.lines = const [],
+    this.width = 0,
+    this.height = 0,
+  });
+
+  /// 1-based index of this page in the source document.
+  final int pageIndex;
+
+  /// Sanitized, layout-aware extracted text of this page.
+  final String text;
+
+  /// Underlying extracted line layouts, if available.
+  final List<PdfLineLayout> lines;
+
+  /// Page width in points.
+  final double width;
+
+  /// Page height in points.
+  final double height;
+}
+
+class _RawPageLayout {
+  const _RawPageLayout({
+    required this.pageIndex,
+    required this.text,
+    required this.lines,
+    required this.width,
+    required this.height,
+  });
+
+  final int pageIndex;
+  final String text;
+  final List<PdfLineLayout> lines;
+  final double width;
+  final double height;
 }
 
 /// Local deterministic PDF text and image extraction service powered by
@@ -113,13 +163,15 @@ class LocalPdfParserService {
   /// applying dynamic cross-page repeating line frequency analysis to strip
   /// marginalia/headers/footers, UTF-8 character validation, vector/graphics
   /// stream exclusion, and grammar-aware line-unwrapping.
-  String extractTextFromPdfBytes(
+  /// Extracts structured, layout-aware pages with explicit 1-based page index,
+  /// geometric line layouts, and spatial dimensions.
+  List<PageLayout> extractPageLayoutsFromPdfBytes(
     Uint8List bytes, {
     String filename = 'document.pdf',
     ExtractionReport? report,
     IngestionCancellationToken? cancellationToken,
   }) {
-    if (bytes.isEmpty) return '';
+    if (bytes.isEmpty) return const [];
 
     cancellationToken?.throwIfCancelled();
 
@@ -166,27 +218,52 @@ class LocalPdfParserService {
         report?.recordDrop(rule: 'unrecoverable_pdf_syntax', sampleText: '$e');
         throw CorruptDocumentException(filename, 'Unrecoverable PDF syntax: $e');
       }
-      return sanitizedFallback;
+      return [
+        PageLayout(
+          pageIndex: 1,
+          text: sanitizedFallback,
+        ),
+      ];
     }
 
-    final pageTexts = <String>[];
+    final rawPages = <_RawPageLayout>[];
     var pageCount = 0;
     try {
       pageCount = document.pages.count;
       final extractor = PdfTextExtractor(document);
 
+      // Pre-index document corpus for evidence-driven dehyphenation across all pages
+      final docCorpus = DocumentCorpus();
+      for (var i = 0; i < pageCount; i++) {
+        cancellationToken?.throwIfCancelled();
+        try {
+          final rawPage = extractor.extractText(startPageIndex: i);
+          if (rawPage.isNotEmpty) {
+            docCorpus.indexText(rawPage);
+          }
+        } on Object catch (e, st) {
+          AppLogger.recordNonFatal(e, st);
+        }
+      }
+
+      List<ExtractedImageAttachment>? cachedImages;
+
       for (var i = 0; i < pageCount; i++) {
         cancellationToken?.throwIfCancelled();
         var pageText = '';
+        var lineLayouts = const <PdfLineLayout>[];
+        final page = document.pages[i];
+
         try {
           final textLines = extractor.extractTextLines(startPageIndex: i);
           if (textLines.isNotEmpty) {
-            final page = document.pages[i];
+            lineLayouts = textLines.map(PdfLineLayout.fromTextLine).toList();
             pageText = _layoutAwarePageText(
               textLines,
               pageHeight: page.size.height,
               pageWidth: page.size.width,
               report: report,
+              corpus: docCorpus,
             );
           }
         } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
@@ -202,11 +279,38 @@ class LocalPdfParserService {
           );
           final ocr = _ocrHandler;
           if (ocr != null) {
-            final pageImages = extractImagesFromPdfBytes(bytes);
-            if (pageImages.isNotEmpty) {
-              final ocrText = ocr(pageImages.first.bytes);
-              if (ocrText.trim().isNotEmpty) {
-                pageText = ocrText;
+            try {
+              cachedImages ??= extractImagesFromPdfBytes(bytes);
+            } on Object catch (_) {
+              cachedImages ??= const [];
+            }
+            final targetPageImages =
+                cachedImages.where((img) => img.page == i + 1).toList();
+
+            if (targetPageImages.isNotEmpty) {
+              final ocrTexts = <String>[];
+              for (final img in targetPageImages) {
+                final ocrResult = ocr(img.bytes);
+                if (ocrResult.trim().isNotEmpty) {
+                  ocrTexts.add(ocrResult.trim());
+                }
+              }
+              if (ocrTexts.isNotEmpty) {
+                pageText = ocrTexts.join('\n\n');
+              }
+            } else {
+              // No embedded images on this specific page: rasterize the actual page viewport
+              final viewportBytes = rasterizePageViewport(
+                bytes,
+                i + 1,
+                width: page.size.width > 0 ? page.size.width.round() : null,
+                height: page.size.height > 0 ? page.size.height.round() : null,
+              );
+              if (viewportBytes.isNotEmpty) {
+                final ocrResult = ocr(viewportBytes);
+                if (ocrResult.trim().isNotEmpty) {
+                  pageText = ocrResult.trim();
+                }
               }
             }
           }
@@ -227,6 +331,13 @@ class LocalPdfParserService {
             .replaceAll('ﬃ', 'ffi')
             .replaceAll('ﬄ', 'ffl');
 
+        pageText = repairGluedWordTransitions(pageText);
+        pageText = OovWordSplitter.repairGluedRunsInText(
+          pageText,
+          report: report,
+          page: i + 1,
+        );
+
         final lower = pageText.toLowerCase().trim();
 
         // Skip non-educational front-matter and back-matter pages
@@ -240,24 +351,55 @@ class LocalPdfParserService {
         }
 
         if (pageText.trim().isNotEmpty) {
-          pageTexts.add(pageText);
+          rawPages.add(
+            _RawPageLayout(
+              pageIndex: i + 1,
+              text: pageText,
+              lines: lineLayouts,
+              width: page.size.width,
+              height: page.size.height,
+            ),
+          );
         }
       }
     } finally {
       document.dispose();
     }
 
-    if (pageTexts.isNotEmpty) {
-      final sanitized = sanitizeExtractedPages(pageTexts, report: report);
-      if (sanitized.isNotEmpty) {
-        return sanitized;
+    if (rawPages.isNotEmpty) {
+      final sanitizedTexts = sanitizeExtractedPageList(
+        rawPages.map((p) => p.text).toList(),
+        report: report,
+      );
+      final layouts = <PageLayout>[];
+      for (var k = 0; k < rawPages.length; k++) {
+        final text = k < sanitizedTexts.length ? sanitizedTexts[k] : rawPages[k].text;
+        if (text.trim().isNotEmpty) {
+          layouts.add(
+            PageLayout(
+              pageIndex: rawPages[k].pageIndex,
+              text: text,
+              lines: rawPages[k].lines,
+              width: rawPages[k].width,
+              height: rawPages[k].height,
+            ),
+          );
+        }
+      }
+      if (layouts.isNotEmpty) {
+        return layouts;
       }
     }
 
     final fallbackText = _documentParserService.extractRawPdfStreamText(bytes);
     final sanitizedFallback = sanitizeExtractedText(fallbackText, report: report);
-    if (sanitizedFallback.isNotEmpty) {
-      return sanitizedFallback;
+    if (sanitizedFallback.trim().isNotEmpty) {
+      return [
+        PageLayout(
+          pageIndex: 1,
+          text: sanitizedFallback,
+        ),
+      ];
     }
 
     // If PDF has pages but zero extractable text streams across all extraction attempts
@@ -268,6 +410,61 @@ class LocalPdfParserService {
         filename,
         'Document has $pageCount page(s) with zero extractable text streams (scanned or image-only).',
       );
+    }
+
+    return const [];
+  }
+
+  /// Extracts raw text page-by-page from raw PDF [bytes] using Syncfusion,
+  /// applying dynamic cross-page repeating line frequency analysis to strip
+  /// marginalia/headers/footers, UTF-8 character validation, vector/graphics
+  /// stream exclusion, and grammar-aware line-unwrapping.
+  String extractTextFromPdfBytes(
+    Uint8List bytes, {
+    String filename = 'document.pdf',
+    ExtractionReport? report,
+    IngestionCancellationToken? cancellationToken,
+  }) {
+    var layouts = const <PageLayout>[];
+    try {
+      layouts = extractPageLayoutsFromPdfBytes(
+        bytes,
+        filename: filename,
+        report: report,
+        cancellationToken: cancellationToken,
+      );
+    } on EncryptedPdfException {
+      rethrow;
+    } on CorruptDocumentException {
+      rethrow;
+    } on ScannedDocumentException {
+      rethrow;
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
+
+    if (layouts.isNotEmpty) {
+      final buffer = StringBuffer();
+      for (var idx = 0; idx < layouts.length; idx++) {
+        final layout = layouts[idx];
+        if (layout.text.trim().isEmpty) continue;
+        if (buffer.isNotEmpty) {
+          buffer.write('\n\n<!-- page: ${layout.pageIndex} -->\n\n');
+        } else if (layouts.length > 1 || layout.pageIndex > 1) {
+          buffer.write('<!-- page: ${layout.pageIndex} -->\n\n');
+        }
+        buffer.write(layout.text);
+      }
+      final sanitized = buffer.toString().trim();
+      if (sanitized.isNotEmpty) {
+        return sanitized;
+      }
+    }
+
+    final fallbackText = _documentParserService.extractRawPdfStreamText(bytes);
+    final sanitizedFallback = sanitizeExtractedText(fallbackText, report: report);
+    if (sanitizedFallback.isNotEmpty) {
+      return sanitizedFallback;
     }
 
     return '';
@@ -297,12 +494,13 @@ class LocalPdfParserService {
 
   /// Dynamically sanitizes extracted pages by computing line occurrence frequency
   /// across pages to automatically identify and eliminate repeating headers,
-  /// footers, watermarks, and marginalia without hardcoded rules.
-  static String sanitizeExtractedPages(
+  /// footers, watermarks, and marginalia without hardcoded rules. Returns a list
+  /// of sanitized page texts matching the input pages list.
+  static List<String> sanitizeExtractedPageList(
     List<String> pages, {
     ExtractionReport? report,
   }) {
-    if (pages.isEmpty) return '';
+    if (pages.isEmpty) return const [];
 
     // 1. Compute line frequency across all pages to detect dynamic repeating headers/footers
     final linePageCounts = <String, int>{};
@@ -464,16 +662,150 @@ class LocalPdfParserService {
       }
       final cleanedPage = cleanLines.join('\n').trim();
       if (cleanedPage.isNotEmpty) {
-        pageOutputs.add(cleanedPage);
+        final repairedRuns = OovWordSplitter.repairGluedRunsInText(
+          cleanedPage,
+          report: report,
+        );
+        pageOutputs.add(HtmlEntityDecoder.decode(repairedRuns));
+      } else {
+        pageOutputs.add('');
       }
     }
 
-    return pageOutputs.join('\n\n');
+    return pageOutputs;
+  }
+
+  /// Sanitizes extracted pages by removing repeating marginalia and joins
+  /// multiple pages into a coherent document.
+  static String sanitizeExtractedPages(
+    List<String> pages, {
+    ExtractionReport? report,
+  }) {
+    final sanitizedList = sanitizeExtractedPageList(pages, report: report);
+    if (sanitizedList.isEmpty) return '';
+    if (sanitizedList.length == 1) {
+      return HtmlEntityDecoder.decode(sanitizedList.first);
+    }
+    final buffer = StringBuffer();
+    for (var i = 0; i < sanitizedList.length; i++) {
+      final pText = sanitizedList[i];
+      if (pText.trim().isEmpty) continue;
+      if (buffer.isNotEmpty) {
+        buffer.write('\n\n<!-- page: ${i + 1} -->\n\n');
+      } else {
+        buffer.write('<!-- page: ${i + 1} -->\n\n');
+      }
+      buffer.write(pText);
+    }
+    return HtmlEntityDecoder.decode(buffer.toString());
   }
 
   /// Preserved for backward-compatibility; no-op to prevent destructive text
   /// mutations (e.g. "Vitamin C is" -> "Vitamin Cis", "Plan B or" -> "Plan Bor").
   static String repairDetachedInitialCapitals(String text) => text;
+
+  /// Reconstructs line text by measuring inter-glyph and inter-word bounding box gaps.
+  ///
+  /// In some PDFs (notably TeX/LaTeX generated documents), space characters are
+  /// omitted from the text stream and spacing is achieved purely through glyph
+  /// coordinate displacement. This method reconstructs spaces when the horizontal
+  /// gap between consecutive glyphs is at least 0.18 * fontSize, while preserving
+  /// character kerning (which is <= 0.05 * fontSize).
+  static String reconstructLineText(TextLine line) {
+    if (line.wordCollection.isEmpty) return line.text;
+
+    final glyphs = <TextGlyph>[];
+    for (final word in line.wordCollection) {
+      glyphs.addAll(word.glyphs);
+    }
+    if (glyphs.isEmpty) return line.text;
+
+    final buffer = StringBuffer();
+    final fontSize = line.fontSize > 0
+        ? line.fontSize
+        : (line.bounds.height > 0 ? line.bounds.height : 10.0);
+    final gapThreshold = 0.18 * fontSize;
+    var endsWithSpace = false;
+
+    // Preserve any leading whitespace from line.text (e.g. indentation).
+    final leadingSpaces = line.text.length - line.text.trimLeft().length;
+    if (leadingSpaces > 0) {
+      buffer.write(' ' * leadingSpaces);
+      endsWithSpace = true;
+    }
+
+    for (var i = 0; i < glyphs.length; i++) {
+      final curr = glyphs[i];
+      if (i > 0) {
+        final prev = glyphs[i - 1];
+        final gap = curr.bounds.left - prev.bounds.right;
+        if (gap >= gapThreshold && !endsWithSpace && !curr.text.startsWith(' ')) {
+          buffer.write(' ');
+          endsWithSpace = true;
+        }
+      }
+      buffer.write(curr.text);
+      if (curr.text.isNotEmpty) {
+        endsWithSpace = curr.text.endsWith(' ');
+      }
+    }
+
+    return buffer.toString();
+  }
+
+  /// Repairs font-encoding artifacts where heading spaces are represented by
+  /// right single quotation marks (`’` / `\u2019`, e.g., "Hello’ world", "Get’ started’ with’ Kotlin").
+  /// Preserves genuine internal word contractions and possessives (e.g. "Java's", "don’t", "user’s").
+  static String repairHeadingQuoteArtifact(String text) {
+    if (!text.contains('’') && !text.contains('\u2019')) return text;
+
+    // Pattern: Word character followed by right single quote and whitespace (or end of line)
+    final quoteSpaceMatches =
+        RegExp(r'(?<=\w)[’\u2019](?=\s|$)').allMatches(text);
+
+    // Also check quote directly between words without space where next word is capitalized: "Hello’World"
+    final quoteCapMatches =
+        RegExp(r'(?<=\w)[’\u2019](?=[A-Z])').allMatches(text);
+
+    if (quoteSpaceMatches.isEmpty && quoteCapMatches.isEmpty) {
+      return text;
+    }
+
+    final words =
+        text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    final boundaryCount = words.length > 1 ? words.length - 1 : 1;
+    final totalMatches = quoteSpaceMatches.length + quoteCapMatches.length;
+    final ratio = totalMatches / boundaryCount;
+
+    // If quote acts as a space delimiter across >= 35% of boundaries or 2+ times in short headings
+    if (ratio >= 0.35 ||
+        totalMatches >= 2 ||
+        (words.length <= 3 && totalMatches >= 1)) {
+      var cleaned = text;
+      // Replace quote before space or end of string with nothing (preserving the space)
+      cleaned = cleaned.replaceAll(RegExp(r'(?<=\w)[’\u2019](?=\s|$)'), '');
+      // Replace quote before uppercase letter without space with a space: "Hello’World" -> "Hello World"
+      cleaned = cleaned.replaceAll(RegExp(r'(?<=\w)[’\u2019](?=[A-Z])'), ' ');
+      return cleaned;
+    }
+
+    return text;
+  }
+
+  /// Scans and repairs remaining out-of-vocabulary glued word runs using DP Viterbi segmentation.
+  static String repairGluedWordRuns(
+    String text, {
+    ExtractionReport? report,
+    int? page,
+    int minLength = 14,
+  }) {
+    return OovWordSplitter.repairGluedRunsInText(
+      text,
+      report: report,
+      page: page,
+      minLength: minLength,
+    );
+  }
 
   /// Sanitizes raw single-block extracted text into coherent paragraphs.
   static String sanitizeExtractedText(
@@ -519,6 +851,127 @@ class LocalPdfParserService {
         lower.contains('lucida console') ||
         lower.contains('ocr') ||
         lower.contains('terminal');
+  }
+
+  static bool _isWordChar(int? charCode) {
+    if (charCode == null) return false;
+    return (charCode >= 48 && charCode <= 57) || // 0-9
+        (charCode >= 65 && charCode <= 90) || // A-Z
+        (charCode >= 97 && charCode <= 122) || // a-z
+        charCode > 127; // Non-ASCII / multi-script
+  }
+
+  static bool _isClosingPunctuation(int? charCode) {
+    if (charCode == null) return false;
+    return charCode == 44 || // ,
+        charCode == 46 || // .
+        charCode == 59 || // ;
+        charCode == 58 || // :
+        charCode == 33 || // !
+        charCode == 63 || // ?
+        charCode == 41 || // )
+        charCode == 93 || // ]
+        charCode == 125 || // }
+        charCode == 39 || // '
+        charCode == 34 || // "
+        charCode == 0x2019 || // ’
+        charCode == 0x201D; // ”
+  }
+
+  static bool _isOpeningPunctuation(int? charCode) {
+    if (charCode == null) return false;
+    return charCode == 40 || // (
+        charCode == 91 || // [
+        charCode == 123 || // {
+        charCode == 34 || // "
+        charCode == 39 || // '
+        charCode == 0x2018 || // ‘
+        charCode == 0x201C; // “
+  }
+
+  /// List of frequent deterministic glued word transitions at font boundaries.
+  static const _gluedWordTransitions = [
+    'thearray',
+    'thearrays',
+    'thedirect',
+    'thedirectly',
+    'abovethat',
+    'usingthat',
+    'theclass',
+    'theclasses',
+    'themethod',
+    'themethods',
+    'thetype',
+    'thetypes',
+    'theinterface',
+    'theinterfaces',
+    'thepackage',
+    'thepackages',
+    'thevariable',
+    'thevariables',
+    'thevalue',
+    'thevalues',
+    'theexpression',
+    'theexpressions',
+    'thefield',
+    'thefields',
+    'theargument',
+    'thearguments',
+    'theparameter',
+    'theparameters',
+    'theconstructor',
+    'theconstructors',
+    'thetarget',
+    'thetargets',
+    'thesource',
+    'thesources',
+    'theelement',
+    'theelements',
+    'theobject',
+    'theobjects',
+    'theinstance',
+    'theinstances',
+    'theinvocation',
+    'theinvocations',
+    'thereturn',
+    'thereturns',
+  ];
+
+  /// Repairs glued word transitions resulting from font changes or raw text fallback.
+  static String repairGluedWordTransitions(String text) {
+    if (text.isEmpty) return text;
+    var result = text;
+    for (final word in _gluedWordTransitions) {
+      if (!result.toLowerCase().contains(word)) continue;
+      if (result.contains(word)) {
+        String rep;
+        if (word.startsWith('the')) {
+          rep = 'the ${word.substring(3)}';
+        } else if (word.startsWith('above')) {
+          rep = 'above ${word.substring(5)}';
+        } else if (word.startsWith('using')) {
+          rep = 'using ${word.substring(5)}';
+        } else {
+          continue;
+        }
+        result = result.replaceAll(RegExp('\\b$word\\b'), rep);
+      }
+      final capitalized = '${word[0].toUpperCase()}${word.substring(1)}';
+      if (result.contains(capitalized)) {
+        String rep;
+        if (word.startsWith('the')) {
+          rep = 'The ${word.substring(3)}';
+        } else if (word.startsWith('above')) {
+          rep = 'Above ${word.substring(5)}';
+        } else if (word.startsWith('using')) {
+          rep = 'Using ${word.substring(5)}';
+        } else {
+          continue;
+        }
+        result = result.replaceAll(RegExp('\\b$capitalized\\b'), rep);
+      }
+    }
+    return result;
   }
 
   /// Computes the statistical mode (most frequent) font size among body lines.
@@ -633,91 +1086,35 @@ class LocalPdfParserService {
     return words.length <= 8;
   }
 
-  /// Determines if two connected words form a hyphenated compound (e.g., class-based, real-time).
-  static bool _isHyphenatedCompound(String part1, String part2) {
-    final p1 = part1.toLowerCase();
-    final p2 = part2.toLowerCase();
+  /// Appends a prose line resolving hyphenation using evidence-driven evaluation.
+  static void _appendProseLine(
+    StringBuffer buffer,
+    String nextText, {
+    DocumentCorpus? corpus,
+  }) {
+    final trimmedNext = nextText.trim();
+    if (trimmedNext.isEmpty) return;
 
-    const compoundSuffixes = {
-      'based',
-      'oriented',
-      'driven',
-      'centric',
-      'level',
-      'safe',
-      'free',
-      'only',
-      'ready',
-      'type',
-      'time',
-      'bound',
-      'rich',
-      'wide',
-      'like',
-      'specific',
-      'scale',
-      'aware',
-      'critical',
-      'friendly',
-      'proof',
-      'sensitive',
-      'side',
-      'first',
-      'point',
-      'case',
-      'party',
-      'rate',
-      'order',
-      'end',
-      'line',
-      'size',
-      'path',
-    };
-
-    if (compoundSuffixes.contains(p2)) {
-      return true;
-    }
-
-    const compoundPrefixes = {
-      'object',
-      'class',
-      'user',
-      'real',
-      'built',
-      'read',
-      'write',
-      'zero',
-      'state',
-      'open',
-      'source',
-      'end',
-      'high',
-      'low',
-      'full',
-      'half',
-      'well',
-      'cross',
-      'self',
-      'fine',
-      'co',
-      'multi',
-      'sub',
-    };
-
-    if (compoundPrefixes.contains(p1)) {
-      if (p2.length >= 2) return true;
-    }
-
-    if (p1.length == 1) return true;
-
-    return false;
-  }
-
-  /// Appends a prose line resolving hyphenation and preventing glued word boundaries.
-  static void _appendProseLine(StringBuffer buffer, String nextText) {
     final current = buffer.toString();
+    final trimmedCurrent = current.trim();
+
     final hyphenMatch =
         RegExp(r'([A-Za-z0-9]+)\s*[-–—]\s*$').firstMatch(current);
+
+    // Guard: strictly isolate formula lines, captions, and table rows
+    if (BlockIsolationService.isFormulaLine(trimmedNext) ||
+        BlockIsolationService.isCaptionLine(trimmedNext) ||
+        BlockIsolationService.isTableRowLine(trimmedNext) ||
+        (hyphenMatch == null && (
+            BlockIsolationService.isFormulaLine(trimmedCurrent) ||
+            BlockIsolationService.isCaptionLine(trimmedCurrent) ||
+            BlockIsolationService.isTableRowLine(trimmedCurrent)))) {
+      if (buffer.isNotEmpty && !current.endsWith('\n\n')) {
+        buffer.write(current.endsWith('\n') ? '\n' : '\n\n');
+      }
+      buffer.write(trimmedNext);
+      return;
+    }
 
     if (hyphenMatch != null) {
       final precedingWord = hyphenMatch.group(1)!;
@@ -739,8 +1136,13 @@ class LocalPdfParserService {
         return;
       }
 
-      // Compound words like "class-" and "based" -> "class-based"
-      if (_isHyphenatedCompound(precedingWord, nextWord)) {
+      final action = DehyphenationService.evaluate(
+        precedingWord: precedingWord,
+        nextWord: nextWord,
+        corpus: corpus,
+      );
+
+      if (action == DehyphenationAction.preserveHyphen) {
         final prefix = current.substring(0, hyphenMatch.start);
         buffer
           ..clear()
@@ -800,36 +1202,94 @@ class LocalPdfParserService {
   }
 
   /// Combines horizontal fragments on the same baseline into a single coherent line.
+  ///
+  /// Uses a dynamic font-size proportional gap threshold ($T_{\text{gap}} = 0.20 \times \max(\text{fontSize})$)
+  /// instead of a static pt constant, computes dominant font properties across all fragments,
+  /// and gracefully handles font transitions (regular -> bold -> monospace) without dropping spaces
+  /// or splitting hyphenated compounds.
+  static PdfLineLayout combineLineFragments(List<PdfLineLayout> fragments) =>
+      _combineLineFragments(fragments);
+
   static PdfLineLayout _combineLineFragments(List<PdfLineLayout> fragments) {
     if (fragments.length == 1) return fragments.first;
 
     final first = fragments.first;
     final textBuffer = StringBuffer(first.text);
+    var endsWithSpace = first.text.endsWith(' ');
 
     for (var i = 1; i < fragments.length; i++) {
       final prev = fragments[i - 1];
       final curr = fragments[i];
       final gap = curr.bounds.left - prev.bounds.right;
-      if (gap > 2.0 &&
-          !textBuffer.toString().endsWith(' ') &&
-          !curr.text.startsWith(' ')) {
+
+      final prevFontSize = prev.fontSize > 0 ? prev.fontSize : 10.0;
+      final currFontSize = curr.fontSize > 0 ? curr.fontSize : 10.0;
+      final maxFontSize = math.max(prevFontSize, currFontSize);
+      final gapThreshold = 0.20 * maxFontSize;
+
+      final isFontTransition = prev.fontName != curr.fontName ||
+          prev.isBold != curr.isBold ||
+          (prev.fontSize - curr.fontSize).abs() > 1.0;
+
+      final prevLastCode =
+          prev.text.isNotEmpty ? prev.text.codeUnits.last : null;
+      final currFirstCode =
+          curr.text.isNotEmpty ? curr.text.codeUnits.first : null;
+
+      final prevEndsHyphen = prev.text.endsWith('-') ||
+          prev.text.endsWith('–') ||
+          prev.text.endsWith('—');
+      final currStartsClosingPunct = _isClosingPunctuation(currFirstCode);
+      final prevEndsOpeningPunct = _isOpeningPunctuation(prevLastCode);
+
+      final shouldSpace = !prevEndsHyphen &&
+          !currStartsClosingPunct &&
+          !prevEndsOpeningPunct &&
+          ((gap >= gapThreshold) ||
+              (isFontTransition &&
+                  gap > 0.05 * maxFontSize &&
+                  _isWordChar(prevLastCode) &&
+                  _isWordChar(currFirstCode)));
+
+      if (shouldSpace && !endsWithSpace && !curr.text.startsWith(' ')) {
         textBuffer.write(' ');
+        endsWithSpace = true;
       }
       textBuffer.write(curr.text);
+      if (curr.text.isNotEmpty) {
+        endsWithSpace = curr.text.endsWith(' ');
+      }
     }
 
     final left = first.bounds.left;
-    final right = fragments.map((f) => f.bounds.right).fold<double>(0, math.max);
+    final right =
+        fragments.map((f) => f.bounds.right).fold<double>(0, math.max);
     final top =
         fragments.map((f) => f.bounds.top).fold(double.infinity, math.min);
-    final bottom = fragments.map((f) => f.bounds.bottom).fold<double>(0, math.max);
+    final bottom =
+        fragments.map((f) => f.bounds.bottom).fold<double>(0, math.max);
+
+    // Calculate dominant font properties based on character count rather than first fragment
+    var dominantFragment = fragments.first;
+    var maxChars = -1;
+    for (final f in fragments) {
+      final charCount = f.text.trim().length;
+      if (charCount > maxChars) {
+        maxChars = charCount;
+        dominantFragment = f;
+      }
+    }
 
     return PdfLineLayout(
       text: textBuffer.toString(),
       bounds: Rect.fromLTRB(left, top, right, bottom),
-      fontSize: first.fontSize,
-      fontName: first.fontName,
-      isBold: fragments.any((f) => f.isBold),
+      fontSize: dominantFragment.fontSize > 0
+          ? dominantFragment.fontSize
+          : first.fontSize,
+      fontName: dominantFragment.fontName.isNotEmpty
+          ? dominantFragment.fontName
+          : first.fontName,
+      isBold: dominantFragment.isBold || fragments.any((f) => f.isBold),
     );
   }
 
@@ -977,6 +1437,7 @@ class LocalPdfParserService {
     double pageHeight = 0,
     double pageWidth = 0,
     ExtractionReport? report,
+    DocumentCorpus? corpus,
   }) {
     if (lines.isEmpty) return '';
 
@@ -1022,6 +1483,7 @@ class LocalPdfParserService {
     if (bodyLines.isEmpty) return '';
 
     final orderedLines = _geometricSort(bodyLines);
+    final effectiveCorpus = corpus ?? DocumentCorpus.fromLines(orderedLines);
     final modeFontSize = _computeModeFontSize(orderedLines);
     final lineHeights = orderedLines
         .map((l) => l.bounds.height)
@@ -1036,6 +1498,9 @@ class LocalPdfParserService {
     var prevWasHeading = false;
     var prevWasBullet = false;
     var prevWasCode = false;
+    var prevWasCaption = false;
+    var prevWasFormula = false;
+    var prevWasTable = false;
     var i = 0;
 
     while (i < orderedLines.length) {
@@ -1066,6 +1531,9 @@ class LocalPdfParserService {
         prevWasHeading = false;
         prevWasBullet = false;
         prevWasCode = true;
+        prevWasCaption = false;
+        prevWasFormula = false;
+        prevWasTable = false;
         i = j;
         continue;
       }
@@ -1103,6 +1571,9 @@ class LocalPdfParserService {
         prevWasHeading = true;
         prevWasBullet = false;
         prevWasCode = false;
+        prevWasCaption = false;
+        prevWasFormula = false;
+        prevWasTable = false;
         i++;
         continue;
       }
@@ -1115,6 +1586,9 @@ class LocalPdfParserService {
         prevWasHeading = false;
         prevWasBullet = false;
         prevWasCode = true;
+        prevWasCaption = false;
+        prevWasFormula = false;
+        prevWasTable = false;
         i++;
         continue;
       }
@@ -1127,6 +1601,64 @@ class LocalPdfParserService {
         prevWasHeading = false;
         prevWasBullet = true;
         prevWasCode = false;
+        prevWasCaption = false;
+        prevWasFormula = false;
+        prevWasTable = false;
+        i++;
+        continue;
+      }
+
+      final isCaption = !isCode &&
+          headingLevel == 0 &&
+          BlockIsolationService.isCaptionLine(rawText);
+      final isFormula = !isCode &&
+          headingLevel == 0 &&
+          BlockIsolationService.isFormulaLine(rawText);
+      final isTable = !isCode &&
+          headingLevel == 0 &&
+          BlockIsolationService.isTableRowLine(rawText);
+
+      if (isCaption) {
+        if (buffer.isNotEmpty) {
+          buffer.write('\n\n');
+        }
+        buffer.write(rawText);
+        prevWasHeading = false;
+        prevWasBullet = false;
+        prevWasCode = false;
+        prevWasCaption = true;
+        prevWasFormula = false;
+        prevWasTable = false;
+        i++;
+        continue;
+      }
+
+      if (isFormula) {
+        if (buffer.isNotEmpty) {
+          buffer.write(prevWasFormula ? '\n' : '\n\n');
+        }
+        buffer.write(rawText);
+        prevWasHeading = false;
+        prevWasBullet = false;
+        prevWasCode = false;
+        prevWasCaption = false;
+        prevWasFormula = true;
+        prevWasTable = false;
+        i++;
+        continue;
+      }
+
+      if (isTable) {
+        if (buffer.isNotEmpty) {
+          buffer.write(prevWasTable ? '\n' : '\n\n');
+        }
+        buffer.write(rawText);
+        prevWasHeading = false;
+        prevWasBullet = false;
+        prevWasCode = false;
+        prevWasCaption = false;
+        prevWasFormula = false;
+        prevWasTable = true;
         i++;
         continue;
       }
@@ -1136,25 +1668,43 @@ class LocalPdfParserService {
         buffer.write(rawText);
       } else {
         final prevLine = orderedLines[i - 1];
+        final prevTrimmed = prevLine.text.trim();
+        final prevEndsWithHyphen = prevTrimmed.endsWith('-') ||
+            prevTrimmed.endsWith('—') ||
+            prevTrimmed.endsWith('–');
         final gap = line.bounds.top - prevLine.bounds.bottom;
         final prevEndsSentence =
-            RegExp(r'[.!?:]$').hasMatch(prevLine.text.trim());
-        final isParagraphBreak = prevWasHeading ||
+            RegExp(r'[.!?:]$').hasMatch(prevTrimmed);
+        final isNonPunctuated = !prevEndsWithHyphen && BlockIsolationService.isNonPunctuatedBlock(
+          currentLine: prevLine.text,
+          nextLine: line.text,
+          gap: gap,
+          medianLineHeight: medianLineHeight,
+        );
+        final isParagraphBreak = !prevEndsWithHyphen && (
+            prevWasHeading ||
             prevWasBullet ||
             prevWasCode ||
+            prevWasCaption ||
+            prevWasFormula ||
+            prevWasTable ||
+            isNonPunctuated ||
             (gap > medianLineHeight * 0.8 && prevEndsSentence) ||
-            gap > medianLineHeight * 1.5;
+            gap > medianLineHeight * 1.5);
 
         if (isParagraphBreak) {
           buffer.write('\n\n$rawText');
         } else {
-          _appendProseLine(buffer, rawText);
+          _appendProseLine(buffer, rawText, corpus: effectiveCorpus);
         }
       }
 
       prevWasHeading = false;
       prevWasBullet = false;
       prevWasCode = false;
+      prevWasCaption = false;
+      prevWasFormula = false;
+      prevWasTable = false;
       i++;
     }
 
@@ -1166,6 +1716,7 @@ class LocalPdfParserService {
     double pageHeight = 0,
     double pageWidth = 0,
     ExtractionReport? report,
+    DocumentCorpus? corpus,
   }) {
     if (textLines.isEmpty) return '';
     final lines = textLines.map(PdfLineLayout.fromTextLine).toList();
@@ -1174,8 +1725,18 @@ class LocalPdfParserService {
       pageHeight: pageHeight,
       pageWidth: pageWidth,
       report: report,
+      corpus: corpus,
     );
   }
+
+  /// Returns true if [text] is a caption line (e.g. Table 1:, Figure 2:).
+  static bool isCaptionLine(String text) => BlockIsolationService.isCaptionLine(text);
+
+  /// Returns true if [text] is a standalone formula line.
+  static bool isFormulaLine(String text) => BlockIsolationService.isFormulaLine(text);
+
+  /// Returns true if [text] is a table row or divider.
+  static bool isTableRowLine(String text) => BlockIsolationService.isTableRowLine(text);
 
 
   /// Discards strings where more than 10% of characters are non-printable,
@@ -1300,6 +1861,21 @@ class LocalPdfParserService {
     List<String>? pageTexts,
   }) {
     return const PdfFigureExtractor().extractFigures(bytes, pageTexts: pageTexts);
+  }
+
+  /// Rasterizes the page viewport for [pageNumber] (1-based) to PNG image bytes.
+  Uint8List rasterizePageViewport(
+    Uint8List bytes,
+    int pageNumber, {
+    int? width,
+    int? height,
+  }) {
+    return const PdfFigureExtractor().rasterizePageViewport(
+      bytes,
+      pageNumber,
+      width: width,
+      height: height,
+    );
   }
 
   /// Parses a local PDF file and synthesizes structured flashcard snippets in a background isolate.

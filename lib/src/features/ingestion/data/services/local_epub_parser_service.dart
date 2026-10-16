@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
+import 'package:kortex/src/features/ingestion/data/services/html_entity_decoder.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_html_parser_service.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
 import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
@@ -208,7 +209,8 @@ class LocalEpubParserService {
     ).firstMatch(opfXml);
 
     if (titleMatch != null) {
-      final bookTitle = titleMatch.group(1)!.replaceAll(RegExp('<[^>]+>'), '').trim();
+      final rawTitle = titleMatch.group(1)!.replaceAll(RegExp('<[^>]+>'), '').trim();
+      final bookTitle = HtmlEntityDecoder.decode(rawTitle);
       if (bookTitle.isNotEmpty) {
         documentBuffer
           ..writeln('# $bookTitle')

@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/formula_extraction_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/offline_card_builder.dart';
+import 'package:kortex/src/features/ingestion/data/services/oov_word_splitter.dart';
 import 'package:kortex/src/features/ingestion/data/services/pdf_figure_extractor.dart';
 import 'package:kortex/src/features/ingestion/data/services/synthesis/flashcard_synthesizer.dart';
 import 'package:kortex/src/features/ingestion/data/services/synthesis/schema_serializer.dart';
@@ -28,15 +30,65 @@ String _normalizeForComparison(String s) {
   return clean;
 }
 
+String _opticsLabOcrHandler(Uint8List imageBytes) {
+  return r'''
+[CONFIDENTIAL LAB NOTEBOOK - OPTICS LAB EXP #4]
+Date: October 14, 2026. Station: Michelson Interferometer & Diffraction Grating.
+Observer: Dr. K. Vance. Room temp: 21.4 C. Pressure: 101.3 kPa.
+
+# 1. Diffraction Grating Equation and Orders of Interference
+Light from a 632.8 nm He-Ne laser incident on a diffraction grating with d = 1.667 micrometers (600 lines/mm).
+Principal maxima condition:
+d \sin(\theta_m) = m \lambda
+where m is the integer diffraction order (m = 0, +/-1, +/-2).
+
+Figure 1: Handwritten sketch of spectrometer detector sweep and laser photodiode alignment.
+
+# 2. Experimental Measurement Data Log
+Order m | Measured Angle (deg) | Theoretical Angle (deg) | Discrepancy
++1      | 22.31                | 22.31                   | 0.00%
++2      | 49.44                | 49.42                   | +0.04%
+-1      | 22.33                | 22.31                   | +0.09%
+-2      | 49.39                | 49.42                   | -0.06%
+
+Notes: Grating optical axis re-calibrated. Zero-order reflection beam blocked by stop.
+''';
+}
+
 void main() {
-  const docService = DocumentParserService();
-  const pdfService = LocalPdfParserService();
+  const docService = DocumentParserService(ocrHandler: _opticsLabOcrHandler);
+  const pdfService = LocalPdfParserService(ocrHandler: _opticsLabOcrHandler);
   const formulaService = FormulaExtractionService.instance;
   const figureExtractor = PdfFigureExtractor();
   const cardBuilder = OfflineCardBuilder();
 
   late Map<String, dynamic> manifestJson;
   late List<Map<String, dynamic>> manifestDocs;
+  final synthesizedDecks = <String, PedagogicalDeck>{};
+
+  PedagogicalDeck? getOrSynthesizeDeck(String filename) {
+    if (synthesizedDecks.containsKey(filename)) {
+      return synthesizedDecks[filename];
+    }
+    final ext = filename.split('.').last.toLowerCase();
+    if (ext == 'png' || ext == 'jpg' || ext == 'jpeg' || ext == 'json') {
+      return null;
+    }
+    final file = File('test/fixtures/ingestion/$filename');
+    if (!file.existsSync()) return null;
+    final effectiveExt = ext == 'text' ? 'txt' : ext;
+    final bytes = file.readAsBytesSync();
+    final extractedText = effectiveExt == 'pdf'
+        ? pdfService.extractTextFromPdfBytes(bytes, filename: filename)
+        : docService.extractTextFromBytes(bytes, fileType: effectiveExt, filename: filename);
+    final deck = docService.synthesizeDeckFromDocument(
+      documentId: 'gate_${filename.hashCode}',
+      fullText: extractedText,
+      filename: filename,
+    );
+    synthesizedDecks[filename] = deck;
+    return deck;
+  }
 
   setUpAll(() {
     final manifestFile = File('test/fixtures/ingestion/ground_truth_manifest.json');
@@ -404,7 +456,7 @@ The university laboratory is situated across from the municipal court building o
 
       for (final file in allFiles) {
         final filename = file.uri.pathSegments.last;
-        if (filename.endsWith('.json') || filename.endsWith('.png') || filename.endsWith('.jpg')) continue;
+        if (filename.startsWith('.') || filename.endsWith('.json') || filename.endsWith('.png') || filename.endsWith('.jpg')) continue;
 
         final ext = filename.split('.').last.toLowerCase();
         final effectiveExt = ext == 'text' ? 'txt' : ext;
@@ -440,14 +492,322 @@ The university laboratory is situated across from the municipal court building o
           fullText: extractedText,
           filename: filename,
         );
+        synthesizedDecks[filename] = deck;
 
         expect(deck, isNotNull);
         expect(deck.schemaVersion, equals('1.0.0'));
+
+        final entityRegex = RegExp('&#[xX]?[0-9a-fA-F]+;|(&[a-zA-Z]+;)');
+        expect(
+          entityRegex.hasMatch(deck.deckTitle),
+          isFalse,
+          reason: '[$filename] Deck title must not leak entity: "${deck.deckTitle}"',
+        );
+        for (final card in deck.cards) {
+          expect(
+            entityRegex.hasMatch(card.front),
+            isFalse,
+            reason: '[$filename] Card front must not leak entity: "${card.front}"',
+          );
+          expect(
+            entityRegex.hasMatch(card.back),
+            isFalse,
+            reason: '[$filename] Card back must not leak entity: "${card.back}"',
+          );
+        }
+
         validDocsProcessed++;
       }
 
       expect(corruptDocsSafeguarded, greaterThanOrEqualTo(4), reason: 'Corrupt and encrypted files must be handled gracefully');
       expect(validDocsProcessed, greaterThanOrEqualTo(30), reason: 'All valid fixtures must complete production pipeline');
+    });
+
+    // -------------------------------------------------------------------------
+    // Gate 8: Spaceless-Run & Glue Gate
+    // -------------------------------------------------------------------------
+    test('Gate 8 (Spaceless-Run & Glue Gate): spaceless run cards = 0 and dictionary glue rate < 0.1%', () {
+      final validDocs = manifestDocs.where((d) {
+        final fn = (d['filename'] as String).toLowerCase();
+        return !fn.contains('corrupt') &&
+            !fn.contains('encrypted') &&
+            !fn.endsWith('.png') &&
+            !fn.endsWith('.jpg') &&
+            !fn.endsWith('.jpeg') &&
+            !fn.endsWith('.json');
+      }).toList();
+
+      var totalCardsChecked = 0;
+      var spacelessRunCards = 0;
+      var totalWordTokens = 0;
+      var gluedTokens = 0;
+
+      final spacelessRegex = RegExp('[a-zA-Z]{35,}');
+      final wordTokenRegex = RegExp(r'\b[a-zA-Z]{4,}\b');
+
+      for (final doc in validDocs) {
+        final filename = doc['filename'] as String;
+        final file = File('test/fixtures/ingestion/$filename');
+        if (!file.existsSync()) continue;
+
+        final deck = getOrSynthesizeDeck(filename);
+        if (deck == null) continue;
+
+        for (final card in deck.cards) {
+          totalCardsChecked++;
+
+          final frontClean = card.front.replaceAll(RegExp(r'https?://[^\s]+|```[\s\S]*?```'), '');
+          final backClean = card.back.replaceAll(RegExp(r'https?://[^\s]+|```[\s\S]*?```'), '');
+
+          if (spacelessRegex.hasMatch(frontClean) || spacelessRegex.hasMatch(backClean)) {
+            spacelessRunCards++;
+          }
+
+          for (final text in [frontClean, backClean]) {
+            for (final match in wordTokenRegex.allMatches(text)) {
+              final token = match.group(0)!;
+              totalWordTokens++;
+              if (OovWordSplitter.isCandidateForOovSplitting(token)) {
+                final split = OovWordSplitter.splitGluedWord(token);
+                if (split.contains(' ')) {
+                  gluedTokens++;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      expect(totalCardsChecked, greaterThanOrEqualTo(50), reason: 'Corpus must evaluate cards');
+      expect(spacelessRunCards, equals(0), reason: 'Spaceless run cards must equal 0 across corpus');
+
+      final glueRate = totalWordTokens > 0 ? (gluedTokens / totalWordTokens) : 0.0;
+      expect(glueRate, lessThan(0.001), reason: 'Dictionary glue rate must be < 0.1% (actual: ${(glueRate * 100).toStringAsFixed(3)}%)');
+    });
+
+    // -------------------------------------------------------------------------
+    // Gate 9: Artifact Gate
+    // -------------------------------------------------------------------------
+    test('Gate 9 (Artifact Gate): 0 ’ heading artifacts and 0 unescaped HTML/XML entities across all decks', () {
+      final validDocs = manifestDocs.where((d) {
+        final fn = (d['filename'] as String).toLowerCase();
+        return !fn.contains('corrupt') &&
+            !fn.contains('encrypted') &&
+            !fn.endsWith('.png') &&
+            !fn.endsWith('.jpg') &&
+            !fn.endsWith('.jpeg') &&
+            !fn.endsWith('.json');
+      }).toList();
+
+      var totalCardsChecked = 0;
+      var headingQuoteArtifacts = 0;
+      var unescapedEntities = 0;
+
+      final entityRegex = RegExp('&#[xX]?[0-9a-fA-F]+;|(&[a-zA-Z]+;)');
+
+      for (final doc in validDocs) {
+        final filename = doc['filename'] as String;
+        final file = File('test/fixtures/ingestion/$filename');
+        if (!file.existsSync()) continue;
+
+        final deck = getOrSynthesizeDeck(filename);
+        if (deck == null) continue;
+
+        if (entityRegex.hasMatch(deck.deckTitle)) unescapedEntities++;
+        if (LocalPdfParserService.repairHeadingQuoteArtifact(deck.deckTitle) != deck.deckTitle) {
+          headingQuoteArtifacts++;
+        }
+
+        for (final card in deck.cards) {
+          totalCardsChecked++;
+
+          if (entityRegex.hasMatch(card.front) ||
+              entityRegex.hasMatch(card.back) ||
+              entityRegex.hasMatch(card.sourceTopic)) {
+            unescapedEntities++;
+          }
+
+          for (final section in card.source?.sectionPath ?? const <String>[]) {
+            if (LocalPdfParserService.repairHeadingQuoteArtifact(section) != section) {
+              headingQuoteArtifacts++;
+            }
+          }
+          if (LocalPdfParserService.repairHeadingQuoteArtifact(card.sourceTopic) != card.sourceTopic) {
+            headingQuoteArtifacts++;
+          }
+        }
+      }
+
+      expect(totalCardsChecked, greaterThanOrEqualTo(50));
+      expect(headingQuoteArtifacts, equals(0), reason: 'Zero heading quote artifacts should remain');
+      expect(unescapedEntities, equals(0), reason: 'Zero unescaped HTML/XML entities should remain');
+    });
+
+    // -------------------------------------------------------------------------
+    // Gate 10: Stem & Morphology Gate
+    // -------------------------------------------------------------------------
+    test('Gate 10 (Stem & Morphology Gate): 0 mangled verb stems and 0 clause-subject stems', () {
+      final validDocs = manifestDocs.where((d) {
+        final fn = (d['filename'] as String).toLowerCase();
+        return !fn.contains('corrupt') &&
+            !fn.contains('encrypted') &&
+            !fn.endsWith('.png') &&
+            !fn.endsWith('.jpg') &&
+            !fn.endsWith('.jpeg') &&
+            !fn.endsWith('.json');
+      }).toList();
+
+      var totalCardsChecked = 0;
+      var mangledVerbStems = 0;
+      var clauseSubjectStems = 0;
+
+      final mangledWords = ['thi', 'clas', 'proces', 'acces', 'maliciou', 'statu'];
+      final clauseStarters = {'if', 'when', 'because', 'although', 'since', 'while', 'unless', 'in', 'for', 'with', 'that', 'which'};
+
+      for (final doc in validDocs) {
+        final filename = doc['filename'] as String;
+        final file = File('test/fixtures/ingestion/$filename');
+        if (!file.existsSync()) continue;
+
+        final deck = getOrSynthesizeDeck(filename);
+        if (deck == null) continue;
+
+        for (final card in deck.cards) {
+          totalCardsChecked++;
+
+          final lower = card.front.toLowerCase();
+          for (final m in mangledWords) {
+            if (RegExp('\\b${RegExp.escape(m)}\\b').hasMatch(lower)) {
+              mangledVerbStems++;
+            }
+          }
+
+          if (card.front.startsWith('How does ') || card.front.startsWith('What does ') || card.front.startsWith('Why does ')) {
+            final prefixLen = card.front.indexOf('does ') + 'does '.length;
+            final afterDoes = card.front.substring(prefixLen).trim();
+            final firstWord = afterDoes.split(RegExp(r'\s+')).first.toLowerCase();
+            if (clauseStarters.contains(firstWord)) {
+              clauseSubjectStems++;
+            }
+            final subjectPhrase = afterDoes.split('?').first;
+            if (subjectPhrase.contains(',')) {
+              clauseSubjectStems++;
+            }
+          }
+        }
+      }
+
+      expect(totalCardsChecked, greaterThanOrEqualTo(50));
+      expect(mangledVerbStems, equals(0), reason: 'Must have 0 mangled verb stems');
+      expect(clauseSubjectStems, equals(0), reason: 'Must have 0 clause-subject stems');
+    });
+
+    // -------------------------------------------------------------------------
+    // Gate 11: LaTeX Fidelity Gate
+    // -------------------------------------------------------------------------
+    test('Gate 11 (LaTeX Fidelity Gate): 0 LaTeX parse failures, 0 blanks inside equations, and 0 formula-for-formula cards', () {
+      final validDocs = manifestDocs.where((d) {
+        final fn = (d['filename'] as String).toLowerCase();
+        return !fn.contains('corrupt') &&
+            !fn.contains('encrypted') &&
+            !fn.endsWith('.png') &&
+            !fn.endsWith('.jpg') &&
+            !fn.endsWith('.jpeg') &&
+            !fn.endsWith('.json');
+      }).toList();
+
+      var totalFormulaCardsChecked = 0;
+      var latexParseFailures = 0;
+      var blanksInsideEquations = 0;
+      var formulaForFormulaCards = 0;
+
+      final clozeBlankRegex = RegExp(r'\{\{c\d+::|_____|\[\.\.\.\]');
+
+      for (final doc in validDocs) {
+        final filename = doc['filename'] as String;
+        final file = File('test/fixtures/ingestion/$filename');
+        if (!file.existsSync()) continue;
+
+        final deck = getOrSynthesizeDeck(filename);
+        if (deck == null) continue;
+
+        for (final card in deck.cards) {
+          final isFormula = card.cognitiveType == 'formula' ||
+              card.frontLatex != null ||
+              card.backLatex != null ||
+              card.assets.any((a) => a.type == CardAssetType.latexEquation);
+
+          if (isFormula) {
+            totalFormulaCardsChecked++;
+
+            final latex = card.backLatex ?? card.frontLatex ?? '';
+            if (latex.isNotEmpty) {
+              if (!FormulaExtractionService.isValidLatexEquation(latex)) {
+                latexParseFailures++;
+              }
+            }
+            final fMatch = RegExp(r'formula\s+for\s+([^?]+)\?', caseSensitive: false).firstMatch(card.front);
+            if (fMatch != null) {
+              final target = fMatch.group(1)!.trim();
+              if (FormulaExtractionService.isValidLatexEquation(target) || target.contains('=') || target.contains(r'\')) {
+                formulaForFormulaCards++;
+              }
+            }
+          }
+
+          final mathDelimited = RegExp(r'(?:\$\$([^\$]+)\$\$|\$([^\$]+)\$)');
+          for (final m in mathDelimited.allMatches(card.front)) {
+            final mathContent = m.group(1) ?? m.group(2) ?? '';
+            if (clozeBlankRegex.hasMatch(mathContent)) {
+              blanksInsideEquations++;
+            }
+          }
+        }
+      }
+
+      expect(totalFormulaCardsChecked, greaterThanOrEqualTo(5), reason: 'Must test formula cards');
+      expect(latexParseFailures, equals(0), reason: 'Must have 0 LaTeX parse failures');
+      expect(blanksInsideEquations, equals(0), reason: 'Must have 0 cloze blanks inside equations');
+      expect(formulaForFormulaCards, equals(0), reason: 'Must have 0 formula-for-formula cards');
+    });
+
+    // -------------------------------------------------------------------------
+    // Gate 12: Provenance Diversity Gate
+    // -------------------------------------------------------------------------
+    test('Gate 12 (Provenance Diversity Gate): multi-page documents emit > 1 distinct source.page values', () {
+      final multiPageDocs = [
+        'flutterengineering-book.pdf',
+        'Flutter_Developer_Case.pdf',
+        'book_principles_of_computing_700_pages.pdf',
+      ];
+
+      for (final filename in multiPageDocs) {
+        final file = File('test/fixtures/ingestion/$filename');
+        if (!file.existsSync()) continue;
+
+        final deck = getOrSynthesizeDeck(filename);
+        expect(deck, isNotNull, reason: '[$filename] Deck must be synthesized');
+        expect(deck!.cards, isNotEmpty, reason: '[$filename] Must produce cards');
+
+        final pages = deck.cards.map((c) => c.source?.page).whereType<int>().toSet();
+        expect(
+          pages.length,
+          greaterThan(1),
+          reason: '[$filename] Multi-page document must emit cards spanning > 1 distinct pages (actual: ${pages.length} pages)',
+        );
+        expect(
+          pages.every((p) => p >= 1),
+          isTrue,
+          reason: '[$filename] Page numbers must be 1-based positive integers',
+        );
+
+        final allHaveBlockId = deck.cards.every((c) => c.source?.blockId != null && c.source!.blockId!.isNotEmpty);
+        expect(
+          allHaveBlockId,
+          isTrue,
+          reason: '[$filename] All cards must have valid non-empty blockId provenance',
+        );
+      }
     });
   });
 }

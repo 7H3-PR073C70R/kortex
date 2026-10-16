@@ -61,11 +61,38 @@ class MarkdownIrParser {
       }
 
       // Check page break or page number metadata
+      final pageCommentMatch = RegExp(
+        r'^<!--\s*page:?\s*(\d+)\s*-->$',
+        caseSensitive: false,
+      ).firstMatch(trimmed);
+      if (pageCommentMatch != null) {
+        final p = int.tryParse(pageCommentMatch.group(1)!);
+        if (p != null) currentPage = p;
+        i++;
+        continue;
+      }
+
+      final pageBreakComment = RegExp(
+        r'^<!--\s*page-break\s*-->$',
+        caseSensitive: false,
+      ).firstMatch(trimmed);
+      if (pageBreakComment != null) {
+        currentPage++;
+        i++;
+        continue;
+      }
+
       if (_pageNumberRegex.hasMatch(trimmed)) {
         final match = RegExp(r'\bpage\s+(\d+)\b', caseSensitive: false).firstMatch(trimmed);
         if (match != null) {
           final p = int.tryParse(match.group(1)!);
           if (p != null) currentPage = p;
+        } else {
+          final standaloneNum = RegExp(r'^[-–—\s]*(\d+)[-–—\s]*$').firstMatch(trimmed);
+          if (standaloneNum != null) {
+            final p = int.tryParse(standaloneNum.group(1)!);
+            if (p != null && p > 0 && p < 10000) currentPage = p;
+          }
         }
         i++;
         continue;

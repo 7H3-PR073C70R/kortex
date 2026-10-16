@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:kortex/src/features/ingestion/data/services/formula_extraction_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/html_entity_decoder.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
 import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 
@@ -402,8 +403,10 @@ class LocalHtmlParserService {
 
   /// Resolves standard HTML, math, and Greek entity codes to text or LaTeX symbols.
   static String _unescapeHtml(String input) {
-    return input
-        // Greek & Math entities
+    if (!input.contains('&')) return input;
+
+    final withMath = input
+        // Greek & Math entities mapped to LaTeX notation for HTML formula blocks
         .replaceAll('&nabla;', r'\nabla ')
         .replaceAll('&hbar;', r'\hbar ')
         .replaceAll('&pi;', r'\pi ')
@@ -428,8 +431,6 @@ class LocalHtmlParserService {
         .replaceAll('&partial;', r'\partial ')
         .replaceAll('&part;', r'\partial ')
         .replaceAll('&infin;', r'\infty ')
-        .replaceAll('&plusmn;', r'\pm ')
-        .replaceAll('&times;', r'\times ')
         .replaceAll('&middot;', r'\cdot ')
         .replaceAll('&le;', r'\le ')
         .replaceAll('&ge;', r'\ge ')
@@ -442,22 +443,9 @@ class LocalHtmlParserService {
         .replaceAll('&lang;', r'\langle ')
         .replaceAll('&radic;', r'\sqrt ')
         .replaceAll('&rarr;', r'\rightarrow ')
-        .replaceAll('&larr;', r'\leftarrow ')
-        // Common HTML entities
-        .replaceAll('&nbsp;', ' ')
-        .replaceAll('&amp;', '&')
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&quot;', '"')
-        .replaceAll('&apos;', "'")
-        .replaceAll('&#39;', "'")
-        .replaceAll('&#27;', "'")
-        .replaceAll('&mdash;', '—')
-        .replaceAll('&ndash;', '–')
-        .replaceAll('&copy;', '©')
-        .replaceAll('&reg;', '®')
-        .replaceAll('&deg;', '°')
-        .replaceAll('&bull;', '•');
+        .replaceAll('&larr;', r'\leftarrow ');
+
+    return HtmlEntityDecoder.decode(withMath);
   }
 
   /// Normalizes whitespace and removes excessive linebreaks.

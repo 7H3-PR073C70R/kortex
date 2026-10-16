@@ -21,7 +21,9 @@ import 'package:kortex/src/features/ingestion/domain/entities/ingestion_cancella
 import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 
 class DocumentParserService {
-  const DocumentParserService();
+  const DocumentParserService({this.ocrHandler});
+
+  final OcrImageHandler? ocrHandler;
 
   /// Maximum file size budget (50 MB) for offline parsing and extraction.
   static const int maxFileSizeBytes = 50 * 1024 * 1024;
@@ -65,7 +67,7 @@ class DocumentParserService {
 
     if (ext == 'pdf') {
       try {
-        final pdfText = const LocalPdfParserService().extractTextFromPdfBytes(
+        final pdfText = LocalPdfParserService(ocrHandler: ocrHandler).extractTextFromPdfBytes(
           bytes,
           filename: filename,
           report: report,
@@ -610,6 +612,7 @@ class DocumentParserService {
     String? category,
     List<String> imageUrls = const [],
     ExtractionReport? report,
+    DocumentIR? ir,
     Clock? clock,
     IngestionCancellationToken? cancellationToken,
   }) {
@@ -626,7 +629,7 @@ class DocumentParserService {
     final inferredSubject = subject ?? _inferSubject(filename);
     final effectiveCategory = category ?? 'Study';
 
-    if (cleanFullText.isEmpty) {
+    if (cleanFullText.isEmpty && (ir == null || ir.blocks.isEmpty)) {
       return PedagogicalDeck(
         schemaVersion: SchemaSerializer.currentSchemaVersion,
         deckId: 'deck_$documentId',
@@ -642,6 +645,7 @@ class DocumentParserService {
     final cards = const OfflineCardBuilder().buildCards(
       cleanFullText,
       report: report,
+      ir: ir,
       metadata: {'title': cleanDeckTitle},
     );
     final usedImageUrls = <String>{};
@@ -684,13 +688,16 @@ class DocumentParserService {
         );
       }
 
-      final source = card.source ??
-          CardSource(
-            docId: documentId,
-            page: 1,
-            sectionPath: [card.heading ?? cleanDeckTitle],
-            blockId: 'block_$i',
-          );
+      final source = card.source != null
+          ? (card.source!.docId.isEmpty
+              ? card.source!.copyWith(docId: documentId)
+              : card.source!)
+          : CardSource(
+              docId: documentId,
+              page: 1,
+              sectionPath: [card.heading ?? cleanDeckTitle],
+              blockId: 'p1_b${i}_card',
+            );
 
       candidates.add(
         PedagogicalCandidateCard(

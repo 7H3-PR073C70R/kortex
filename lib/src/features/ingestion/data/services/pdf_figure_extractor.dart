@@ -93,6 +93,63 @@ class ExtractedPdfFigure {
 class PdfFigureExtractor {
   const PdfFigureExtractor();
 
+  /// Rasterizes the page viewport for [pageNumber] (1-based) to PNG image bytes.
+  Uint8List rasterizePageViewport(
+    Uint8List pdfBytes,
+    int pageNumber, {
+    int? width,
+    int? height,
+  }) {
+    if (pdfBytes.isEmpty) return Uint8List(0);
+    try {
+      final objTable = _PdfObjectTable.fromBytes(pdfBytes);
+      final pages = _traversePageTree(objTable);
+      _PdfPageInfo? targetPage;
+      for (final p in pages) {
+        if (p.pageNumber == pageNumber) {
+          targetPage = p;
+          break;
+        }
+      }
+
+      final page = targetPage ??
+          _PdfPageInfo(
+            pageNumber: pageNumber,
+            mediaBox: const BoundingBox(left: 0, top: 0, right: 612, bottom: 792),
+            resourcesDict: '',
+            xObjects: const {},
+            contentStreams: const [],
+          );
+
+      final w = (width != null && width > 0)
+          ? width
+          : (page.mediaBox.width > 0 ? page.mediaBox.width.round() : 612);
+      final h = (height != null && height > 0)
+          ? height
+          : (page.mediaBox.height > 0 ? page.mediaBox.height.round() : 792);
+
+      final rasterW = w.clamp(200, 2048);
+      final rasterH = h.clamp(200, 2048);
+
+      final analysis = page.contentStreams.isNotEmpty
+          ? _analyzeContentStreams(page.contentStreams, page.mediaBox)
+          : null;
+
+      return _rasterizeVectorDiagram(
+        analysis?.vectorCluster,
+        width: rasterW,
+        height: rasterH,
+        drawFallbackIfEmpty: false,
+      );
+    } on Object catch (_) {
+      final w = (width ?? 612).clamp(200, 2048);
+      final h = (height ?? 792).clamp(200, 2048);
+      final pixels = Uint8List(w * h * 3);
+      pixels.fillRange(0, pixels.length, 255);
+      return encodePixelsToPng(pixels, w, h);
+    }
+  }
+
   /// Extracts embedded images and vector diagrams from [pdfBytes], associating
   /// each figure with its nearest spatial "Figure N" caption and page context.
   List<ExtractedPdfFigure> extractFigures(
@@ -317,11 +374,14 @@ class PdfFigureExtractor {
 
     // Check Resources inheritance
     var currentResources = parentResources;
-    final resMatch = RegExp(r'/Resources\s*(<<.*?>>|\d+\s+0\s+R)', dotAll: true).firstMatch(dict);
-    if (resMatch != null) {
-      final resRaw = resMatch.group(1)!;
-      if (resRaw.contains('0 R')) {
-        final refMatch = RegExp(r'(\d+)\s+0\s+R').firstMatch(resRaw);
+    final resIdx = dict.indexOf('/Resources');
+    if (resIdx != -1) {
+      final afterRes = dict.substring(resIdx + '/Resources'.length).trimLeft();
+      if (afterRes.startsWith('<<')) {
+        final balanced = _extractBalancedDict(afterRes, 0);
+        if (balanced != null) currentResources = balanced;
+      } else {
+        final refMatch = RegExp(r'^(\d+)\s+0\s+R').firstMatch(afterRes);
         if (refMatch != null) {
           final refId = int.tryParse(refMatch.group(1)!);
           if (refId != null) {
@@ -329,8 +389,6 @@ class PdfFigureExtractor {
             if (resObj != null) currentResources = resObj.dict;
           }
         }
-      } else {
-        currentResources = resRaw;
       }
     }
 
@@ -390,21 +448,39 @@ class PdfFigureExtractor {
     return pages;
   }
 
+  static String? _extractBalancedDict(String text, int startPos) {
+    final dictStart = text.indexOf('<<', startPos);
+    if (dictStart == -1) return null;
+    var depth = 0;
+    for (var j = dictStart; j < text.length - 1; j++) {
+      if (text[j] == '<' && text[j + 1] == '<') {
+        depth++;
+        j++;
+      } else if (text[j] == '>' && text[j + 1] == '>') {
+        depth--;
+        j++;
+        if (depth == 0) {
+          return text.substring(dictStart, j + 1);
+        }
+      }
+    }
+    return null;
+  }
+
   Map<String, int> _extractXObjectsFromResources(
     String resourcesDict,
     _PdfObjectTable table,
   ) {
     final map = <String, int>{};
-    final xObjBlockMatch = RegExp(
-      r'/XObject\s*(<<.*?>>|\d+\s+0\s+R)',
-      dotAll: true,
-    ).firstMatch(resourcesDict);
+    final xObjIdx = resourcesDict.indexOf('/XObject');
+    if (xObjIdx == -1) return map;
 
-    if (xObjBlockMatch == null) return map;
-
-    var block = xObjBlockMatch.group(1)!;
-    if (block.contains('0 R')) {
-      final refMatch = RegExp(r'(\d+)\s+0\s+R').firstMatch(block);
+    final afterXObj = resourcesDict.substring(xObjIdx + '/XObject'.length).trimLeft();
+    var block = '';
+    if (afterXObj.startsWith('<<')) {
+      block = _extractBalancedDict(afterXObj, 0) ?? '';
+    } else {
+      final refMatch = RegExp(r'^(\d+)\s+0\s+R').firstMatch(afterXObj);
       if (refMatch != null) {
         final refId = int.tryParse(refMatch.group(1)!);
         if (refId != null) {
@@ -414,7 +490,7 @@ class PdfFigureExtractor {
       }
     }
 
-    final entryRegex = RegExp(r'/([A-Za-z0-9_]+)\s+(\d+)\s+0\s+R');
+    final entryRegex = RegExp(r'/([^\s/<>\[\]()]+)\s+(\d+)\s+0\s+R');
     for (final m in entryRegex.allMatches(block)) {
       final name = m.group(1)!;
       final objId = int.parse(m.group(2)!);
@@ -946,6 +1022,7 @@ class PdfFigureExtractor {
     _VectorPathCluster? cluster, {
     required int width,
     required int height,
+    bool drawFallbackIfEmpty = true,
   }) {
     final pixels = Uint8List(width * height * 3);
 
@@ -980,7 +1057,7 @@ class PdfFigureExtractor {
 
         _drawLine(pixels, width, height, x1, y1, x2, y2, r: 30, g: 41, b: 59);
       }
-    } else {
+    } else if (drawFallbackIfEmpty) {
       _drawLine(pixels, width, height, 40, height - 40, width - 40, height - 40, r: 71, g: 85, b: 105);
       _drawLine(pixels, width, height, 40, 40, 40, height - 40, r: 71, g: 85, b: 105);
       _drawLine(pixels, width, height, 40, height - 40, width ~/ 2, 60, r: 37, g: 99, b: 235);

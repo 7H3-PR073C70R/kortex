@@ -28,6 +28,34 @@ class DroppedElement {
       'DroppedElement(page: $page, rule: "$rule", sample: "$sampleText")';
 }
 
+/// An out-of-vocabulary glued run repaired by word segmentation.
+class GluedWordSplit {
+  const GluedWordSplit({
+    required this.fusedToken,
+    required this.splitResult,
+    this.page,
+  });
+
+  /// The original spaceless fused token (e.g. 'distinctsections').
+  final String fusedToken;
+
+  /// The segmented result (e.g. 'distinct sections').
+  final String splitResult;
+
+  /// 1-based page index where the split occurred (null if document-wide).
+  final int? page;
+
+  Map<String, dynamic> toJson() => {
+    'fused_token': fusedToken,
+    'split_result': splitResult,
+    if (page != null) 'page': page,
+  };
+
+  @override
+  String toString() =>
+      'GluedWordSplit(fused: "$fusedToken", split: "$splitResult", page: $page)';
+}
+
 /// Audit report documenting text extraction status, anomalies, and dropped content.
 class ExtractionReport {
   ExtractionReport({
@@ -38,8 +66,10 @@ class ExtractionReport {
     this.isCorrupt = false,
     List<DroppedElement>? droppedElements,
     List<String>? warnings,
+    List<GluedWordSplit>? gluedWordSplits,
   })  : droppedElements = droppedElements ?? [],
-        warnings = warnings ?? [];
+        warnings = warnings ?? [],
+        gluedWordSplits = gluedWordSplits ?? [];
 
   final String filename;
   final String fileType;
@@ -48,11 +78,13 @@ class ExtractionReport {
   bool isCorrupt;
   final List<DroppedElement> droppedElements;
   final List<String> warnings;
+  final List<GluedWordSplit> gluedWordSplits;
 
   int totalLinesProcessed = 0;
   int totalLinesRetained = 0;
 
   int get totalDroppedElements => droppedElements.length;
+  int get totalGluedWordSplits => gluedWordSplits.length;
 
   /// Records an element dropped by a specific extraction filter.
   void recordDrop({
@@ -78,6 +110,21 @@ class ExtractionReport {
     warnings.add(warning);
   }
 
+  /// Records an out-of-vocabulary glued word run repaired by word segmentation.
+  void recordGluedWordSplit({
+    required String fusedToken,
+    required String splitResult,
+    int? page,
+  }) {
+    gluedWordSplits.add(
+      GluedWordSplit(
+        fusedToken: fusedToken,
+        splitResult: splitResult,
+        page: page,
+      ),
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'filename': filename,
     'file_type': fileType,
@@ -87,12 +134,15 @@ class ExtractionReport {
     'total_lines_processed': totalLinesProcessed,
     'total_lines_retained': totalLinesRetained,
     'total_dropped_elements': totalDroppedElements,
+    'total_glued_splits': totalGluedWordSplits,
     'dropped_elements': droppedElements.map((e) => e.toJson()).toList(),
+    'glued_word_splits': gluedWordSplits.map((e) => e.toJson()).toList(),
     'warnings': warnings,
   };
 
   @override
   String toString() =>
       'ExtractionReport($filename, dropped: $totalDroppedElements, '
+      'gluedSplits: $totalGluedWordSplits, '
       'encrypted: $isEncrypted, scanned: $isScanned, corrupt: $isCorrupt)';
 }

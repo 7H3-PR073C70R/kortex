@@ -339,7 +339,7 @@ void main() {
 
       // Report tracks scanned/warning status
       expect(report.warnings.length, greaterThanOrEqualTo(0));
-      expect(ocrInvoked, isFalse); // PdfDocument with vector rect has no bitmap stream
+      expect(ocrInvoked, isTrue); // Viewport rasterization fallback triggers OCR
     });
 
     test('Acceptance Gate: JLS8 page 21 preserves class-based without glued words', () {

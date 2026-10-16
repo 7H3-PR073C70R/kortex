@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
+import 'package:kortex/src/features/ingestion/data/services/block_isolation_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/formula_extraction_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/html_entity_decoder.dart';
 import 'package:kortex/src/features/ingestion/data/services/synthesis/flashcard_synthesizer.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_ir.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
@@ -98,7 +101,8 @@ class OfflineCardBuilder {
   /// 1. Document metadata title.
   /// 2. Primary first-page heading (Level 1 heading, or first heading on page 1).
   static String _sanitizeDeckTitle(String raw) {
-    final clean = raw
+    final decoded = HtmlEntityDecoder.decode(raw);
+    final clean = decoded
         .replaceAll(RegExp(r'\s*\(Page\s+\d+(?:\s+of\s+\d+)?\)', caseSensitive: false), '')
         .replaceAll(RegExp(r'\s*-\s*Page\s+\d+', caseSensitive: false), '')
         .replaceAll(RegExp(r'^(?:#+|\d+(?:\.\d+)*\.?)\s*'), '')
@@ -110,6 +114,7 @@ class OfflineCardBuilder {
   }
 
   static bool _isValidDeckTitle(String clean) {
+    if (clean.startsWith('<!--') || clean.endsWith('-->')) return false;
     if (clean.length < 3 || clean.length > 100) return false;
     if (RegExp(r'\b(?:\d{1,2}(?:st|nd|rd|th)?\s+)?(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{2,4}\b', caseSensitive: false).hasMatch(clean)) {
       return false;
@@ -177,6 +182,7 @@ class OfflineCardBuilder {
         final trimmed = line.trim();
         if (trimmed.isNotEmpty &&
             trimmed.length <= 80 &&
+            !trimmed.startsWith('<!--') &&
             !trimmed.startsWith('Page ') &&
             !trimmed.startsWith('http') &&
             !trimmed.contains('===') &&
@@ -196,10 +202,18 @@ class OfflineCardBuilder {
   }
 
   /// Builds cards from strongly-typed [DocumentIR].
-  List<OfflineCard> buildCardsFromIR(DocumentIR ir, {ExtractionReport? report}) {
+  List<OfflineCard> buildCardsFromIR(
+    DocumentIR ir, {
+    ExtractionReport? report,
+    Map<String, dynamic>? metadata,
+  }) {
     final blocks = _irToBlocks(ir);
     if (blocks.isEmpty) return const [];
-    final docContext = extractDeckTitle(ir: ir, filename: ir.filename);
+    final docContext = extractDeckTitle(
+      ir: ir,
+      metadata: metadata,
+      filename: ir.filename,
+    );
     return _buildCardsFromBlocks(blocks, docContext: docContext, report: report);
   }
 
@@ -212,7 +226,7 @@ class OfflineCardBuilder {
     Map<String, dynamic>? metadata,
   }) {
     if (ir != null) {
-      return buildCardsFromIR(ir, report: report);
+      return buildCardsFromIR(ir, report: report, metadata: metadata);
     }
     final blocks = _parseBlocks(fullText, report: report);
     if (blocks.isEmpty) return const [];
@@ -289,8 +303,8 @@ class OfflineCardBuilder {
               _BlockKind.table,
               node.rawText,
               term: node.caption ?? currentHeading,
-              tableHeaders: node.headers,
-              tableRows: node.rows,
+              tableHeaders: node.headers.map(FormulaExtractionService.escapeTablePipes).toList(),
+              tableRows: node.rows.map((r) => r.map(FormulaExtractionService.escapeTablePipes).toList()).toList(),
               sectionTitle: currentHeading,
               page: node.provenance.page,
               provenance: node.provenance,
@@ -310,17 +324,21 @@ class OfflineCardBuilder {
             ),
           );
         case MathBlock():
-          blocks.add(
-            _Block(
-              _BlockKind.formula,
-              node.rawText,
-              term: currentHeading,
-              sectionTitle: currentHeading,
-              page: node.provenance.page,
-              provenance: node.provenance,
-              zone: currentZone,
-            ),
-          );
+          final rawContent = node.latex.isNotEmpty ? node.latex : node.rawMathText;
+          final cleanMath = FormulaExtractionService.stripLatexPreamble(rawContent);
+          if (FormulaExtractionService.isValidLatexEquation(cleanMath)) {
+            blocks.add(
+              _Block(
+                _BlockKind.formula,
+                cleanMath,
+                term: currentHeading,
+                sectionTitle: currentHeading,
+                page: node.provenance.page,
+                provenance: node.provenance,
+                zone: currentZone,
+              ),
+            );
+          }
         case FigureBlock():
           blocks.add(
             _Block(
@@ -345,15 +363,22 @@ class OfflineCardBuilder {
     ExtractionReport? report,
   }) {
     final termFrequency = _termFrequency(blocks);
+    final clozeExclusions = extractClozeExclusions(
+      docContext: docContext,
+      totalBlocks: blocks.length,
+      termFrequency: termFrequency,
+    );
     final structured = <OfflineCard>[];
     final clozeCandidates = <_ClozeCandidate>[];
     final clozePerSection = <String, int>{};
 
     String? heading;
     final pendingList = <_Block>[];
+    var listStartIndex = 0;
 
     void flushList() {
-      final card = _listCard(heading, pendingList);
+      if (pendingList.isEmpty) return;
+      final card = _listCard(heading, pendingList, docContext: docContext, index: listStartIndex);
       if (card != null) {
         structured.add(card);
       }
@@ -379,6 +404,7 @@ class OfflineCardBuilder {
         case _BlockKind.heading:
           heading = block.text;
         case _BlockKind.qa:
+          final pageNum = block.page > 0 ? block.page : (block.provenance?.page ?? 1);
           structured.add(
             OfflineCard(
               type: OfflineCardType.qa,
@@ -386,19 +412,19 @@ class OfflineCardBuilder {
               back: block.text,
               confidence: 0.9,
               heading: heading,
-              source: block.provenance != null
-                  ? CardSource(
-                      docId: block.provenance!.docId,
-                      page: block.provenance!.page,
-                      sectionPath: block.provenance!.sectionPath,
-                      bbox: block.provenance!.bbox,
-                      blockId: 'qa_$i',
-                    )
-                  : null,
+              source: CardSource(
+                docId: block.provenance?.docId ?? '',
+                page: pageNum,
+                sectionPath: block.provenance?.sectionPath.isNotEmpty == true
+                    ? block.provenance!.sectionPath
+                    : [if (heading != null && heading.isNotEmpty) heading else if (docContext.isNotEmpty) docContext],
+                bbox: block.provenance?.bbox,
+                blockId: 'p${pageNum}_b${i}_qa',
+              ),
             ),
           );
         case _BlockKind.glossary:
-          final card = _glossaryCard(block, docContext, heading);
+          final card = _glossaryCard(block, docContext, heading, i);
           if (card != null) {
             structured.add(card);
           }
@@ -408,6 +434,9 @@ class OfflineCardBuilder {
             structured.add(card);
           }
         case _BlockKind.bullet:
+          if (pendingList.isEmpty) {
+            listStartIndex = i;
+          }
           pendingList.add(block);
         case _BlockKind.code:
           final card = _codeCard(blocks, i, heading, docContext);
@@ -427,7 +456,14 @@ class OfflineCardBuilder {
           final consumed = <int>{};
           for (var s = 0; s < sentences.length; s++) {
             if (consumed.contains(s)) continue;
-            final discourse = _discourseCard(sentences, s, heading, docContext);
+            final discourse = _discourseCard(
+              sentences,
+              s,
+              heading,
+              docContext,
+              block: block,
+              blockIndex: i,
+            );
             if (discourse != null) {
               structured.add(discourse.card);
               consumed.addAll(discourse.consumed);
@@ -435,7 +471,14 @@ class OfflineCardBuilder {
           }
           for (var s = 0; s < sentences.length; s++) {
             if (consumed.contains(s)) continue;
-            final def = _definitionCard(sentences, s);
+            final def = _definitionCard(
+              sentences,
+              s,
+              heading: heading,
+              docContext: docContext,
+              block: block,
+              blockIndex: i,
+            );
             if (def != null) {
               structured.add(def.card);
               consumed.addAll(def.consumed);
@@ -449,6 +492,10 @@ class OfflineCardBuilder {
               termFrequency,
               clozeCandidates.length,
               heading: heading,
+              docContext: docContext,
+              block: block,
+              blockIndex: i,
+              clozeExclusions: clozeExclusions,
             );
             if (cloze == null) continue;
             if (heading != null && maxClozePerSection != null) {
@@ -463,7 +510,12 @@ class OfflineCardBuilder {
     flushList();
 
     final assembled = _assemble(structured, clozeCandidates, report: report);
-    return _bindAdjacentAssets(assembled, blocks);
+    final bound = _bindAdjacentAssets(assembled, blocks);
+    return bound.map((c) => c.copyWith(
+      front: HtmlEntityDecoder.decode(c.front),
+      back: HtmlEntityDecoder.decode(c.back),
+      heading: c.heading != null ? HtmlEntityDecoder.decode(c.heading!) : null,
+    )).toList();
   }
 
   List<OfflineCard> _bindAdjacentAssets(
@@ -527,8 +579,131 @@ class OfflineCardBuilder {
   }
 
   // ---------------------------------------------------------------------------
-  // Assembly
+  // Assembly & Quality Deduplication
   // ---------------------------------------------------------------------------
+
+  /// Extracts keywords that should be excluded from cloze blanks:
+  /// - Document title and context words (e.g. "Kotlin" in Kotlin Reference).
+  /// - Meta-document structural vocabulary (chapter, section, figure, etc.).
+  /// - Dominant corpus-wide topic terms appearing with high frequency across blocks.
+  static Set<String> extractClozeExclusions({
+    required String docContext,
+    int totalBlocks = 0,
+    Map<String, int> termFrequency = const {},
+  }) {
+    final exclusions = <String>{
+      'chapter', 'chapters', 'section', 'sections', 'part', 'parts',
+      'figure', 'figures', 'table', 'tables', 'page', 'pages',
+      'example', 'examples', 'definition', 'definitions',
+      'overview', 'summary', 'introduction', 'manual', 'reference',
+      'references', 'handbook', 'tutorial', 'tutorials', 'document',
+      'textbook', 'course', 'lecture', 'lectures', 'notes', 'study',
+      'deck', 'edition', 'version', 'versions', 'author', 'authors',
+      'appendix', 'appendices', 'exercise', 'exercises', 'topic', 'topics',
+      'guide', 'guides', 'volume', 'volumes', 'bullet', 'bullets',
+    };
+
+    // 2. Document title & context keywords
+    if (docContext.isNotEmpty && docContext != 'Study Deck') {
+      final titleTokens = docContext
+          .replaceAll(RegExp('(?<=[a-z])(?=[A-Z])'), ' ')
+          .replaceAll(RegExp('(?<=[A-Z])(?=[A-Z][a-z])'), ' ')
+          .replaceAll(RegExp(r'[^\p{L}\p{N}\s]', unicode: true), ' ')
+          .split(RegExp(r'\s+'));
+      for (final rawWord in titleTokens) {
+        final w = rawWord.toLowerCase().trim();
+        if (w.length >= 2 && !_stopWords.contains(w)) {
+          exclusions.add(w);
+          final stem = w.replaceAll(RegExp(r"['’]s$"), '');
+          if (stem.isNotEmpty) exclusions.add(stem);
+          if (w.endsWith('s') && w.length > 3) {
+            exclusions.add(w.substring(0, w.length - 1));
+          }
+        }
+      }
+    }
+
+    // 3. Dominant corpus-wide topic terms (words appearing with overwhelming frequency)
+    if (totalBlocks >= 5) {
+      final threshold = (totalBlocks * 0.35).round().clamp(6, 9999);
+      for (final entry in termFrequency.entries) {
+        if (entry.value >= threshold) {
+          final w = entry.key.toLowerCase().trim();
+          if (w.length >= 3 && !_stopWords.contains(w)) {
+            exclusions.add(w);
+          }
+        }
+      }
+    }
+
+    return exclusions;
+  }
+
+  /// Extracts the canonical answer or target concept from an [OfflineCard].
+  static String extractCardAnswer(OfflineCard card) {
+    if (card.type == OfflineCardType.cloze) {
+      return card.back.split('\n').first.trim();
+    }
+    if (card.type == OfflineCardType.definition || card.type == OfflineCardType.glossary) {
+      final match = RegExp(
+        r'^(?:What\s+(?:is|are|does)\s+)([^?]+?)(?:\s+(?:state|require|involve|mean))?\?$',
+        caseSensitive: false,
+      ).firstMatch(card.front.trim());
+      if (match != null) {
+        return match.group(1)!.trim();
+      }
+    }
+    if (card.type == OfflineCardType.qa) {
+      final backTrimmed = card.back.trim();
+      if (backTrimmed.length <= 60 && !backTrimmed.contains('\n')) {
+        return backTrimmed;
+      }
+      final match = RegExp(
+        r'^(?:What\s+(?:is|are|does)\s+)([^?]+?)(?:\s+(?:state|require|involve|mean))?\?$',
+        caseSensitive: false,
+      ).firstMatch(card.front.trim());
+      if (match != null) {
+        return match.group(1)!.trim();
+      }
+    }
+    return card.back.split('\n').first.trim();
+  }
+
+  /// Extracts the primary source sentence from an [OfflineCard].
+  static String extractSourceSentence(OfflineCard card) {
+    if (card.type == OfflineCardType.cloze) {
+      final parts = card.back.split('\n\n');
+      if (parts.length >= 2) {
+        return parts.sublist(1).join(' ').trim();
+      }
+    }
+    final trimmed = card.back.trim();
+    final match = RegExp(r'^.*?[.!?](?:\s|$)', unicode: true).firstMatch(trimmed);
+    return match != null ? match.group(0)!.trim() : trimmed;
+  }
+
+  /// Extracts the normalized sub-deck / section key from an [OfflineCard].
+  static String subDeckKey(OfflineCard card) {
+    String cleanSubDeck(String s) {
+      return s
+          .replaceAll(RegExp(r'^[#\s]+'), '')
+          .replaceFirst(RegExp(r'^\d+(?:\.\d+)*\.?\s*'), '')
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^\p{L}\p{N}\s]', unicode: true), ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+    }
+
+    if (card.source != null && card.source!.sectionPath.isNotEmpty) {
+      final joined = card.source!.sectionPath.map(cleanSubDeck).where((s) => s.isNotEmpty).join(' > ');
+      if (joined.isNotEmpty) return joined;
+    }
+    if (card.heading != null && card.heading!.trim().isNotEmpty) {
+      final clean = cleanSubDeck(card.heading!);
+      if (clean.isNotEmpty) return clean;
+    }
+    return '__root__';
+  }
 
   List<OfflineCard> _assemble(
     List<OfflineCard> structured,
@@ -537,6 +712,8 @@ class OfflineCardBuilder {
   }) {
     final seen = <String>{};
     final seenFrontTokens = <String, Set<String>>{};
+    final seenSourceSentences = <String>{};
+    final seenAnswersBySubdeck = <String, Set<String>>{};
     final result = <OfflineCard>[];
 
     String norm(String s) =>
@@ -567,31 +744,76 @@ class OfflineCardBuilder {
       return false;
     }
 
-    for (final card in structured) {
-      if (maxCards != null && result.length >= maxCards!) break;
-      if (_isMeaningfulCard(card)) {
-        final normFront = norm(card.front);
-        if (seen.contains(normFront)) {
-          report?.recordDrop(
-            rule: 'duplicate_card_front',
-            sampleText: card.front,
-          );
-        } else if (isSemanticDuplicate(card.front)) {
-          report?.recordDrop(
-            rule: 'semantic_duplicate_card_front',
-            sampleText: card.front,
-          );
-        } else {
-          seen.add(normFront);
-          seenFrontTokens[normFront] = contentTokens(card.front);
-          result.add(card);
-        }
-      } else {
+    bool tryAddCard(OfflineCard card) {
+      if (maxCards != null && result.length >= maxCards!) return false;
+
+      if (!_isMeaningfulCard(card)) {
         report?.recordDrop(
           rule: 'meaningless_card_rejected',
           sampleText: '${card.front} -> ${card.back}',
         );
+        return false;
       }
+
+      final normFront = norm(card.front);
+      if (seen.contains(normFront)) {
+        report?.recordDrop(
+          rule: 'duplicate_card_front',
+          sampleText: card.front,
+        );
+        return false;
+      }
+
+      if (isSemanticDuplicate(card.front)) {
+        report?.recordDrop(
+          rule: 'semantic_duplicate_card_front',
+          sampleText: card.front,
+        );
+        return false;
+      }
+
+      // 1. Deduplicate cards citing the identical source sentence
+      final sourceSent = norm(extractSourceSentence(card));
+      if (sourceSent.length >= 20) {
+        if (seenSourceSentences.contains(sourceSent)) {
+          report?.recordDrop(
+            rule: 'duplicate_source_sentence',
+            sampleText: card.front,
+          );
+          return false;
+        }
+      }
+
+      // 2. Deduplicate cards yielding identical answers within the same sub-deck
+      final subDeck = subDeckKey(card);
+      final rawAnswer = extractCardAnswer(card);
+      final normAns = norm(rawAnswer);
+      if (normAns.length >= 2 && normAns.length <= 80) {
+        final existingAnswers = seenAnswersBySubdeck[subDeck];
+        if (existingAnswers != null && existingAnswers.contains(normAns)) {
+          report?.recordDrop(
+            rule: 'duplicate_subdeck_answer',
+            sampleText: '${card.front} -> $rawAnswer',
+          );
+          return false;
+        }
+      }
+
+      seen.add(normFront);
+      seenFrontTokens[normFront] = contentTokens(card.front);
+      if (sourceSent.length >= 20) {
+        seenSourceSentences.add(sourceSent);
+      }
+      if (normAns.length >= 2 && normAns.length <= 80) {
+        seenAnswersBySubdeck.putIfAbsent(subDeck, () => <String>{}).add(normAns);
+      }
+      result.add(card);
+      return true;
+    }
+
+    for (final card in structured) {
+      if (maxCards != null && result.length >= maxCards!) break;
+      tryAddCard(card);
     }
 
     // Sort clozes by score descending so the highest-yield domain terms come first
@@ -602,29 +824,7 @@ class OfflineCardBuilder {
     if (room > 0 && sortedClozes.isNotEmpty) {
       for (final c in sortedClozes) {
         if (maxCards != null && result.length >= maxCards!) break;
-        if (_isMeaningfulCard(c.card)) {
-          final normFront = norm(c.card.front);
-          if (seen.contains(normFront)) {
-            report?.recordDrop(
-              rule: 'duplicate_card_front',
-              sampleText: c.card.front,
-            );
-          } else if (isSemanticDuplicate(c.card.front)) {
-            report?.recordDrop(
-              rule: 'semantic_duplicate_card_front',
-              sampleText: c.card.front,
-            );
-          } else {
-            seen.add(normFront);
-            seenFrontTokens[normFront] = contentTokens(c.card.front);
-            result.add(c.card);
-          }
-        } else {
-          report?.recordDrop(
-            rule: 'meaningless_card_rejected',
-            sampleText: '${c.card.front} -> ${c.card.back}',
-          );
-        }
+        tryAddCard(c.card);
       }
     }
     return result;
@@ -767,13 +967,15 @@ class OfflineCardBuilder {
   };
 
   List<_Block> _parseBlocks(String text, {ExtractionReport? report}) {
-    final rawLines = text.replaceAll('\r\n', '\n').split('\n');
+    final decodedText = HtmlEntityDecoder.decode(text);
+    final rawLines = decodedText.replaceAll('\r\n', '\n').split('\n');
     final lines = _dropNoise(rawLines, report: report);
 
     final blocks = <_Block>[];
     final paragraph = <String>[];
     String? currentSectionTitle;
     var currentZone = DocumentZone.bodyKnowledge;
+    var currentPage = 1;
 
     void flushParagraph() {
       if (paragraph.isEmpty) return;
@@ -785,6 +987,7 @@ class OfflineCardBuilder {
             _BlockKind.paragraph,
             joined,
             sectionTitle: currentSectionTitle,
+            page: currentPage,
             zone: currentZone,
           ),
         );
@@ -838,6 +1041,46 @@ class OfflineCardBuilder {
     while (i < lines.length) {
       final line = lines[i].trim();
 
+      final pageCommentMatch = RegExp(
+        r'^<!--\s*page:?\s*(\d+)\s*-->$',
+        caseSensitive: false,
+      ).firstMatch(line);
+      if (pageCommentMatch != null) {
+        flushParagraph();
+        final p = int.tryParse(pageCommentMatch.group(1)!);
+        if (p != null) currentPage = p;
+        previousBlank = true;
+        i++;
+        continue;
+      }
+
+      final pageBreakMatch = RegExp(
+        r'^<!--\s*page-break\s*-->$',
+        caseSensitive: false,
+      ).firstMatch(line);
+      if (pageBreakMatch != null) {
+        flushParagraph();
+        currentPage++;
+        previousBlank = true;
+        i++;
+        continue;
+      }
+
+      final pageNumMatch = RegExp(
+        r'^(?:page\s+(\d+)(?:\s+of\s+\d+)?)$',
+        caseSensitive: false,
+      ).firstMatch(line);
+      if (pageNumMatch != null) {
+        final p = int.tryParse(pageNumMatch.group(1)!);
+        if (p != null) {
+          flushParagraph();
+          currentPage = p;
+          previousBlank = true;
+          i++;
+          continue;
+        }
+      }
+
       if (line.isEmpty) {
         if (paragraph.isNotEmpty) {
           final lastParaLine = paragraph.last.trim();
@@ -875,6 +1118,7 @@ class OfflineCardBuilder {
             term: label ?? (alt.isNotEmpty ? alt : 'Figure'),
             imageRef: url,
             sectionTitle: currentSectionTitle,
+            page: currentPage,
             zone: currentZone,
           ),
         );
@@ -883,16 +1127,49 @@ class OfflineCardBuilder {
         continue;
       }
 
-      if (_looksLikeTableRow(line) && i + 1 < lines.length && _looksLikeTableDivider(lines[i + 1])) {
+      if (BlockIsolationService.isCaptionLine(line)) {
         flushParagraph();
-        final tableLines = <String>[lines[i], lines[i + 1]];
-        i += 2;
-        while (i < lines.length && _looksLikeTableRow(lines[i])) {
+        final labelMatch = RegExp(
+          r'^(?:Table|Figure|Fig\.|Listing|Algorithm|Chart|Graph|Box|Equation|Eq\.)\s+(?:\d+[A-Za-z]?(?:\.\d+)*|[A-Z]|\b[IVXLCDM]+\b)',
+          caseSensitive: false,
+        ).firstMatch(line);
+        final label = labelMatch != null ? labelMatch.group(0)!.trim() : 'Caption';
+        final caption = labelMatch != null
+            ? line.substring(labelMatch.end).replaceFirst(RegExp(r'^\s*[.:\-—–]\s*'), '').trim()
+            : line;
+        blocks.add(
+          _Block(
+            _BlockKind.figure,
+            caption.isNotEmpty ? caption : line,
+            term: label,
+            sectionTitle: currentSectionTitle,
+            page: currentPage,
+            zone: currentZone,
+          ),
+        );
+        previousBlank = true;
+        i++;
+        continue;
+      }
+
+      if (_looksLikeTableRow(line) || BlockIsolationService.isTableRowLine(line)) {
+        flushParagraph();
+        final tableLines = <String>[lines[i]];
+        i++;
+        while (i < lines.length &&
+            (_looksLikeTableRow(lines[i]) ||
+                _looksLikeTableDivider(lines[i]) ||
+                BlockIsolationService.isTableRowLine(lines[i]))) {
           tableLines.add(lines[i]);
           i++;
         }
+        final hasDivider =
+            tableLines.length > 1 && _looksLikeTableDivider(tableLines[1]);
         final headers = _parseTableRow(tableLines[0]);
-        final rows = tableLines.skip(2).map(_parseTableRow).where((r) => r.isNotEmpty).toList();
+        final rows = (hasDivider ? tableLines.skip(2) : tableLines.skip(1))
+            .map(_parseTableRow)
+            .where((r) => r.isNotEmpty)
+            .toList();
         blocks.add(
           _Block(
             _BlockKind.table,
@@ -901,6 +1178,7 @@ class OfflineCardBuilder {
             tableHeaders: headers,
             tableRows: rows,
             sectionTitle: currentSectionTitle,
+            page: currentPage,
             zone: currentZone,
           ),
         );
@@ -926,6 +1204,7 @@ class OfflineCardBuilder {
             _BlockKind.code,
             code.join('\n'),
             sectionTitle: currentSectionTitle,
+            page: currentPage,
             zone: currentZone,
           ),
         );
@@ -971,6 +1250,7 @@ class OfflineCardBuilder {
             mathLines.join('\n'),
             term: lead?.replaceFirst(RegExp(r'\s*:\s*$'), ''),
             sectionTitle: currentSectionTitle,
+            page: currentPage,
             zone: currentZone,
           ),
         );
@@ -987,6 +1267,7 @@ class OfflineCardBuilder {
             qa.answer,
             term: qa.question,
             sectionTitle: currentSectionTitle,
+            page: currentPage,
             zone: currentZone,
           ),
         );
@@ -995,7 +1276,7 @@ class OfflineCardBuilder {
         continue;
       }
 
-      if (_isFormulaLine(line)) {
+      if (_isFormulaLine(line) || BlockIsolationService.isFormulaLine(line)) {
         String? lead;
         if (paragraph.isNotEmpty) {
           lead = paragraph.removeLast();
@@ -1011,19 +1292,25 @@ class OfflineCardBuilder {
               lines[i],
               term: lead.replaceFirst(RegExp(r'\s*:\s*$'), ''),
               sectionTitle: currentSectionTitle,
+              page: currentPage,
               zone: currentZone,
             ),
           );
           previousBlank = false;
           i++;
           continue;
-        } else if (lead == null && FormulaExtractionService.isFormula(lines[i])) {
+        } else {
+          if (lead != null) {
+            paragraph.add(lead);
+            flushParagraph();
+          }
           blocks.add(
             _Block(
               _BlockKind.formula,
               lines[i],
               term: currentSectionTitle,
               sectionTitle: currentSectionTitle,
+              page: currentPage,
               zone: currentZone,
             ),
           );
@@ -1031,7 +1318,6 @@ class OfflineCardBuilder {
           i++;
           continue;
         }
-        if (lead != null) paragraph.add(lead);
       }
 
       final headingText = _headingText(line, previousBlank);
@@ -1044,6 +1330,7 @@ class OfflineCardBuilder {
             _BlockKind.heading,
             currentSectionTitle,
             sectionTitle: currentSectionTitle,
+            page: currentPage,
             zone: currentZone,
           ),
         );
@@ -1067,6 +1354,7 @@ class OfflineCardBuilder {
               _BlockKind.heading,
               currentSectionTitle,
               sectionTitle: currentSectionTitle,
+              page: currentPage,
               zone: currentZone,
             ),
           );
@@ -1091,6 +1379,7 @@ class OfflineCardBuilder {
               body,
               term: term,
               sectionTitle: currentSectionTitle,
+              page: currentPage,
               zone: currentZone,
             ),
           );
@@ -1112,6 +1401,7 @@ class OfflineCardBuilder {
             ordered: ordered,
             marker: bullet.group(1),
             sectionTitle: currentSectionTitle,
+            page: currentPage,
             zone: currentZone,
           ),
         );
@@ -1140,6 +1430,11 @@ class OfflineCardBuilder {
     for (var idx = 0; idx < rawLines.length; idx++) {
       final line = rawLines[idx];
       final trimmed = line.trim();
+
+      if (trimmed.startsWith('<!--')) {
+        isProtected[idx] = true;
+        continue;
+      }
 
       // Check code fences (``` or ~~~)
       if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
@@ -1474,7 +1769,8 @@ class OfflineCardBuilder {
   bool _looksLikeTableRow(String line) {
     final t = line.trim();
     if (!t.contains('|')) return false;
-    return t.startsWith('|') || t.endsWith('|') || t.split('|').length >= 3;
+    final unescapedPipes = RegExp(r'(?<!\\)\|').allMatches(t).length;
+    return t.startsWith('|') || t.endsWith('|') || unescapedPipes >= 3;
   }
 
   bool _looksLikeTableDivider(String line) {
@@ -1484,10 +1780,15 @@ class OfflineCardBuilder {
   }
 
   List<String> _parseTableRow(String line) {
-    var t = line.trim();
+    final sanitized = FormulaExtractionService.escapeTablePipes(line);
+    var t = sanitized.trim();
     if (t.startsWith('|')) t = t.substring(1);
     if (t.endsWith('|')) t = t.substring(0, t.length - 1);
-    return t.split('|').map((c) => c.trim()).where((c) => c.isNotEmpty).toList();
+    return t
+        .split(RegExp(r'(?<!\\)\|'))
+        .map((c) => c.trim())
+        .where((c) => c.isNotEmpty)
+        .toList();
   }
 
   static String _cleanSectionTitle(String leadIn) {
@@ -1536,7 +1837,12 @@ class OfflineCardBuilder {
     'such',
   };
 
-  OfflineCard? _glossaryCard(_Block block, String docContext, [String? currentHeading]) {
+  OfflineCard? _glossaryCard(
+    _Block block,
+    String docContext, [
+    String? currentHeading,
+    int index = 0,
+  ]) {
     final term = block.term!;
     final body = block.text;
 
@@ -1567,6 +1873,18 @@ class OfflineCardBuilder {
     ).trim();
     if (sanitizedBody.length < 15) return null;
 
+    final pageNum = block.page > 0 ? block.page : (block.provenance?.page ?? 1);
+    final section = block.sectionTitle ?? currentHeading;
+    final source = CardSource(
+      docId: block.provenance?.docId ?? '',
+      page: pageNum,
+      sectionPath: block.provenance?.sectionPath.isNotEmpty == true
+          ? block.provenance!.sectionPath
+          : [if (section != null && section.isNotEmpty) section else if (docContext.isNotEmpty) docContext],
+      bbox: block.provenance?.bbox,
+      blockId: 'p${pageNum}_b${index}_glossary',
+    );
+
     final isSyntax = RegExp(r'[{}[\];]').hasMatch(sanitizedBody) || sanitizedBody.contains('::=');
     if (isSyntax) {
       final lang = docContext.isNotEmpty ? ' in $docContext' : '';
@@ -1576,6 +1894,7 @@ class OfflineCardBuilder {
         back: sanitizedBody,
         confidence: 0.88,
         heading: block.sectionTitle ?? currentHeading,
+        source: source,
       );
     }
 
@@ -1637,11 +1956,56 @@ class OfflineCardBuilder {
       back: sanitizedBody,
       confidence: 0.85,
       heading: block.sectionTitle ?? currentHeading,
+      source: source,
     );
   }
 
+  static bool _isGenericFormulaTerm(String? term) {
+    if (term == null) return true;
+    final t = term.trim().toLowerCase();
+    if (t.isEmpty) return true;
+    final normalized = t.replaceAll(RegExp(r'[^a-z0-9\s]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    const genericTerms = {
+      'formula',
+      'this formula',
+      'the formula',
+      'a formula',
+      'formulas',
+      'equation',
+      'this equation',
+      'the equation',
+      'an equation',
+      'equations',
+      'reaction',
+      'this reaction',
+      'the reaction',
+      'a reaction',
+      'reactions',
+      'chemical reaction',
+      'chemical equation',
+      'this chemical equation',
+      'math',
+      'mathematics',
+      'mathematical formula',
+      'expression',
+      'this expression',
+      'the expression',
+      'expressions',
+    };
+    return genericTerms.contains(normalized);
+  }
+
   OfflineCard? _formulaCard(_Block block, String? heading, String docContext, {int index = 0}) {
-    final formulaText = block.text.trim();
+    var formulaText = block.text.trim();
+    // 1. Strip document preamble declarations
+    formulaText = FormulaExtractionService.stripLatexPreamble(formulaText);
+    if (formulaText.isEmpty) return null;
+
+    // 2. Validate LaTeX equation strictly
+    if (!FormulaExtractionService.isValidLatexEquation(formulaText)) {
+      return null;
+    }
+
     final isChem = FormulaExtractionService.isChemicalEquation(formulaText);
     final isMath = FormulaExtractionService.isFormula(formulaText) ||
         formulaText.contains(r'\') ||
@@ -1649,7 +2013,37 @@ class OfflineCardBuilder {
 
     if (!isChem && !isMath) return null;
 
-    final term = block.term ?? heading ?? (isChem ? 'this reaction' : 'this formula');
+    // 3. Resolve non-generic term; prevent recursive self-referential templates
+    String? term;
+    if (block.term != null && !_isGenericFormulaTerm(block.term)) {
+      term = block.term!.trim();
+    } else if (heading != null && !_isGenericFormulaTerm(heading)) {
+      term = heading.trim();
+    } else if (docContext.isNotEmpty && !_isGenericFormulaTerm(docContext)) {
+      term = docContext.trim();
+    } else if (formulaText.contains('=')) {
+      final lhs = formulaText.split('=').first.trim();
+      if (lhs.isNotEmpty &&
+          lhs.length <= 30 &&
+          !lhs.contains('\n') &&
+          !_isGenericFormulaTerm(lhs) &&
+          !RegExp(r'^[\+\*\/\=\^]').hasMatch(lhs)) {
+        term = lhs;
+      }
+    }
+
+    // Suppress card if term is still generic or null
+    if (term == null || _isGenericFormulaTerm(term)) {
+      return null;
+    }
+
+    // Clean leading interrogative prefixes if present
+    term = term.replaceFirst(RegExp(r'^(?:What is|What are|What does)\s+', caseSensitive: false), '').trim();
+    term = term.replaceAll(RegExp(r'[?.:;]+$'), '').trim();
+    if (term.isEmpty || _isGenericFormulaTerm(term)) {
+      return null;
+    }
+
     final front = isChem
         ? 'What is the chemical equation for $term?'
         : 'What is the formula for $term?';
@@ -1663,18 +2057,16 @@ class OfflineCardBuilder {
       ),
     ];
 
-    CardSource? source;
-    if (block.provenance != null) {
-      source = CardSource(
-        docId: block.provenance!.docId,
-        page: block.provenance!.page,
-        sectionPath: block.provenance!.sectionPath.isNotEmpty
-            ? block.provenance!.sectionPath
-            : [heading ?? docContext],
-        bbox: block.provenance!.bbox,
-        blockId: 'math_$index',
-      );
-    }
+    final pageNum = block.page > 0 ? block.page : (block.provenance?.page ?? 1);
+    final source = CardSource(
+      docId: block.provenance?.docId ?? '',
+      page: pageNum,
+      sectionPath: block.provenance?.sectionPath.isNotEmpty == true
+          ? block.provenance!.sectionPath
+          : [if (heading != null && heading.isNotEmpty) heading else if (docContext.isNotEmpty) docContext],
+      bbox: block.provenance?.bbox,
+      blockId: 'p${pageNum}_b${index}_formula',
+    );
 
     return OfflineCard(
       type: OfflineCardType.formula,
@@ -1767,18 +2159,16 @@ class OfflineCardBuilder {
       ),
     ];
 
-    CardSource? source;
-    if (block.provenance != null) {
-      source = CardSource(
-        docId: block.provenance!.docId,
-        page: block.provenance!.page,
-        sectionPath: block.provenance!.sectionPath.isNotEmpty
-            ? block.provenance!.sectionPath
-            : [heading ?? docContext],
-        bbox: block.provenance!.bbox,
-        blockId: 'code_$index',
-      );
-    }
+    final pageNum = block.page > 0 ? block.page : (block.provenance?.page ?? 1);
+    final source = CardSource(
+      docId: block.provenance?.docId ?? '',
+      page: pageNum,
+      sectionPath: block.provenance?.sectionPath.isNotEmpty == true
+          ? block.provenance!.sectionPath
+          : [if (heading != null && heading.isNotEmpty) heading else if (docContext.isNotEmpty) docContext],
+      bbox: block.provenance?.bbox,
+      blockId: 'p${pageNum}_b${index}_code',
+    );
 
     return OfflineCard(
       type: OfflineCardType.code,
@@ -1825,18 +2215,16 @@ class OfflineCardBuilder {
       );
     }
 
-    CardSource? source;
-    if (block.provenance != null) {
-      source = CardSource(
-        docId: block.provenance!.docId,
-        page: block.provenance!.page,
-        sectionPath: block.provenance!.sectionPath.isNotEmpty
-            ? block.provenance!.sectionPath
-            : [heading ?? docContext],
-        bbox: block.provenance!.bbox,
-        blockId: 'fig_$index',
-      );
-    }
+    final pageNum = block.page > 0 ? block.page : (block.provenance?.page ?? 1);
+    final source = CardSource(
+      docId: block.provenance?.docId ?? '',
+      page: pageNum,
+      sectionPath: block.provenance?.sectionPath.isNotEmpty == true
+          ? block.provenance!.sectionPath
+          : [if (heading != null && heading.isNotEmpty) heading else if (docContext.isNotEmpty) docContext],
+      bbox: block.provenance?.bbox,
+      blockId: 'p${pageNum}_b${index}_figure',
+    );
 
     return OfflineCard(
       type: OfflineCardType.figure,
@@ -1876,20 +2264,18 @@ class OfflineCardBuilder {
         front = 'In $tableName, what are the details for $entity?';
       }
 
-      final back = '| ${row.join(" | ")} |';
+      final back = '| ${row.map(FormulaExtractionService.escapeTablePipes).join(" | ")} |';
 
-      CardSource? source;
-      if (block.provenance != null) {
-        source = CardSource(
-          docId: block.provenance!.docId,
-          page: block.provenance!.page,
-          sectionPath: block.provenance!.sectionPath.isNotEmpty
-              ? block.provenance!.sectionPath
-              : [heading ?? docContext],
-          bbox: block.provenance!.bbox,
-          blockId: 'table_${index}_$r',
-        );
-      }
+      final pageNum = block.page > 0 ? block.page : (block.provenance?.page ?? 1);
+      final source = CardSource(
+        docId: block.provenance?.docId ?? '',
+        page: pageNum,
+        sectionPath: block.provenance?.sectionPath.isNotEmpty == true
+            ? block.provenance!.sectionPath
+            : [if (heading != null && heading.isNotEmpty) heading else if (docContext.isNotEmpty) docContext],
+        bbox: block.provenance?.bbox,
+        blockId: 'p${pageNum}_b${index}_table_$r',
+      );
 
       cards.add(
         OfflineCard(
@@ -1909,14 +2295,26 @@ class OfflineCardBuilder {
     List<String> sentences,
     int index,
     String? heading,
-    String docContext,
-  ) {
+    String docContext, {
+    _Block? block,
+    int blockIndex = 0,
+  }) {
     final sentence = sentences[index].trim();
     if (!_endsSentence(sentence) || !_looksLikeProse(sentence)) return null;
     final lowerSentence = sentence.toLowerCase();
     if (_isBannedBoilerplate(lowerSentence)) return null;
 
     final consumed = <int>{index};
+    final pageNum = block != null && block.page > 0 ? block.page : (block?.provenance?.page ?? 1);
+    final source = CardSource(
+      docId: block?.provenance?.docId ?? '',
+      page: pageNum,
+      sectionPath: block?.provenance?.sectionPath.isNotEmpty == true
+          ? block!.provenance!.sectionPath
+          : [if (heading != null && heading.isNotEmpty) heading else if (docContext.isNotEmpty) docContext],
+      bbox: block?.provenance?.bbox,
+      blockId: 'p${pageNum}_b${blockIndex}_paragraph',
+    );
 
     // 1. Causal / Reason ("Why")
     final becauseMatch = RegExp(
@@ -1938,6 +2336,8 @@ class OfflineCardBuilder {
             front: front,
             back: sentence,
             confidence: 0.88,
+            heading: heading,
+            source: source,
           ),
           consumed,
         );
@@ -1954,6 +2354,10 @@ class OfflineCardBuilder {
       final obj = methodMatch.group(3)!.trim();
       final subject = _resolveSubject(rawSubject, heading);
       if (subject != null &&
+          !obj.contains(',') &&
+          !obj.contains(';') &&
+          !obj.toLowerCase().startsWith('which ') &&
+          !obj.toLowerCase().startsWith('that ') &&
           !_subjectBannedWords.contains(verbS) &&
           !_nounPluralExclusions.contains(verbS) &&
           !_anaphoraBlacklist.contains(rawSubject.toLowerCase())) {
@@ -1968,6 +2372,8 @@ class OfflineCardBuilder {
             front: front,
             back: sentence,
             confidence: 0.88,
+            heading: heading,
+            source: source,
           ),
           consumed,
         );
@@ -1993,6 +2399,8 @@ class OfflineCardBuilder {
             front: front,
             back: sentence,
             confidence: 0.88,
+            heading: heading,
+            source: source,
           ),
           consumed,
         );
@@ -2013,6 +2421,8 @@ class OfflineCardBuilder {
           front: front,
           back: sentence,
           confidence: 0.90,
+          heading: heading,
+          source: source,
         ),
         consumed,
       );
@@ -2033,6 +2443,8 @@ class OfflineCardBuilder {
             front: front,
             back: sentence,
             confidence: 0.88,
+            heading: heading,
+            source: source,
           ),
           consumed,
         );
@@ -2054,6 +2466,8 @@ class OfflineCardBuilder {
             front: front,
             back: sentence,
             confidence: 0.90,
+            heading: heading,
+            source: source,
           ),
           consumed,
         );
@@ -2075,6 +2489,8 @@ class OfflineCardBuilder {
             front: front,
             back: sentence,
             confidence: 0.88,
+            heading: heading,
+            source: source,
           ),
           consumed,
         );
@@ -2096,6 +2512,8 @@ class OfflineCardBuilder {
             front: front,
             back: sentence,
             confidence: 0.85,
+            heading: heading,
+            source: source,
           ),
           consumed,
         );
@@ -2105,28 +2523,94 @@ class OfflineCardBuilder {
     return null;
   }
 
+  @visibleForTesting
+  String toBaseVerbForTesting(String verb) => _toBaseVerb(verb);
+
+  @visibleForTesting
+  String? resolveSubjectForTesting(String rawSubject, String? heading) =>
+      _resolveSubject(rawSubject, heading);
+
   String _toBaseVerb(String verb) {
-    if (verb.endsWith('ies')) return '${verb.substring(0, verb.length - 3)}y';
-    if (RegExp(r'(?:ss|sh|ch|x|z)es$').hasMatch(verb)) {
-      return verb.substring(0, verb.length - 2);
+    final v = verb.trim().toLowerCase();
+
+    // Irregular verb base mappings
+    if (v == 'has') return 'have';
+    if (v == 'does') return 'do';
+    if (v == 'goes') return 'go';
+    if (v == 'is' || v == 'was') return 'be';
+
+    // Very short tokens (<= 3 chars e.g. 'is', 'as')
+    if (v.length <= 3) return v;
+
+    // Never strip words ending in 'ss', 'us', 'is', 'ous', 'ics', 'as'
+    // E.g. 'process', 'access', 'class', 'pass', 'status', 'focus', 'this',
+    //      'analysis', 'basis', 'malicious', 'continuous', 'physics', 'gas'
+    if (v.endsWith('ss') ||
+        v.endsWith('us') ||
+        v.endsWith('is') ||
+        v.endsWith('ous') ||
+        v.endsWith('ics') ||
+        v.endsWith('as')) {
+      return v;
     }
-    if (verb.endsWith('s')) return verb.substring(0, verb.length - 1);
-    return verb;
+
+    // 1. -ies -> -y (e.g., 'carries' -> 'carry', 'applies' -> 'apply')
+    // Guard against non-verbs ending in -ies like 'series', 'species'
+    if (v.endsWith('ies') && v.length > 4) {
+      if (v == 'series' || v == 'species') return v;
+      return '${v.substring(0, v.length - 3)}y';
+    }
+
+    // 2. -sses, -shes, -ches, -xes, -zes -> remove -es (e.g., 'processes' -> 'process', 'catches' -> 'catch', 'fixes' -> 'fix')
+    if (RegExp(r'(?:ss|sh|ch|x|z)es$').hasMatch(v)) {
+      return v.substring(0, v.length - 2);
+    }
+
+    // 3. Regular 3rd person singular -s -> remove -s
+    if (v.endsWith('s')) {
+      return v.substring(0, v.length - 1);
+    }
+
+    return v;
   }
 
   String? _resolveSubject(String rawSubject, String? heading) {
     var s = rawSubject.trim();
-    s = s.replaceFirst(RegExp(r'^(?:the|a|an)\s+', caseSensitive: false), '').trim();
+    s = s
+        .replaceFirst(RegExp(r'^(?:the|a|an)\s+', caseSensitive: false), '')
+        .trim();
     if (s.isEmpty) return null;
+
+    // Reject subjects containing commas (indicating introductory clause or apposition)
+    if (s.contains(',')) return null;
+
+    final words =
+        s.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    // Reject subjects running past 6 words (clauses rather than clean noun phrases)
+    if (words.length > 6) return null;
+
     final lower = s.toLowerCase();
+    final firstWord = words.first.toLowerCase();
+
+    // Reject subjects starting with bad words, subordinators, determiners, or prepositions
+    if (_badSubjectStarts.contains(firstWord)) return null;
+    if (_subjectBannedWords.contains(lower)) return null;
+
+    // Reject subjects containing clause verbs (e.g. "you need", "developers should")
+    if (words.length > 1 &&
+        words.any((w) => _clauseKeywords.contains(w.toLowerCase()))) {
+      return null;
+    }
+
     if (_anaphoraBlacklist.contains(lower)) {
-      if (heading != null && heading.isNotEmpty && !_bannedHeadingPattern.hasMatch(heading)) {
+      if (heading != null &&
+          heading.isNotEmpty &&
+          !_bannedHeadingPattern.hasMatch(heading)) {
         return heading.replaceFirst(RegExp(r'^#+\s*'), '').trim();
       }
       return null;
     }
-    if (_badSubjectStarts.contains(lower.split(RegExp(r'\s+')).first)) return null;
-    if (_subjectBannedWords.contains(lower)) return null;
+
     return s;
   }
 
@@ -2138,7 +2622,12 @@ class OfflineCardBuilder {
     ).hasMatch(trimmed);
   }
 
-  OfflineCard? _listCard(String? heading, List<_Block> items) {
+  OfflineCard? _listCard(
+    String? heading,
+    List<_Block> items, {
+    String docContext = '',
+    int index = 0,
+  }) {
     if (heading == null || items.length < 2) return null;
 
     final cleanHeading = heading
@@ -2172,6 +2661,18 @@ class OfflineCardBuilder {
 
     if (back.length > 600) return null;
 
+    final firstBlock = items.first;
+    final pageNum = firstBlock.page > 0 ? firstBlock.page : (firstBlock.provenance?.page ?? 1);
+    final source = CardSource(
+      docId: firstBlock.provenance?.docId ?? '',
+      page: pageNum,
+      sectionPath: firstBlock.provenance?.sectionPath.isNotEmpty == true
+          ? firstBlock.provenance!.sectionPath
+          : [if (cleanHeading.isNotEmpty) cleanHeading else if (docContext.isNotEmpty) docContext],
+      bbox: firstBlock.provenance?.bbox,
+      blockId: 'p${pageNum}_b${index}_list',
+    );
+
     return OfflineCard(
       type: OfflineCardType.list,
       front: ordered
@@ -2179,6 +2680,8 @@ class OfflineCardBuilder {
           : 'What are the key points of "$cleanHeading"?',
       back: back,
       confidence: 0.75,
+      heading: heading,
+      source: source,
     );
   }
 
@@ -2202,33 +2705,41 @@ class OfflineCardBuilder {
   }
 
   static final _definitionRe = RegExp(
-    r'^(.{2,60}?)\s+(is defined as|is known as|is called|refers to|means|states that|occurs in|occurs at|is|are)\s+(.{8,})$',
+    r'^(.{2,120}?)\s+(is defined as|is known as|is called|refers to|means|states that|occurs in|occurs at|is|are)\s+(.{8,})$',
     dotAll: true,
   );
   static final _copulaObjectRe = RegExp(
     r'^(?:a|an|the|any|one|each|used|called|known|defined|composed|made|formed|when|where)\b',
   );
   static const _badSubjectStarts = {
-    'it',
-    'this',
-    'that',
-    'these',
-    'those',
-    'they',
-    'there',
-    'he',
-    'she',
-    'we',
-    'you',
-    'which',
-    'what',
-    'who',
-    'here',
-    'such',
-    'both',
-    'some',
-    'many',
+    // Pronouns & demonstratives
+    'it', 'this', 'that', 'these', 'those', 'they', 'them', 'their', 'theirs',
+    'there', 'he', 'him', 'his', 'she', 'her', 'hers', 'we', 'us', 'our', 'ours',
+    'you', 'your', 'yours', 'i', 'me', 'my', 'mine',
+    // Relative & interrogative
+    'which', 'what', 'who', 'whom', 'whose', 'where', 'when', 'why', 'how',
+    // Subordinating conjunctions & condition markers
+    'if', 'because', 'although', 'though', 'since', 'while', 'unless',
+    'until', 'after', 'before', 'as', 'whereas', 'whether', 'whenever',
+    'wherever', 'once', 'insofar',
+    // Prepositions
+    'in', 'on', 'at', 'by', 'for', 'with', 'without', 'from', 'to', 'into',
+    'through', 'during', 'under', 'over', 'between', 'among',
+    // Determiners & quantifiers
+    'such', 'both', 'some', 'many', 'each', 'every', 'all', 'any',
+    'either', 'neither', 'one', 'another', 'other', 'others', 'few', 'several',
+    // Discourse connectives & imperatives
+    'here', 'however', 'therefore', 'furthermore', 'moreover', 'instead', 'otherwise',
+    'then', 'also', 'finally', 'meanwhile', 'similarly', 'additionally',
+    'note', 'remember', 'consider', 'assume', 'suppose',
   };
+
+  static const _clauseKeywords = {
+    'need', 'needs', 'want', 'wants', 'should', 'must', 'could', 'would', 'might',
+    'are', 'is', 'were', 'was', 'have', 'has', 'had', 'do', 'does', 'did',
+    'can', 'cannot', 'will', 'shall', 'may',
+  };
+
   static const _subjectBannedWords = {
     'is',
     'are',
@@ -2250,7 +2761,14 @@ class OfflineCardBuilder {
     'when',
   };
 
-  _DefinitionResult? _definitionCard(List<String> sentences, int index) {
+  _DefinitionResult? _definitionCard(
+    List<String> sentences,
+    int index, {
+    String? heading,
+    String docContext = '',
+    _Block? block,
+    int blockIndex = 0,
+  }) {
     final sentence = sentences[index];
     final trimmed = sentence.trim();
     if (RegExp(
@@ -2274,6 +2792,30 @@ class OfflineCardBuilder {
     }
 
     var subject = m.group(1)!.trim();
+    // Strip introductory phrases and reporting attributions:
+    // e.g. "On the central university street, scientists confirmed that photosynthesis" -> "photosynthesis"
+    // e.g. "In classical mechanics, Newton's second law" -> "Newton's second law"
+    subject = subject.replaceFirst(
+      RegExp(
+        r'^[^,\n]+,\s*(?:(?:scientists|researchers|investigators|authors|experts|studies|investigation)\s+)?(?:confirmed|noted|verified|reported|observed|stated|found|showed|demonstrated)\s+that\s+',
+        caseSensitive: false,
+      ),
+      '',
+    );
+    subject = subject.replaceFirst(
+      RegExp(
+        r'^(?:(?:scientists|researchers|investigators|authors|experts|studies|investigation)\s+)?(?:confirmed|noted|verified|reported|observed|stated|found|showed|demonstrated)\s+that\s+',
+        caseSensitive: false,
+      ),
+      '',
+    );
+    subject = subject.replaceFirst(
+      RegExp(
+        r'^(?:in|on|during|supported\s+by|according\s+to)\s+[^,\n]+,\s*',
+        caseSensitive: false,
+      ),
+      '',
+    );
     // Strip leading chapter/section/heading artifacts
     subject = subject.replaceFirst(
       RegExp(
@@ -2295,6 +2837,9 @@ class OfflineCardBuilder {
       '',
     );
     subject = subject.replaceAll('®', '').replaceAll(RegExp(r'\s{2,}'), ' ').trim();
+    if (subject.isNotEmpty && !RegExp('^[A-Z]').hasMatch(subject)) {
+      subject = subject[0].toUpperCase() + subject.substring(1);
+    }
     if (subject.length < 2) return null;
 
     final words = subject.split(RegExp(r'\s+'));
@@ -2333,6 +2878,17 @@ class OfflineCardBuilder {
 
     if (!_endsSentence(back)) return null;
 
+    final pageNum = block != null && block.page > 0 ? block.page : (block?.provenance?.page ?? 1);
+    final source = CardSource(
+      docId: block?.provenance?.docId ?? '',
+      page: pageNum,
+      sectionPath: block?.provenance?.sectionPath.isNotEmpty == true
+          ? block!.provenance!.sectionPath
+          : [if (heading != null && heading.isNotEmpty) heading else if (docContext.isNotEmpty) docContext],
+      bbox: block?.provenance?.bbox,
+      blockId: 'p${pageNum}_b${blockIndex}_definition',
+    );
+
     return _DefinitionResult(
       OfflineCard(
         type: OfflineCardType.definition,
@@ -2343,6 +2899,8 @@ class OfflineCardBuilder {
         },
         back: back,
         confidence: 0.8,
+        heading: heading,
+        source: source,
       ),
       consumed,
     );
@@ -2459,7 +3017,7 @@ class OfflineCardBuilder {
     return freq;
   }
 
-  Iterable<String> _tokens(String text) => RegExp(
+  static Iterable<String> _tokens(String text) => RegExp(
     r"[\p{L}\p{N}][\p{L}\p{N}'’\-]*[\p{L}\p{N}]|[\p{Lu}]{2,}|[\p{Lo}]+",
     unicode: true,
   ).allMatches(text).map((m) => m.group(0)!);
@@ -2469,6 +3027,10 @@ class OfflineCardBuilder {
     Map<String, int> freq,
     int order, {
     String? heading,
+    String docContext = '',
+    _Block? block,
+    int blockIndex = 0,
+    Set<String> clozeExclusions = const {},
   }) {
     final words = _wordCount(sentence);
     if (words < _minClozeWords || words > _maxClozeWords) return null;
@@ -2477,6 +3039,7 @@ class OfflineCardBuilder {
     if (sentence.endsWith('?')) return null;
     if (RegExp(r'https?://|www\.').hasMatch(sentence)) return null;
     if (!_looksLikeProse(sentence)) return null;
+    if (BlockIsolationService.isHybridClozeCandidate(sentence)) return null;
 
     final trimmed = sentence.trim();
     if (RegExp(
@@ -2510,6 +3073,11 @@ class OfflineCardBuilder {
       return null;
     }
 
+    Set<String>? headingWords;
+    if (heading != null && heading.trim().isNotEmpty) {
+      headingWords = _tokens(heading).map((t) => t.toLowerCase()).toSet();
+    }
+
     String? best;
     var bestScore = 0.0;
     final matches = RegExp(
@@ -2521,6 +3089,15 @@ class OfflineCardBuilder {
       final lowerWord = word.toLowerCase();
       if (word.length < 3 && !RegExp(r'^\p{Lu}{2,}$', unicode: true).hasMatch(word)) continue;
       if (_stopWords.contains(lowerWord)) continue;
+      if (clozeExclusions.contains(lowerWord)) continue;
+      final stem = lowerWord.replaceAll(RegExp(r"['’]s$"), '');
+      if (clozeExclusions.contains(stem)) continue;
+      if (lowerWord.endsWith('s') && lowerWord.length > 3 && clozeExclusions.contains(lowerWord.substring(0, lowerWord.length - 1))) {
+        continue;
+      }
+      if (headingWords != null && (headingWords.contains(lowerWord) || headingWords.contains(stem))) {
+        continue;
+      }
 
       var score = math.log(1 + word.length);
       final midSentence = m.start > 0;
@@ -2554,6 +3131,17 @@ class OfflineCardBuilder {
         ? 'In "$cleanHeading", complete: $blank'
         : blank;
 
+    final pageNum = block != null && block.page > 0 ? block.page : (block?.provenance?.page ?? 1);
+    final source = CardSource(
+      docId: block?.provenance?.docId ?? '',
+      page: pageNum,
+      sectionPath: block?.provenance?.sectionPath.isNotEmpty == true
+          ? block!.provenance!.sectionPath
+          : [if (heading != null && heading.isNotEmpty) heading else if (docContext.isNotEmpty) docContext],
+      bbox: block?.provenance?.bbox,
+      blockId: 'p${pageNum}_b${blockIndex}_cloze',
+    );
+
     return _ClozeCandidate(
       card: OfflineCard(
         type: OfflineCardType.cloze,
@@ -2561,6 +3149,7 @@ class OfflineCardBuilder {
         back: '$best\n\n$effectiveSentence',
         confidence: 0.75,
         heading: heading,
+        source: source,
       ),
       score: bestScore,
       order: order,
@@ -2630,6 +3219,7 @@ class OfflineCardBuilder {
 
   /// Rejects sentences that are mostly symbols/numbers (tables, code, noise).
   bool _looksLikeProse(String sentence) {
+    if (BlockIsolationService.isHybridClozeCandidate(sentence)) return false;
     final letters = RegExp(r'\p{L}', unicode: true).allMatches(sentence).length;
     if (sentence.isEmpty) return false;
     if (letters / sentence.length < 0.4) return false;

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:kortex/src/features/ingestion/data/services/html_entity_decoder.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/lms_course_entity.dart';
 
 export 'package:kortex/src/features/ingestion/domain/entities/lms_course_entity.dart';
@@ -35,19 +36,15 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
 
   static String stripHtml(String? html) {
     if (html == null || html.isEmpty) return '';
-    return html
+    final stripped = html
         .replaceAll(RegExp(r'<br\s*\/?>', caseSensitive: false), '\n')
         .replaceAll(RegExp(r'<\/p>', caseSensitive: false), '\n\n')
         .replaceAll(RegExp(r'<\/h[1-6]>', caseSensitive: false), '\n\n')
         .replaceAll(RegExp(r'<\/li>', caseSensitive: false), '\n')
         .replaceAll(RegExp('<li[^>]*>', caseSensitive: false), '- ')
-        .replaceAll(RegExp('<[^>]*>'), '')
-        .replaceAll('&nbsp;', ' ')
-        .replaceAll('&amp;', '&')
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&quot;', '"')
-        .replaceAll('&#39;', "'")
+        .replaceAll(RegExp('<[^>]*>'), '');
+
+    return HtmlEntityDecoder.decode(stripped)
         .replaceAll(RegExp(r'\n{3,}'), '\n\n')
         .trim();
   }

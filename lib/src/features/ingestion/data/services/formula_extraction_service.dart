@@ -103,8 +103,28 @@ class FormulaExtractionService {
       '',
     ).trim();
 
+    // Strip document preamble declarations (\documentclass, \usepackage, \begin{document}, etc.)
+    trimmed = stripLatexPreamble(trimmed);
+    if (trimmed.isEmpty) return false;
+
+    // 0. Cloze blank or blank placeholder filter (_____, [...], [?])
+    if (RegExp('_{3,}').hasMatch(trimmed) ||
+        trimmed.contains('___') ||
+        trimmed.contains('[...]') ||
+        RegExp(r'\bcloze\b', caseSensitive: false).hasMatch(trimmed)) {
+      return false;
+    }
+
+    // 0b. Leading binary operator checks without an LHS (+, *, /, =, ^) or lone operators
+    if (RegExp(r'^\s*[\+\*\/\=\^]').hasMatch(trimmed)) return false;
+    if (RegExp(r'^\s*[-+*\/=^]\s*$').hasMatch(trimmed)) return false;
+    if (RegExp(r'^\s*-\s*[\+\*\/\=\^]').hasMatch(trimmed)) return false;
+
     // 1. Direct code assignment and programming syntax filter
     if (isCodeAssignment(trimmed)) return false;
+
+    // 1b. Gating against full prose sentences (> 40% prose words)
+    if (hasHighProseWordDensity(trimmed)) return false;
 
     // 2. Explicit LaTeX delimiters
     if (_hasExplicitLatexDelimiters(trimmed)) return true;
@@ -282,12 +302,16 @@ class FormulaExtractionService {
       '',
     ).trim();
 
+    // Strip LaTeX document preamble declarations
+    trimmed = stripLatexPreamble(trimmed);
+    if (trimmed.isEmpty) return null;
+
     if (isCodeAssignment(trimmed)) return null;
 
     // 1. Tier A: MathML
     if (trimmed.contains('<math')) {
       final latex = convertMathMLToLatex(trimmed);
-      if (latex.isNotEmpty && isBalancedLatex(latex)) {
+      if (latex.isNotEmpty && isValidLatexEquation(latex)) {
         return ExtractedFormula(
           latex: latex,
           rawMathText: trimmed,
@@ -303,7 +327,7 @@ class FormulaExtractionService {
     // 2. Tier A: OMML (DOCX)
     if (trimmed.contains('<m:oMath')) {
       final latex = convertOmmlToLatex(trimmed);
-      if (latex.isNotEmpty && isBalancedLatex(latex)) {
+      if (latex.isNotEmpty && isValidLatexEquation(latex)) {
         return ExtractedFormula(
           latex: latex,
           rawMathText: trimmed,
@@ -320,13 +344,13 @@ class FormulaExtractionService {
     final delimitedMatch = _delimitedLatexRegex.firstMatch(trimmed);
     if (delimitedMatch != null) {
       final rawMatch = delimitedMatch.group(0)!;
-      final cleanLatex = _stripLatexDelimiters(rawMatch);
+      final cleanLatex = stripLatexPreamble(_stripLatexDelimiters(rawMatch));
       final isDisplay = rawMatch.startsWith(r'$$') ||
           rawMatch.startsWith(r'\[') ||
           rawMatch.contains('equation') ||
           rawMatch.contains('align');
 
-      if (isBalancedLatex(cleanLatex)) {
+      if (isValidLatexEquation(cleanLatex)) {
         return ExtractedFormula(
           latex: cleanLatex,
           rawMathText: rawMatch,
@@ -345,8 +369,8 @@ class FormulaExtractionService {
     ).firstMatch(trimmed);
     if (mathCmdMatch != null) {
       final matchStr = mathCmdMatch.group(1)!.trim();
-      final clean = _stripLatexDelimiters(matchStr);
-      if (isBalancedLatex(clean)) {
+      final clean = stripLatexPreamble(_stripLatexDelimiters(matchStr));
+      if (isValidLatexEquation(clean)) {
         return ExtractedFormula(
           latex: clean,
           rawMathText: matchStr,
@@ -362,7 +386,7 @@ class FormulaExtractionService {
     // 5. Tier B: Vector / Unicode / Plain Mathematical Formula (whole text)
     if (isFormula(trimmed)) {
       final normalizedLatex = normalizeToLatex(trimmed);
-      if (isBalancedLatex(normalizedLatex)) {
+      if (isValidLatexEquation(normalizedLatex)) {
         final confidence = computeMathSymbolDensity(trimmed);
         return ExtractedFormula(
           latex: normalizedLatex,
@@ -393,7 +417,7 @@ class FormulaExtractionService {
 
       if (!isCodeAssignment(candidate) && isFormula(candidate)) {
         final normalizedLatex = normalizeToLatex(candidate);
-        if (isBalancedLatex(normalizedLatex)) {
+        if (isValidLatexEquation(normalizedLatex)) {
           return ExtractedFormula(
             latex: normalizedLatex,
             rawMathText: candidate,
@@ -417,8 +441,8 @@ class FormulaExtractionService {
     // Check display environments
     for (final m in _delimitedLatexRegex.allMatches(text)) {
       final raw = m.group(0)!;
-      final clean = _stripLatexDelimiters(raw);
-      if (isBalancedLatex(clean)) {
+      final clean = stripLatexPreamble(_stripLatexDelimiters(raw));
+      if (isValidLatexEquation(clean)) {
         formulas.add(
           ExtractedFormula(
             latex: clean,
@@ -449,14 +473,18 @@ class FormulaExtractionService {
         for (final m in subMatches) {
           final candidate = m.group(1)!.trim();
           final formula = extractFormula(candidate, page: page);
-          if (formula != null && !formulas.any((f) => f.latex == formula.latex)) {
+          if (formula != null &&
+              isValidLatexEquation(formula.latex) &&
+              !formulas.any((f) => f.latex == formula.latex)) {
             formulas.add(formula);
           }
         }
       }
 
       final standalone = extractFormula(trimmed, page: page);
-      if (standalone != null && !formulas.any((f) => f.latex == standalone.latex)) {
+      if (standalone != null &&
+          isValidLatexEquation(standalone.latex) &&
+          !formulas.any((f) => f.latex == standalone.latex)) {
         formulas.add(standalone);
       }
     }
@@ -597,8 +625,171 @@ class FormulaExtractionService {
   }
 
   // ===========================================================================
-  // VALIDATION & BALANCING
+  // VALIDATION, SANITIZATION & BALANCING
   // ===========================================================================
+
+  /// Strictly validates whether [latex] constitutes a renderable, well-formed
+  /// mathematical equation, filtering out broken cloze blanks, unclosed brackets,
+  /// leading binary operators without an LHS, and high-prose textual lines.
+  static bool isValidLatexEquation(String latex) {
+    var clean = stripLatexPreamble(latex).trim();
+    if (clean.isEmpty) return false;
+
+    // Strip delimiters if present
+    clean = _stripLatexDelimiters(clean);
+    if (clean.isEmpty) return false;
+
+    // 1. Reject cloze blanks or blank placeholders (e.g. _____, [...], [?])
+    if (RegExp('_{3,}').hasMatch(clean) ||
+        clean.contains('___') ||
+        clean.contains('[...]') ||
+        clean.contains('<??>') ||
+        RegExp(r'\bcloze\b', caseSensitive: false).hasMatch(clean)) {
+      return false;
+    }
+
+    // 2. Reject leading binary operators (+, *, /, =, ^) without an LHS
+    if (RegExp(r'^\s*[\+\*\/\=\^]').hasMatch(clean)) return false;
+
+    // 3. Reject lone operators (e.g. "+", "-", "=", "*", "/")
+    if (RegExp(r'^\s*[-+*\/=^]\s*$').hasMatch(clean)) return false;
+
+    // 4. Reject minus followed immediately by binary operator (e.g. "- =", "- +")
+    if (RegExp(r'^\s*-\s*[\+\*\/\=\^]').hasMatch(clean)) return false;
+
+    // 5. Reject equations ending with bare '=' or starting with '='
+    if (clean.startsWith('=') || clean.endsWith('=')) return false;
+
+    // If equation contains '=', verify that the LHS is non-empty and well-formed
+    if (clean.contains('=')) {
+      final eqIndex = clean.indexOf('=');
+      final lhs = clean.substring(0, eqIndex).trim();
+      if (lhs.isEmpty || RegExp(r'^[\+\*\/\=\^]').hasMatch(lhs)) return false;
+    }
+
+    // 6. Must have balanced brackets, braces, and parentheses
+    if (!isBalancedLatex(clean)) return false;
+
+    // 7. Reject candidate strings where alphabetical prose words form > 40% of tokens
+    if (hasHighProseWordDensity(clean)) return false;
+
+    // 8. Reject code assignments
+    if (isCodeAssignment(clean)) return false;
+
+    // 9. Must contain at least one math indicator (LaTeX command, math operator, or relation)
+    final hasMathIndicator = clean.contains(r'\') ||
+        RegExp(r'[\=\+\*\/\^\_\<\>\≈\≠\≤\≥\→\⇒]').hasMatch(clean);
+    if (!hasMathIndicator) return false;
+
+    return true;
+  }
+
+  /// Strips LaTeX document preamble declarations (e.g. \documentclass, \usepackage,
+  /// \author, \title, \date, \maketitle, \begin{document}, \end{document})
+  /// from [input], returning the clean mathematical body.
+  static String stripLatexPreamble(String input) {
+    if (input.isEmpty) return '';
+
+    var s = input;
+
+    // Remove LaTeX comments (% ...)
+    s = s.replaceAll(RegExp(r'(?<!\\)%.*$', multiLine: true), '');
+
+    // Document class and packages
+    s = s.replaceAll(RegExp(r'\\documentclass(?:\s*\[[^\]]*\])?\s*\{[^}]*\}', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'\\usepackage(?:\s*\[[^\]]*\])?\s*\{[^}]*\}', caseSensitive: false), '');
+
+    // Metadata declarations
+    s = s.replaceAll(RegExp(r'\\(?:author|title|date|affiliation|address|email|thanks)(?:\s*\[[^\]]*\])?\s*\{[^}]*\}', caseSensitive: false), '');
+
+    // Page and layout setup
+    s = s.replaceAll(RegExp(r'\\(?:pagestyle|thispagestyle|geometry|hypersetup|bibliographystyle|bibliography)\s*\{[^}]*\}', caseSensitive: false), '');
+
+    // Document environment delimiters and title macro
+    s = s.replaceAll(RegExp(r'\\maketitle\b', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'\\begin\{document\}', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'\\end\{document\}', caseSensitive: false), '');
+
+    return s.trim();
+  }
+
+  /// Checks whether alphabetical prose words form more than [threshold] (default 40%)
+  /// of the whitespace-delimited tokens in [text].
+  static bool hasHighProseWordDensity(String text, {double threshold = 0.40}) {
+    final clean = stripLatexPreamble(text).trim();
+    if (clean.isEmpty) return false;
+
+    final tokens = clean.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+    if (tokens.isEmpty) return false;
+
+    var proseCount = 0;
+    for (final token in tokens) {
+      if (_isProseWordToken(token)) {
+        proseCount++;
+      }
+    }
+
+    final ratio = proseCount / tokens.length;
+    return ratio > threshold;
+  }
+
+  static bool _isProseWordToken(String token) {
+    final t = token.trim();
+    if (t.isEmpty) return false;
+
+    // LaTeX commands are math markup, not prose words
+    if (t.startsWith(r'\')) return false;
+
+    // Remove leading/trailing punctuation and brackets
+    final alphaOnly = t.replaceAll(RegExp(r'^[^a-zA-Z]+|[^a-zA-Z]+$'), '');
+    if (alphaOnly.isEmpty) return false;
+
+    // Single-character tokens (x, y, z, E, m, c, n, i) are math variables, NOT prose
+    if (alphaOnly.length <= 1) return false;
+
+    // Strip enclosing brackets and punctuation to evaluate inner token
+    final unbracketed = t.replaceAll(RegExp(r'^[\(\[\{\<]+|[\)\]\}\>,;:\.!?]+$'), '');
+    if (unbracketed.isEmpty) return false;
+
+    // Tokens containing numbers, subscripts, superscripts, or math symbols are formulas
+    // Note: hyphen between letters (e.g. half-integer, Fermi-Dirac) is a word hyphen, not minus
+    final hasMathSymbols = RegExp(r'[\d_^\(\)\[\]\{\}\+\*\/=\\\>\<\≈\≠\≤\≥\→\⇒]').hasMatch(unbracketed) ||
+        (unbracketed.contains('-') && !RegExp(r'^[a-zA-Z]+(?:-[a-zA-Z]+)+$').hasMatch(unbracketed));
+    if (hasMathSymbols) return false;
+
+    final lower = alphaOnly.toLowerCase();
+
+    // Whitelist check
+    if (_mathFunctionAndUnitWhitelist.contains(lower)) return false;
+
+    // Token is a prose word
+    return true;
+  }
+
+  /// Escapes unescaped pipe characters (`|`) in LaTeX math within [text] to
+  /// `\|` so that Markdown table column parsing does not break.
+  static String escapeTablePipes(String text) {
+    if (!text.contains('|')) return text;
+
+    // 1. Delimited LaTeX math environments: $...$, $$...$$, \(...\), \[...\]
+    var s = text.replaceAllMapped(
+      RegExp(r'(\$\$[\s\S]+?\$\$|\$(?!\$)[\s\S]+?\$|\\\[[\s\S]+?\\\]|\\\(.+?\\\))'),
+      (match) {
+        final mathBlock = match.group(0)!;
+        return mathBlock.replaceAll(RegExp(r'(?<!\\)\|'), r'\|');
+      },
+    );
+
+    // 2. If the text has no math delimiters, but represents an equation or math notation with pipes
+    // e.g. "|x| < 1", "P(A|B) = 0.5", or standalone "|a|"
+    if (!s.contains(r'$') && !s.contains(r'\(') && !s.contains(r'\[')) {
+      if (isFormula(s) || s.contains('=') || s.contains(r'\') || RegExp(r'(?<!\\)\|[^|]+(?<!\\)\|').hasMatch(s)) {
+        s = s.replaceAll(RegExp(r'(?<!\\)\|'), r'\|');
+      }
+    }
+
+    return s;
+  }
 
   /// Validates that braces `{...}`, brackets `[...]`, and parentheses `(...)`
   /// are balanced within [latex], ensuring valid rendering.
@@ -611,7 +802,11 @@ class FormulaExtractionService {
 
     for (var i = 0; i < latex.length; i++) {
       final char = latex[i];
-      final isEscaped = i > 0 && latex[i - 1] == r'\';
+      var backslashes = 0;
+      for (var k = i - 1; k >= 0 && latex[k] == r'\'; k--) {
+        backslashes++;
+      }
+      final isEscaped = backslashes.isOdd;
 
       if (char == '{' && !isEscaped) braces++;
       if (char == '}' && !isEscaped) {
@@ -633,7 +828,16 @@ class FormulaExtractionService {
     }
 
     // Trailing unescaped backslash indicates incomplete command
-    if (latex.endsWith(r'\') && !latex.endsWith(r'\\')) return false;
+    var trailingBackslashes = 0;
+    for (var k = latex.length - 1; k >= 0 && latex[k] == r'\'; k--) {
+      trailingBackslashes++;
+    }
+    if (trailingBackslashes.isOdd) return false;
+
+    // Check matching \left and \right if present
+    final leftMatches = RegExp(r'\\left\b').allMatches(latex).length;
+    final rightMatches = RegExp(r'\\right\b').allMatches(latex).length;
+    if (leftMatches != rightMatches) return false;
 
     return braces == 0 && brackets == 0 && parens == 0;
   }
@@ -810,6 +1014,39 @@ class FormulaExtractionService {
     0x2192, // →
     0x21D2, // ⇒
     0x210F, // ℏ
+  };
+
+  static final _mathFunctionAndUnitWhitelist = <String>{
+    // Functions and operations
+    'sin', 'cos', 'tan', 'sec', 'csc', 'cot', 'arcsin', 'arccos', 'arctan',
+    'sinh', 'cosh', 'tanh', 'exp', 'ln', 'log', 'lg', 'lim', 'min', 'max',
+    'inf', 'sup', 'det', 'dim', 'ker', 'hom', 'deg', 'gcd', 'argmax', 'argmin',
+    'mod', 'pmod', 'var', 'cov', 'std', 'pr', 'tr', 'softmax', 'sigmoid',
+    'relu', 'gelu', 'selu', 'swish', 'attention', 'loss', 'diff', 'err',
+    'acc', 'rate', 'value', 'total', 'diag', 'rank', 'trace', 'sign', 'sgn',
+    'erf', 'erfc', 'sinc', 'rect', 'step', 'mean', 'median', 'mode', 'norm',
+    'uptime', 'downtime', 'minutes', 'sharpe', 'ratio', 'entropy', 'cross',
+    'ion', 'out', 'in', 'mpc', 'energy', 'mass', 'area', 'vol', 'len',
+    // Units
+    'kg', 'cm', 'mm', 'nm', 'pm', 'km', 'mol', 'hr', 'ms', 'ns',
+    'hz', 'khz', 'mhz', 'ghz', 'thz', 'db', 'dbm', 'kb', 'mb', 'gb', 'tb',
+    'pb', 'ev', 'mev', 'gev', 'tev', 'rad', 'cal', 'kcal', 'pa', 'kpa',
+    'mpa', 'gpa', 'atm', 'bar', 'mbar', 'ppm', 'ppb', 'amu', 'kwh', 'mwh', 'wh',
+    'snr', 'sinr', 'ber', 'per', 'mse', 'mae', 'rmse', 'iou', 'map', 'auc', 'roc',
+    'dft', 'fft', 'svd', 'pca',
+    // Greek names
+    'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta',
+    'iota', 'kappa', 'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho',
+    'sigma', 'tau', 'upsilon', 'phi', 'chi', 'psi', 'omega',
+    // 2-letter chemical elements
+    'he', 'li', 'be', 'ne', 'na', 'mg', 'al', 'si', 'cl', 'ar', 'ca', 'sc',
+    'ti', 'cr', 'mn', 'fe', 'co', 'ni', 'cu', 'zn', 'ga', 'ge', 'as', 'se',
+    'br', 'kr', 'rb', 'sr', 'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag',
+    'cd', 'sn', 'sb', 'te', 'xe', 'cs', 'ba', 'la', 'ce', 'nd',
+    'sm', 'eu', 'gd', 'dy', 'ho', 'er', 'tm', 'yb', 'lu', 'hf',
+    'ta', 're', 'os', 'ir', 'pt', 'au', 'hg', 'tl', 'bi', 'po', 'at',
+    'rn', 'fr', 'ra', 'ac', 'th', 'np', 'pu', 'am', 'bk', 'cf',
+    'es', 'fm', 'md', 'no', 'lr',
   };
 
   static final _commonProseWords = <String>{

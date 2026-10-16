@@ -57,9 +57,9 @@ void main() {
         );
 
         expect(cards.length, greaterThanOrEqualTo(3));
-        expect(cards.any((c) => c.topic.contains('Mitosis')), isTrue);
-        expect(cards.any((c) => c.topic.contains('Meiosis')), isTrue);
-        expect(cards.any((c) => c.topic.contains('Photosynthesis')), isTrue);
+        expect(cards.any((c) => c.rawText.contains('Mitosis')), isTrue);
+        expect(cards.any((c) => c.rawText.contains('Meiosis')), isTrue);
+        expect(cards.any((c) => c.rawText.contains('Photosynthesis')), isTrue);
       },
     );
 

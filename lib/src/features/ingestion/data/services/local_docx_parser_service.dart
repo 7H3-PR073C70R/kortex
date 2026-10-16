@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:kortex/src/features/ingestion/data/services/formula_extraction_service.dart';
+import 'package:kortex/src/features/ingestion/data/services/html_entity_decoder.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
 import 'package:kortex/src/features/ingestion/domain/exceptions/ingestion_exceptions.dart';
 
@@ -376,24 +377,9 @@ class LocalDocxParserService {
     return _unescapeXml(raw).trimRight();
   }
 
-  /// Unescapes common XML character entities including hex/decimal references.
+  /// Unescapes common XML character entities including hex/decimal and HTML5 references.
   static String _unescapeXml(String input) {
-    var text = input;
-    text = text.replaceAllMapped(RegExp('&#x([0-9a-fA-F]+);'), (m) {
-      final code = int.tryParse(m.group(1)!, radix: 16);
-      return code != null ? String.fromCharCode(code) : m.group(0)!;
-    });
-    text = text.replaceAllMapped(RegExp('&#([0-9]+);'), (m) {
-      final code = int.tryParse(m.group(1)!);
-      return code != null ? String.fromCharCode(code) : m.group(0)!;
-    });
-    return text
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&quot;', '"')
-        .replaceAll('&apos;', "'")
-        .replaceAll('&nbsp;', ' ')
-        .replaceAll('&amp;', '&');
+    return HtmlEntityDecoder.decode(input);
   }
 
   /// Normalizes multiple blank lines.

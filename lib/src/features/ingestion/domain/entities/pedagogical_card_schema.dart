@@ -59,6 +59,21 @@ class CardSource {
     if (blockId != null) 'block_id': blockId,
   };
 
+  CardSource copyWith({
+    String? docId,
+    int? page,
+    List<String>? sectionPath,
+    BoundingBox? bbox,
+    String? blockId,
+  }) =>
+      CardSource(
+        docId: docId ?? this.docId,
+        page: page ?? this.page,
+        sectionPath: sectionPath ?? this.sectionPath,
+        bbox: bbox ?? this.bbox,
+        blockId: blockId ?? this.blockId,
+      );
+
   @override
   String toString() =>
       'CardSource(doc: $docId, page: $page, path: ${sectionPath.join(" > ")})';
