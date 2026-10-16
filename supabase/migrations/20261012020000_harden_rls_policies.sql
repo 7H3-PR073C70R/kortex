@@ -28,8 +28,8 @@ CREATE POLICY "Anyone can view past questions"
 CREATE POLICY "Service role manages past questions"
     ON public.past_questions FOR ALL
     TO service_role
-    USING (true)
-    WITH CHECK (true);
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
 
 -- Revoke direct table manipulation privileges from client roles
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.past_questions FROM PUBLIC, anon, authenticated;
@@ -97,8 +97,8 @@ CREATE POLICY "Community creators can delete study communities"
 CREATE POLICY "Service role manages study communities"
     ON public.study_communities FOR ALL
     TO service_role
-    USING (true)
-    WITH CHECK (true);
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
 
 -- ------------------------------------------------------------------------------
 -- 3. semantic_ai_cache & semantic_response_cache: Vector Cache Defense
@@ -120,8 +120,8 @@ BEGIN
         CREATE POLICY "Service role manages semantic cache"
             ON public.semantic_ai_cache FOR ALL
             TO service_role
-            USING (true)
-            WITH CHECK (true);
+            USING ((auth.jwt() ->> 'role') = 'service_role')
+            WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
 
         REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.semantic_ai_cache FROM PUBLIC, anon, authenticated;
         GRANT SELECT ON public.semantic_ai_cache TO authenticated;
@@ -143,8 +143,8 @@ BEGIN
         CREATE POLICY "Service role manages semantic response cache"
             ON public.semantic_response_cache FOR ALL
             TO service_role
-            USING (true)
-            WITH CHECK (true);
+            USING ((auth.jwt() ->> 'role') = 'service_role')
+            WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
 
         REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.semantic_response_cache FROM PUBLIC, anon, authenticated;
         GRANT SELECT ON public.semantic_response_cache TO authenticated;
@@ -172,8 +172,8 @@ CREATE POLICY "Users can view own analytics"
 CREATE POLICY "Service role manages user analytics"
     ON public.user_analytics FOR ALL
     TO service_role
-    USING (true)
-    WITH CHECK (true);
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
 
 -- Disallow client direct mutations; all writes flow through audited SECURITY DEFINER RPCs
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.user_analytics FROM PUBLIC, anon, authenticated;
@@ -198,8 +198,8 @@ CREATE POLICY "Users can view own heatmap activity"
 CREATE POLICY "Service role manages heatmap activity"
     ON public.heatmap_activity FOR ALL
     TO service_role
-    USING (true)
-    WITH CHECK (true);
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
 
 -- Disallow client direct mutations on heatmap
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.heatmap_activity FROM PUBLIC, anon, authenticated;
@@ -251,8 +251,8 @@ CREATE POLICY "Authors can delete own forum posts"
 CREATE POLICY "Service role manages forum posts"
     ON public.forum_posts FOR ALL
     TO service_role
-    USING (true)
-    WITH CHECK (true);
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
 
 ALTER TABLE IF EXISTS public.forum_replies ENABLE ROW LEVEL SECURITY;
 
@@ -293,8 +293,46 @@ CREATE POLICY "Authors can delete own forum replies"
 CREATE POLICY "Service role manages forum replies"
     ON public.forum_replies FOR ALL
     TO service_role
-    USING (true)
-    WITH CHECK (true);
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
+
+-- ------------------------------------------------------------------------------
+-- 6. Replace Legacy Permissive Service Role Policies on Core Infrastructure
+-- ------------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Service role manages all user devices" ON public.user_devices;
+CREATE POLICY "Service role manages all user devices"
+    ON public.user_devices FOR ALL
+    TO service_role
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
+
+DROP POLICY IF EXISTS "Service role manages all notification preferences" ON public.notification_preferences;
+CREATE POLICY "Service role manages all notification preferences"
+    ON public.notification_preferences FOR ALL
+    TO service_role
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
+
+DROP POLICY IF EXISTS "Service role manages all notifications" ON public.notifications;
+CREATE POLICY "Service role manages all notifications"
+    ON public.notifications FOR ALL
+    TO service_role
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
+
+DROP POLICY IF EXISTS "Service role manages notification outbox" ON public.notification_outbox;
+CREATE POLICY "Service role manages notification outbox"
+    ON public.notification_outbox FOR ALL
+    TO service_role
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
+
+DROP POLICY IF EXISTS "service_role_all_app_version_config" ON public.app_version_config;
+CREATE POLICY "service_role_all_app_version_config"
+    ON public.app_version_config FOR ALL
+    TO service_role
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
 
 -- Reload PostgREST schema cache
 NOTIFY pgrst, 'reload schema';

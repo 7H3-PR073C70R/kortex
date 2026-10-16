@@ -1,26 +1,21 @@
-import 'dart:async';
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:kortex/src/app/router/app_router.gr.dart';
-import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
-import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
-import 'package:kortex/src/features/quiz/presentation/widgets/quiz_audio_reader_button.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/past_question_card/question_action_buttons.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/past_question_card/question_explanation_box.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/past_question_card/question_header_badges.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/past_question_card/question_option_tile.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/past_question_card/theory_model_answer_widget.dart';
 import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
+/// Card rendering a single [PastQuestionEntity] with LaTeX rendering,
+/// multimodal asset preview, multiple-choice or essay options, and peer actions.
 class PastQuestionCard extends StatelessWidget {
   const PastQuestionCard({
     required this.question,
@@ -28,6 +23,8 @@ class PastQuestionCard extends StatelessWidget {
     this.onOptionSelected,
     this.onBookmarkToggle,
     this.onAskAi,
+    this.pastQuestionsBloc,
+    this.communityHubBloc,
     super.key,
   });
 
@@ -36,6 +33,10 @@ class PastQuestionCard extends StatelessWidget {
   final void Function(int optionIndex)? onOptionSelected;
   final VoidCallback? onBookmarkToggle;
   final VoidCallback? onAskAi;
+  final PastQuestionsBloc? pastQuestionsBloc;
+  final CommunityHubBloc? communityHubBloc;
+
+  static const List<String> _optionLetters = ['A', 'B', 'C', 'D', 'E'];
 
   Widget _buildQuestionImage(String imagePath) {
     return AppMultimodalImage(
@@ -44,13 +45,34 @@ class PastQuestionCard extends StatelessWidget {
     );
   }
 
+  void _handleBookmarkToggle(BuildContext context) {
+    if (onBookmarkToggle != null) {
+      onBookmarkToggle!();
+      return;
+    }
+    (pastQuestionsBloc ?? context.read<PastQuestionsBloc>()).add(
+      ToggleBookmarkEvent(question.id),
+    );
+  }
+
+  void _handleOptionTap(BuildContext context, int index) {
+    if (onOptionSelected != null) {
+      onOptionSelected!(index);
+      return;
+    }
+    (pastQuestionsBloc ?? context.read<PastQuestionsBloc>()).add(
+      SelectOptionEvent(
+        questionId: question.id,
+        optionIndex: index,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
-
-    final optionLetters = ['A', 'B', 'C', 'D', 'E'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -73,138 +95,9 @@ class PastQuestionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header: Category, Badges, Subject, Year, Topic, Bookmark
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    if (question.isUserAdded)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(isDark ? 45 : 20),
-                          borderRadius: BorderRadius.circular(AppRadius.badge),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(70),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.person_outline_rounded,
-                              size: 11,
-                              color: colors.primary,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              'User Added',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (question.isTheory)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.syllabotAccent.withAlpha(
-                            isDark ? 45 : 20,
-                          ),
-                          borderRadius: BorderRadius.circular(AppRadius.badge),
-                          border: Border.all(
-                            color: colors.syllabotAccent.withAlpha(70),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Text(
-                          'Theory / Essay',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.syllabotAccent,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(isDark ? 40 : 20),
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                      ),
-                      child: Text(
-                        '${question.subject} • ${question.year} • Q${question.questionNumber}',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          fontSize: 10.5,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                      ),
-                      child: Text(
-                        question.topic,
-                        style: typography.caption.medium.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  QuizAudioReaderButton(
-                    questionText: question.prompt,
-                    options: question.options,
-                    size: 32,
-                    iconSize: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: Icon(
-                      question.isBookmarked
-                          ? Icons.bookmark_rounded
-                          : Icons.bookmark_outline_rounded,
-                      color: question.isBookmarked
-                          ? colors.syllabotAccent
-                          : colors.textSecondary,
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      context.read<PastQuestionsBloc>().add(
-                        ToggleBookmarkEvent(question.id),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
+          QuestionHeaderBadges(
+            question: question,
+            onBookmarkToggle: () => _handleBookmarkToggle(context),
           ),
           const SizedBox(height: 12),
 
@@ -258,7 +151,7 @@ class PastQuestionCard extends StatelessWidget {
 
           // Theory Question View vs Multiple Choice Options
           if (question.isTheory) ...[
-            _TheoryModelAnswerWidget(
+            TheoryModelAnswerWidget(
               explanation: question.explanation,
             ),
           ] else ...[
@@ -266,168 +159,28 @@ class PastQuestionCard extends StatelessWidget {
             ...question.options.asMap().entries.map((entry) {
               final idx = entry.key;
               final optionText = entry.value;
-              final letter = idx < optionLetters.length
-                  ? optionLetters[idx]
+              final letter = idx < _optionLetters.length
+                  ? _optionLetters[idx]
                   : '$idx';
               final isSelected = question.userSelectedOptionIndex == idx;
               final isCorrect = idx == question.correctOptionIndex;
 
-              var baseBgColor = isDark
-                  ? colors.backgroundPrimary
-                  : colors.surfaceSecondary.withAlpha(50);
-              var baseBorderColor = colors.surfaceBorder.withAlpha(90);
-              var optionTextColor = colors.textPrimary;
-
-              if (question.isAnswered && isInstantFeedback) {
-                if (isCorrect) {
-                  baseBgColor = colors.success.withAlpha(isDark ? 50 : 25);
-                  baseBorderColor = colors.success.withAlpha(180);
-                  optionTextColor = colors.success;
-                } else if (isSelected) {
-                  baseBgColor = colors.error.withAlpha(isDark ? 50 : 25);
-                  baseBorderColor = colors.error.withAlpha(180);
-                  optionTextColor = colors.error;
-                }
-              } else if (isSelected) {
-                baseBgColor = colors.primary.withAlpha(isDark ? 50 : 25);
-                baseBorderColor = colors.primary;
-                optionTextColor = colors.primary;
-              }
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: PlatformHoverBuilder(
-                  builder: (context, isHovered, _) {
-                    final optionBgColor =
-                        isHovered && !isSelected && !question.isAnswered
-                        ? colors.primary.withAlpha(isDark ? 20 : 10)
-                        : baseBgColor;
-                    final optionBorderColor =
-                        isHovered && !isSelected && !question.isAnswered
-                        ? colors.primary.withAlpha(isDark ? 80 : 60)
-                        : baseBorderColor;
-
-                    return ShrinkableButton(
-                      onTap: () {
-                        unawaited(HapticFeedback.selectionClick());
-                        context.read<PastQuestionsBloc>().add(
-                          SelectOptionEvent(
-                            questionId: question.id,
-                            optionIndex: idx,
-                          ),
-                        );
-                      },
-                      child: AnimatedContainer(
-                        duration: AppMotion.standard,
-                        curve: AppMotion.easeOutCubic,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 11,
-                        ),
-                        decoration: BoxDecoration(
-                          color: optionBgColor,
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                          border: Border.all(
-                            color: optionBorderColor,
-                            width: 1.2,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 26,
-                              height: 26,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isSelected
-                                    ? colors.primary
-                                    : colors.surfaceSecondary,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  letter,
-                                  style: typography.caption.bold.copyWith(
-                                    color: isSelected
-                                        ? colors.white
-                                        : colors.textSecondary,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: LatexRichViewer(
-                                text: optionText,
-                                style: typography.subhead.medium.copyWith(
-                                  color: optionTextColor,
-                                ),
-                              ),
-                            ),
-                            if (question.isAnswered && isInstantFeedback) ...[
-                              if (isCorrect)
-                                Icon(
-                                  Icons.check_circle_rounded,
-                                  color: colors.success,
-                                  size: 20,
-                                )
-                              else if (isSelected)
-                                Icon(
-                                  Icons.cancel_rounded,
-                                  color: colors.error,
-                                  size: 20,
-                                ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+              return QuestionOptionTile(
+                letter: letter,
+                optionText: optionText,
+                isSelected: isSelected,
+                isCorrect: isCorrect,
+                isAnswered: question.isAnswered,
+                isInstantFeedback: isInstantFeedback,
+                onTap: () => _handleOptionTap(context, idx),
               );
             }),
 
             // Explanation Box (shown once answered for MCQ)
             if (question.isAnswered && isInstantFeedback) ...[
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(isDark ? 30 : 15),
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                  border: Border.all(
-                    color: colors.primary.withAlpha(isDark ? 70 : 40),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.lightbulb_rounded,
-                          color: colors.syllabotAccent,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Explanation & Solution',
-                          style: typography.footnote.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    LatexRichViewer(
-                      text: question.explanation,
-                      style: typography.footnote.regular.copyWith(
-                        color: colors.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
+              QuestionExplanationBox(
+                explanation: question.explanation,
               ),
             ],
           ],
@@ -435,299 +188,11 @@ class PastQuestionCard extends StatelessWidget {
           const SizedBox(height: 10),
 
           // Action Buttons: Discuss with Peers & Ask Syllabot AI
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              PlatformHoverBuilder(
-                builder: (context, isHovered, _) {
-                  return ShrinkableButton(
-                    onTap: () => _showDiscussWithPeersSheet(context),
-                    child: AnimatedContainer(
-                      duration: AppMotion.standard,
-                      curve: AppMotion.easeOutCubic,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(
-                          isDark
-                              ? (isHovered ? 50 : 30)
-                              : (isHovered ? 30 : 18),
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                        border: Border.all(
-                          color: colors.primary.withAlpha(
-                            isDark
-                                ? (isHovered ? 120 : 70)
-                                : (isHovered ? 70 : 40),
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.forum_outlined,
-                            color: colors.primary,
-                            size: 15,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Discuss with Peers',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
-                              fontSize: 11.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 8),
-              PlatformHoverBuilder(
-                builder: (context, isHovered, _) {
-                  return ShrinkableButton(
-                    onTap: () {
-                      unawaited(
-                        context.router.push(
-                          SyllabotChatRoute(
-                            initialPrompt:
-                                'Explain this ${question.subject} question '
-                                'step-by-step:\n"${question.prompt}"',
-                          ),
-                        ),
-                      );
-                    },
-                    child: AnimatedContainer(
-                      duration: AppMotion.standard,
-                      curve: AppMotion.easeOutCubic,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.syllabotAccent.withAlpha(
-                          isDark
-                              ? (isHovered ? 65 : 45)
-                              : (isHovered ? 40 : 25),
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                        border: Border.all(
-                          color: colors.syllabotAccent.withAlpha(
-                            isDark
-                                ? (isHovered ? 130 : 90)
-                                : (isHovered ? 80 : 50),
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.auto_awesome_rounded,
-                            color: colors.syllabotAccent,
-                            size: 15,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Ask Syllabot AI',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.syllabotAccent,
-                              fontSize: 11.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
+          QuestionActionButtons(
+            question: question,
+            communityHubBloc: communityHubBloc,
+            onAskAi: onAskAi,
           ),
-        ],
-      ),
-    );
-  }
-
-  void _showDiscussWithPeersSheet(BuildContext context) {
-    final tag = question.topic.isNotEmpty
-        ? question.topic
-        : (question.courseCode ?? question.subject);
-    final examLabel =
-        '${question.examType.displayName} ${question.year} • Q${question.questionNumber}';
-    final buffer = StringBuffer()
-      ..writeln(question.prompt.replaceAll('**', ''))
-      ..writeln();
-    if (question.options.isNotEmpty) {
-      buffer.writeln('Options:');
-      for (var i = 0; i < question.options.length; i++) {
-        final label = String.fromCharCode(65 + i);
-        buffer.writeln('$label. ${question.options[i]}');
-      }
-      buffer.writeln();
-    }
-    if (question.explanation.isNotEmpty) {
-      buffer
-        ..writeln('Explanation: ${question.explanation.replaceAll('**', '')}')
-        ..writeln();
-    }
-    buffer.writeln('Would love some help or peer perspectives on this problem!');
-
-    unawaited(
-      CreatePostBottomSheet.show(
-        context,
-        lockedTrack: question.subject,
-        initialTitle: '[$tag] $examLabel Discussion',
-        initialContent: buffer.toString().trim(),
-        initialLatex: question.latexFormula,
-        initialSyllabusTag: tag,
-        initialIsQuestion: true,
-        contextBadge: '$examLabel • $tag',
-        onSubmit: ({
-          required title,
-          required content,
-          required track,
-          latexContent,
-          isQuestion = true,
-          syllabusTag = 'General',
-          isAnonymous = false,
-        }) {
-          if (locator.isRegistered<CommunityHubBloc>()) {
-            locator<CommunityHubBloc>().add(
-              CreateForumPostEvent(
-                title: title,
-                content: content,
-                track: track,
-                latexContent: latexContent,
-                isQuestion: isQuestion,
-                syllabusTag: syllabusTag.isNotEmpty ? syllabusTag : tag,
-                isAnonymous: isAnonymous,
-              ),
-            );
-            context.showSnackBar(
-              message: 'Posted to peer discussion forum!',
-              type: SnackBarType.success,
-            );
-          }
-        },
-      ),
-    );
-  }
-}
-
-class _TheoryModelAnswerWidget extends StatefulWidget {
-  const _TheoryModelAnswerWidget({
-    required this.explanation,
-  });
-
-  final String? explanation;
-
-  @override
-  State<_TheoryModelAnswerWidget> createState() =>
-      _TheoryModelAnswerWidgetState();
-}
-
-class _TheoryModelAnswerWidgetState extends State<_TheoryModelAnswerWidget> {
-  bool _isExpanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-    final explanation = widget.explanation;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.primary.withAlpha(isDark ? 28 : 12),
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-          color: colors.primary.withAlpha(isDark ? 65 : 35),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(isDark ? 50 : 25),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.menu_book_rounded,
-                      color: colors.primary,
-                      size: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Model Solution & Verified Answer',
-                          style: typography.subhead.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 13,
-                          ),
-                        ),
-                        Text(
-                          _isExpanded
-                              ? 'Tap to hide model answer'
-                              : 'Tap to view model solution and detailed reasoning',
-                          style: typography.caption.medium.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    _isExpanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
-                    color: colors.primary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_isExpanded) ...[
-            Divider(
-              height: 1,
-              color: colors.primary.withAlpha(isDark ? 40 : 25),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: explanation != null && explanation.trim().isNotEmpty
-                  ? LatexRichViewer(
-                      text: explanation,
-                      style: typography.body.regular.copyWith(
-                        color: colors.textPrimary,
-                        height: 1.5,
-                      ),
-                    )
-                  : Text(
-                      'No model solution or detailed explanation available for this question yet.',
-                      style: typography.caption.medium.copyWith(
-                        color: colors.textSecondary,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-            ),
-          ],
         ],
       ),
     );

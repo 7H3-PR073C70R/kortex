@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
+import 'package:mocktail/mocktail.dart';
 import '../helpers/pump_app.dart';
 
 void main() {
@@ -160,5 +161,41 @@ void main() {
 
       expect(deleted, isTrue);
     });
+
+    testWidgets('supports constructor dependency injection of MediaUploadService',
+        (tester) async {
+      final mockUpload = _MockMediaUploadService();
+      when(
+        () => mockUpload.transcribeVoiceNote(
+          audioUrl: any(named: 'audioUrl'),
+          replyId: any(named: 'replyId'),
+          postId: any(named: 'postId'),
+        ),
+      ).thenAnswer((_) async => 'Injected service transcript');
+
+      await tester.pumpApp(
+        Scaffold(
+          body: VoiceNotePlayerWidget(
+            audioUrl: 'https://example.com/test-di.m4a',
+            durationSeconds: 10,
+            mediaUploadService: mockUpload,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Show Speech-to-Text 📝'), findsOneWidget);
+      await tester.tap(find.text('Show Speech-to-Text 📝'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Injected service transcript'), findsOneWidget);
+      verify(
+        () => mockUpload.transcribeVoiceNote(
+          audioUrl: 'https://example.com/test-di.m4a',
+        ),
+      ).called(1);
+    });
   });
 }
+
+class _MockMediaUploadService extends Mock implements MediaUploadService {}

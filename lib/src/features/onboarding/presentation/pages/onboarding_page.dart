@@ -28,7 +28,13 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class OnboardingPage extends StatefulWidget {
-  const OnboardingPage({super.key});
+  const OnboardingPage({
+    super.key,
+    this.onboardingRepository,
+  });
+
+  /// Optional injected repository for testability.
+  final OnboardingRepository? onboardingRepository;
 
   /// Viewports at or above this width get the split showcase + auth layout
   /// instead of the full-screen mobile carousel (same breakpoint the Auth
@@ -50,7 +56,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    _onboardingRepository = locator<OnboardingRepository>();
+    _onboardingRepository =
+        widget.onboardingRepository ?? locator<OnboardingRepository>();
   }
 
   @override

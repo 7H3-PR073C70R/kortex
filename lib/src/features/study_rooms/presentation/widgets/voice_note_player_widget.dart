@@ -6,13 +6,17 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
-import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/media_upload_service.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player/voice_note_player_card.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player/voice_note_transcript_panel.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player/voice_note_transcript_toggle.dart';
+
+// Re-export sub-widgets for seamless modular access
+export 'voice_note_player/voice_note_player_card.dart';
+export 'voice_note_player/voice_note_transcript_panel.dart';
+export 'voice_note_player/voice_note_transcript_toggle.dart';
 
 /// An interactive audio player widget for voice notes in forum posts and replies
 /// with toggleable Speech-to-Text transcript display.
@@ -26,6 +30,8 @@ class VoiceNotePlayerWidget extends StatefulWidget {
     this.onTranscriptLoaded,
     this.onTranscribe,
     this.onDelete,
+    this.mediaUploadService,
+    this.audioPlayer,
     this.compact = false,
     this.showTranscript = true,
     super.key,
@@ -43,6 +49,8 @@ class VoiceNotePlayerWidget extends StatefulWidget {
     String? postId,
   })? onTranscribe;
   final VoidCallback? onDelete;
+  final MediaUploadService? mediaUploadService;
+  final AudioPlayer? audioPlayer;
   final bool compact;
   final bool showTranscript;
 
@@ -69,7 +77,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
 
   AudioPlayer _ensurePlayerInitialized() {
     if (_player != null) return _player!;
-    final p = AudioPlayer();
+    final p = widget.audioPlayer ?? AudioPlayer();
     _stateSub = p.onPlayerStateChanged.listen((state) {
       if (mounted) {
         setState(() {
@@ -182,7 +190,9 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
       _stopFallbackTimer();
       try {
         await _player?.pause();
-      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+      } on Object catch (e, st) {
+        AppLogger.recordNonFatal(e, st);
+      }
       if (mounted) {
         setState(() {
           _isPlaying = false;
@@ -280,12 +290,6 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
     _fallbackTimer = null;
   }
 
-  String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
-
   void _cyclePlaybackRate() {
     unawaited(HapticFeedback.lightImpact());
     setState(() {
@@ -378,9 +382,10 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
           postId: widget.postId,
         );
       } else {
-        final uploadService = locator.isRegistered<MediaUploadService>()
-            ? locator<MediaUploadService>()
-            : MediaUploadService();
+        final uploadService = widget.mediaUploadService ??
+            (locator.isRegistered<MediaUploadService>()
+                ? locator<MediaUploadService>()
+                : MediaUploadService());
         result = await uploadService.transcribeVoiceNote(
           audioUrl: audioUrl,
           replyId: widget.replyId,
@@ -434,455 +439,46 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
     final hasTranscript = _currentTranscript != null &&
         _currentTranscript!.trim().isNotEmpty;
     final effectiveTranscript =
         hasTranscript ? _currentTranscript!.trim() : null;
 
-    final progress = (_totalDuration.inMilliseconds > 0)
-        ? (_position.inMilliseconds / _totalDuration.inMilliseconds).clamp(
-            0.0,
-            1.0,
-          )
-        : 0.0;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: widget.compact ? 10 : 14,
-            vertical: widget.compact ? 8 : 10,
-          ),
-          decoration: BoxDecoration(
-            color: colors.primary.withAlpha(isDark ? 28 : 14),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: colors.primary.withAlpha(isDark ? 55 : 30),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Play / Pause Circle Button
-              ShrinkableButton(
-                onTap: _togglePlay,
-                child: Container(
-                  width: widget.compact ? 34 : 40,
-                  height: widget.compact ? 34 : 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.primary,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.black.withAlpha(30),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    _isPlaying
-                        ? Icons.pause_rounded
-                        : Icons.play_arrow_rounded,
-                    color: colors.white,
-                    size: widget.compact ? 20 : 24,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Progress Bar / Waveform & Timestamps
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.mic_rounded,
-                                size: 13,
-                                color: colors.primary,
-                              ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  'Voice Note',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.primary,
-                                    fontSize: 11.5,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _totalDuration.inSeconds > 0
-                                  ? '${_formatDuration(_position)} / ${_formatDuration(_totalDuration)}'
-                                  : _formatDuration(_position),
-                              style: typography.caption.medium.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            ShrinkableButton(
-                              onTap: _cyclePlaybackRate,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 1.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.primary.withAlpha(
-                                    isDark ? 50 : 25,
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  '${_playbackRate.toStringAsFixed(_playbackRate % 1 == 0 ? 0 : 2)}x',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.primary,
-                                    fontSize: 9.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 4,
-                        backgroundColor: colors.primary.withAlpha(
-                          isDark ? 40 : 25,
-                        ),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          colors.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Delete button (if in editing/preview mode)
-              if (widget.onDelete != null) ...[
-                const SizedBox(width: 10),
-                ShrinkableButton(
-                  onTap: widget.onDelete,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colors.error.withAlpha(isDark ? 35 : 20),
-                    ),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 16,
-                      color: colors.error,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
+        VoiceNotePlayerCard(
+          isPlaying: _isPlaying,
+          position: _position,
+          totalDuration: _totalDuration,
+          playbackRate: _playbackRate,
+          onTogglePlay: _togglePlay,
+          onCyclePlaybackRate: _cyclePlaybackRate,
+          onDelete: widget.onDelete,
+          compact: widget.compact,
         ),
-
-        // Expandable Speech-to-Text Transcript Section — always visible when showTranscript is true
         if (widget.showTranscript) ...[
           const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ShrinkableButton(
-              onTap: _toggleTranscript,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: (effectiveTranscript != null || _isTranscribing)
-                      ? colors.primary.withAlpha(isDark ? 35 : 20)
-                      : colors.surfaceSecondary.withAlpha(isDark ? 120 : 80),
-                  borderRadius: AppRadius.radiusBadge,
-                  border: Border.all(
-                    color: (effectiveTranscript != null || _isTranscribing)
-                        ? colors.primary.withAlpha(isDark ? 70 : 40)
-                        : colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
-                    width: 0.9,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_isTranscribing) ...[
-                      SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.8,
-                          color: colors.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                    ] else ...[
-                      Icon(
-                        Icons.subtitles_rounded,
-                        size: 13,
-                        color: effectiveTranscript != null
-                            ? colors.primary
-                            : colors.textSecondary,
-                      ),
-                      const SizedBox(width: 5),
-                    ],
-                    Text(
-                      _isTranscribing
-                          ? 'Transcribing with AI... 🎙️'
-                          : _isTranscriptExpanded
-                              ? 'Hide Transcript'
-                              : 'Show Speech-to-Text 📝',
-                      style: typography.caption.bold.copyWith(
-                        color: (effectiveTranscript != null || _isTranscribing)
-                            ? colors.primary
-                            : colors.textSecondary,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      _isTranscriptExpanded
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                      size: 15,
-                      color: (effectiveTranscript != null || _isTranscribing)
-                          ? colors.primary
-                          : colors.textSecondary,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          VoiceNoteTranscriptToggle(
+            isTranscribing: _isTranscribing,
+            isTranscriptExpanded: _isTranscriptExpanded,
+            effectiveTranscript: effectiveTranscript,
+            onToggleTranscript: _toggleTranscript,
           ),
-
-          // Expanded panel — shows transcript text OR an empty state
           if (_isTranscriptExpanded) ...[
             const SizedBox(height: 6),
-            AnimatedContainer(
-              duration: AppMotion.standard,
-              curve: AppMotion.easeOutCubic,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? colors.surfaceSecondary.withAlpha(200)
-                    : colors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: effectiveTranscript != null
-                      ? colors.primary.withAlpha(isDark ? 55 : 35)
-                      : _transcriptionError != null
-                          ? colors.error.withAlpha(isDark ? 80 : 50)
-                          : colors.surfaceBorder.withAlpha(isDark ? 50 : 30),
-                ),
-              ),
-              child: _buildTranscriptContent(context),
+            VoiceNoteTranscriptPanel(
+              isTranscribing: _isTranscribing,
+              transcriptionError: _transcriptionError,
+              currentTranscript: _currentTranscript,
+              effectiveTranscript: effectiveTranscript,
+              onRetry: () => unawaited(_fetchTranscription()),
+              onCopyTranscript: _copyTranscript,
             ),
           ],
         ],
       ],
-    );
-  }
-
-  Widget _buildTranscriptContent(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    if (_isTranscribing) {
-      return Row(
-        children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: colors.primary,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Transcribing voice note with AI Whisper...',
-              style: typography.caption.medium.copyWith(
-                color: colors.primary,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    if (_transcriptionError != null) {
-      return ShrinkableButton(
-        onTap: () => unawaited(_fetchTranscription()),
-        child: Row(
-          children: [
-            Icon(
-              Icons.refresh_rounded,
-              size: 16,
-              color: colors.error,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _transcriptionError!,
-                style: typography.caption.medium.copyWith(
-                  color: colors.error,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: colors.error.withAlpha(isDark ? 40 : 20),
-                borderRadius: AppRadius.radiusMicro,
-              ),
-              child: Text(
-                'Retry',
-                style: typography.caption.bold.copyWith(
-                  color: colors.error,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_currentTranscript != null && _currentTranscript!.trim().isNotEmpty) {
-      final text = _currentTranscript!.trim();
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.graphic_eq_rounded,
-                    size: 14,
-                    color: colors.primary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'SPEECH-TO-TEXT TRANSCRIPT',
-                    style: typography.caption.bold.copyWith(
-                      color: colors.primary,
-                      fontSize: 10,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ],
-              ),
-              ShrinkableButton(
-                onTap: () => _copyTranscript(context, text),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withAlpha(isDark ? 40 : 20),
-                    borderRadius: AppRadius.radiusMicro,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.copy_rounded,
-                        size: 11,
-                        color: colors.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Copy',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 180),
-            child: SingleChildScrollView(
-              child: SelectableText(
-                text,
-                style: typography.body.regular.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 12.5,
-                  height: 1.4,
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return ShrinkableButton(
-      onTap: () => unawaited(_fetchTranscription()),
-      child: Row(
-        children: [
-          Icon(
-            Icons.auto_awesome_rounded,
-            size: 16,
-            color: colors.primary,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'No transcript available. Tap to transcribe with AI 🎙️',
-              style: typography.caption.medium.copyWith(
-                color: colors.primary,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

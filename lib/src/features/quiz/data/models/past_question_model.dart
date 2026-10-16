@@ -22,33 +22,8 @@ class PastQuestionModel {
     this.courseCode,
   });
 
-  static ExamCategory parseExamCategory(String? raw) {
-    final rawExam = (raw ?? 'general').toLowerCase();
-    if (rawExam.contains('waec') || rawExam.contains('wassce')) {
-      return ExamCategory.waec;
-    } else if (rawExam.contains('jamb') || rawExam.contains('utme')) {
-      return ExamCategory.jamb;
-    } else if (rawExam.contains('neco')) {
-      return ExamCategory.neco;
-    } else if (rawExam.contains('sat')) {
-      return ExamCategory.sat;
-    } else if (rawExam.contains('toefl')) {
-      return ExamCategory.toefl;
-    } else if (rawExam.contains('ielts')) {
-      return ExamCategory.ielts;
-    } else if (rawExam.contains('med')) {
-      return ExamCategory.medicine;
-    } else if (rawExam.contains('law')) {
-      return ExamCategory.law;
-    } else if (rawExam.contains('eng')) {
-      return ExamCategory.engineering;
-    } else if (rawExam.contains('bus') || rawExam.contains('acc')) {
-      return ExamCategory.business;
-    } else if (rawExam.contains('cs') || rawExam.contains('comp')) {
-      return ExamCategory.computerScience;
-    }
-    return ExamCategory.general;
-  }
+  static ExamCategory parseExamCategory(String? raw) =>
+      ExamCategory.parse(raw);
 
   factory PastQuestionModel.fromJson(Map<String, dynamic> json) {
     final category = parseExamCategory(json['exam_type'] as String?);

@@ -10,8 +10,6 @@ import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/focus_session_config.dart';
 import 'package:kortex/src/features/decks/domain/entities/thought_entry.dart';
@@ -464,10 +462,10 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
     } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
     try {
-      if (locator.isRegistered<DecksRemoteDataSource>()) {
-        await locator<DecksRemoteDataSource>().updateDeckCards(
+      if (_decksRepository != null) {
+        await _decksRepository.updateDeckCards(
           state.deckId,
-          finalCards.map(FlashcardModel.fromEntity).toList(),
+          finalCards,
         );
       }
     } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }

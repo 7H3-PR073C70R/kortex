@@ -14,6 +14,17 @@ SELECT plan(18);
 -- Test 1: Verify pgTAP extension is available
 SELECT has_extension('pgtap', 'pgTAP extension is installed');
 
+CREATE OR REPLACE FUNCTION table_has_rls(p_schema text, p_table text, p_desc text)
+RETURNS text LANGUAGE plpgsql AS $$
+BEGIN
+    RETURN is(
+        (SELECT c.relrowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = p_schema AND c.relname = p_table),
+        true,
+        p_desc
+    );
+END;
+$$;
+
 -- Test 2: Verify that NO SECURITY DEFINER functions in schema 'public' are executable by 'anon'
 SELECT is(
     (
@@ -65,20 +76,20 @@ SELECT table_has_rls('public', 'user_analytics', 'user_analytics has RLS enabled
 SELECT table_has_rls('public', 'forum_posts', 'forum_posts has RLS enabled');
 SELECT table_has_rls('public', 'forum_replies', 'forum_replies has RLS enabled');
 SELECT table_has_rls('public', 'user_daily_ai_quotas', 'user_daily_ai_quotas has RLS enabled');
-SELECT table_has_rls('public', 'active_user_sessions', 'active_user_sessions has RLS enabled');
+SELECT table_has_rls('public', 'user_device_sessions', 'user_device_sessions has RLS enabled');
 
--- Test 13: Verify specific critical RPC functions reject execution by anon
+-- Test 13: Verify delete_shared_deck rejects execution by anon
 SELECT is(
-    has_function_privilege('anon', 'public.delete_user_account()', 'EXECUTE'),
+    has_function_privilege('anon', 'public.delete_shared_deck(uuid)', 'EXECUTE'),
     false,
-    'delete_user_account() cannot be executed by anon'
+    'delete_shared_deck(uuid) cannot be executed by anon'
 );
 
 -- Test 14: Verify check_livekit_room_access rejects execution by anon
 SELECT is(
-    has_function_privilege('anon', 'public.check_livekit_room_access(text)', 'EXECUTE'),
+    has_function_privilege('anon', 'public.check_livekit_room_access(text, uuid)', 'EXECUTE'),
     false,
-    'check_livekit_room_access(text) cannot be executed by anon'
+    'check_livekit_room_access(text, uuid) cannot be executed by anon'
 );
 
 -- Test 15: Verify app_sync_engine_upsert rejects execution by anon
@@ -88,11 +99,11 @@ SELECT is(
     'app_sync_engine_upsert(jsonb) cannot be executed by anon'
 );
 
--- Test 16: Verify upsert_user_subscription rejects execution by anon
+-- Test 16: Verify process_revenuecat_billing_event rejects execution by anon
 SELECT is(
-    has_function_privilege('anon', 'public.upsert_user_subscription(uuid, text, text, timestamptz, jsonb, text)', 'EXECUTE'),
+    has_function_privilege('anon', 'public.process_revenuecat_billing_event(text, uuid, text, timestamptz, text, boolean, timestamptz, text)', 'EXECUTE'),
     false,
-    'upsert_user_subscription cannot be executed by anon'
+    'process_revenuecat_billing_event cannot be executed by anon'
 );
 
 -- Test 17: Verify user_analytics direct insert is denied to authenticated role
@@ -109,18 +120,18 @@ SELECT is(
     'user_analytics table must NOT allow direct INSERT by authenticated role (must use RPC)'
 );
 
--- Test 18: Verify active_user_sessions enforce auth.uid() = user_id on SELECT
+-- Test 18: Verify user_device_sessions enforce auth.uid() = user_id
 SELECT is(
     (
         SELECT count(*)::int
         FROM pg_policies
         WHERE schemaname = 'public'
-          AND tablename = 'active_user_sessions'
-          AND cmd = 'SELECT'
+          AND tablename = 'user_device_sessions'
+          AND cmd IN ('SELECT', 'ALL')
           AND qual LIKE '%auth.uid() = user_id%'
     ),
     1,
-    'active_user_sessions must enforce auth.uid() = user_id on SELECT'
+    'user_device_sessions must enforce auth.uid() = user_id'
 );
 
 SELECT * FROM finish();

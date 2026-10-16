@@ -21,6 +21,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart'
 import 'package:kortex/src/features/auth/presentation/widgets/auth_flow_panel.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
+import 'package:kortex/src/features/onboarding/data/repositories/onboarding_repository_impl.dart';
+import 'package:kortex/src/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:kortex/src/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:kortex/src/features/onboarding/presentation/pages/splash_page.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/animated_page_indicator.dart';
@@ -95,7 +97,9 @@ void _registerAuthFlowMocks() {
         authRepository: mockAuthRepository,
       ),
     )
-    ..registerLazySingleton<AuthModeCubit>(AuthModeCubit.new);
+    ..registerLazySingleton<AuthModeCubit>(
+      () => AuthModeCubit()..setMode(AuthMode.chat),
+    );
 }
 
 Widget _wrapWithTheme(Widget child) {
@@ -120,6 +124,11 @@ void main() {
       ..registerSingleton<LocalStorageService>(mockStorage)
       ..registerLazySingleton<OnboardingLocalDataSource>(
         () => OnboardingLocalDataSourceImpl(storageService: mockStorage),
+      )
+      ..registerLazySingleton<OnboardingRepository>(
+        () => OnboardingRepositoryImpl(
+          localDataSource: locator<OnboardingLocalDataSource>(),
+        ),
       );
   });
 
@@ -219,37 +228,32 @@ void main() {
         await tester.pumpWidget(_wrapWithTheme(const OnboardingPage()));
         await tester.pump();
 
-        // Carousel pane still leads with the first slide.
+        // Carousel pane still leads with the first slide. Skip is hidden on wide view.
         expect(find.text('Drop. Parse. Master.'), findsOneWidget);
-        expect(find.text('Skip'), findsOneWidget);
+        expect(find.text('Skip'), findsNothing);
 
         // The real Auth/Signup flow sits beside the carousel instead of
-        // the mobile flow being stretched across the viewport. (The chat
-        // canvas surfaces its own social dock inline, hence two bars.)
+        // the mobile flow being stretched across the viewport.
         expect(find.byType(AuthWorkspacePanel), findsOneWidget);
         expect(find.byType(SocialAuthBar), findsOneWidget);
 
-        // Paging forward works and reveals the Previous control. (Pumps
-        // step frame-by-frame: one large time jump can leave PageView's
-        // snap activity mid-transition in tests.)
-        await tester.tap(find.byIcon(Icons.arrow_forward_rounded));
+        // Paging forward via indicator tap advances the slide.
+        await tester.tap(find.byType(GestureDetector).at(1));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 160));
         await tester.pump(const Duration(milliseconds: 160));
         await tester.pump(const Duration(milliseconds: 180));
 
         expect(find.text('Flawless Math & Science OCR'), findsOneWidget);
-        expect(find.text('Previous'), findsOneWidget);
 
-        // Paging back returns to slide one and hides the Previous control.
-        await tester.tap(find.text('Previous'));
+        // Paging back to first slide via indicator tap.
+        await tester.tap(find.byType(GestureDetector).first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 160));
         await tester.pump(const Duration(milliseconds: 160));
         await tester.pump(const Duration(milliseconds: 180));
 
         expect(find.text('Drop. Parse. Master.'), findsOneWidget);
-        expect(find.text('Previous'), findsNothing);
       },
     );
 

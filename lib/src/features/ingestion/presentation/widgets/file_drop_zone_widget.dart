@@ -1,17 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:auto_route/auto_route.dart';
 import 'package:crypto/crypto.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -19,15 +15,22 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
-import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
-import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/ingestion/presentation/widgets/file_drop_zone/document_already_extracted_dialog.dart';
+import 'package:kortex/src/features/ingestion/presentation/widgets/file_drop_zone/drop_zone_action_buttons.dart';
+import 'package:kortex/src/features/ingestion/presentation/widgets/file_drop_zone/free_daily_uploads_card.dart';
+import 'package:kortex/src/features/ingestion/presentation/widgets/file_drop_zone/ingestion_limit_dialogs.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
+export 'file_drop_zone/document_already_extracted_dialog.dart';
+export 'file_drop_zone/drop_zone_action_buttons.dart';
+export 'file_drop_zone/free_daily_uploads_card.dart';
+export 'file_drop_zone/ingestion_limit_dialogs.dart';
+
+/// Primary multi-format document drop and pick target with drag-and-drop support,
+/// 50MB/200MB tier limit enforcement, and document deduplication detection.
 class FileDropZoneWidget extends HookWidget {
   const FileDropZoneWidget({
     required this.onFilePicked,
@@ -36,6 +39,12 @@ class FileDropZoneWidget extends HookWidget {
     this.courseId,
     this.courseCode,
     this.courseTitle,
+    this.subscriptionGuard,
+    this.filePickerService,
+    this.localStorageService,
+    this.decksRepository,
+    this.decksBloc,
+    this.dashboardBloc,
     super.key,
   });
 
@@ -43,8 +52,7 @@ class FileDropZoneWidget extends HookWidget {
     required String filename,
     required String fileType,
     required Uint8List fileBytes,
-  })
-  onFilePicked;
+  }) onFilePicked;
 
   final VoidCallback? onCameraScanTap;
   final VoidCallback? onLmsImportTap;
@@ -52,14 +60,37 @@ class FileDropZoneWidget extends HookWidget {
   final String? courseCode;
   final String? courseTitle;
 
+  final SubscriptionGuard? subscriptionGuard;
+  final FilePickerService? filePickerService;
+  final LocalStorageService? localStorageService;
+  final DecksRepository? decksRepository;
+  final DecksBloc? decksBloc;
+  final DashboardBloc? dashboardBloc;
+
+  SubscriptionGuard _resolveGuard() =>
+      subscriptionGuard ??
+      (locator.isRegistered<SubscriptionGuard>()
+          ? locator<SubscriptionGuard>()
+          : SubscriptionGuard());
+
+  FilePickerService _resolveFilePicker() =>
+      filePickerService ??
+      (locator.isRegistered<FilePickerService>()
+          ? locator<FilePickerService>()
+          : FilePickerService());
+
+  LocalStorageService? _resolveStorage() =>
+      localStorageService ??
+      (locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null);
+
   Map<String, String>? _checkExistingExtractedDeck(
     String filename,
     Uint8List bytes,
   ) {
     try {
-      final storage = locator.isRegistered<LocalStorageService>()
-          ? locator<LocalStorageService>()
-          : null;
+      final storage = _resolveStorage();
       if (storage == null) return null;
 
       final hash = sha256.convert(bytes).toString();
@@ -78,7 +109,9 @@ class FileDropZoneWidget extends HookWidget {
           final decoded = jsonDecode(byHash) as Map<String, dynamic>;
           deckId = decoded['deckId'] as String?;
           deckTitle = decoded['deckTitle'] as String?;
-        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+        } on Object catch (e, st) {
+          AppLogger.recordNonFatal(e, st);
+        }
       }
 
       // Check by normalized base filename if not found by hash
@@ -89,15 +122,18 @@ class FileDropZoneWidget extends HookWidget {
             final decoded = jsonDecode(byName) as Map<String, dynamic>;
             deckId = decoded['deckId'] as String?;
             deckTitle = decoded['deckTitle'] as String?;
-          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+          } on Object catch (e, st) {
+            AppLogger.recordNonFatal(e, st);
+          }
         }
       }
 
       if (deckId != null && deckId.isNotEmpty) {
         // Verify deck actually exists if DecksBloc is loaded
-        if (locator.isRegistered<DecksBloc>()) {
-          final decksBloc = locator<DecksBloc>();
-          final allDecks = decksBloc.state.allDecks;
+        final dBloc = decksBloc ??
+            (locator.isRegistered<DecksBloc>() ? locator<DecksBloc>() : null);
+        if (dBloc != null) {
+          final allDecks = dBloc.state.allDecks;
           if (allDecks.isNotEmpty && !allDecks.any((d) => d.id == deckId)) {
             // Deck was deleted! Purge stale extraction markers
             unawaited(storage.deletePreference(key: 'extracted_doc_$hash'));
@@ -113,300 +149,106 @@ class FileDropZoneWidget extends HookWidget {
               deckTitle ?? filename.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), ''),
         };
       }
-    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
     return null;
   }
 
-  Future<void> _show50MbUpgradeDialog(
-    BuildContext context,
-    String filename,
-    int sizeBytes,
-  ) async {
-    final colors = context.colors;
-    final typography = context.typography;
-    final sizeMb = (sizeBytes / (1024 * 1024)).toStringAsFixed(1);
-
-    await showDialog<void>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: context.isDarkMode
-            ? colors.surfaceSecondary
-            : colors.surfacePrimary,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.radiusDialog,
-          side: BorderSide(color: colors.primary.withAlpha(60)),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colors.error.withAlpha(30),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.upload_file_rounded,
-                color: colors.error,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '50MB Limit Exceeded',
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'The selected file "$filename" is $sizeMb MB, which exceeds the 50MB free tier limit.\n\nUpgrade to Kortexify Pro to upload documents up to 200MB with unlimited AI flashcard synthesis.',
-          style: typography.callout.regular.copyWith(
-            color: colors.textSecondary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: Text(
-              'Dismiss',
-              style: context.typography.body.regular.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-          ),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.star_rounded, size: 18),
-            label: Text(context.l10n.ingestionUpgradeTier),
-            onPressed: () {
-              Navigator.of(dialogCtx).pop();
-              unawaited(
-                context.router.push(PaywallRoute()),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showDailyLimitDialog(BuildContext context) async {
-    final colors = context.colors;
-    final typography = context.typography;
-
-    await showDialog<void>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: context.isDarkMode
-            ? colors.surfaceSecondary
-            : colors.surfacePrimary,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.radiusDialog,
-          side: BorderSide(color: colors.primary.withAlpha(60)),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colors.warning.withAlpha(30),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.hourglass_top_rounded,
-                color: colors.warning,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Daily Limit Reached',
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'You have reached your free daily limit of 3 document uploads.\n\nUpgrade to Kortexify Pro for unlimited document uploads, 200MB file limit, and high-speed cloud AI card generation.',
-          style: typography.callout.regular.copyWith(
-            color: colors.textSecondary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: Text(
-              'Dismiss',
-              style: context.typography.body.regular.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-          ),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.star_rounded, size: 18),
-            label: Text(context.l10n.ingestionUpgradeTier),
-            onPressed: () {
-              Navigator.of(dialogCtx).pop();
-              unawaited(
-                context.router.push(PaywallRoute()),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showAlreadyExtractedDialog(
+  Future<void> _processPickedFileBytes(
     BuildContext context, {
-    required String deckTitle,
-    required String deckId,
-    required VoidCallback onReExtract,
+    required String filename,
+    required String extension,
+    required Uint8List bytes,
   }) async {
-    final colors = context.colors;
-    final typography = context.typography;
+    final guard = _resolveGuard();
+    final isPro = guard.isPro;
 
-    await showDialog<void>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: context.isDarkMode
-            ? colors.surfaceSecondary
-            : colors.surfacePrimary,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.radiusDialog,
-          side: BorderSide(color: colors.primary.withAlpha(60)),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colors.primary.withAlpha(30),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.style_rounded,
-                color: colors.primary,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Document Already Extracted',
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          courseId != null
-              ? 'We previously extracted this document as "$deckTitle".\n\nWould you like to link it to ${courseCode ?? "this course"}, open the existing deck, or re-extract it from scratch?'
-              : 'We previously extracted this document as "$deckTitle".\n\nWould you like to open the existing study deck or re-extract it from scratch?',
-          style: typography.callout.regular.copyWith(
-            color: colors.textSecondary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: Text(
-              'Cancel',
-              style: context.typography.body.regular.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-          ),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              side: BorderSide(color: colors.surfaceBorder),
-            ),
-            onPressed: () {
-              Navigator.of(dialogCtx).pop();
-              onReExtract();
-            },
-            child: Text(context.l10n.ingestionReExtract),
-          ),
-          if (courseId != null)
-            FilledButton.icon(
-              icon: const Icon(Icons.link_rounded, size: 16),
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.success,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () async {
-                Navigator.of(dialogCtx).pop();
-                AppFeedback.medium();
-                if (locator.isRegistered<DecksRepository>()) {
-                  await locator<DecksRepository>().linkDeckToCourse(
-                    deckId: deckId,
-                    courseId: courseId!,
-                    courseCode: courseCode,
-                    subject: courseTitle,
-                  );
-                }
-                if (locator.isRegistered<DecksBloc>()) {
-                  locator<DecksBloc>().add(const DecksRefreshed());
-                }
-                if (locator.isRegistered<DashboardBloc>()) {
-                  locator<DashboardBloc>().add(const DashboardRefreshed());
-                }
-                if (context.mounted) {
-                  context.showSnackBar(
-                    message:
-                        'Linked "$deckTitle" to ${courseCode ?? "Course"}!',
-                    type: SnackBarType.success,
-                  );
-                  unawaited(
-                    context.router.push(StudySessionRoute(deckId: deckId)),
-                  );
-                }
-              },
-              label: Text('Link to ${courseCode ?? "Course"} & Open'),
-            )
-          else
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(dialogCtx).pop();
-                unawaited(
-                  context.router.push(StudySessionRoute(deckId: deckId)),
-                );
-              },
-              child: Text('Open "$deckTitle"'),
-            ),
-        ],
-      ),
+    // 1. File Limit Enforcement (50MB Free, 200MB Pro)
+    final maxBytes = isPro
+        ? SubscriptionGuard.proMaxSizeBytes
+        : SubscriptionGuard.freeMaxSizeBytes;
+
+    if (bytes.lengthInBytes > maxBytes) {
+      if (context.mounted) {
+        await show50MbUpgradeDialog(
+          context,
+          filename: filename,
+          sizeBytes: bytes.lengthInBytes,
+        );
+      }
+      return;
+    }
+
+    // 2. Daily Document Upload Limit (Free: 3/day, Pro: Unlimited)
+    if (!isPro &&
+        !guard.canUploadDocument(
+          fileSizeBytes: bytes.lengthInBytes,
+        )) {
+      if (context.mounted) {
+        await showDailyLimitDialog(context);
+      }
+      return;
+    }
+
+    // 3. Document Deduplication Check
+    final existingDeck = _checkExistingExtractedDeck(
+      filename,
+      bytes,
     );
+    if (existingDeck != null && context.mounted) {
+      await showAlreadyExtractedDialog(
+        context,
+        deckTitle: existingDeck['deckTitle']!,
+        deckId: existingDeck['deckId']!,
+        courseId: courseId,
+        courseCode: courseCode,
+        courseTitle: courseTitle,
+        decksRepository: decksRepository,
+        decksBloc: decksBloc,
+        dashboardBloc: dashboardBloc,
+        onReExtract: () {
+          unawaited(guard.recordDocumentUpload());
+          onFilePicked(
+            filename: filename,
+            fileType: extension,
+            fileBytes: bytes,
+          );
+        },
+      );
+      return;
+    }
+
+    unawaited(guard.recordDocumentUpload());
+
+    onFilePicked(
+      filename: filename,
+      fileType: extension,
+      fileBytes: bytes,
+    );
+  }
+
+  Future<void> _handlePickFile(BuildContext context) async {
+    try {
+      final filePicker = _resolveFilePicker();
+      final doc = await filePicker.pickStudyDocument();
+
+      if (doc != null && doc.bytes.isNotEmpty && context.mounted) {
+        await _processPickedFileBytes(
+          context,
+          filename: doc.name,
+          extension: doc.extension,
+          bytes: doc.bytes,
+        );
+      }
+    } on Object {
+      if (context.mounted) {
+        context.showSnackBar(
+          message: context.l10n.invalidFileFormatError,
+          type: SnackBarType.error,
+        );
+      }
+    }
   }
 
   @override
@@ -418,102 +260,7 @@ class FileDropZoneWidget extends HookWidget {
 
     final isHovering = useState<bool>(false);
     final isDragging = useState<bool>(false);
-
-    Future<void> processPickedFileBytes(
-      BuildContext context, {
-      required String filename,
-      required String extension,
-      required Uint8List bytes,
-    }) async {
-      final guard = locator.isRegistered<SubscriptionGuard>()
-          ? locator<SubscriptionGuard>()
-          : null;
-      final isPro = guard?.isPro ?? false;
-
-      // 1. File Limit Enforcement (50MB Free, 200MB Pro)
-      final maxBytes = isPro
-          ? SubscriptionGuard.proMaxSizeBytes
-          : SubscriptionGuard.freeMaxSizeBytes;
-
-      if (bytes.lengthInBytes > maxBytes) {
-        if (context.mounted) {
-          await _show50MbUpgradeDialog(
-            context,
-            filename,
-            bytes.lengthInBytes,
-          );
-        }
-        return;
-      }
-
-      // 2. Daily Document Upload Limit (Free: 3/day, Pro: Unlimited)
-      if (!isPro &&
-          guard != null &&
-          !guard.canUploadDocument(
-            fileSizeBytes: bytes.lengthInBytes,
-          )) {
-        if (context.mounted) {
-          await _showDailyLimitDialog(context);
-        }
-        return;
-      }
-
-      // 3. Document Deduplication Check
-      final existingDeck = _checkExistingExtractedDeck(
-        filename,
-        bytes,
-      );
-      if (existingDeck != null && context.mounted) {
-        await _showAlreadyExtractedDialog(
-          context,
-          deckTitle: existingDeck['deckTitle']!,
-          deckId: existingDeck['deckId']!,
-          onReExtract: () {
-            unawaited(guard?.recordDocumentUpload());
-            onFilePicked(
-              filename: filename,
-              fileType: extension,
-              fileBytes: bytes,
-            );
-          },
-        );
-        return;
-      }
-
-      unawaited(guard?.recordDocumentUpload());
-
-      onFilePicked(
-        filename: filename,
-        fileType: extension,
-        fileBytes: bytes,
-      );
-    }
-
-    Future<void> handlePickFile() async {
-      try {
-        final filePickerService = locator.isRegistered<FilePickerService>()
-            ? locator<FilePickerService>()
-            : FilePickerService();
-
-        final doc = await filePickerService.pickStudyDocument();
-
-        if (doc != null && doc.bytes.isNotEmpty && context.mounted) {
-          await processPickedFileBytes(
-            context,
-            filename: doc.name,
-            extension: doc.extension,
-            bytes: doc.bytes,
-          );
-        }
-      } on Object {
-        if (context.mounted) {
-          context.showSnackBar(
-            message: l10n.invalidFileFormatError,
-            type: SnackBarType.error,
-          );
-        }
-      }
-    }
+    final guard = _resolveGuard();
 
     return DropTarget(
       onDragEntered: (_) => isDragging.value = true,
@@ -528,7 +275,7 @@ class FileDropZoneWidget extends HookWidget {
               ? filename.split('.').last.toLowerCase()
               : '';
           if (context.mounted) {
-            await processPickedFileBytes(
+            await _processPickedFileBytes(
               context,
               filename: filename,
               extension: ext,
@@ -545,7 +292,7 @@ class FileDropZoneWidget extends HookWidget {
             : l10n.dragAndDropHint,
         button: true,
         child: GestureDetector(
-          onTap: handlePickFile,
+          onTap: () => _handlePickFile(context),
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             onEnter: (_) => isHovering.value = true,
@@ -559,10 +306,10 @@ class FileDropZoneWidget extends HookWidget {
                 color: isDragging.value
                     ? colors.primary.withAlpha(isDark ? 50 : 30)
                     : (isHovering.value
-                          ? colors.surfaceSecondary
-                          : (isDark
-                                ? colors.surfaceSecondary
-                                : colors.surfacePrimary)),
+                        ? colors.surfaceSecondary
+                        : (isDark
+                            ? colors.surfaceSecondary
+                            : colors.surfacePrimary)),
                 borderRadius: AppRadius.radiusDialog,
                 border: Border.all(
                   color: (isDragging.value || isHovering.value)
@@ -615,242 +362,15 @@ class FileDropZoneWidget extends HookWidget {
                       color: colors.textSecondary,
                     ),
                   ),
-                  if (!SubscriptionGuard().isPro) ...[
-                    const SizedBox(height: 12),
-                    Builder(
-                      builder: (ctx) {
-                        final guard = SubscriptionGuard();
-                        final used = guard.getTodayUploadCount();
-                        const limit = SubscriptionGuard.freeDailyUploadLimit;
-                        final progress = (used / limit).clamp(0.0, 1.0);
-                        return Container(
-                          constraints: const BoxConstraints(maxWidth: 320),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.surfacePrimary.withAlpha(
-                              isDark ? 160 : 200,
-                            ),
-                            borderRadius: AppRadius.radiusBadge,
-                            border: Border.all(
-                              color: colors.surfaceBorder.withAlpha(80),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'Free Daily Uploads',
-                                      style: typography.caption.medium.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ),
-                                  Text(
-                                    '$used / $limit used today',
-                                    style: typography.caption.bold.copyWith(
-                                      color: progress >= 1.0
-                                          ? colors.warning
-                                          : colors.primary,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
-                                  value: progress,
-                                  backgroundColor: colors.surfaceBorder
-                                      .withAlpha(50),
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    progress >= 1.0
-                                        ? colors.warning
-                                        : colors.primary,
-                                  ),
-                                  minHeight: 5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                  const SizedBox(height: 12),
+                  FreeDailyUploadsCard(subscriptionGuard: guard),
                   const SizedBox(height: 24),
 
                   // Action Buttons Row
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 10,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      // Browse Files Button
-                      PlatformHoverBuilder(
-                        builder: (context, isHovered, child) {
-                          return AnimatedScale(
-                            scale: isHovered ? 1.04 : 1.0,
-                            duration: AppMotion.snappy,
-                            curve: AppMotion.easeOutCubic,
-                            child: child,
-                          );
-                        },
-                        child: ShrinkableButton(
-                          onTap: handlePickFile,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  colors.primary,
-                                  colors.primary.withAlpha(210),
-                                ],
-                              ),
-                              borderRadius: AppRadius.radiusCard,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.black.withAlpha(
-                                    isDark ? 50 : 20,
-                                  ),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.folder_open_rounded,
-                                  color: colors.white,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  l10n.browseFilesButton,
-                                  style: typography.footnote.bold.copyWith(
-                                    color: colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Camera Scanner Button (Supported on iOS & Android only)
-                      if (!kIsWeb &&
-                          (defaultTargetPlatform == TargetPlatform.iOS ||
-                              defaultTargetPlatform ==
-                                  TargetPlatform.android) &&
-                          onCameraScanTap != null)
-                        PlatformHoverBuilder(
-                          builder: (context, isHovered, child) {
-                            return AnimatedScale(
-                              scale: isHovered ? 1.04 : 1.0,
-                              duration: AppMotion.snappy,
-                              curve: AppMotion.easeOutCubic,
-                              child: child,
-                            );
-                          },
-                          child: ShrinkableButton(
-                            onTap: onCameraScanTap,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceTertiary
-                                    : colors.surfaceSecondary,
-                                borderRadius: AppRadius.radiusCard,
-                                border: Border.all(
-                                  color: colors.primary.withAlpha(
-                                    isDark ? 90 : 60,
-                                  ),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.camera_alt_outlined,
-                                    color: colors.primary,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    l10n.cameraCaptureButton,
-                                    style: typography.footnote.bold.copyWith(
-                                      color: colors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (onLmsImportTap != null)
-                        PlatformHoverBuilder(
-                          builder: (context, isHovered, child) {
-                            return AnimatedScale(
-                              scale: isHovered ? 1.04 : 1.0,
-                              duration: AppMotion.snappy,
-                              curve: AppMotion.easeOutCubic,
-                              child: child,
-                            );
-                          },
-                          child: ShrinkableButton(
-                            onTap: onLmsImportTap,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceTertiary
-                                    : colors.surfaceSecondary,
-                                borderRadius: AppRadius.radiusCard,
-                                border: Border.all(
-                                  color: colors.primary.withAlpha(
-                                    isDark ? 90 : 60,
-                                  ),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.school_outlined,
-                                    color: colors.primary,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Import LMS',
-                                    style: typography.footnote.bold.copyWith(
-                                      color: colors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                  DropZoneActionButtons(
+                    onPickFile: () => _handlePickFile(context),
+                    onCameraScanTap: onCameraScanTap,
+                    onLmsImportTap: onLmsImportTap,
                   ),
                 ],
               ),

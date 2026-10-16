@@ -35,8 +35,8 @@ CREATE POLICY "Service role manages revenuecat processed events"
     ON public.revenuecat_processed_events
     FOR ALL
     TO service_role
-    USING (true)
-    WITH CHECK (true);
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
 
 REVOKE ALL ON public.revenuecat_processed_events FROM anon, authenticated, PUBLIC;
 GRANT ALL ON public.revenuecat_processed_events TO service_role;

@@ -203,6 +203,9 @@ BEGIN
 END;
 $$;
 
+REVOKE EXECUTE ON FUNCTION public.nudge_study_circle_members_rpc(UUID, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.nudge_study_circle_members_rpc(UUID, TEXT) TO authenticated, service_role;
+
 -- 3. Reschedule pg_cron jobs using X-Cron-Secret
 DO $$
 DECLARE

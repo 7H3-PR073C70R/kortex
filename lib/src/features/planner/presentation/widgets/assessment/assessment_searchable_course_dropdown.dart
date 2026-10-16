@@ -3,7 +3,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 
 /// Reusable searchable dropdown for registered courses and subjects in the assessment planner.
 class AssessmentSearchableCourseDropdown extends StatefulWidget {
@@ -14,9 +14,9 @@ class AssessmentSearchableCourseDropdown extends StatefulWidget {
     super.key,
   });
 
-  final List<CuratedCourseModel> courses;
-  final CuratedCourseModel? selectedCourse;
-  final ValueChanged<CuratedCourseModel> onCourseSelected;
+  final List<CuratedCourseEntity> courses;
+  final CuratedCourseEntity? selectedCourse;
+  final ValueChanged<CuratedCourseEntity> onCourseSelected;
 
   @override
   State<AssessmentSearchableCourseDropdown> createState() =>

@@ -5,7 +5,6 @@ import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/dashboard/data/models/analytics_summary_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
@@ -40,7 +39,7 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
   final CreateExamCountdownUseCase _createExamUseCase;
   final CramWorkloadCalculator _calculator;
   StreamSubscription<DecksState>? _decksSubscription;
-  StreamSubscription<AnalyticsSummaryModel>? _activitySubscription;
+  StreamSubscription<dynamic>? _activitySubscription;
 
   void _initDecksListener() {
     if (locator.isRegistered<DecksBloc>()) {

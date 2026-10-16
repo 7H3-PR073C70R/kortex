@@ -41,8 +41,8 @@ CREATE POLICY "Service role manages daily ai quotas"
     ON public.user_daily_ai_quotas
     FOR ALL
     TO service_role
-    USING (true)
-    WITH CHECK (true);
+    USING ((auth.jwt() ->> 'role') = 'service_role')
+    WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
 
 -- Revoke direct modifications from public/anon/authenticated
 REVOKE INSERT, UPDATE, DELETE ON public.user_daily_ai_quotas FROM anon, authenticated, PUBLIC;

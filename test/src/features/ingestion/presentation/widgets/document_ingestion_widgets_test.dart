@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
-import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/ingestion/document_upload_control_section.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/ingestion/interrupted_upload_banner.dart';
@@ -31,7 +30,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           InterruptedUploadBanner(
-            job: {
+            job: const {
               'filename': 'lecture_notes.pdf',
               'uploadProgress': 0.75,
             },
@@ -153,10 +152,7 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      const state = IngestionState(
-        status: ProcessingStatus.idle,
-        synthesisMode: SynthesisMode.fastLocal,
-      );
+      const state = IngestionState();
 
       await tester.pumpWidget(
         _wrap(

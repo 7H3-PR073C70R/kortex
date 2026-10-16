@@ -1,6 +1,6 @@
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
-import 'package:kortex/src/features/ingestion/data/data_sources/lms_import_data_source.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/lms_course_entity.dart';
 
 abstract class LmsRepository {
   Future<Either<Failure, List<LmsCourse>>> fetchGoogleClassroomCourses({

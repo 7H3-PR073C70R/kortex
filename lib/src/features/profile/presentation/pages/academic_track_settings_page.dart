@@ -1,17 +1,9 @@
-import 'dart:async';
-
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:kortex/src/app/router/app_router.gr.dart';
-import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
-import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/course_track_entity.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -19,83 +11,52 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/goal_calibration_slider.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
-import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
-import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/academic_track/academic_track_card.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/academic_track/save_track_button.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/academic_track/study_pace_shortcut_card.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
-import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
-import 'package:kortex/src/shared/widgets/app_dialog.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Subpage for calibrating active academic track, target exams, and goals.
 @RoutePage()
 class AcademicTrackSettingsPage extends StatelessWidget {
-  const AcademicTrackSettingsPage({super.key});
+  const AcademicTrackSettingsPage({
+    this.authBloc,
+    this.dashboardBloc,
+    super.key,
+  });
+
+  final AuthBloc? authBloc;
+  final DashboardBloc? dashboardBloc;
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<AuthBloc>.value(
-      value: locator<AuthBloc>(),
-      child: const _AcademicTrackSettingsView(),
-    );
+    final effectiveAuthBloc = authBloc ??
+        (locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null);
+    final effectiveDashboardBloc = dashboardBloc ??
+        (locator.isRegistered<DashboardBloc>()
+            ? locator<DashboardBloc>()
+            : null);
+
+    if (effectiveAuthBloc != null) {
+      return BlocProvider<AuthBloc>.value(
+        value: effectiveAuthBloc,
+        child: _AcademicTrackSettingsView(dashboardBloc: effectiveDashboardBloc),
+      );
+    }
+    return _AcademicTrackSettingsView(dashboardBloc: effectiveDashboardBloc);
   }
 }
 
 class _AcademicTrackSettingsView extends HookWidget {
-  const _AcademicTrackSettingsView();
+  const _AcademicTrackSettingsView({this.dashboardBloc});
 
-  IconData _getIconData(String iconName) {
-    switch (iconName) {
-      case 'school':
-        return Icons.school_rounded;
-      case 'assignment_turned_in':
-        return Icons.assignment_turned_in_rounded;
-      case 'timer':
-        return Icons.timer_outlined;
-      case 'history_edu':
-        return Icons.history_edu_rounded;
-      case 'workspace_premium':
-        return Icons.workspace_premium_rounded;
-      case 'psychology':
-        return Icons.psychology_rounded;
-      case 'menu_book':
-        return Icons.menu_book_rounded;
-      case 'auto_stories':
-        return Icons.auto_stories_rounded;
-      case 'handyman':
-        return Icons.handyman_rounded;
-      case 'verified':
-        return Icons.verified_rounded;
-      case 'calculate':
-        return Icons.calculate_outlined;
-      case 'biotech':
-        return Icons.biotech_outlined;
-      case 'medical_services':
-        return Icons.medical_services_outlined;
-      case 'gavel':
-        return Icons.gavel_rounded;
-      case 'engineering':
-        return Icons.engineering_outlined;
-      case 'trending_up':
-        return Icons.trending_up_rounded;
-      case 'terminal':
-        return Icons.terminal_rounded;
-      case 'record_voice_over':
-        return Icons.record_voice_over_outlined;
-      case 'translate':
-        return Icons.translate_rounded;
-      default:
-        return Icons.auto_stories_rounded;
-    }
-  }
+  final DashboardBloc? dashboardBloc;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
-    final l10n = context.l10n;
-    final isDark = context.isDarkMode;
 
     final currentProfile = context.read<AuthBloc>().state.userProfile;
     final selectedTrack = useState<String>(
@@ -161,6 +122,7 @@ class _AcademicTrackSettingsView extends HookWidget {
                     ),
                     const SizedBox(height: 18),
 
+                    // 1. Target Exam & Curriculum Hero Card
                     Padding(
                       padding: const EdgeInsets.only(left: 6, bottom: 8),
                       child: Text(
@@ -172,13 +134,9 @@ class _AcademicTrackSettingsView extends HookWidget {
                         ),
                       ),
                     ),
-                    _buildInteractiveTrackCard(
-                      context,
-                      activeTrack,
-                      selectedTrack,
-                      colors,
-                      typography,
-                      isDark,
+                    AcademicTrackCard(
+                      track: activeTrack,
+                      selectedTrack: selectedTrack,
                     ),
                     const SizedBox(height: 24),
 
@@ -208,7 +166,7 @@ class _AcademicTrackSettingsView extends HookWidget {
                     ),
                     const SizedBox(height: 20),
 
-                    // 2b. Advanced FSRS & Reminder Tuning Entry
+                    // 3. Advanced FSRS & Reminder Tuning Entry
                     Padding(
                       padding: const EdgeInsets.only(left: 6, bottom: 8),
                       child: Text(
@@ -220,179 +178,16 @@ class _AcademicTrackSettingsView extends HookWidget {
                         ),
                       ),
                     ),
-                    PlatformHoverBuilder(
-                      builder: (context, isHovered, child) {
-                        return AnimatedScale(
-                          scale: isHovered ? 1.005 : 1.0,
-                          duration: AppMotion.snappy,
-                          curve: Curves.easeOutCubic,
-                          child: child,
-                        );
-                      },
-                      child: ShrinkableButton(
-                        onTap: () {
-                          AppFeedback.light();
-                          unawaited(
-                            context.router.push(const DeckPaceSettingsRoute()),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceSecondary,
-                            borderRadius: AppRadius.radiusCard,
-                            border: Border.all(
-                              color: colors.surfaceBorder.withAlpha(60),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: colors.primary.withAlpha(30),
-                                  borderRadius: AppRadius.radiusBadge,
-                                ),
-                                child: Icon(
-                                  Icons.tune_rounded,
-                                  color: colors.primary,
-                                  size: 18,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Study Pace & Daily Reminders',
-                                      style: typography.body.bold.copyWith(
-                                        color: colors.textPrimary,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Calibrate desired retention, request interval optimization, and schedule daily review reminders.',
-                                      style: typography.caption.regular.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 11.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                color: colors.textSecondary,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    const StudyPaceShortcutCard(),
                     const SizedBox(height: 28),
 
-                    // 3. Save Changes Button
-                    PlatformHoverBuilder(
-                      builder: (context, isHovered, child) {
-                        return AnimatedScale(
-                          scale: isHovered ? 1.01 : 1.0,
-                          duration: AppMotion.snappy,
-                          curve: Curves.easeOutCubic,
-                          child: child,
-                        );
-                      },
-                      child: ShrinkableButton(
-                        onTap: () {
-                          AppFeedback.medium();
-                          final currentTrack =
-                              currentProfile?.targetTrack ?? '';
-                          final isTrackChanging =
-                              currentTrack.isNotEmpty &&
-                              currentTrack.toUpperCase() !=
-                                  selectedTrack.value.toUpperCase();
-
-                          if (isTrackChanging) {
-                            unawaited(
-                              AppDialog.show<void>(
-                                context: context,
-                                title: 'Switch Academic Track?',
-                                description:
-                                    'Switching your primary focus to "${selectedTrack.value}".\n\n'
-                                    'Your historical study logs, flashcard decks, and day streak will be fully preserved.',
-                                primaryActionText: 'Switch Track',
-                                onPrimaryAction: () async {
-                                  AppFeedback.medium();
-                                  if (context.mounted) {
-                                    context.read<AuthBloc>().add(
-                                      AuthUpdateCourseTrackRequested(
-                                        track: selectedTrack.value,
-                                        dailyTarget: dailyTarget.value,
-                                        retentionBenchmark:
-                                            retentionBenchmark.value,
-                                      ),
-                                    );
-                                    if (locator.isRegistered<DashboardBloc>()) {
-                                      locator<DashboardBloc>().add(
-                                        const DashboardRefreshed(),
-                                      );
-                                    }
-                                    context.showSnackBar(
-                                      message:
-                                          'Switched academic track to ${selectedTrack.value}. Study history preserved!',
-                                      type: SnackBarType.success,
-                                    );
-                                    Navigator.of(context).pop();
-                                  }
-                                },
-                                secondaryActionText: 'Cancel',
-                              ),
-                            );
-                          } else {
-                            context.read<AuthBloc>().add(
-                              AuthUpdateCourseTrackRequested(
-                                track: selectedTrack.value,
-                                dailyTarget: dailyTarget.value,
-                                retentionBenchmark: retentionBenchmark.value,
-                              ),
-                            );
-                            context.showSnackBar(
-                              message: l10n.profileSavedSuccessNotice,
-                              type: SnackBarType.success,
-                            );
-                            Navigator.of(context).pop();
-                          }
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          decoration: BoxDecoration(
-                            color: colors.primary,
-                            borderRadius: AppRadius.radiusPanel,
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.black.withAlpha(
-                                  isDark ? 60 : 25,
-                                ),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              l10n.saveChangesButton,
-                              style: typography.body.bold.copyWith(
-                                color: colors.white,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                    // 4. Save Changes Button
+                    SaveTrackButton(
+                      selectedTrack: selectedTrack.value,
+                      dailyTarget: dailyTarget.value,
+                      retentionBenchmark: retentionBenchmark.value,
+                      currentTrack: currentProfile?.targetTrack ?? '',
+                      dashboardBloc: dashboardBloc,
                     ),
                   ],
                 ),
@@ -401,444 +196,6 @@ class _AcademicTrackSettingsView extends HookWidget {
           ),
         );
       },
-    );
-  }
-
-  /// Single interactive Track card with tap-to-switch workflow
-  Widget _buildInteractiveTrackCard(
-    BuildContext context,
-    CourseTrackEntity track,
-    ValueNotifier<String> selectedTrack,
-    AppThemeColorsExtension colors,
-    TypographyThemeExtension typography,
-    bool isDark,
-  ) {
-    return PlatformHoverBuilder(
-      builder: (context, isHovered, child) {
-        return AnimatedContainer(
-          duration: AppMotion.snappy,
-          curve: Curves.easeOutCubic,
-          transform: isHovered
-              ? Matrix4.translationValues(0, -2, 0)
-              : Matrix4.identity(),
-          child: child,
-        );
-      },
-      child: ShrinkableButton(
-        onTap: () => _openTrackSelectorSheet(
-          context,
-          selectedTrack,
-          colors,
-          typography,
-          isDark,
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colors.surfaceSecondary,
-            borderRadius: AppRadius.radiusDialog,
-            border: Border.all(
-              color: colors.primary.withAlpha(isDark ? 100 : 70),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: colors.black.withAlpha(isDark ? 40 : 12),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          colors.primary,
-                          colors.syllabotAccent,
-                        ],
-                      ),
-                      borderRadius: AppRadius.radiusCard,
-                    ),
-                    child: Icon(
-                      _getIconData(track.iconName),
-                      color: colors.white,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                track.name,
-                                style: typography.body.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 15.5,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.primary.withAlpha(40),
-                                borderRadius: AppRadius.radiusBadge,
-                              ),
-                              child: Text(
-                                '~${track.examCountdownDays}d exam',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Tap to change track (11 available)',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.syllabotAccent,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceTertiary,
-                      borderRadius: AppRadius.radiusCard,
-                      border: Border.all(
-                        color: colors.surfaceBorder.withAlpha(80),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Change',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 11.5,
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: colors.primary,
-                          size: 16,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                track.description,
-                style: typography.caption.regular.copyWith(
-                  color: colors.textSecondary,
-                  fontSize: 12,
-                  height: 1.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Full searchable bottom sheet to select from all 11 tracks
-  void _openTrackSelectorSheet(
-    BuildContext context,
-    ValueNotifier<String> selectedTrack,
-    AppThemeColorsExtension colors,
-    TypographyThemeExtension typography,
-    bool isDark,
-  ) {
-    AppFeedback.selection();
-    unawaited(
-      AppAdaptiveSheet.showModal<void>(
-        context: context,
-        maxWidth: 600,
-        builder: (ctx) {
-          final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(ctx);
-          const tracks = CourseTrackEntity.defaultTracks;
-          return Align(
-            alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: Container(
-                height: isDesktop ? 600 : MediaQuery.of(ctx).size.height * 0.72,
-                decoration: BoxDecoration(
-                  color: colors.surfacePrimary,
-                  borderRadius: isDesktop
-                      ? BorderRadius.circular(AppRadius.dialog)
-                      : const BorderRadius.vertical(
-                          top: Radius.circular(AppRadius.dialog),
-                        ),
-                  border: Border.all(
-                    color: colors.surfaceBorder.withAlpha(80),
-                  ),
-                  boxShadow: isDesktop
-                      ? [
-                          BoxShadow(
-                            color: colors.black.withAlpha(isDark ? 80 : 30),
-                            blurRadius: 32,
-                            offset: const Offset(0, 12),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Column(
-                  children: [
-                    if (!isDesktop) ...[
-                      const SizedBox(height: 10),
-                      // Handle bar
-                      Container(
-                        width: 38,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: colors.surfaceBorder,
-                          borderRadius: AppRadius.radiusMicro,
-                        ),
-                      ),
-                    ],
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Select Academic Track',
-                            style: typography.title3.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 17,
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: colors.textSecondary,
-                              size: 20,
-                            ),
-                            onPressed: () => Navigator.of(ctx).pop(),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      child: StatefulBuilder(
-                        builder: (ctx, setSheetState) {
-                          return Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              TextField(
-                                onChanged: (q) => setSheetState(() {}),
-                                decoration: InputDecoration(
-                                  hintText: 'Search exam track, university, or department...',
-                                  hintStyle: typography.caption.regular.copyWith(
-                                    color: colors.textSecondary,
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.search_rounded,
-                                    color: colors.textSecondary,
-                                    size: 18,
-                                  ),
-                                  filled: true,
-                                  fillColor: colors.surfaceSecondary,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 10,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: AppRadius.radiusCard,
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                    Divider(
-                      height: 1,
-                      color: colors.surfaceBorder.withAlpha(60),
-                    ),
-                    Expanded(
-                      child: StatefulBuilder(
-                        builder: (ctx, setListState) {
-                          return ListView.builder(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            itemCount: tracks.length,
-                            itemBuilder: (context, index) {
-                              final track = tracks[index];
-                              final isSelected = selectedTrack.value == track.id;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: PlatformHoverBuilder(
-                              builder: (context, isHovered, child) {
-                                return AnimatedContainer(
-                                  duration: AppMotion.snappy,
-                                  curve: Curves.easeOutCubic,
-                                  transform: isHovered
-                                      ? Matrix4.translationValues(4, 0, 0)
-                                      : Matrix4.identity(),
-                                  child: child,
-                                );
-                              },
-                              child: ShrinkableButton(
-                                onTap: () {
-                                  AppFeedback.light();
-                                  selectedTrack.value = track.id;
-                                  Navigator.of(ctx).pop();
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? colors.primary.withAlpha(
-                                            isDark ? 40 : 20,
-                                          )
-                                        : colors.surfaceSecondary,
-                                    borderRadius: AppRadius.radiusCard,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? colors.primary
-                                          : colors.surfaceBorder.withAlpha(60),
-                                      width: isSelected ? 1.5 : 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 36,
-                                        height: 36,
-                                        decoration: BoxDecoration(
-                                          color: colors.primary.withAlpha(30),
-                                          borderRadius: AppRadius.radiusBadge,
-                                        ),
-                                        child: Icon(
-                                          _getIconData(track.iconName),
-                                          color: colors.primary,
-                                          size: 18,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Flexible(
-                                                  child: Text(
-                                                    track.name,
-                                                    style: typography.body.bold
-                                                        .copyWith(
-                                                          color: colors
-                                                              .textPrimary,
-                                                          fontSize: 13.5,
-                                                        ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 5,
-                                                        vertical: 1.5,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        colors.surfaceTertiary,
-                                                    borderRadius:
-                                                        AppRadius.radiusMicro,
-                                                  ),
-                                                  child: Text(
-                                                    '~${track.examCountdownDays}d',
-                                                    style: typography
-                                                        .caption
-                                                        .bold
-                                                        .copyWith(
-                                                          color: colors
-                                                              .textSecondary,
-                                                          fontSize: 9.5,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              track.description,
-                                              style: typography.caption.regular
-                                                  .copyWith(
-                                                    color: colors.textSecondary,
-                                                    fontSize: 11,
-                                                  ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (isSelected)
-                                        Icon(
-                                          Icons.check_circle_rounded,
-                                          color: colors.primary,
-                                          size: 20,
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
     );
   }
 }

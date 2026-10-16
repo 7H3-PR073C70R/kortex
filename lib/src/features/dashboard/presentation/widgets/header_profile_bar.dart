@@ -1,31 +1,32 @@
 import 'dart:async';
-import 'dart:ui';
 
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar/header_icon_button.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar/profile_initials_helper.dart' as profile_initials;
+import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar/rank_progress_sheet.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar/uncalibrated_profile_banner.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:kortex/src/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
+
+export 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar/header_icon_button.dart';
+export 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar/profile_initials_helper.dart';
+export 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar/rank_progress_sheet.dart';
+export 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar/uncalibrated_profile_banner.dart';
 
 class HeaderProfileBar extends StatelessWidget {
   const HeaderProfileBar({
@@ -33,6 +34,8 @@ class HeaderProfileBar extends StatelessWidget {
     required this.isProfileUncalibrated,
     this.userName,
     this.userPhotoUrl,
+    this.userStorageService,
+    this.notificationsCubit,
     super.key,
   });
 
@@ -40,68 +43,35 @@ class HeaderProfileBar extends StatelessWidget {
   final bool isProfileUncalibrated;
   final String? userName;
   final String? userPhotoUrl;
+  final UserStorageService? userStorageService;
+  final NotificationsCubit? notificationsCubit;
 
-  static String extractTwoLetterInitials(String? text) {
-    if (text == null) return 'KO';
-    final trimmed = text.trim();
-    if (trimmed.isEmpty) return 'KO';
-
-    // 1. If multi-word (e.g. "John Doe"), take the first letter of the first two words
-    final parts = trimmed
-        .split(RegExp(r'[\s_.\-]+'))
-        .where((p) => p.isNotEmpty)
-        .toList();
-    if (parts.length >= 2) {
-      final first = parts[0].characters.isNotEmpty
-          ? parts[0].characters.first
-          : '';
-      final second = parts[1].characters.isNotEmpty
-          ? parts[1].characters.first
-          : '';
-      final combined = '$first$second'.toUpperCase();
-      if (combined.isNotEmpty) return combined;
-    }
-
-    // 2. If single word/username (e.g. "toxicbishop01"), strip non-alphanumeric and take first 2 chars
-    final clean = trimmed.replaceAll(RegExp('[^a-zA-Z0-9]'), '');
-    if (clean.characters.length >= 2) {
-      return clean.characters.take(2).toString().toUpperCase();
-    }
-    if (clean.characters.length == 1) {
-      return clean.toUpperCase();
-    }
-
-    // 3. Fallback to raw characters if only unicode/emojis or special symbols
-    if (trimmed.characters.length >= 2) {
-      return trimmed.characters.take(2).toString().toUpperCase();
-    }
-    if (trimmed.characters.length == 1) {
-      return trimmed.toUpperCase();
-    }
-
-    return 'KO';
-  }
+  static String extractTwoLetterInitials(String? text) =>
+      profile_initials.extractTwoLetterInitials(text);
 
   @override
   Widget build(BuildContext context) {
     final neural = context.neural;
-    final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
-    final isDark = context.isDarkMode;
 
     final authState = context.watch<AuthBloc?>()?.state;
     final authProfile = authState?.userProfile;
     final email = authProfile?.email ?? authState?.user?.email ?? '';
     final emailPrefix = email.contains('@') ? email.split('@').first : '';
 
+    final storage = userStorageService ??
+        (locator.isRegistered<UserStorageService>()
+            ? locator<UserStorageService>()
+            : null);
+
     var candidateName =
         userName ?? authProfile?.displayName ?? authState?.user?.displayName;
     if (candidateName == null ||
         candidateName.trim().isEmpty ||
         (emailPrefix.isNotEmpty && candidateName.trim() == emailPrefix)) {
-      if (locator.isRegistered<UserStorageService>()) {
-        final storedName = locator<UserStorageService>().getUserDisplayName();
+      if (storage != null) {
+        final storedName = storage.getUserDisplayName();
         if (storedName != null &&
             storedName.trim().isNotEmpty &&
             storedName.trim() != emailPrefix) {
@@ -125,10 +95,15 @@ class HeaderProfileBar extends StatelessWidget {
     );
 
     final unreadCount = () {
+      if (notificationsCubit != null) {
+        return notificationsCubit!.state.unreadCount;
+      }
       try {
         final cubit = context.watch<NotificationsCubit?>();
         if (cubit != null) return cubit.state.unreadCount;
-      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+      } on Object catch (e, st) {
+        AppLogger.recordNonFatal(e, st);
+      }
       if (locator.isRegistered<NotificationsCubit>()) {
         return locator<NotificationsCubit>().state.unreadCount;
       }
@@ -228,7 +203,7 @@ class HeaderProfileBar extends StatelessWidget {
                                     key: AppTourKeys.headerStreakKey,
                                     onTap: () {
                                       unawaited(HapticFeedback.lightImpact());
-                                      _showRankProgressSheet(
+                                      showRankProgressSheet(
                                         context,
                                         analytics,
                                         authProfile,
@@ -276,7 +251,7 @@ class HeaderProfileBar extends StatelessWidget {
               children:
                   <Widget>[
                         // Notifications Shortcut
-                        _HeaderIconButton(
+                        HeaderIconButton(
                           icon: Icons.notifications_outlined,
                           color: neural.amber300,
                           tooltip: 'Notifications',
@@ -302,482 +277,9 @@ class HeaderProfileBar extends StatelessWidget {
         // 2. Sticky Uncalibrated Profile Banner (If user skipped calibration)
         if (isProfileUncalibrated) ...[
           const SizedBox(height: 14),
-          Semantics(
-            container: true,
-            label: l10n.dashboardUncalibratedSemantics,
-            child:
-                ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.panel),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.panel,
-                            ),
-                            gradient: LinearGradient(
-                              colors: [
-                                colors.primary.withAlpha(isDark ? 55 : 30),
-                                colors.syllabotAccent.withAlpha(
-                                  isDark ? 35 : 18,
-                                ),
-                              ],
-                            ),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(
-                                isDark ? 100 : 70,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const SyllabotAvatar(size: 36),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      l10n.dashboardUncalibratedTitle,
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.textPrimary,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      l10n.dashboardUncalibratedSubtitle,
-                                      style: typography.footnote.regular
-                                          .copyWith(
-                                            color: colors.textSecondary,
-                                            fontSize: 11.5,
-                                            height: 1.3,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              ShrinkableButton(
-                                onTap: () {
-                                  unawaited(HapticFeedback.lightImpact());
-                                  unawaited(
-                                    context.router.push(
-                                      const OnboardingCalibrationRoute(),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 7,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.primary,
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.badge,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    l10n.dashboardCalibrateButton,
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.white,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
-                    .animate(delay: 200.ms)
-                    .fadeIn(duration: 400.ms)
-                    .slideY(begin: -0.1, end: 0, curve: Curves.easeOutQuint),
-          ),
+          const UncalibratedProfileBanner(),
         ],
       ],
     );
   }
-}
-
-class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({
-    required this.icon,
-    required this.color,
-    required this.tooltip,
-    required this.onTap,
-    this.borderHighlightColor,
-    this.badgeCount = 0,
-  });
-
-  final IconData icon;
-  final Color color;
-  final String tooltip;
-  final VoidCallback onTap;
-  final Color? borderHighlightColor;
-  final int badgeCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final neural = context.neural;
-
-    return Semantics(
-      button: true,
-      label: tooltip,
-      child: Tooltip(
-        message: tooltip,
-        child: PlatformHoverBuilder(
-          builder: (context, isHovered, child) {
-            return ShrinkableButton(
-              onTap: onTap,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  AnimatedContainer(
-                    duration: AppMotion.snappy,
-                    curve: AppMotion.easeOutCubic,
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: neural.obsidian850.withAlpha(
-                        isHovered ? 255 : 230,
-                      ),
-                      border: Border.all(
-                        color: isHovered
-                            ? (borderHighlightColor ?? neural.emerald)
-                                  .withAlpha(
-                                    110,
-                                  )
-                            : neural.hairlineStrong,
-                      ),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 16,
-                      color: color,
-                    ),
-                  ),
-                  if (badgeCount > 0)
-                    Positioned(
-                      top: -4,
-                      right: -4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 1,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: neural.amber400,
-                          borderRadius: BorderRadius.circular(9),
-                          border: Border.all(
-                            color: neural.obsidian950,
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: neural.amber400.withAlpha(140),
-                              blurRadius: 6,
-                              spreadRadius: 0.5,
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            badgeCount > 99 ? '99+' : '$badgeCount',
-                            style: TextStyle(
-                              color: neural.obsidian950,
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w800,
-                              height: 1.1,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-void _showRankProgressSheet(
-  BuildContext context,
-  AnalyticsSummaryEntity analytics,
-  dynamic authProfile,
-) {
-  final neural = context.neural;
-  final typography = context.typography;
-
-  final currentXp = analytics.xpPoints > 0 ? analytics.xpPoints : 3400;
-  const targetXp = 5000;
-  final progressRatio = (currentXp / targetXp).clamp(0.0, 1.0);
-  final userLevel = (authProfile as dynamic)?.level ?? 1;
-
-  unawaited(
-    AppAdaptiveSheet.showModal<void>(
-      context: context,
-      builder: (sheetContext) {
-        final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(sheetContext);
-        return Align(
-          alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: ClipRRect(
-              borderRadius: isDesktop
-                  ? BorderRadius.circular(AppRadius.dialog)
-                  : const BorderRadius.vertical(
-                      top: Radius.circular(AppRadius.dialog),
-                    ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  padding: EdgeInsets.fromLTRB(24, isDesktop ? 24 : 16, 24, 32),
-                  decoration: BoxDecoration(
-                    color: neural.obsidian900.withAlpha(245),
-                    borderRadius: isDesktop
-                        ? BorderRadius.circular(AppRadius.dialog)
-                        : const BorderRadius.vertical(
-                            top: Radius.circular(AppRadius.dialog),
-                          ),
-                    border: Border.all(
-                      color: neural.amber.withAlpha(80),
-                    ),
-                    boxShadow: isDesktop
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 28,
-                              offset: const Offset(0, 14),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (!isDesktop) ...[
-                        // Handle
-                        Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: neural.slate400.withAlpha(120),
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.micro,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // Rank Badge Icon
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              neural.amber400,
-                              neural.amber,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: neural.amber.withAlpha(120),
-                              blurRadius: 20,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.workspace_premium_rounded,
-                            size: 36,
-                            color: neural.obsidian950,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      Text(
-                        analytics.academicRank,
-                        style: typography.title2.bold.copyWith(
-                          color: neural.slate100,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: neural.emerald.withAlpha(30),
-                          borderRadius: BorderRadius.circular(AppRadius.badge),
-                          border: Border.all(
-                            color: neural.emerald400.withAlpha(100),
-                          ),
-                        ),
-                        child: Text(
-                          'LEVEL $userLevel SCHOLAR',
-                          style: typography.caption.bold.copyWith(
-                            color: neural.emerald400,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Progress Bar Card
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: neural.obsidian850,
-                          borderRadius: BorderRadius.circular(AppRadius.panel),
-                          border: Border.all(color: neural.hairlineStrong),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Next Rank: Master Scholar',
-                                  style: typography.footnote.bold.copyWith(
-                                    color: neural.slate200,
-                                  ),
-                                ),
-                                Text(
-                                  '$currentXp / $targetXp XP',
-                                  style: typography.footnote.bold.copyWith(
-                                    color: neural.amber300,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.micro,
-                              ),
-                              child: LinearProgressIndicator(
-                                value: progressRatio,
-                                minHeight: 8,
-                                backgroundColor: neural.obsidian800,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  neural.amber400,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Earn ${(targetXp - currentXp).clamp(0, targetXp)} more XP to rank up and unlock Advanced Socratic Drills!',
-                              style: typography.caption.regular.copyWith(
-                                color: neural.slate400,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Multipliers & Active Perks
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: neural.obsidian850,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.badge,
-                                ),
-                                border: Border.all(
-                                  color: neural.amber.withAlpha(40),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.bolt_rounded,
-                                    size: 18,
-                                    color: neural.amber400,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      '+15% XP Active Recall Multiplier',
-                                      style: typography.caption.bold.copyWith(
-                                        color: neural.slate200,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Action Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ShrinkableButton(
-                          onTap: () {
-                            Navigator.of(sheetContext).pop();
-                            unawaited(
-                              context.router.push(
-                                const AnalyticsDetailRoute(),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [neural.amber400, neural.amber],
-                              ),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.badge,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'View Full Analytics & Rank Badges',
-                                style: typography.callout.bold.copyWith(
-                                  color: neural.obsidian950,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    ),
-  );
 }

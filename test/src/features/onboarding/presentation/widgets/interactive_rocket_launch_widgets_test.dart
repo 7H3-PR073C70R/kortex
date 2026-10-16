@@ -21,9 +21,9 @@ void main() {
         y: 0.5,
         vx: 0.1,
         vy: -0.2,
-        radius: 3.0,
+        radius: 3,
         color: Colors.amber,
-        maxLife: 1.0,
+        maxLife: 1,
       );
       expect(particle.x, equals(0.5));
       expect(particle.life, equals(1.0));

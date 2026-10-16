@@ -12,7 +12,6 @@ import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
-import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
@@ -131,7 +130,7 @@ class CbtPracticeConfigModalSheet extends HookWidget {
 
     final userTrack = context.read<AuthBloc?>()?.state.userProfile?.targetTrack;
     final examCategory = (userTrack != null && userTrack.isNotEmpty)
-        ? PastQuestionModel.parseExamCategory(userTrack)
+        ? ExamCategory.parse(userTrack)
         : null;
 
     useEffect(() {

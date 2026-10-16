@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
-import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/assessment/assessment_action_buttons.dart';
@@ -262,8 +262,8 @@ void main() {
 
     testWidgets('AssessmentSearchableCourseDropdown expands and selects a course',
         (tester) async {
-      final courses = <CuratedCourseModel>[
-        const CuratedCourseModel(
+      final courses = <CuratedCourseEntity>[
+        const CuratedCourseEntity(
           id: 'course-1',
           courseCode: 'MECH 301',
           title: 'Advanced Thermodynamics',
@@ -273,7 +273,7 @@ void main() {
           iconName: 'school',
           colorHex: '#4F46E5',
         ),
-        const CuratedCourseModel(
+        const CuratedCourseEntity(
           id: 'course-2',
           courseCode: 'ELEC 202',
           title: 'Circuits & Systems',
@@ -285,7 +285,7 @@ void main() {
         ),
       ];
 
-      CuratedCourseModel? selectedCourse;
+      CuratedCourseEntity? selectedCourse;
 
       await tester.pumpWidget(
         createTestWidget(

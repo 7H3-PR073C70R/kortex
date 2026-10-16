@@ -7,7 +7,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/ingestion/data/models/generated_deck_preview_model.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/generated_deck_preview_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/ocr_latex_live_editor.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';

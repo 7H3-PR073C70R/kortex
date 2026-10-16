@@ -61,6 +61,56 @@ class CuratedCourseEntity extends Equatable {
     this.retentionRate,
   });
 
+  factory CuratedCourseEntity.fromJson(Map<String, dynamic> json) =>
+      CuratedCourseEntity(
+        id: (json['id'] ?? '') as String,
+        courseCode:
+            (json['courseCode'] ?? json['course_code'] ?? '') as String,
+        title: (json['title'] ?? '') as String,
+        department: (json['department'] ?? 'General') as String,
+        totalMaterials:
+            ((json['totalMaterials'] ?? json['total_materials']) as int?) ?? 0,
+        hasActivePastPapers: ((json['hasActivePastPapers'] ??
+                json['has_active_past_papers']) as bool?) ??
+            true,
+        iconName: (json['iconName'] ?? json['icon_name'] ?? 'school') as String,
+        colorHex: (json['colorHex'] ?? json['color_hex'] ?? '#6366F1') as String,
+        pdfDownloadUrl:
+            (json['pdfDownloadUrl'] ?? json['pdf_download_url']) as String?,
+        syllabusCoverage:
+            ((json['syllabusCoverage'] ?? json['syllabus_coverage']) as num?)
+                ?.toDouble() ??
+            0.0,
+        accuracyPercent:
+            ((json['accuracyPercent'] ?? json['accuracy_percent']) as num?)
+                ?.toDouble(),
+        retentionRate:
+            ((json['retentionRate'] ?? json['retention_rate']) as num?)
+                ?.toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'courseCode': courseCode,
+    'course_code': courseCode,
+    'title': title,
+    'department': department,
+    'totalMaterials': totalMaterials,
+    'total_materials': totalMaterials,
+    'hasActivePastPapers': hasActivePastPapers,
+    'has_active_past_papers': hasActivePastPapers,
+    'iconName': iconName,
+    'icon_name': iconName,
+    'colorHex': colorHex,
+    'color_hex': colorHex,
+    'pdfDownloadUrl': pdfDownloadUrl,
+    'pdf_download_url': pdfDownloadUrl,
+    'syllabusCoverage': syllabusCoverage,
+    'syllabus_coverage': syllabusCoverage,
+    'accuracyPercent': accuracyPercent,
+    'retentionRate': retentionRate,
+  };
+
   final String id;
   final String courseCode; // e.g. "MTH 301", "WAEC-CHEM", "SAT-MATH"
   final String title;

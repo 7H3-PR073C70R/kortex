@@ -5,7 +5,7 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/features/ingestion/data/models/generated_deck_preview_model.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/generated_deck_preview_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';

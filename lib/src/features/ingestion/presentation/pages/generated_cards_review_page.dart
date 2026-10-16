@@ -16,8 +16,8 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.d
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
-import 'package:kortex/src/features/ingestion/data/models/generated_deck_preview_model.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/generated_deck_preview_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';

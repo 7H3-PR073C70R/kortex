@@ -19,8 +19,6 @@ import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repo
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/domain/models/fsrs_user_settings.dart';
@@ -762,10 +760,10 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           )
         else
           Future<void>.value(),
-        if (locator.isRegistered<DecksRemoteDataSource>())
-          locator<DecksRemoteDataSource>().updateDeckCards(
+        if (_decksRepository != null)
+          _decksRepository.updateDeckCards(
             deckId,
-            updatedCards.map(FlashcardModel.fromEntity).toList(),
+            updatedCards,
           )
         else
           Future<void>.value(),

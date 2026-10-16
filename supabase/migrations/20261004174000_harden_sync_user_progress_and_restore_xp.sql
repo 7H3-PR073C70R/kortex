@@ -36,24 +36,29 @@ SET xp_points = 1600, current_streak_days = GREATEST(current_streak_days, 1), lo
 WHERE user_id = '50d185ad-eca8-4a1c-b793-0cdedd4d4be0';
 
 -- 3. Add today's heatmap entry for toxicbishop01 (CBT / quiz practice)
-INSERT INTO public.heatmap_activity (
-    user_id,
-    activity_date,
-    intensity_level,
-    cards_reviewed,
-    minutes_studied
-)
-VALUES (
-    '50d185ad-eca8-4a1c-b793-0cdedd4d4be0',
-    CURRENT_DATE,
-    3,
-    25,
-    15
-)
-ON CONFLICT (user_id, activity_date) DO UPDATE SET
-    cards_reviewed = GREATEST(heatmap_activity.cards_reviewed, EXCLUDED.cards_reviewed),
-    minutes_studied = GREATEST(heatmap_activity.minutes_studied, EXCLUDED.minutes_studied),
-    intensity_level = GREATEST(heatmap_activity.intensity_level, EXCLUDED.intensity_level);
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM auth.users WHERE id = '50d185ad-eca8-4a1c-b793-0cdedd4d4be0') THEN
+        INSERT INTO public.heatmap_activity (
+            user_id,
+            activity_date,
+            intensity_level,
+            cards_reviewed,
+            minutes_studied
+        )
+        VALUES (
+            '50d185ad-eca8-4a1c-b793-0cdedd4d4be0',
+            CURRENT_DATE,
+            3,
+            25,
+            15
+        )
+        ON CONFLICT (user_id, activity_date) DO UPDATE SET
+            cards_reviewed = GREATEST(heatmap_activity.cards_reviewed, EXCLUDED.cards_reviewed),
+            minutes_studied = GREATEST(heatmap_activity.minutes_studied, EXCLUDED.minutes_studied),
+            intensity_level = GREATEST(heatmap_activity.intensity_level, EXCLUDED.intensity_level);
+    END IF;
+END $$;
 
 -- 4. Recalculate leaderboard ranks
 WITH ranked AS (

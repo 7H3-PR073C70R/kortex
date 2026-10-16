@@ -22,6 +22,9 @@ AS $$
     );
 $$;
 
+REVOKE EXECUTE ON FUNCTION public.is_service_role_caller() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_service_role_caller() TO service_role;
+
 -- ------------------------------------------------------------------------------
 -- 2. award_user_xp: Enforce caller ownership, role check, and transaction bounds
 -- ------------------------------------------------------------------------------

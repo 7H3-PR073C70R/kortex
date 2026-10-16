@@ -30,7 +30,14 @@ CREATE INDEX IF NOT EXISTS idx_community_members_community_id ON community_membe
 ALTER TABLE study_communities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE community_members ENABLE ROW LEVEL SECURITY;
 
-ALTER PUBLICATION supabase_realtime ADD TABLE study_communities, community_members;
+DO $$
+BEGIN
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE study_communities, community_members;
+    EXCEPTION WHEN duplicate_object THEN
+        NULL;
+    END;
+END $$;
 
 DROP POLICY IF EXISTS "Anyone can view study communities" ON study_communities;
 DROP POLICY IF EXISTS "Users can create study communities" ON study_communities;

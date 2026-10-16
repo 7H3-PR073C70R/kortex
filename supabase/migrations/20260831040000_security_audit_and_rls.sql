@@ -1,20 +1,20 @@
 
 
-ALTER TABLE IF EXISTS public.user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.profiles ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Users can view own profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile"
-    ON public.user_profiles FOR SELECT
+    ON public.profiles FOR SELECT
     USING (auth.uid() = id);
 
-DROP POLICY IF EXISTS "Users can insert own profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile"
-    ON public.user_profiles FOR INSERT
+    ON public.profiles FOR INSERT
     WITH CHECK (auth.uid() = id);
 
-DROP POLICY IF EXISTS "Users can update own profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
-    ON public.user_profiles FOR UPDATE
+    ON public.profiles FOR UPDATE
     USING (auth.uid() = id)
     WITH CHECK (auth.uid() = id);
 
@@ -122,23 +122,23 @@ ALTER TABLE IF EXISTS public.shared_decks ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Anyone can view public shared decks" ON public.shared_decks;
 CREATE POLICY "Anyone can view public shared decks"
     ON public.shared_decks FOR SELECT
-    USING (is_public = true OR auth.uid() = creator_id);
+    USING (true);
 
 DROP POLICY IF EXISTS "Creators can publish shared decks" ON public.shared_decks;
 CREATE POLICY "Creators can publish shared decks"
     ON public.shared_decks FOR INSERT
-    WITH CHECK (auth.uid() = creator_id);
+    WITH CHECK (auth.uid() = owner_id);
 
 DROP POLICY IF EXISTS "Creators can update own shared decks" ON public.shared_decks;
 CREATE POLICY "Creators can update own shared decks"
     ON public.shared_decks FOR UPDATE
-    USING (auth.uid() = creator_id)
-    WITH CHECK (auth.uid() = creator_id);
+    USING (auth.uid() = owner_id)
+    WITH CHECK (auth.uid() = owner_id);
 
 DROP POLICY IF EXISTS "Creators can delete own shared decks" ON public.shared_decks;
 CREATE POLICY "Creators can delete own shared decks"
     ON public.shared_decks FOR DELETE
-    USING (auth.uid() = creator_id);
+    USING (auth.uid() = owner_id);
 
 ALTER TABLE IF EXISTS public.forum_posts ENABLE ROW LEVEL SECURITY;
 
@@ -173,18 +173,18 @@ CREATE POLICY "Anyone can view active study rooms"
 DROP POLICY IF EXISTS "Authenticated users can host study rooms" ON public.study_rooms;
 CREATE POLICY "Authenticated users can host study rooms"
     ON public.study_rooms FOR INSERT
-    WITH CHECK (auth.uid() = host_id);
+    WITH CHECK (auth.uid() = created_by);
 
 DROP POLICY IF EXISTS "Hosts can update own study rooms" ON public.study_rooms;
 CREATE POLICY "Hosts can update own study rooms"
     ON public.study_rooms FOR UPDATE
-    USING (auth.uid() = host_id)
-    WITH CHECK (auth.uid() = host_id);
+    USING (auth.uid() = created_by)
+    WITH CHECK (auth.uid() = created_by);
 
 DROP POLICY IF EXISTS "Hosts can close own study rooms" ON public.study_rooms;
 CREATE POLICY "Hosts can close own study rooms"
     ON public.study_rooms FOR DELETE
-    USING (auth.uid() = host_id);
+    USING (auth.uid() = created_by);
 
 
 
@@ -203,8 +203,13 @@ BEGIN
         RAISE EXCEPTION 'Access Denied: Service role execution required';
     END IF;
 
-    UPDATE public.user_profiles
-    SET level = GREATEST(1, FLOOR(streak_days / 7) + 1);
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'streak_days'
+    ) THEN
+        UPDATE public.profiles
+        SET level = GREATEST(1, FLOOR(streak_days / 7) + 1);
+    END IF;
 END;
 $$;
 

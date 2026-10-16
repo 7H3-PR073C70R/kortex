@@ -60,12 +60,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('00:14'), findsOneWidget);
-      expect(find.text('Locked 🔒'), findsOneWidget);
-      expect(find.text('Discussing projectile motion formula'), findsOneWidget);
-      expect(find.text('Done'), findsOneWidget);
+      expect(find.text('REC'), findsOneWidget);
+      expect(find.text('Show Live STT Preview 📝'), findsOneWidget);
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
       expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
 
-      await tester.tap(find.text('Done'));
+      await tester.tap(find.byIcon(Icons.check_rounded));
       await tester.pump(const Duration(milliseconds: 50));
       expect(doneCalled, isTrue);
 
@@ -93,7 +93,37 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+    });
+
+    testWidgets('supports constructor dependency injection of AudioRecordingService',
+        (tester) async {
+      final customMockService = MockAudioRecordingService();
+      when(() => customMockService.amplitudeStream)
+          .thenAnswer((_) => const Stream<double>.empty());
+      when(customMockService.hasPermission)
+          .thenAnswer((_) async => true);
+      when(customMockService.isRecording)
+          .thenAnswer((_) async => false);
+
+      await tester.pumpApp(
+        Scaffold(
+          body: VoiceNoteRecorderWidget(
+            audioRecordingService: customMockService,
+            compact: true,
+            onRecordingComplete: ({
+              required audioUrl,
+              required durationSeconds,
+              required transcript,
+            }) {},
+            onCancel: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
     });
 
     testWidgets('VoiceNoteRecorderController attaches and triggers finish',

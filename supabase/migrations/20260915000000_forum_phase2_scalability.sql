@@ -39,7 +39,7 @@ CREATE OR REPLACE FUNCTION public.fetch_forum_posts_keyset(
 )
 RETURNS JSONB
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
@@ -115,7 +115,7 @@ CREATE OR REPLACE FUNCTION public.fetch_forum_thread_tree(
 )
 RETURNS JSONB
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public, pg_temp
 AS $$
 DECLARE

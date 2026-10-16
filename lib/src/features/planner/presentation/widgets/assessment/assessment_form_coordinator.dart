@@ -10,7 +10,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
@@ -63,8 +63,8 @@ class AssessmentFormCoordinator extends ChangeNotifier {
   final List<String> scopedTopics = [];
   double? selectedWeightPercent;
 
-  List<CuratedCourseModel> registeredCourses = [];
-  CuratedCourseModel? selectedCourse;
+  List<CuratedCourseEntity> registeredCourses = [];
+  CuratedCourseEntity? selectedCourse;
   List<DeckEntity> courseDecks = [];
   int deckCardsCount = 0;
   int pastQuestionsCount = 0;
@@ -126,7 +126,7 @@ class AssessmentFormCoordinator extends ChangeNotifier {
     notifyListeners();
   }
 
-  void onCourseSelected(CuratedCourseModel course) {
+  void onCourseSelected(CuratedCourseEntity course) {
     selectedCourse = course;
     userCustomizedTitle = false;
     syncDefaultTitleAndDecks();
@@ -169,7 +169,7 @@ class AssessmentFormCoordinator extends ChangeNotifier {
         final list = jsonDecode(raw) as List<dynamic>;
         registeredCourses = list
             .whereType<Map<String, dynamic>>()
-            .map(CuratedCourseModel.fromJson)
+            .map(CuratedCourseEntity.fromJson)
             .toList();
       }
     } on Object catch (e, st) {

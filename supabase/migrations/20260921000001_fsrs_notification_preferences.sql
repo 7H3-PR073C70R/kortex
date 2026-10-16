@@ -82,14 +82,14 @@ BEGIN
             'kortex-spaced-repetition-due',
             '0 8 * * *',
             format(
-                $$SELECT net.http_post(
+                $cron$SELECT net.http_post(
                     url := %L || '/functions/v1/trigger-notifications',
                     headers := jsonb_build_object(
                         'Content-Type', 'application/json',
                         'X-Cron-Secret', %L
                     ),
                     body := '{"action":"spaced_repetition_due"}'::jsonb
-                )$$,
+                )$cron$,
                 v_supabase_url,
                 v_cron_secret
             )
@@ -99,14 +99,14 @@ BEGIN
             'kortex-daily-streak-reminder',
             '0 20 * * *',
             format(
-                $$SELECT net.http_post(
+                $cron$SELECT net.http_post(
                     url := %L || '/functions/v1/trigger-notifications',
                     headers := jsonb_build_object(
                         'Content-Type', 'application/json',
                         'X-Cron-Secret', %L
                     ),
                     body := '{"action":"daily_streak_reminder"}'::jsonb
-                )$$,
+                )$cron$,
                 v_supabase_url,
                 v_cron_secret
             )

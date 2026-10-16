@@ -3,24 +3,19 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/text_to_speech_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
-import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
-import 'package:kortex/src/core/utils/app_logger.dart';
-import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
-import 'package:kortex/src/features/decks/presentation/bloc/focus_session_cubit.dart';
-import 'package:kortex/src/features/decks/presentation/bloc/focus_session_state.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/latex_card_content_viewer.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/thought_parking_lot_sheet.dart';
-import 'package:kortex/src/features/syllabot/presentation/widgets/speech_text_normalizer.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/gesture_canvas/card_drag_route_indicator.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/gesture_canvas/card_entrance_widget.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/gesture_canvas/card_face_content_resolver.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/gesture_canvas/card_face_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
+/// Interactive canvas managing 3D flip physics, directional drag gestures,
+/// and entrance animations for a study [FlashcardEntity].
 class FlashcardGestureCanvas extends HookWidget {
   const FlashcardGestureCanvas({
     required this.card,
@@ -32,6 +27,7 @@ class FlashcardGestureCanvas extends HookWidget {
     this.onSwipeDown,
     this.onOpenParkingLot,
     this.enableBionicReading = false,
+    this.ttsService,
     super.key,
   });
 
@@ -44,13 +40,16 @@ class FlashcardGestureCanvas extends HookWidget {
   final VoidCallback? onSwipeDown;
   final VoidCallback? onOpenParkingLot;
   final bool enableBionicReading;
+  final TextToSpeechService? ttsService;
+
+  @visibleForTesting
+  static (String, String) resolveCardFaces(String front, String back) =>
+      CardFaceContentResolver.resolve(front, back);
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final typography = context.typography;
     final l10n = context.l10n;
-    final isDark = context.isDarkMode;
 
     // Flip Animation Controller with expressive Kowalski curve
     final flipController = useAnimationController(
@@ -254,7 +253,7 @@ class FlashcardGestureCanvas extends HookWidget {
             ..rotateZ(dragOffset.value.dx * 0.0004)
             ..rotateY(flipAngle);
 
-          final (resolvedFront, resolvedBack) = resolveCardFaces(
+          final (resolvedFront, resolvedBack) = CardFaceContentResolver.resolve(
             card.front,
             card.back,
           );
@@ -263,9 +262,7 @@ class FlashcardGestureCanvas extends HookWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.center,
             children: [
-              // Each incoming card rises from the deck: scale 0.96 + fade,
-              // keyed by card id so only genuine card changes replay it.
-              _CardEntrance(
+              CardEntranceWidget(
                 key: ValueKey(card.id),
                 child: Transform(
                   alignment: Alignment.center,
@@ -274,491 +271,43 @@ class FlashcardGestureCanvas extends HookWidget {
                       ? Transform(
                           alignment: Alignment.center,
                           transform: Matrix4.identity()..rotateY(math.pi),
-                          child: _CardFace(
+                          child: CardFaceWidget(
                             badgeText: l10n.studySessionBackBadge,
                             badgeColor: colors.success,
                             mainText: resolvedBack,
                             latexFormula: card.backLatex,
                             isBackFace: true,
-                            colors: colors,
-                            typography: typography,
-                            isDark: isDark,
                             card: card,
                             enableBionicReading: enableBionicReading,
                             onOpenParkingLot: onOpenParkingLot,
+                            ttsService: ttsService,
                           ),
                         )
-                      : _CardFace(
+                      : CardFaceWidget(
                           badgeText: l10n.studySessionFrontBadge,
                           badgeColor: colors.primary,
                           mainText: resolvedFront,
                           latexFormula: card.frontLatex,
                           isBackFace: false,
-                          colors: colors,
-                          typography: typography,
-                          isDark: isDark,
                           card: card,
                           enableBionicReading: enableBionicReading,
                           onOpenParkingLot: onOpenParkingLot,
+                          ttsService: ttsService,
                         ),
                 ),
               ),
 
               // Visual Drag Direction Route Indicator Overlay
               if (routeColor != null && routeLabel != null && routeIcon != null)
-                Positioned(
-                  top: 24,
-                  child: Opacity(
-                    opacity: dragProgress,
-                    child: Transform.scale(
-                      scale: 0.85 + (0.25 * dragProgress),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: routeColor.withAlpha(isDark ? 230 : 255),
-                          borderRadius: BorderRadius.circular(AppRadius.dialog),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.black.withAlpha(isDark ? 60 : 30),
-                              blurRadius: 18,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(routeIcon, color: colors.white, size: 18),
-                            const SizedBox(width: 8),
-                            Text(
-                              routeLabel,
-                              style: typography.caption.bold.copyWith(
-                                color: colors.white,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                CardDragRouteIndicator(
+                  routeColor: routeColor,
+                  routeLabel: routeLabel,
+                  routeIcon: routeIcon,
+                  dragProgress: dragProgress,
                 ),
             ],
           );
         },
-      ),
-    );
-  }
-
-  @visibleForTesting
-  static (String, String) resolveCardFaces(String front, String back) {
-    // 1. If front already explicitly contains options, nothing to migrate
-    final hasFrontOptions = RegExp(
-      r'(?:\*\*Options:\*\*|Options:|\n\s*•\s*[A-Ea-e][\.\)])',
-      caseSensitive: false,
-    ).hasMatch(front);
-
-    if (hasFrontOptions) {
-      return (front, back);
-    }
-
-    // 2. Check if back contains legacy options block
-    final legacyOptionsRegex = RegExp(
-      r'(?:\*\*Options:\*\*|Options:)\s*\n([\s\S]*?)(?=\n+\s*(?:\*\*)?(?:Correct Answer|Ans|Answer|Explanation):|\Z)',
-      caseSensitive: false,
-    );
-
-    final match = legacyOptionsRegex.firstMatch(back);
-    if (match == null) {
-      return (front, back);
-    }
-
-    final rawOptions = match.group(1) ?? '';
-    final cleanOptionLines = <String>[];
-    String? correctOptionText;
-
-    for (final rawLine in rawOptions.split('\n')) {
-      final trimmed = rawLine.trim();
-      if (trimmed.isEmpty) continue;
-
-      final isChecked = trimmed.contains('✅');
-      final cleaned = trimmed
-          .replaceAll('✅', '')
-          .replaceAll('•', '')
-          .replaceAll('*', '')
-          .replaceAll('-', '')
-          .trim();
-
-      // Normalize duplicate prefixes like "A. A. Option Text" -> "A. Option Text"
-      final optMatch = RegExp(
-        r'^(?:([A-Ea-e])[\.\)]|\(([A-Ea-e])\))\s*(?:(?:([A-Ea-e])[\.\)]|\(([A-Ea-e])\))\s*)?(.*)',
-      ).firstMatch(cleaned);
-
-      if (optMatch != null) {
-        final letter = (optMatch.group(1) ?? optMatch.group(2) ?? '')
-            .toUpperCase();
-        final content = optMatch.group(5)?.trim() ?? '';
-        cleanOptionLines.add('• $letter. $content');
-        if (isChecked && content.isNotEmpty) {
-          correctOptionText = 'Option $letter — $content';
-        }
-      } else {
-        cleanOptionLines.add('• $cleaned');
-      }
-    }
-
-    final resolvedFront = cleanOptionLines.isNotEmpty
-        ? '${front.trim()}\n\n**Options:**\n${cleanOptionLines.join('\n')}'
-        : front;
-
-    var resolvedBack =
-        (back.substring(0, match.start) + back.substring(match.end)).trim();
-
-    if (correctOptionText != null) {
-      resolvedBack = resolvedBack.replaceAllMapped(
-        RegExp(
-          r'((?:\*\*)?Correct Answer:(?:\*\*)?\s*Option\s+[A-Ea-e])(?!\s*—)',
-          caseSensitive: false,
-        ),
-        (m) => '${m.group(1)} — ${correctOptionText!.split(' — ').last}',
-      );
-    }
-
-    return (resolvedFront, resolvedBack);
-  }
-}
-
-class _CardFace extends StatelessWidget {
-  const _CardFace({
-    required this.badgeText,
-    required this.badgeColor,
-    required this.mainText,
-    required this.isBackFace,
-    required this.colors,
-    required this.typography,
-    required this.isDark,
-    required this.card,
-    this.latexFormula,
-    this.enableBionicReading = false,
-    this.onOpenParkingLot,
-  });
-
-  final String badgeText;
-  final Color badgeColor;
-  final String mainText;
-  final String? latexFormula;
-  final bool isBackFace;
-  final AppThemeColorsExtension colors;
-  final TypographyThemeExtension typography;
-  final bool isDark;
-  final FlashcardEntity card;
-  final bool enableBionicReading;
-  final VoidCallback? onOpenParkingLot;
-
-  @override
-  Widget build(BuildContext context) {
-    FocusSessionState? focusState;
-    try {
-      focusState = context.watch<FocusSessionCubit?>()?.state;
-    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-    final hasParkedThoughts = focusState?.parkedThoughts.isNotEmpty ?? false;
-
-    return Semantics(
-      container: true,
-      button: true,
-      label: isBackFace
-          ? 'Back of card: $mainText. Rate recall or tap to flip.'
-          : 'Front of card: $mainText. Tap or spacebar to reveal answer.',
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          // Faint deck edges peeking behind the active card — layered
-          // solid surfaces instead of blur, cheap during long sessions.
-          Positioned(
-            left: 20,
-            right: 20,
-            top: 16,
-            bottom: -10,
-            child: Container(
-              decoration: BoxDecoration(
-                color: colors.surfaceSecondary.withAlpha(isDark ? 110 : 150),
-                borderRadius: BorderRadius.circular(AppRadius.panel),
-                border: Border.all(color: colors.surfaceBorder.withAlpha(70)),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 36,
-            right: 36,
-            top: 26,
-            bottom: -20,
-            child: Container(
-              decoration: BoxDecoration(
-                color: colors.surfaceSecondary.withAlpha(isDark ? 60 : 90),
-                borderRadius: BorderRadius.circular(AppRadius.panel),
-              ),
-            ),
-          ),
-          Container(
-            constraints: const BoxConstraints(minHeight: 340, maxWidth: 640),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.dialog),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  if (isDark)
-                    colors.surfaceSecondary.withAlpha(220)
-                  else
-                    colors.surfacePrimary.withAlpha(245),
-                  if (isDark)
-                    colors.surfacePrimary.withAlpha(235)
-                  else
-                    colors.surfaceSecondary.withAlpha(230),
-                ],
-              ),
-              border: Border.all(
-                color: isBackFace
-                    ? colors.success.withAlpha(isDark ? 120 : 80)
-                    : colors.primary.withAlpha(isDark ? 120 : 70),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.black.withAlpha(isDark ? 60 : 25),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Top Tag Pill
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeColor.withAlpha(isDark ? 45 : 20),
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                        border: Border.all(
-                          color: badgeColor.withAlpha(100),
-                        ),
-                      ),
-                      child: Text(
-                        badgeText,
-                        style: typography.caption.bold.copyWith(
-                          color: badgeColor,
-                          fontSize: 10.5,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          if (card.sourceTopic != null &&
-                              (isBackFace || card.sourceTopic != mainText)) ...[
-                            Flexible(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 120),
-                                child: Text(
-                                  card.sourceTopic!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.end,
-                                  style: typography.footnote.regular.copyWith(
-                                    color: colors.textMuted,
-                                    fontSize: 11.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                          ],
-                          // Listen button — reads the card text aloud
-                          ValueListenableBuilder<bool>(
-                            valueListenable:
-                                locator<TextToSpeechService>().isSpeakingNotifier,
-                            builder: (context, isSpeaking, _) {
-                              return IconButton(
-                                icon: Icon(
-                                  isSpeaking
-                                      ? Icons.volume_up_rounded
-                                      : Icons.volume_up_outlined,
-                                  size: 20,
-                                  color: isSpeaking
-                                      ? colors.primary
-                                      : colors.textMuted,
-                                ),
-                                onPressed: () {
-                                  final tts =
-                                      locator<TextToSpeechService>();
-                                  if (tts.isSpeaking) {
-                                    unawaited(tts.stop());
-                                  } else {
-                                    final spokenText =
-                                        SpeechTextNormalizer.normalizeFlashcard(
-                                      mainText,
-                                    );
-                                    unawaited(tts.speak(spokenText));
-                                  }
-                                },
-                                tooltip: 'Listen to card',
-                                constraints: const BoxConstraints(
-                                  minWidth: 32,
-                                  minHeight: 32,
-                                ),
-                                padding: EdgeInsets.zero,
-                              );
-                            },
-                          ),
-                          // Only show parking lot when FocusSessionCubit is
-                          // actually in scope (Focus Workspace) or an explicit
-                          // callback was wired up by the parent.
-                          if (onOpenParkingLot != null || focusState != null)
-                            IconButton(
-                              icon: Icon(
-                                Icons.psychology_rounded,
-                                size: 20,
-                                color: hasParkedThoughts
-                                    ? colors.primary
-                                    : colors.textMuted,
-                              ),
-                              onPressed: () {
-                                if (onOpenParkingLot != null) {
-                                  onOpenParkingLot!();
-                                } else {
-                                  unawaited(
-                                    ThoughtParkingLotSheet.show(context),
-                                  );
-                                }
-                              },
-                              tooltip: 'Thought Parking Lot',
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
-                              ),
-                              padding: EdgeInsets.zero,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // Center Content (Text + Image + LaTeX Formula)
-                Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      physics: const ClampingScrollPhysics(),
-                      child: LatexCardContentViewer(
-                        text: mainText,
-                        latexFormula: latexFormula,
-                        imageUrl: card.imageUrl,
-                        isBackFace: isBackFace,
-                        enableBionicReading: enableBionicReading,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Bottom Self-Aware Hint
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      isBackFace
-                          ? Icons.swap_vert_rounded
-                          : Icons.touch_app_rounded,
-                      size: 14,
-                      color: colors.textMuted,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      isBackFace
-                          ? context.l10n.studySessionTapToFlipBack
-                          : context.l10n.studySessionTapToFlip,
-                      style: typography.footnote.regular.copyWith(
-                        color: colors.textMuted,
-                        fontSize: 11.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Brief "rising from the deck" entrance (scale 0.96 + fade), replayed
-/// whenever the parent hands in a new card via [ValueKey].
-class _CardEntrance extends StatefulWidget {
-  const _CardEntrance({required this.child, super.key});
-
-  final Widget child;
-
-  @override
-  State<_CardEntrance> createState() => _CardEntranceState();
-}
-
-class _CardEntranceState extends State<_CardEntrance>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 220),
-    value: 1,
-  );
-  bool _entranceQueued = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_entranceQueued) return;
-    _entranceQueued = true;
-    if (!context.reduceMotion) {
-      unawaited(_controller.forward(from: 0));
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final curved = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutQuint,
-    );
-    return FadeTransition(
-      opacity: curved,
-      child: ScaleTransition(
-        scale: Tween<double>(begin: 0.96, end: 1).animate(curved),
-        child: widget.child,
       ),
     );
   }

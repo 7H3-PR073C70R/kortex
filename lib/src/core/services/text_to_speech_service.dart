@@ -10,9 +10,9 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/kokoro_model_downloader.dart';
 import 'package:kortex/src/core/services/kokoro_tts_adapter.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/tts/speech_text_normalizer.dart';
+import 'package:kortex/src/core/services/tts/tts_config.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
-import 'package:kortex/src/features/syllabot/presentation/widgets/speech_text_normalizer.dart';
-import 'package:kortex/src/features/syllabot/presentation/widgets/tts_config.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Available synthesis engines in Kortex's tiered speech architecture.
