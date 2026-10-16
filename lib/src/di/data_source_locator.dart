@@ -32,6 +32,7 @@ void _initDataSource() {
         locator<DashboardApiClient>(),
         userActivityService: locator<UserActivityService>(),
         storageService: locator<LocalStorageService>(),
+        dio: locator.isRegistered<Dio>() ? locator<Dio>() : null,
       ),
     )
     ..registerLazySingleton<DecksLocalDataSource>(

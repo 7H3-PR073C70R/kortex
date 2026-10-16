@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/quiz/data/client/past_questions_api_client.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source_impl.dart';
+import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:retrofit/retrofit.dart';
@@ -86,5 +87,89 @@ void main() {
       final subjects = await dataSource.getAvailableSubjects(ExamCategory.waec);
       expect(subjects, equals(['Chemistry', 'Physics']));
     });
+
+    test(
+      'savePastQuestions routes questions to submitQuestionSubmissions moderation queue',
+      () async {
+        List<dynamic>? capturedPayload;
+        when(
+          () => mockClient.submitQuestionSubmissions(any()),
+        ).thenAnswer((invocation) async {
+          capturedPayload = invocation.positionalArguments.first as List<dynamic>;
+          return HttpResponse(
+            {'status': 'success'},
+            Response(requestOptions: RequestOptions()),
+          );
+        });
+
+        const question = PastQuestionModel(
+          id: 'pq_user_contributed_1',
+          examType: ExamCategory.jamb,
+          subject: 'Physics',
+          year: 2024,
+          questionNumber: 1,
+          prompt: 'What is the SI unit of force?',
+          options: ['Joule', 'Newton', 'Watt', 'Pascal'],
+          correctOptionIndex: 1,
+          correctOptionLabel: 'B',
+          explanation: 'Force is measured in Newtons (N).',
+          topic: 'Mechanics',
+          isUserAdded: true,
+        );
+
+        await dataSource.savePastQuestions([question]);
+
+        verify(() => mockClient.submitQuestionSubmissions(any())).called(1);
+        expect(capturedPayload, isNotNull);
+        expect(capturedPayload!.length, equals(1));
+        final payloadItem = capturedPayload!.first as Map<String, dynamic>;
+        expect(payloadItem['client_question_id'], equals('pq_user_contributed_1'));
+        expect(payloadItem['exam_type'], equals('JAMB'));
+        expect(payloadItem['subject'], equals('Physics'));
+        expect(payloadItem['prompt'], equals('What is the SI unit of force?'));
+        expect(payloadItem['options'], equals(['Joule', 'Newton', 'Watt', 'Pascal']));
+        expect(payloadItem['metadata'], isNotNull);
+      },
+    );
+
+    test(
+      'savePastQuestions preserves questions in memory so user can access them locally even if remote call fails',
+      () async {
+        when(
+          () => mockClient.submitQuestionSubmissions(any()),
+        ).thenThrow(Exception('PostgREST write forbidden / RLS failure'));
+
+        const question = PastQuestionModel(
+          id: 'pq_user_local_1',
+          examType: ExamCategory.jamb,
+          subject: 'Chemistry',
+          year: 2023,
+          questionNumber: 5,
+          prompt: 'What is the atomic number of Carbon?',
+          options: ['4', '6', '8', '12'],
+          correctOptionIndex: 1,
+          correctOptionLabel: 'B',
+          explanation: 'Carbon has atomic number 6.',
+          topic: 'Atomic Structure',
+          isUserAdded: true,
+        );
+
+        await dataSource.savePastQuestions([question]);
+
+        // Mock remote fetch to fail, confirming in-memory presence
+        when(
+          () => mockClient.fetchPastQuestions(any()),
+        ).thenThrow(Exception('Offline'));
+
+        final results = await dataSource.getPastQuestions(
+          examCategory: ExamCategory.jamb,
+          subject: 'Chemistry',
+        );
+
+        expect(results.length, equals(1));
+        expect(results.first.id, equals('pq_user_local_1'));
+        expect(results.first.prompt, equals('What is the atomic number of Carbon?'));
+      },
+    );
   });
 }

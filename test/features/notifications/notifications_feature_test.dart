@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
 import 'package:kortex/src/features/notifications/domain/services/notification_router.dart';
 import 'package:kortex/src/features/notifications/domain/services/smart_study_reminder_scheduler.dart';
@@ -92,6 +93,47 @@ void main() {
 
       final scheduler = SmartStudyReminderScheduler(localStorageService: mockStorage);
       expect(scheduler.calculateOptimalRetentionHour(), equals(14));
+    });
+
+    test('SmartStudyReminderScheduler calculateExamUrgencyStudyWindow curves correctly', () {
+      final mockStorage = MockLocalStorageService();
+      final scheduler = SmartStudyReminderScheduler(localStorageService: mockStorage);
+
+      // > 30 days: 45 mins
+      expect(scheduler.calculateExamUrgencyStudyWindow(60), equals(45));
+      expect(scheduler.calculateExamUrgencyStudyWindow(31), equals(45));
+
+      // 15 - 30 days: 60 mins
+      expect(scheduler.calculateExamUrgencyStudyWindow(30), equals(60));
+      expect(scheduler.calculateExamUrgencyStudyWindow(15), equals(60));
+
+      // 7 - 14 days: 90 mins
+      expect(scheduler.calculateExamUrgencyStudyWindow(14), equals(90));
+      expect(scheduler.calculateExamUrgencyStudyWindow(7), equals(90));
+
+      // 1 - 6 days: 120 mins
+      expect(scheduler.calculateExamUrgencyStudyWindow(6), equals(120));
+      expect(scheduler.calculateExamUrgencyStudyWindow(1), equals(120));
+
+      // 0 days (exam day): 30 mins
+      expect(scheduler.calculateExamUrgencyStudyWindow(0), equals(30));
+
+      // Negative (past): 0 mins
+      expect(scheduler.calculateExamUrgencyStudyWindow(-1), equals(0));
+    });
+
+    test('NotificationService computeExamMilestoneNotificationId is deterministic and bounded', () {
+      final id0 = NotificationService.computeExamMilestoneNotificationId('JAMB 2026', 0);
+      final id1 = NotificationService.computeExamMilestoneNotificationId('JAMB 2026', 1);
+      final id5 = NotificationService.computeExamMilestoneNotificationId('JAMB 2026', 5);
+
+      expect(id0 >= NotificationService.examReminderBaseId, isTrue);
+      expect(id1, equals(id0 + 1));
+      expect(id5, equals(id0 + 5));
+
+      // Different exam has distinct id
+      final waecId0 = NotificationService.computeExamMilestoneNotificationId('WAEC 2026', 0);
+      expect(waecId0 >= NotificationService.examReminderBaseId, isTrue);
     });
 
     test('NotificationRouter parses quiz duel payload correctly', () async {

@@ -18,4 +18,9 @@ abstract class PastQuestionsApiClient {
   Future<HttpResponse<dynamic>> insertPastQuestions(
     @Body() List<dynamic> questions,
   );
+
+  @POST(AppApiEndpoint.questionSubmissions)
+  Future<HttpResponse<dynamic>> submitQuestionSubmissions(
+    @Body() List<dynamic> submissions,
+  );
 }

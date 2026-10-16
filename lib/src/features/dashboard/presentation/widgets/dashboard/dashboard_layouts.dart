@@ -15,6 +15,7 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/dashboard_hea
 import 'package:kortex/src/features/dashboard/presentation/widgets/fsrs_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_speed_dial.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/recent_deck_carousel.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/resume_active_cbt_exam_banner.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/study_circle_pod_pulse_card.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
@@ -69,6 +70,7 @@ class DashboardCompactLayout extends StatelessWidget {
                   curve: AppMotion.easeOutCubic,
                   child: Column(
                     children: [
+                      const ResumeActiveCbtExamBanner(),
                       if (feed.curatedCourses.isNotEmpty) ...[
                         ExamCountdownBanner(
                           key: AppTourKeys.countdownKey,
@@ -170,6 +172,9 @@ class DashboardMediumLayout extends StatelessWidget {
                   curve: AppMotion.easeOutCubic,
                   child: Column(
                     children: [
+                      const ResumeActiveCbtExamBanner(
+                        margin: EdgeInsets.only(bottom: 20),
+                      ),
                       if (feed.curatedCourses.isNotEmpty) ...[
                         ExamCountdownBanner(
                           key: AppTourKeys.countdownKey,
@@ -321,6 +326,9 @@ class DashboardExpandedLayout extends StatelessWidget {
                       curve: AppMotion.easeOutCubic,
                       child: Column(
                         children: [
+                          const ResumeActiveCbtExamBanner(
+                            margin: EdgeInsets.only(bottom: 20),
+                          ),
                           if (feed.curatedCourses.isNotEmpty) ...[
                             ExamCountdownBanner(
                               key: AppTourKeys.countdownKey,

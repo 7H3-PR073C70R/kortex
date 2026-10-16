@@ -9,6 +9,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -31,6 +32,8 @@ class MockExamLobbyPage extends HookWidget {
     required this.examName,
     this.subjectTrack,
     this.courseCode,
+    this.pastQuestionsRepository,
+    this.dashboardBloc,
     super.key,
   });
 
@@ -38,6 +41,8 @@ class MockExamLobbyPage extends HookWidget {
   final String examName;
   final String? subjectTrack;
   final String? courseCode;
+  final PastQuestionsRepository? pastQuestionsRepository;
+  final DashboardBloc? dashboardBloc;
 
   @override
   Widget build(BuildContext context) {
@@ -339,7 +344,12 @@ class MockExamLobbyPage extends HookWidget {
                               questionCount = 12;
                             }
 
-                            locator<DashboardBloc>().add(
+                            final effectiveDashboardBloc = dashboardBloc ??
+                                context.read<DashboardBloc?>() ??
+                                (locator.isRegistered<DashboardBloc>()
+                                    ? locator<DashboardBloc>()
+                                    : null);
+                            effectiveDashboardBloc?.add(
                               DashboardExamStarted(
                                 examId: examId,
                                 subject: examName,
@@ -362,11 +372,14 @@ class MockExamLobbyPage extends HookWidget {
                                     : null);
 
                             List<QuizQuestionEntity>? initialQuestions;
-                            if (locator
-                                .isRegistered<PastQuestionsRepository>()) {
+                            final effectivePqRepo = pastQuestionsRepository ??
+                                (locator.isRegistered<PastQuestionsRepository>()
+                                    ? locator<PastQuestionsRepository>()
+                                    : null);
+                            if (effectivePqRepo != null) {
                               try {
                                 var result =
-                                    await locator<PastQuestionsRepository>()
+                                    await effectivePqRepo
                                         .getPastQuestions(
                                           examCategory: cleanCategory,
                                           subject: cleanSubject.isNotEmpty
@@ -382,7 +395,7 @@ class MockExamLobbyPage extends HookWidget {
                                 if (questions.isEmpty &&
                                     cleanSubject.isNotEmpty) {
                                   result =
-                                      await locator<PastQuestionsRepository>()
+                                      await effectivePqRepo
                                           .getPastQuestions(
                                             subject: cleanSubject,
                                           );
@@ -395,7 +408,7 @@ class MockExamLobbyPage extends HookWidget {
                                 if (questions.isEmpty &&
                                     cleanSubject.isNotEmpty) {
                                   result =
-                                      await locator<PastQuestionsRepository>()
+                                      await effectivePqRepo
                                           .getPastQuestions(
                                             searchQuery: cleanSubject,
                                           );
@@ -414,8 +427,8 @@ class MockExamLobbyPage extends HookWidget {
                                       .map(QuizQuestionEntity.fromPastQuestion)
                                       .toList();
                                 }
-                              } on Object catch (_) {
-                                // Fallback handled by QuizRepositoryImpl or QuizWorkspace
+                              } on Object catch (e, st) {
+                                AppLogger.recordNonFatal(e, st);
                               }
                             }
 
@@ -425,7 +438,7 @@ class MockExamLobbyPage extends HookWidget {
                             unawaited(
                               context.router.push(
                                 QuizWorkspaceRoute(
-                                  deckId: examId,
+                                    deckId: examId,
                                   deckTitle:
                                       '$examName (${selectedMode.title})',
                                   subject: cleanSubject.isNotEmpty

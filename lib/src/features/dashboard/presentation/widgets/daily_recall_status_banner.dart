@@ -7,6 +7,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
@@ -58,7 +59,8 @@ class DailyRecallStatusBanner extends StatelessWidget {
               } else {
                 try {
                   AutoTabsRouter.of(context).setActiveIndex(1);
-                } on Object catch (_) {
+                } on Object catch (e, st) {
+                  AppLogger.debug('[DailyRecallStatusBanner] AutoTabsRouter not found, pushing DecksRoute: $e', error: e, stackTrace: st);
                   unawaited(context.router.push(const DecksRoute()));
                 }
               }

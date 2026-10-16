@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
@@ -61,8 +62,9 @@ class QuizWorkspacePage extends StatelessWidget {
           existing.state.questions.isNotEmpty) {
         return view;
       }
-    } on Object catch (_) {
+    } on Object catch (e, st) {
       // No ancestor QuizSessionCubit found, proceed to create one.
+      AppLogger.debug('[QuizWorkspacePage] No ancestor QuizSessionCubit found: $e', error: e, stackTrace: st);
     }
 
     final cubit = quizSessionCubit ?? locator<QuizSessionCubit>();
@@ -71,6 +73,12 @@ class QuizWorkspacePage extends StatelessWidget {
         title: deckTitle ?? 'Review your answers',
         questions: initialQuestions ?? const [],
       );
+    } else if (cubit.state.status == QuizSessionStatus.inProgress &&
+        cubit.state.questions.isNotEmpty) {
+      // In-progress session already active (e.g. preserved or restored)
+    } else if (QuizSessionCubit.hasActiveRestorableSession &&
+        (initialQuestions == null || initialQuestions!.isEmpty)) {
+      unawaited(cubit.restoreActiveSession());
     } else if (initialQuestions != null && initialQuestions!.isNotEmpty) {
       if (assessmentMode == AssessmentMode.millionaireMode) {
         cubit.startMillionaireQuiz(

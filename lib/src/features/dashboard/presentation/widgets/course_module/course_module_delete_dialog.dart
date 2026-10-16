@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -34,6 +35,7 @@ class CourseModuleDeleteDialog {
         onPrimaryAction: () async {
           AppFeedback.heavy();
           final effectiveCubit = curateCoursesCubit ??
+              context.read<CurateCoursesCubit?>() ??
               (locator.isRegistered<CurateCoursesCubit>()
                   ? locator<CurateCoursesCubit>()
                   : null);
@@ -45,6 +47,7 @@ class CourseModuleDeleteDialog {
       ).then((didDelete) {
         if (didDelete == true && context.mounted) {
           final effectiveBloc = dashboardBloc ??
+              context.read<DashboardBloc?>() ??
               (locator.isRegistered<DashboardBloc>()
                   ? locator<DashboardBloc>()
                   : null);

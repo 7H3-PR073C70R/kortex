@@ -37,11 +37,24 @@ class DashboardPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveCramPlannerCubit =
-        cramPlannerCubit ?? locator<CramPlannerCubit>();
-    final effectiveDashboardBloc = dashboardBloc ?? locator<DashboardBloc>();
-    final effectiveLocalStorage =
-        localStorageService ?? locator<LocalStorageService>();
+    final effectiveCramPlannerCubit = cramPlannerCubit ??
+        (context.read<CramPlannerCubit?>() ??
+            (locator.isRegistered<CramPlannerCubit>()
+                ? locator<CramPlannerCubit>()
+                : null)) ??
+        locator<CramPlannerCubit>();
+    final effectiveDashboardBloc = dashboardBloc ??
+        (context.read<DashboardBloc?>() ??
+            (locator.isRegistered<DashboardBloc>()
+                ? locator<DashboardBloc>()
+                : null)) ??
+        locator<DashboardBloc>();
+    final effectiveLocalStorage = localStorageService ??
+        (context.read<LocalStorageService?>() ??
+            (locator.isRegistered<LocalStorageService>()
+                ? locator<LocalStorageService>()
+                : null)) ??
+        locator<LocalStorageService>();
 
     useEffect(() {
       unawaited(effectiveCramPlannerCubit.loadExams());

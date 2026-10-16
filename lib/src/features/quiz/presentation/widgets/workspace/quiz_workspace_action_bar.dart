@@ -88,6 +88,14 @@ class QuizActionBar extends StatelessWidget {
     final question = state.currentQuestion;
     final isAnswered = question?.isAnswered ?? false;
 
+    if (state.status == QuizSessionStatus.submitting) {
+      return (
+        color: colors.primary,
+        label: 'Submitting...',
+        onPressed: null,
+      );
+    }
+
     if (reviewMode) {
       if (state.isLastQuestion) {
         return (

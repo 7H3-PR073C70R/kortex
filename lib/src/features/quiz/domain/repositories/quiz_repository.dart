@@ -19,7 +19,20 @@ abstract class QuizRepository {
     required String quizTitle,
     required List<QuizQuestionEntity> questions,
     required int durationSeconds,
+    String? attemptId,
   });
 
-  Future<int> flushPendingQuizSubmissions();
+  Future<Either<Failure, Map<String, dynamic>>> submitCbtMockAttempt({
+    required String sessionId,
+    required String quizTitle,
+    required String subject,
+    required int totalQuestions,
+    required int correctAnswers,
+    required int durationSeconds,
+    List<String> weakSubtopics = const [],
+    String? courseId,
+    String? courseCode,
+  });
+
+  Future<int> flushPendingQuizSubmissions({bool force = false});
 }

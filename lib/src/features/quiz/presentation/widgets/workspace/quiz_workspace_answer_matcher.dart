@@ -7,17 +7,8 @@ bool isExamSession(QuizSessionState state) =>
     state.assessmentMode == AssessmentMode.examSimulationMode;
 
 /// Answer comparison that ignores decoration and case.
-bool isSameAnswer(String option, String correctAnswer) {
-  final cleanCorrect = QuizContentSanitizer.cleanOptionText(
-    correctAnswer,
-  ).toLowerCase();
-  final cleanOption = QuizContentSanitizer.cleanOptionText(
-    option,
-  ).toLowerCase();
-  if (cleanCorrect.isEmpty) return false;
-  return cleanCorrect == cleanOption ||
-      option.trim().toLowerCase() == correctAnswer.trim().toLowerCase();
-}
+bool isSameAnswer(String option, String correctAnswer) =>
+    QuizContentSanitizer.isAnswerMatching(option, correctAnswer);
 
 /// The nudge offered before an answer, and repeated after a miss.
 String quizQuestionHintText(QuizQuestionEntity question) {

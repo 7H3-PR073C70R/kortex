@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
@@ -18,8 +19,9 @@ class DefaultSubjectsBanner extends StatelessWidget {
 
   final DashboardBloc? dashboardBloc;
 
-  DashboardBloc? get _effectiveDashboardBloc =>
+  DashboardBloc? _resolveDashboardBloc(BuildContext context) =>
       dashboardBloc ??
+      context.read<DashboardBloc?>() ??
       (locator.isRegistered<DashboardBloc>()
           ? locator<DashboardBloc>()
           : null);
@@ -72,12 +74,13 @@ class DefaultSubjectsBanner extends StatelessWidget {
               GestureDetector(
                 onTap: () async {
                   AppFeedback.selection();
+                  final dashboardBloc = _resolveDashboardBloc(context);
                   Navigator.of(context).pop();
                   final result = await context.router.push(
                     CurateCoursesRoute(),
                   );
                   if (result == true) {
-                    _effectiveDashboardBloc?.add(const DashboardRefreshed());
+                    dashboardBloc?.add(const DashboardRefreshed());
                   }
                 },
                 child: Container(
@@ -160,8 +163,9 @@ class AddCourseChip extends StatelessWidget {
 
   final DashboardBloc? dashboardBloc;
 
-  DashboardBloc? get _effectiveDashboardBloc =>
+  DashboardBloc? _resolveDashboardBloc(BuildContext context) =>
       dashboardBloc ??
+      context.read<DashboardBloc?>() ??
       (locator.isRegistered<DashboardBloc>()
           ? locator<DashboardBloc>()
           : null);
@@ -190,12 +194,13 @@ class AddCourseChip extends StatelessWidget {
       ),
       onPressed: () async {
         AppFeedback.selection();
+        final dashboardBloc = _resolveDashboardBloc(context);
         Navigator.of(context).pop();
         final result = await context.router.push(
           CurateCoursesRoute(),
         );
         if (result == true) {
-          _effectiveDashboardBloc?.add(const DashboardRefreshed());
+          dashboardBloc?.add(const DashboardRefreshed());
         }
       },
     );

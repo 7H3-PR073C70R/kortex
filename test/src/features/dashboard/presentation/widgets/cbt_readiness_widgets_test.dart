@@ -29,7 +29,8 @@ void main() {
       fsrsRetentionRate: 0.90,
       mockScoreRatio: 0.72,
       remediationSuggestion: 'Focus on Organic Chemistry reactions',
-      statusColor: Color(0xFF10B981),
+      statusTier: CbtReadinessStatusTier.onTrack,
+      statusColorValue: 0xFF10B981,
       targetExamType: 'WAEC',
       weakestAreaLabel: 'Organic Chemistry (54%)',
       calibratedCourseCount: 4,
@@ -44,7 +45,7 @@ void main() {
           accuracyPercent: 0.68,
           projectedScore: 68,
           maxScore: 100,
-          statusColor: Color(0xFFF59E0B),
+          statusColorValue: 0xFFF59E0B,
         ),
       ],
     );
@@ -160,10 +161,14 @@ void main() {
     testWidgets('CbtReadinessBreakdownSheet renders full diagnostic sheet content', (
       tester,
     ) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       await tester.pumpWidget(
         createTestApp(
           SizedBox(
-            height: 900,
+            height: 1400,
             width: 450,
             child: CbtReadinessBreakdownSheet(
               readinessResult: sampleReadinessResult,
@@ -181,6 +186,78 @@ void main() {
       expect(find.text('REGISTERED COURSES BREAKDOWN'), findsOneWidget);
       expect(find.text('Chemistry'), findsOneWidget);
       expect(find.text('Primary Bottleneck Diagnostic'), findsOneWidget);
+    });
+
+    testWidgets('CbtReadinessGaugeCard renders transparent confidence interval when sample size is sufficient', (
+      tester,
+    ) async {
+      const sufficientResult = CbtReadinessResult(
+        scorePercent: 68,
+        statusLabel: 'On Track',
+        statusTier: CbtReadinessStatusTier.onTrack,
+        statusColorValue: 0xFF10B981,
+        syllabusCoverage: 0.70,
+        fsrsRetentionRate: 0.85,
+        mockScoreRatio: 0.68,
+        projectedGrade: 'B2',
+        projectedScoreRange: '272 / 400',
+        totalQuestionsAnswered: 140,
+        confidenceMargin: 6,
+        isSampleSufficient: true,
+        confidenceIntervalLabel: 'Readiness: 68% ± 6% (Based on 140 questions across 4 subjects)',
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          const CbtReadinessGaugeCard(
+            readinessResult: sufficientResult,
+            examTitle: 'JAMB UTME 2026',
+            daysRemaining: 40,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Readiness: 68% ± 6% (Based on 140 questions across 4 subjects)'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.verified_outlined), findsOneWidget);
+    });
+
+    testWidgets('CbtReadinessGaugeCard renders low sample warning pill when sample is insufficient', (
+      tester,
+    ) async {
+      const lowSampleResult = CbtReadinessResult(
+        scorePercent: 60,
+        statusLabel: 'Accelerate Prep',
+        statusTier: CbtReadinessStatusTier.acceleratePrep,
+        statusColorValue: 0xFFF59E0B,
+        syllabusCoverage: 0.40,
+        fsrsRetentionRate: 0.70,
+        mockScoreRatio: 0.50,
+        projectedGrade: 'C4',
+        projectedScoreRange: '240 / 400',
+        totalQuestionsAnswered: 12,
+        confidenceIntervalLabel: 'Low sample size — complete a full mock to improve projection accuracy',
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          const CbtReadinessGaugeCard(
+            readinessResult: lowSampleResult,
+            examTitle: 'JAMB UTME 2026',
+            daysRemaining: 40,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Low sample size — complete a full mock to improve projection accuracy'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
     });
   });
 }

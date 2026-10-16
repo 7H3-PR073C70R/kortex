@@ -23,12 +23,16 @@ import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-DecksBloc _resolveDecksBloc() => locator<DecksBloc>();
+DecksBloc _resolveDecksBloc(BuildContext context) =>
+    context.read<DecksBloc?>() ??
+    (locator.isRegistered<DecksBloc>() ? locator<DecksBloc>() : null) ??
+    locator<DecksBloc>();
 
-GetDeckCardsUseCase? _resolveGetDeckCardsUseCase() =>
-    locator.isRegistered<GetDeckCardsUseCase>()
+GetDeckCardsUseCase? _resolveGetDeckCardsUseCase(BuildContext context) =>
+    context.read<GetDeckCardsUseCase?>() ??
+    (locator.isRegistered<GetDeckCardsUseCase>()
         ? locator<GetDeckCardsUseCase>()
-        : null;
+        : null);
 
 @RoutePage()
 class DeckDetailPage extends StatelessWidget {
@@ -47,7 +51,7 @@ class DeckDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = decksBloc ?? _resolveDecksBloc();
+    final bloc = decksBloc ?? _resolveDecksBloc(context);
     return BlocProvider<DecksBloc>.value(
       value: bloc,
       child: _DeckDetailContent(
@@ -93,7 +97,8 @@ class _DeckDetailContent extends HookWidget {
     final errorMessage = useState<String?>(null);
 
     void fetchCards() {
-      final useCase = getDeckCardsUseCase ?? _resolveGetDeckCardsUseCase();
+      final useCase =
+          getDeckCardsUseCase ?? _resolveGetDeckCardsUseCase(context);
       if (useCase != null) {
         isLoadingCards.value = true;
         errorMessage.value = null;

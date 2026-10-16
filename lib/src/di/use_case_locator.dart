@@ -277,6 +277,9 @@ void _initUseCaseLocator() {
         plannerRepository: locator<PlannerRepository>(),
         calculateTargetUseCase: locator<CalculateDailyCramTargetUseCase>(),
         createExamUseCase: locator<CreateExamCountdownUseCase>(),
+        notificationService: locator.isRegistered<NotificationService>()
+            ? locator<NotificationService>()
+            : null,
       ),
     )
     ..registerLazySingleton<GenerateQuizFromDeckUseCase>(
@@ -292,6 +295,7 @@ void _initUseCaseLocator() {
       () => QuizSessionCubit(
         generateQuizUseCase: locator<GenerateQuizFromDeckUseCase>(),
         submitQuizUseCase: locator<SubmitQuizAnswersUseCase>(),
+        analyticsService: locator<AnalyticsService>(),
       ),
     )
     ..registerLazySingleton<AnkiExportService>(

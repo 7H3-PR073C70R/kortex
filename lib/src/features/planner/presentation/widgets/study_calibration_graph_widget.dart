@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
-import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class StudyCalibrationGraphWidget extends StatelessWidget {
@@ -49,14 +49,16 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
       statusColor = colors.primary;
     }
 
-    final readiness = const CramWorkloadCalculator().calculateExamReadinessScore(
-      totalCards: exam.totalCardsCount,
-      masteredCards: exam.masteredCardsCount,
-      averageStability: 18,
+    final readinessResult = const CbtReadinessCalculator().compute(
+      syllabusCoverage: exam.completionProgress,
+      fsrsRetentionRate: (exam.achievedScorePercent ?? 0.0).clamp(0.0, 1.0),
+      mockScoreRatio: (exam.achievedScorePercent ?? 0.0).clamp(0.0, 1.0),
       daysRemaining: exam.daysRemaining,
-      totalLapses: exam.totalLapses,
-      empiricalQuizScorePercent: exam.achievedScorePercent,
+      examType: exam.subjectTrack.isNotEmpty
+          ? exam.subjectTrack
+          : exam.examName,
     );
+    final readiness = readinessResult.scorePercent.toDouble();
 
     final start = exam.createdAt ??
         DateTime.now().subtract(

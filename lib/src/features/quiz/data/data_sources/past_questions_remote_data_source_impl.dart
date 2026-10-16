@@ -1,3 +1,4 @@
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/quiz/data/client/past_questions_api_client.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_remote_data_source.dart';
 import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
@@ -16,12 +17,13 @@ class PastQuestionsRemoteDataSourceImpl
     _inMemoryQuestions.insertAll(0, questions);
 
     try {
-      final payload = questions.map((q) => q.toJson()).toList();
-      await _client.insertPastQuestions(payload);
-    } on Object {
-      // Gracefully continue offline
+      final payload = questions.map((q) => q.toSubmissionJson()).toList();
+      await _client.submitQuestionSubmissions(payload);
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
   }
+
 
   String _sanitizeInput(String input) {
     return input.replaceAll(RegExp('[,()%*]'), '').trim();
@@ -123,8 +125,8 @@ class PastQuestionsRemoteDataSourceImpl
           ...remote.where((q) => !seenIds.contains(q.id)),
         ];
       }
-    } on Object {
-      // Fallback gracefully to memory matches if remote query fails
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
 
     return memoryMatches;
@@ -149,8 +151,8 @@ class PastQuestionsRemoteDataSourceImpl
         final list = set.toList()..sort();
         return list;
       }
-    } on Object {
-      // Fallback
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
 
     return const [
@@ -189,8 +191,8 @@ class PastQuestionsRemoteDataSourceImpl
           return list;
         }
       }
-    } on Object {
-      // Fallback
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
 
     return const [2024, 2023, 2022, 2021, 2020, 2019, 2018];

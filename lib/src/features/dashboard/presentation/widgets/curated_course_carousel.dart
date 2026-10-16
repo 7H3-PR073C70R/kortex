@@ -285,10 +285,10 @@ class _CourseCard extends StatelessWidget {
     ];
     final accent = accents[accentIndex % accents.length];
 
-    // Query matching decks from DecksBloc if registered
-    final allDecks = locator.isRegistered<DecksBloc>()
-        ? locator<DecksBloc>().state.allDecks
-        : const <DeckEntity>[];
+    // Query matching decks from DecksBloc (context first, then fallback to locator)
+    final decksBloc = context.read<DecksBloc?>() ??
+        (locator.isRegistered<DecksBloc>() ? locator<DecksBloc>() : null);
+    final allDecks = decksBloc?.state.allDecks ?? const <DeckEntity>[];
 
     final matchingDecks = allDecks
         .where(

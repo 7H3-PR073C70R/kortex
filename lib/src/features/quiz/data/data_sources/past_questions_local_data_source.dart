@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
@@ -71,8 +72,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
         await _appDatabase.deleteMockPastQuestions();
         final dbEntries = await _appDatabase.getPastQuestionsList(limit: 0);
         allQuestions.addAll(dbEntries.map(_entryToModel));
-      } on Object catch (_) {
+      } on Object catch (e, st) {
         // Database unavailable or query failed; fallback to local memory cache.
+        AppLogger.recordNonFatal(e, st);
       }
     }
 
@@ -110,8 +112,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
           }
         }
       }
-    } on Object catch (_) {
+    } on Object catch (e, st) {
       // Preference storage parsing failed; proceed with base questions.
+      AppLogger.recordNonFatal(e, st);
     }
 
     _cachedQuestions = allQuestions;
@@ -184,8 +187,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
             data: payload,
           );
         }
-      } on Object catch (_) {
+      } on Object catch (e, st) {
         // Local storage write failed.
+        AppLogger.recordNonFatal(e, st);
       }
     }
 
@@ -194,8 +198,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
       try {
         final companions = newQuestions.map(_modelToCompanion).toList();
         await _appDatabase.batchInsertPastQuestions(companions);
-      } on Object catch (_) {
+      } on Object catch (e, st) {
         // SQLite batch insertion failed.
+        AppLogger.recordNonFatal(e, st);
       }
     }
   }
@@ -318,8 +323,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
           category.code,
         );
         if (dbSubjects.isNotEmpty) return dbSubjects;
-      } on Object catch (_) {
+      } on Object catch (e, st) {
         // AppDatabase query failed; fallback to in-memory index.
+        AppLogger.recordNonFatal(e, st);
       }
     }
     return _subjectsByCategory[category] ?? const [];
@@ -336,8 +342,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
           category.code,
         );
         if (dbYears.isNotEmpty) return dbYears;
-      } on Object catch (_) {
+      } on Object catch (e, st) {
         // AppDatabase query failed; fallback to in-memory index.
+        AppLogger.recordNonFatal(e, st);
       }
     }
     return _yearsByCategory[category] ?? const [];
@@ -352,8 +359,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
       if (decoded is List) {
         options = decoded.map((e) => e.toString()).toList();
       }
-    } on Object catch (_) {
+    } on Object catch (e, st) {
       // Options parsing failed; options defaults to empty list.
+      AppLogger.recordNonFatal(e, st);
     }
     return PastQuestionModel(
       id: entry.id,

@@ -9,6 +9,7 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -77,7 +78,8 @@ class QuizDuelMatchmakingSheet extends HookWidget {
     if (authBlocOverride != null) return authBlocOverride;
     try {
       return context.read<AuthBloc>();
-    } on Object catch (_) {
+    } on Object catch (e, st) {
+      AppLogger.debug('[QuizDuelMatchmakingSheet] No ancestor AuthBloc in context: $e', error: e, stackTrace: st);
       return locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null;
     }
   }
@@ -86,7 +88,8 @@ class QuizDuelMatchmakingSheet extends HookWidget {
     if (dashboardBlocOverride != null) return dashboardBlocOverride;
     try {
       return context.read<DashboardBloc>();
-    } on Object catch (_) {
+    } on Object catch (e, st) {
+      AppLogger.debug('[QuizDuelMatchmakingSheet] No ancestor DashboardBloc in context: $e', error: e, stackTrace: st);
       return locator.isRegistered<DashboardBloc>()
           ? locator<DashboardBloc>()
           : null;
@@ -97,7 +100,8 @@ class QuizDuelMatchmakingSheet extends HookWidget {
     if (decksBlocOverride != null) return decksBlocOverride;
     try {
       return context.read<DecksBloc>();
-    } on Object catch (_) {
+    } on Object catch (e, st) {
+      AppLogger.debug('[QuizDuelMatchmakingSheet] No ancestor DecksBloc in context: $e', error: e, stackTrace: st);
       return locator.isRegistered<DecksBloc>() ? locator<DecksBloc>() : null;
     }
   }

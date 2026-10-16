@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 
 /// Intelligent scheduler that calculates optimal cognitive retention hours
@@ -50,10 +50,29 @@ class SmartStudyReminderScheduler {
       }
 
       return maxCount > 0 ? maxIndex : defaultPeakHour;
-    } on Object catch (err) {
-      debugPrint('[SmartStudyReminderScheduler] Calculation warning: $err');
+    } on Object catch (err, st) {
+      AppLogger.recordNonFatal(err, st);
       return defaultPeakHour;
     }
+  }
+
+  /// Returns recommended daily study duration in minutes based on the
+  /// remaining days until the target exam.
+  ///
+  /// Urgency curve:
+  /// - > 30 days: 45 minutes (sustainable baseline pacing)
+  /// - 15 - 30 days: 60 minutes (deep syllabus coverage)
+  /// - 7 - 14 days: 90 minutes (accelerated mock review)
+  /// - 1 - 6 days: 120 minutes (targeted weak-point triage & high-yield flashcards)
+  /// - Exam day (0 days): 30 minutes (light warmup & pacing check)
+  /// - Negative (past): 0 minutes
+  int calculateExamUrgencyStudyWindow(int daysRemaining) {
+    if (daysRemaining < 0) return 0;
+    if (daysRemaining == 0) return 30;
+    if (daysRemaining <= 6) return 120;
+    if (daysRemaining <= 14) return 90;
+    if (daysRemaining <= 30) return 60;
+    return 45;
   }
 
   /// Calculates the next DateTime target for scheduling a smart study reminder.
@@ -87,8 +106,8 @@ class SmartStudyReminderScheduler {
         key: 'study_session_history',
         data: history.join(','),
       );
-    } on Object catch (e) {
-      debugPrint('[SmartStudyReminderScheduler] Record timestamp error: $e');
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
   }
 }

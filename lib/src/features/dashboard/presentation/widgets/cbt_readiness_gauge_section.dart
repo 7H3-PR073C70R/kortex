@@ -20,11 +20,13 @@ class DashboardCbtReadinessGaugeCard extends StatelessWidget {
   const DashboardCbtReadinessGaugeCard({
     required this.feed,
     this.targetTrack,
+    this.userActivityService,
     super.key,
   });
 
   final DashboardFeedEntity feed;
   final String? targetTrack;
+  final UserActivityService? userActivityService;
 
   @override
   Widget build(BuildContext context) {
@@ -91,21 +93,28 @@ class DashboardCbtReadinessGaugeCard extends StatelessWidget {
 
     var subjectAccuracies = const <String, double>{};
     var subjectRetentions = const <String, double>{};
+    var subjectQuestionCounts = const <String, int>{};
     var realMockScoreRatio = 0.0;
+    var totalQuestionsAnswered = 0;
 
     try {
-      if (locator.isRegistered<UserActivityService>()) {
-        final activityService = locator<UserActivityService>();
+      final activityService = userActivityService ??
+          (locator.isRegistered<UserActivityService>()
+              ? locator<UserActivityService>()
+              : null);
+      if (activityService != null) {
         final metrics = activityService.getQuizPerformanceMetrics();
         subjectAccuracies = metrics.subjectAccuracies;
         subjectRetentions = metrics.subjectRetentions;
+        subjectQuestionCounts = metrics.subjectQuestionCounts;
+        totalQuestionsAnswered = metrics.totalQuestionsAnswered;
         if (metrics.totalQuizSessions > 0) {
           realMockScoreRatio = metrics.overallMockAccuracy;
-        } else if (feed.analyticsSummary.overallRetentionRate > 0.0) {
-          realMockScoreRatio = feed.analyticsSummary.overallRetentionRate;
         }
       }
-    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
 
     final readinessResult = const CbtReadinessCalculator().compute(
       syllabusCoverage: realSyllabusCoverage,
@@ -116,13 +125,34 @@ class DashboardCbtReadinessGaugeCard extends StatelessWidget {
       examType: effectiveExamType,
       subjectAccuracies: subjectAccuracies,
       subjectRetentions: subjectRetentions,
+      subjectQuestionCounts: subjectQuestionCounts,
+      totalQuestionsAnswered: totalQuestionsAnswered,
     );
 
-    return CbtReadinessGaugeCard(
+    final gaugeCard = CbtReadinessGaugeCard(
       readinessResult: readinessResult,
       examTitle: effectiveExamTitle,
       daysRemaining: effectiveDaysRemaining,
+      userActivityService: userActivityService,
     );
+
+    if (!readinessResult.hasSufficientData ||
+        readinessResult.statusTier == CbtReadinessStatusTier.diagnosticPending) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DayOneDiagnosticBanner(
+            targetTrack: effectiveExamTitle,
+            registeredSubjectNames:
+                feed.curatedCourses.map((c) => c.title).toList(),
+          ),
+          const SizedBox(height: 14),
+          gaugeCard,
+        ],
+      );
+    }
+
+    return gaugeCard;
   }
 }
 

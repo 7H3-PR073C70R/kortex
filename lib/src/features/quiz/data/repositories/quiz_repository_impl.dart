@@ -10,11 +10,13 @@ import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
+import 'package:kortex/src/core/services/analytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
@@ -25,6 +27,7 @@ import 'package:kortex/src/features/quiz/data/models/quiz_result_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
+import 'package:kortex/src/features/quiz/domain/logic/exam_question_selector.dart';
 import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
@@ -40,6 +43,7 @@ class QuizRepositoryImpl implements QuizRepository {
     UserStorageService? userStorageService,
     UserActivityService? userActivityService,
     Connectivity? connectivity,
+    AnalyticsService? analyticsService,
   }) : _decksRepository = decksRepository,
        _ingestionRepository = ingestionRepository,
        _pastQuestionsRepository = pastQuestionsRepository,
@@ -48,7 +52,8 @@ class QuizRepositoryImpl implements QuizRepository {
        _localStorageService = localStorageService,
        _userStorageService = userStorageService,
        _userActivityService = userActivityService,
-       _connectivity = connectivity {
+       _connectivity = connectivity,
+       _analyticsService = analyticsService {
     if (_connectivity != null) {
       _initConnectivityListener();
     }
@@ -63,6 +68,7 @@ class QuizRepositoryImpl implements QuizRepository {
   final UserStorageService? _userStorageService;
   final UserActivityService? _userActivityService;
   final Connectivity? _connectivity;
+  final AnalyticsService? _analyticsService;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
   void _initConnectivityListener() {
@@ -86,6 +92,11 @@ class QuizRepositoryImpl implements QuizRepository {
   }
 
   static const String cbtSubmissionsStorageKey = 'kortex_cbt_test_submissions';
+  static const String seenQuestionIdsStorageKey =
+      '__kortex_seen_question_ids_v1';
+  static const String historicalErrorQuestionIdsStorageKey =
+      '__kortex_historical_error_question_ids_v1';
+  static const String weakSubtopicsStorageKey = '__kortex_weak_subtopics_v1';
 
   DecksRepository? get _effectiveDecksRepo =>
       _decksRepository ??
@@ -130,6 +141,12 @@ class QuizRepositoryImpl implements QuizRepository {
       _userActivityService ??
       (locator.isRegistered<UserActivityService>()
           ? locator<UserActivityService>()
+          : null);
+
+  AnalyticsService? get _effectiveAnalytics =>
+      _analyticsService ??
+      (locator.isRegistered<AnalyticsService>()
+          ? locator<AnalyticsService>()
           : null);
 
   @override
@@ -205,11 +222,12 @@ class QuizRepositoryImpl implements QuizRepository {
           }).toList();
         }
       }
-    } on Object catch (err) {
-      debugPrint(
+    } on Object catch (err, st) {
+      AppLogger.info(
         '[QuizRepository] Remote AI generation failed ($err). '
         'Falling back to local asset engine.',
       );
+      AppLogger.recordNonFatal(err, st);
     }
 
     // 2. Fetch cards from the deck to drive StudyEngineRouter or local synthesis
@@ -276,15 +294,23 @@ class QuizRepositoryImpl implements QuizRepository {
           }
 
           if (pastQuestions.isNotEmpty) {
-            final shuffled = List<PastQuestionEntity>.from(pastQuestions)
-              ..shuffle();
-            return shuffled
-                .take(min(questionCount, pastQuestions.length))
+            final seenIds = _loadSeenQuestionIds();
+            final errorIds = _loadHistoricalErrorIds();
+            final weakTopics = _loadWeakSubtopics();
+            final selected = ExamQuestionSelector.selectPastQuestions(
+              pool: pastQuestions,
+              count: min(questionCount, pastQuestions.length),
+              seenQuestionIds: seenIds,
+              historicalErrorIds: errorIds,
+              weakSubtopics: weakTopics,
+              seed: deckId.hashCode,
+            );
+            return selected
                 .map(QuizQuestionEntity.fromPastQuestion)
                 .toList();
           }
-        } on Object catch (pqErr) {
-          debugPrint('[QuizRepository] Error loading past questions: $pqErr');
+        } on Object catch (pqErr, st) {
+          AppLogger.recordNonFatal(pqErr, st);
         }
       }
 
@@ -332,8 +358,8 @@ class QuizRepositoryImpl implements QuizRepository {
         );
         if (cardQuestions.isNotEmpty) return cardQuestions;
       }
-    } on Object catch (err) {
-      debugPrint('[QuizRepository] StudyEngineRouter direct asset error: $err');
+    } on Object catch (err, st) {
+      AppLogger.recordNonFatal(err, st);
     }
 
     // Fallback: direct dynamic synthesis from cards
@@ -417,11 +443,12 @@ class QuizRepositoryImpl implements QuizRepository {
           }).toList();
         }
       }
-    } on Object catch (err) {
-      debugPrint(
+    } on Object catch (err, st) {
+      AppLogger.info(
         '[QuizRepository] Remote document AI failed ($err). '
         'Falling back to local asset engine.',
       );
+      AppLogger.recordNonFatal(err, st);
     }
 
     // 2. Offline / local fallback using IngestionRepository and StudyEngineRouter
@@ -465,8 +492,8 @@ class QuizRepositoryImpl implements QuizRepository {
           packResult.userMessage ?? StudyEngineRouter.offlineModelMissingPrompt,
         );
       }
-    } on Object catch (err) {
-      debugPrint('[QuizRepository] StudyEngineRouter document error: $err');
+    } on Object catch (err, st) {
+      AppLogger.recordNonFatal(err, st);
       if (err is ServerException || err is StateError) rethrow;
     }
 
@@ -481,6 +508,7 @@ class QuizRepositoryImpl implements QuizRepository {
     required String quizTitle,
     required List<QuizQuestionEntity> questions,
     required int durationSeconds,
+    String? attemptId,
   }) {
     return Future<QuizResultEntity>.sync(() async {
       // Defensive grading: normalize and verify question correctness in case questions
@@ -489,26 +517,23 @@ class QuizRepositoryImpl implements QuizRepository {
         if (q.isCorrect) return q;
         if (q.userSelectedAnswer != null &&
             q.userSelectedAnswer!.trim().isNotEmpty) {
-          final cleanCorrect = QuizContentSanitizer.cleanOptionText(
+          if (QuizContentSanitizer.isAnswerMatching(
+            q.userSelectedAnswer,
             q.correctAnswer,
-          ).trim().toLowerCase();
-          final cleanSelected = QuizContentSanitizer.cleanOptionText(
-            q.userSelectedAnswer!,
-          ).trim().toLowerCase();
-          if (cleanCorrect == cleanSelected ||
-              q.userSelectedAnswer!.trim().toLowerCase() ==
-                  q.correctAnswer.trim().toLowerCase()) {
+          )) {
             return q.copyWith(isCorrect: true);
           }
         }
         return q;
       }).toList();
 
-      final total = gradedQuestions.length;
-      final correctCount = gradedQuestions.where((q) => q.isCorrect).length;
+      final total = gradedQuestions.length.clamp(0, 1000);
+      final rawCorrect = gradedQuestions.where((q) => q.isCorrect).length;
+      final correctCount = rawCorrect.clamp(0, total);
       final scorePercent = total > 0
-          ? ((correctCount / total) * 100).round()
+          ? ((correctCount / total) * 100).round().clamp(0, 100)
           : 0;
+      final safeDurationSeconds = durationSeconds.clamp(0, 86400);
       final completedAt = DateTime.now();
 
       final topicGroups = <String, List<QuizQuestionEntity>>{};
@@ -532,8 +557,13 @@ class QuizRepositoryImpl implements QuizRepository {
           .map((w) => w.subTopic)
           .toList();
 
+      final effectiveAttemptId =
+          (attemptId != null && UuidUtils.isValidUuid(attemptId))
+              ? attemptId
+              : UuidUtils.generate();
+
       final resultModel = QuizResultModel(
-        id: 'quiz-res-${completedAt.millisecondsSinceEpoch}',
+        id: effectiveAttemptId,
         quizTitle: quizTitle,
         totalQuestions: total,
         correctAnswers: correctCount,
@@ -542,7 +572,15 @@ class QuizRepositoryImpl implements QuizRepository {
         completedAt: completedAt,
       );
 
-      // 1. Persist to LocalStorageService for robust offline availability
+      // Record question performance asynchronously for adaptive selection
+      unawaited(
+        _recordQuestionPerformance(
+          questions: gradedQuestions,
+          weakSubtopics: weakSubtopics,
+        ),
+      );
+
+      // 1. Persist to LocalStorageService for robust offline availability (idempotent by ID)
       try {
         final storage = _effectiveLocalStorage;
         if (storage != null) {
@@ -552,8 +590,17 @@ class QuizRepositoryImpl implements QuizRepository {
           final submissionsList =
               (existingJson != null && existingJson.isNotEmpty
                     ? (jsonDecode(existingJson) as List<dynamic>)
-                    : <dynamic>[])
-                ..add(resultModel.toJson());
+                    : <dynamic>[]);
+
+          final existingIdx = submissionsList.indexWhere(
+            (item) => item is Map && item['id'] == effectiveAttemptId,
+          );
+          if (existingIdx >= 0) {
+            submissionsList[existingIdx] = resultModel.toJson();
+          } else {
+            submissionsList.add(resultModel.toJson());
+          }
+
           // Keep up to 200 persistent CBT submissions
           if (submissionsList.length > 200) {
             submissionsList.removeRange(0, submissionsList.length - 200);
@@ -563,10 +610,8 @@ class QuizRepositoryImpl implements QuizRepository {
             data: jsonEncode(submissionsList),
           );
         }
-      } on Object catch (localErr) {
-        debugPrint(
-          '[QuizRepository] Failed to persist quiz result locally: $localErr',
-        );
+      } on Object catch (localErr, st) {
+        AppLogger.recordNonFatal(localErr, st);
       }
 
       // 2. Record learning activity in UserActivityService
@@ -584,32 +629,39 @@ class QuizRepositoryImpl implements QuizRepository {
             subject: quizTitle,
           );
         }
-      } on Object catch (activityErr) {
-        debugPrint(
-          '[QuizRepository] Failed to record user activity: $activityErr',
-        );
+      } on Object catch (activityErr, st) {
+        AppLogger.recordNonFatal(activityErr, st);
       }
 
-      // 3. Persist to Remote Database table public.quizzes
+      // 3. Persist to Remote Database table public.quizzes with ON CONFLICT DO NOTHING
       final userStorage = _effectiveUserStorage;
       final token = userStorage?.getToken();
       final userId = userStorage?.getUserId();
-      final authHeader = token != null && token.isNotEmpty
-          ? 'Bearer $token'
-          : 'Bearer ${AppEnv.apiKey}';
 
       final payload = <String, dynamic>{
+        'id': effectiveAttemptId,
         'title': quizTitle,
+        'subject': quizTitle,
         'total_questions': total,
         'correct_answers': correctCount,
         'score_percent': scorePercent,
-        'duration_seconds': durationSeconds,
+        'duration_seconds': safeDurationSeconds,
         'weak_subtopics': weakSubtopics,
         'completed_at': completedAt.toUtc().toIso8601String(),
       };
       if (userId != null && userId.isNotEmpty) {
         payload['user_id'] = userId;
       }
+
+      // If user token is missing or expired, do NOT fall back to AppEnv.apiKey
+      // (which triggers 403 on user-owned tables like public.quizzes).
+      // Enqueue offline payload and return local resultModel.
+      if (token == null || token.isEmpty) {
+        await _enqueuePendingQuizSubmission(payload);
+        return resultModel;
+      }
+
+      final authHeader = 'Bearer $token';
 
       try {
         await _effectiveDio.post<dynamic>(
@@ -619,27 +671,97 @@ class QuizRepositoryImpl implements QuizRepository {
             headers: {
               'apikey': AppEnv.apiKey,
               'Authorization': authHeader,
-              'Prefer': 'return=representation',
+              'Prefer': 'resolution=ignore-duplicates,return=representation',
             },
             sendTimeout: const Duration(seconds: 15),
             receiveTimeout: const Duration(seconds: 20),
           ),
         );
-      } on Object catch (remoteErr) {
-        debugPrint(
-          '[QuizRepository] Remote quiz submission sync postponed/failed: $remoteErr',
-        );
+        unawaited(flushPendingQuizSubmissions());
+      } on Object catch (remoteErr, st) {
+        AppLogger.recordNonFatal(remoteErr, st);
         await _enqueuePendingQuizSubmission(payload);
       }
-
-      unawaited(flushPendingQuizSubmissions());
 
       return resultModel;
     }).makeRequest();
   }
 
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> submitCbtMockAttempt({
+    required String sessionId,
+    required String quizTitle,
+    required String subject,
+    required int totalQuestions,
+    required int correctAnswers,
+    required int durationSeconds,
+    List<String> weakSubtopics = const [],
+    String? courseId,
+    String? courseCode,
+  }) async {
+    return (() async {
+      final userStorage = _effectiveUserStorage;
+      final token = userStorage?.getToken();
+      final authHeader = token != null && token.isNotEmpty
+          ? 'Bearer $token'
+          : 'Bearer ${AppEnv.apiKey}';
+
+      final safeTotal = totalQuestions.clamp(0, 1000);
+      final safeCorrect = correctAnswers.clamp(0, safeTotal);
+      final safeDuration = durationSeconds.clamp(0, 86400);
+
+      final response = await _effectiveDio.post<dynamic>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.submitCbtMockAttemptRpc}',
+        data: {
+          'p_session_id': sessionId,
+          'p_quiz_title': quizTitle,
+          'p_subject': subject,
+          'p_total_questions': safeTotal,
+          'p_correct_answers': safeCorrect,
+          'p_duration_seconds': safeDuration,
+          'p_weak_subtopics': weakSubtopics,
+          'p_course_id': ?courseId,
+          'p_course_code': ?courseCode,
+        },
+        options: Options(
+          headers: {
+            'apikey': AppEnv.apiKey,
+            'Authorization': authHeader,
+          },
+          sendTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 20),
+        ),
+      );
+
+      final dynamic data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return <String, dynamic>{'success': true};
+    })().makeRequest();
+  }
+
   static const String _pendingQuizSubmissionsKey =
       '__kortex_pending_quiz_submissions';
+  static const String _deadLetterQuizSubmissionsKey =
+      '__kortex_dead_letter_quiz_submissions';
+
+  @visibleForTesting
+  static const int maxPendingSubmissions = 50;
+
+  @visibleForTesting
+  static const int maxSubmissionRetries = 5;
+
+  @visibleForTesting
+  static const String pendingQuizSubmissionsStorageKey =
+      _pendingQuizSubmissionsKey;
+
+  @visibleForTesting
+  static const String deadLetterQuizSubmissionsStorageKey =
+      _deadLetterQuizSubmissionsKey;
+
+  Completer<int>? _activeFlushCompleter;
+  bool _queuedFlushRequested = false;
 
   Future<void> _enqueuePendingQuizSubmission(
     Map<String, dynamic> payload,
@@ -650,21 +772,88 @@ class QuizRepositoryImpl implements QuizRepository {
       final raw = storage.getPreference(key: _pendingQuizSubmissionsKey);
       final list = ((raw != null && raw.isNotEmpty)
           ? (jsonDecode(raw) as List<dynamic>)
-          : <dynamic>[])
-        ..add(payload);
+          : <dynamic>[]);
+
+      final submissionId = payload['id']?.toString();
+      if (submissionId != null && submissionId.isNotEmpty) {
+        final existingIdx = list.indexWhere(
+          (item) => item is Map && item['id']?.toString() == submissionId,
+        );
+        if (existingIdx >= 0) {
+          return; // Idempotent: already in queue
+        }
+      }
+
+      final queueItem = <String, dynamic>{
+        'id': submissionId,
+        'payload': payload,
+        'retry_count': 0,
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+        ...payload,
+      };
+
+      list.add(queueItem);
+
+      // Bound queue size to maxPendingSubmissions (50)
+      while (list.length > maxPendingSubmissions) {
+        list.removeAt(0);
+      }
+
       await storage.savePreference(
         key: _pendingQuizSubmissionsKey,
         data: jsonEncode(list),
       );
-    } on Object catch (e) {
-      debugPrint('[QuizRepository] Failed to enqueue pending quiz submission: $e');
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
   }
 
   @override
-  Future<int> flushPendingQuizSubmissions() async {
+  Future<int> flushPendingQuizSubmissions({bool force = false}) async {
+    if (_activeFlushCompleter != null) {
+      _queuedFlushRequested = true;
+      return _activeFlushCompleter!.future;
+    }
+
+    final completer = Completer<int>();
+    _activeFlushCompleter = completer;
+
+    var totalSynced = 0;
+    try {
+      totalSynced += await _executeFlushPendingSubmissions(force: force);
+
+      // If another flush was requested or new items enqueued while flushing,
+      // run follow-up pass to process newly enqueued items.
+      while (_queuedFlushRequested) {
+        _queuedFlushRequested = false;
+        totalSynced += await _executeFlushPendingSubmissions(force: force);
+      }
+
+      completer.complete(totalSynced);
+      return totalSynced;
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+      completer.complete(totalSynced);
+      return totalSynced;
+    } finally {
+      _activeFlushCompleter = null;
+    }
+  }
+
+  Future<int> _executeFlushPendingSubmissions({bool force = false}) async {
     final storage = _effectiveLocalStorage;
     if (storage == null) return 0;
+
+    final userStorage = _effectiveUserStorage;
+    final token = userStorage?.getToken();
+    final userId = userStorage?.getUserId();
+
+    // If user token is missing or expired, do NOT fall back to AppEnv.apiKey
+    // (which triggers 403 on user-owned tables like public.quizzes).
+    // Halt flush until authentic user session is available.
+    if (token == null || token.isEmpty) {
+      return 0;
+    }
 
     final raw = storage.getPreference(key: _pendingQuizSubmissionsKey);
     if (raw == null || raw.isEmpty) return 0;
@@ -672,63 +861,201 @@ class QuizRepositoryImpl implements QuizRepository {
     List<dynamic> list;
     try {
       list = jsonDecode(raw) as List<dynamic>;
-    } on Object catch (_) {
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
       return 0;
     }
 
     if (list.isEmpty) return 0;
 
-    final userStorage = _effectiveUserStorage;
-    final token = userStorage?.getToken();
-    final userId = userStorage?.getUserId();
-    final authHeader = token != null && token.isNotEmpty
-        ? 'Bearer $token'
-        : 'Bearer ${AppEnv.apiKey}';
-
+    final authHeader = 'Bearer $token';
+    final now = DateTime.now();
+    final stopwatch = Stopwatch()..start();
     var syncedCount = 0;
-    final remaining = <Map<String, dynamic>>[];
 
-    for (final item in list) {
-      if (item is Map) {
-        final payload = Map<String, dynamic>.from(item);
-        if (userId != null &&
-            userId.isNotEmpty &&
-            !payload.containsKey('user_id')) {
-          payload['user_id'] = userId;
+    final successfulIds = <String>{};
+    final updatedRetries = <String, Map<String, dynamic>>{};
+    final deadLetterItems = <Map<String, dynamic>>[];
+
+    for (final rawItem in list) {
+      if (rawItem is! Map) continue;
+      final item = Map<String, dynamic>.from(rawItem);
+      final id = item['id']?.toString() ?? '';
+
+      // Check exponential backoff
+      final nextRetryAtStr = item['next_retry_at'] as String?;
+      if (!force && nextRetryAtStr != null) {
+        final nextRetryAt = DateTime.tryParse(nextRetryAtStr);
+        if (nextRetryAt != null && now.isBefore(nextRetryAt)) {
+          // Delay has not elapsed yet; skip this item for this cycle
+          continue;
         }
-        try {
-          final res = await _effectiveDio.post<dynamic>(
-            '${AppApiEndpoint.baseUri}${AppApiEndpoint.quizzes}',
-            data: payload,
-            options: Options(
-              headers: {
-                'apikey': AppEnv.apiKey,
-                'Authorization': authHeader,
-                'Prefer': 'return=representation',
-              },
-              sendTimeout: const Duration(seconds: 15),
-              receiveTimeout: const Duration(seconds: 20),
-            ),
-          );
-          if (res.statusCode == 200 || res.statusCode == 201) {
-            syncedCount++;
-            continue;
-          }
-        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-        remaining.add(payload);
+      }
+
+      final payload = item['payload'] is Map
+          ? Map<String, dynamic>.from(item['payload'] as Map)
+          : Map<String, dynamic>.from(item);
+
+      if (userId != null &&
+          userId.isNotEmpty &&
+          !payload.containsKey('user_id')) {
+        payload['user_id'] = userId;
+      }
+
+      final currentRetries = (item['retry_count'] as num?)?.toInt() ?? 0;
+
+      try {
+        final res = await _effectiveDio.post<dynamic>(
+          '${AppApiEndpoint.baseUri}${AppApiEndpoint.quizzes}',
+          data: payload,
+          options: Options(
+            headers: {
+              'apikey': AppEnv.apiKey,
+              'Authorization': authHeader,
+              'Prefer': 'resolution=ignore-duplicates,return=representation',
+            },
+            sendTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 20),
+          ),
+        );
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          syncedCount++;
+          if (id.isNotEmpty) successfulIds.add(id);
+          continue;
+        }
+      } on Object catch (e, st) {
+        AppLogger.recordNonFatal(e, st);
+      }
+
+      // If we reach here, the attempt failed
+      final newRetries = currentRetries + 1;
+      item['retry_count'] = newRetries;
+      if (newRetries >= maxSubmissionRetries) {
+        // Exceeded max retries (5). Move to dead-letter storage
+        item['failed_at'] = DateTime.now().toUtc().toIso8601String();
+        deadLetterItems.add(item);
+        if (id.isNotEmpty) successfulIds.add(id); // Remove from active pending
+      } else {
+        // Exponential backoff: 2^newRetries seconds (2s, 4s, 8s, 16s...)
+        final backoffSeconds = pow(2, newRetries).toInt();
+        item['next_retry_at'] = DateTime.now()
+            .add(Duration(seconds: backoffSeconds))
+            .toUtc()
+            .toIso8601String();
+        if (id.isNotEmpty) updatedRetries[id] = item;
       }
     }
 
-    if (remaining.isEmpty) {
-      await storage.deletePreference(key: _pendingQuizSubmissionsKey);
-    } else {
-      await storage.savePreference(
-        key: _pendingQuizSubmissionsKey,
-        data: jsonEncode(remaining),
-      );
+    // Atomic reconcile with whatever is currently in storage
+    // Protects newly enqueued items during the flush against mid-flight overwrite
+    try {
+      final latestRaw = storage.getPreference(key: _pendingQuizSubmissionsKey);
+      final latestList = (latestRaw != null && latestRaw.isNotEmpty)
+          ? (jsonDecode(latestRaw) as List<dynamic>)
+          : <dynamic>[];
+
+      final reconciled = <Map<String, dynamic>>[];
+      for (final rawItem in latestList) {
+        if (rawItem is! Map) continue;
+        final map = Map<String, dynamic>.from(rawItem);
+        final id = map['id']?.toString() ?? '';
+
+        if (successfulIds.contains(id)) {
+          // Successfully synced or dead-lettered
+          continue;
+        }
+        if (updatedRetries.containsKey(id)) {
+          // Updated with incremented retry and backoff
+          reconciled.add(updatedRetries[id]!);
+        } else {
+          // Item wasn't processed or was newly added mid-flight! Keep it!
+          reconciled.add(map);
+        }
+      }
+
+      // Bound queue to maxPendingSubmissions
+      while (reconciled.length > maxPendingSubmissions) {
+        reconciled.removeAt(0);
+      }
+
+      if (reconciled.isEmpty) {
+        await storage.deletePreference(key: _pendingQuizSubmissionsKey);
+      } else {
+        await storage.savePreference(
+          key: _pendingQuizSubmissionsKey,
+          data: jsonEncode(reconciled),
+        );
+      }
+
+      // Save dead letter items if any
+      if (deadLetterItems.isNotEmpty) {
+        await _recordDeadLetterSubmissions(deadLetterItems);
+      }
+
+      if (syncedCount > 0) {
+        try {
+          unawaited(
+            _effectiveAnalytics?.logCbtOfflineQueueFlushSuccess(
+              flushedCount: syncedCount,
+              remainingCount: reconciled.length,
+              durationMs: stopwatch.elapsedMilliseconds,
+            ),
+          );
+        } on Object catch (e, st) {
+          AppLogger.recordNonFatal(e, st);
+        }
+      }
+
+      if (deadLetterItems.isNotEmpty || updatedRetries.isNotEmpty) {
+        try {
+          final failedCount = deadLetterItems.length + updatedRetries.length;
+          final maxRetry = [
+            ...deadLetterItems.map((e) => (e['retry_count'] as num?)?.toInt() ?? 0),
+            ...updatedRetries.values.map((e) => (e['retry_count'] as num?)?.toInt() ?? 0),
+          ].fold<int>(0, max);
+
+          unawaited(
+            _effectiveAnalytics?.logCbtOfflineQueueFlushFailed(
+              failedCount: failedCount,
+              errorReason: deadLetterItems.isNotEmpty
+                  ? 'dead_letter_max_retries_exceeded'
+                  : 'network_retry_exponential_backoff',
+              retryCount: maxRetry,
+            ),
+          );
+        } on Object catch (e, st) {
+          AppLogger.recordNonFatal(e, st);
+        }
+      }
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
 
     return syncedCount;
+  }
+
+  Future<void> _recordDeadLetterSubmissions(
+    List<Map<String, dynamic>> items,
+  ) async {
+    try {
+      final storage = _effectiveLocalStorage;
+      if (storage == null || items.isEmpty) return;
+      final raw = storage.getPreference(key: _deadLetterQuizSubmissionsKey);
+      final list = ((raw != null && raw.isNotEmpty)
+          ? (jsonDecode(raw) as List<dynamic>)
+          : <dynamic>[])
+        ..addAll(items);
+      while (list.length > maxPendingSubmissions) {
+        list.removeAt(0);
+      }
+
+      await storage.savePreference(
+        key: _deadLetterQuizSubmissionsKey,
+        data: jsonEncode(list),
+      );
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
   }
 
   List<QuizQuestionModel> _synthesizeQuestionsFromCards({
@@ -1457,5 +1784,104 @@ class QuizRepositoryImpl implements QuizRepository {
     }
 
     return selected;
+  }
+
+  Set<String> _loadSeenQuestionIds() {
+    try {
+      final storage = _effectiveLocalStorage;
+      if (storage == null) return <String>{};
+      final raw = storage.getPreference(key: seenQuestionIdsStorageKey);
+      if (raw == null || raw.isEmpty) return <String>{};
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((e) => e.toString()).toSet();
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+      return <String>{};
+    }
+  }
+
+  Set<String> _loadHistoricalErrorIds() {
+    try {
+      final storage = _effectiveLocalStorage;
+      if (storage == null) return <String>{};
+      final raw =
+          storage.getPreference(key: historicalErrorQuestionIdsStorageKey);
+      if (raw == null || raw.isEmpty) return <String>{};
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((e) => e.toString()).toSet();
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+      return <String>{};
+    }
+  }
+
+  Set<String> _loadWeakSubtopics() {
+    try {
+      final storage = _effectiveLocalStorage;
+      if (storage == null) return <String>{};
+      final raw = storage.getPreference(key: weakSubtopicsStorageKey);
+      if (raw == null || raw.isEmpty) return <String>{};
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((e) => e.toString()).toSet();
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+      return <String>{};
+    }
+  }
+
+  Future<void> _recordQuestionPerformance({
+    required List<QuizQuestionEntity> questions,
+    List<String> weakSubtopics = const [],
+  }) async {
+    try {
+      final storage = _effectiveLocalStorage;
+      if (storage == null) return;
+
+      final seen = _loadSeenQuestionIds();
+      final errors = _loadHistoricalErrorIds();
+      final weak = _loadWeakSubtopics();
+
+      for (final q in questions) {
+        if (q.id.isNotEmpty) {
+          seen.add(q.id);
+          if (!q.isCorrect) {
+            errors.add(q.id);
+          } else {
+            errors.remove(q.id);
+          }
+        }
+      }
+
+      for (final topic in weakSubtopics) {
+        if (topic.trim().isNotEmpty) {
+          weak.add(topic.trim());
+        }
+      }
+
+      final boundedSeen = seen.length > 2000
+          ? seen.toList().sublist(seen.length - 2000)
+          : seen.toList();
+      final boundedErrors = errors.length > 1000
+          ? errors.toList().sublist(errors.length - 1000)
+          : errors.toList();
+      final boundedWeak = weak.length > 200
+          ? weak.toList().sublist(weak.length - 200)
+          : weak.toList();
+
+      await storage.savePreference(
+        key: seenQuestionIdsStorageKey,
+        data: jsonEncode(boundedSeen),
+      );
+      await storage.savePreference(
+        key: historicalErrorQuestionIdsStorageKey,
+        data: jsonEncode(boundedErrors),
+      );
+      await storage.savePreference(
+        key: weakSubtopicsStorageKey,
+        data: jsonEncode(boundedWeak),
+      );
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
   }
 }

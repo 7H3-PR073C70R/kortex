@@ -94,6 +94,139 @@ void main() {
       );
     });
 
+    test('logCbtDiagnosticStarted records correct event and parameters', () async {
+      await analytics.logCbtDiagnosticStarted(
+        trackOrExamName: 'JAMB UTME',
+      );
+      expect(analytics.loggedEventsForTesting.length, 1);
+      final event = analytics.loggedEventsForTesting.first;
+      expect(event['name'], 'cbt_diagnostic_started');
+      final params = event['parameters'] as Map<String, Object>;
+      expect(params['track_name'], 'JAMB UTME');
+      expect(params['question_count'], 15);
+    });
+
+    test('logCbtDiagnosticCompleted records correct event and parameters', () async {
+      await analytics.logCbtDiagnosticCompleted(
+        trackOrExamName: 'WAEC WASSCE',
+        scorePercent: 78,
+        totalQuestions: 15,
+        correctAnswers: 12,
+        durationSeconds: 520,
+      );
+      final event = analytics.loggedEventsForTesting.last;
+      expect(event['name'], 'cbt_diagnostic_completed');
+      final params = event['parameters'] as Map<String, Object>;
+      expect(params['track_name'], 'WAEC WASSCE');
+      expect(params['score_percent'], 78);
+      expect(params['total_questions'], 15);
+      expect(params['correct_answers'], 12);
+      expect(params['duration_seconds'], 520);
+    });
+
+    test('logCbtMockExamStarted records correct event and parameters', () async {
+      await analytics.logCbtMockExamStarted(
+        examTrack: 'JAMB Medicine',
+        attemptId: 'attempt-uuid-123',
+        totalQuestions: 180,
+        durationMinutes: 120,
+      );
+      final event = analytics.loggedEventsForTesting.last;
+      expect(event['name'], 'cbt_mock_exam_started');
+      final params = event['parameters'] as Map<String, Object>;
+      expect(params['exam_track'], 'JAMB Medicine');
+      expect(params['attempt_id'], 'attempt-uuid-123');
+      expect(params['total_questions'], 180);
+      expect(params['duration_minutes'], 120);
+      expect(params['is_timed'], 1);
+    });
+
+    test('logCbtMockExamSubmitted records correct event and parameters', () async {
+      await analytics.logCbtMockExamSubmitted(
+        examTrack: 'JAMB Medicine',
+        attemptId: 'attempt-uuid-123',
+        scorePercent: 82,
+        totalQuestions: 180,
+        correctAnswers: 148,
+        elapsedSeconds: 7100,
+        isAutoSubmit: false,
+      );
+      final event = analytics.loggedEventsForTesting.last;
+      expect(event['name'], 'cbt_mock_exam_submitted');
+      final params = event['parameters'] as Map<String, Object>;
+      expect(params['exam_track'], 'JAMB Medicine');
+      expect(params['attempt_id'], 'attempt-uuid-123');
+      expect(params['score_percent'], 82);
+      expect(params['total_questions'], 180);
+      expect(params['correct_answers'], 148);
+      expect(params['elapsed_seconds'], 7100);
+      expect(params['is_auto_submit'], 0);
+    });
+
+    test('logCbtExamResumedAfterInterrupt records correct event and parameters', () async {
+      await analytics.logCbtExamResumedAfterInterrupt(
+        examTrack: 'NECO Senior School',
+        attemptId: 'attempt-uuid-456',
+        remainingSeconds: 1800,
+        answeredQuestionsCount: 45,
+        totalQuestions: 60,
+      );
+      final event = analytics.loggedEventsForTesting.last;
+      expect(event['name'], 'cbt_exam_resumed_after_interrupt');
+      final params = event['parameters'] as Map<String, Object>;
+      expect(params['exam_track'], 'NECO Senior School');
+      expect(params['attempt_id'], 'attempt-uuid-456');
+      expect(params['remaining_seconds'], 1800);
+      expect(params['answered_count'], 45);
+      expect(params['total_questions'], 60);
+    });
+
+    test('logCbtOfflineQueueFlushSuccess records correct event and parameters', () async {
+      await analytics.logCbtOfflineQueueFlushSuccess(
+        flushedCount: 3,
+        remainingCount: 0,
+        durationMs: 340,
+      );
+      final event = analytics.loggedEventsForTesting.last;
+      expect(event['name'], 'cbt_offline_queue_flush_success');
+      final params = event['parameters'] as Map<String, Object>;
+      expect(params['flushed_count'], 3);
+      expect(params['remaining_count'], 0);
+      expect(params['duration_ms'], 340);
+    });
+
+    test('logCbtOfflineQueueFlushFailed records correct event and parameters', () async {
+      await analytics.logCbtOfflineQueueFlushFailed(
+        failedCount: 2,
+        errorReason: 'network_timeout_socket_error',
+        retryCount: 4,
+      );
+      final event = analytics.loggedEventsForTesting.last;
+      expect(event['name'], 'cbt_offline_queue_flush_failed');
+      final params = event['parameters'] as Map<String, Object>;
+      expect(params['failed_count'], 2);
+      expect(params['error_reason'], 'network_timeout_socket_error');
+      expect(params['retry_count'], 4);
+    });
+
+    test('logReadinessScoreViewed records correct event and parameters', () async {
+      await analytics.logReadinessScoreViewed(
+        readinessScore: 76.5,
+        statusTier: 'onTrack',
+        confidenceIntervalLabel: 'Readiness: 76% ± 5%',
+        standardErrorMargin: 5,
+        examTrack: 'JAMB UTME 2026',
+      );
+      final event = analytics.loggedEventsForTesting.last;
+      expect(event['name'], 'readiness_score_viewed');
+      final params = event['parameters'] as Map<String, Object>;
+      expect(params['readiness_score'], 76.5);
+      expect(params['status_tier'], 'onTrack');
+      expect(params['confidence_label'], 'Readiness: 76% ± 5%');
+      expect(params['standard_error_margin'], 5);
+      expect(params['exam_track'], 'JAMB UTME 2026');
+    });
+
     test('observer returns null or instance safely', () {
       final obs = analytics.observer;
       expect(obs, anyOf(isNull, isNotNull));

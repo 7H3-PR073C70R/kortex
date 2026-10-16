@@ -12,10 +12,11 @@ class CbtReadinessImpactCard extends StatelessWidget {
     required this.cardsReviewed,
     required this.retentionScore,
     this.examTitle = 'JAMB',
-    this.syllabusCoverage = 0.88,
-    this.mockScore = 0.85,
+    this.syllabusCoverage = 0.0,
+    this.mockScore = 0.0,
     this.topicName,
     this.registeredCourses,
+    this.daysRemaining,
     super.key,
   });
 
@@ -26,6 +27,7 @@ class CbtReadinessImpactCard extends StatelessWidget {
   final double mockScore;
   final String? topicName;
   final List<dynamic>? registeredCourses;
+  final int? daysRemaining;
 
   @override
   Widget build(BuildContext context) {
@@ -33,18 +35,22 @@ class CbtReadinessImpactCard extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
+    final effectiveDaysRemaining = daysRemaining ?? 30;
+
     const calculator = CbtReadinessCalculator();
     final result = calculator.compute(
       syllabusCoverage: syllabusCoverage,
       fsrsRetentionRate: retentionScore,
       mockScoreRatio: mockScore,
-      daysRemaining: 30,
+      daysRemaining: effectiveDaysRemaining,
       examType: examTitle,
       explicitWeakestTopic: topicName,
       registeredCourses: registeredCourses,
     );
 
-    final scoreGain = (cardsReviewed * 0.12 * retentionScore).clamp(0.4, 4.2);
+    final scoreGain = cardsReviewed == 0
+        ? 0.0
+        : (cardsReviewed * 0.12 * retentionScore).clamp(0.0, 4.2);
 
     return Container(
       padding: const EdgeInsets.all(20),

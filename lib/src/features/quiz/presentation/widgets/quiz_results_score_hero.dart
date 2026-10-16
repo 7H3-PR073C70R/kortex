@@ -184,6 +184,52 @@ class QuizScoreHero extends StatelessWidget {
               ),
             );
           }(),
+          if (result.id.startsWith('day_one_diagnostic') ||
+              result.quizTitle.toLowerCase().contains('diagnostic')) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: colors.primary.withAlpha(isDark ? 40 : 20),
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                border: Border.all(
+                  color: colors.primary.withAlpha(isDark ? 100 : 70),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 16,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Day-One Readiness Calibrated! 🎯',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Your baseline readiness score is now unlocked on your executive dashboard and trend charts.',
+                    textAlign: TextAlign.center,
+                    style: typography.caption.regular.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 11,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

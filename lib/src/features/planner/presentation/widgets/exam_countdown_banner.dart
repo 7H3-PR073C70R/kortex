@@ -5,7 +5,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
@@ -24,7 +28,14 @@ export 'countdown/untracked_milestone_card.dart';
 
 /// Top-level coordinator widget for the live countdown banner and multi-milestone strip.
 class ExamCountdownBanner extends StatelessWidget {
-  const ExamCountdownBanner({super.key});
+  const ExamCountdownBanner({
+    this.registeredCourses,
+    this.targetTrack,
+    super.key,
+  });
+
+  final List<dynamic>? registeredCourses;
+  final String? targetTrack;
 
   static const _calculator = CramWorkloadCalculator();
 
@@ -125,11 +136,79 @@ class ExamCountdownBanner extends StatelessWidget {
         };
 
         final isTopPriority = exam.id == state.topPriorityExamId;
+
+        final effectiveCourses = registeredCourses ??
+            context.watch<DashboardBloc?>()?.state.displayFeed?.curatedCourses ??
+            const <dynamic>[];
+
+        final double effectiveCoverage;
+        if (effectiveCourses.isNotEmpty) {
+          final total = effectiveCourses.fold<double>(
+            0,
+            (sum, c) =>
+                sum +
+                RegisteredCourseInput.fromDynamic(c)
+                    .syllabusCoverage
+                    .clamp(0.0, 1.0),
+          );
+          effectiveCoverage = (total / effectiveCourses.length).clamp(0.0, 1.0);
+        } else {
+          effectiveCoverage = exam.completionProgress.clamp(0.0, 1.0);
+        }
+
+        var subjectAccuracies = const <String, double>{};
+        var subjectRetentions = const <String, double>{};
+        var subjectQuestionCounts = const <String, int>{};
+        var totalQuestionsAnswered = 0;
+        var effectiveRetention = 0.0;
+        var effectiveMockRatio = 0.0;
+
+        final dashboardFeed = context.watch<DashboardBloc?>()?.state.displayFeed;
+        if (dashboardFeed != null) {
+          effectiveRetention = dashboardFeed.analyticsSummary.overallRetentionRate;
+        }
+
+        try {
+          if (locator.isRegistered<UserActivityService>()) {
+            final activityService = locator<UserActivityService>();
+            final metrics = activityService.getQuizPerformanceMetrics();
+            subjectAccuracies = metrics.subjectAccuracies;
+            subjectRetentions = metrics.subjectRetentions;
+            subjectQuestionCounts = metrics.subjectQuestionCounts;
+            totalQuestionsAnswered = metrics.totalQuestionsAnswered;
+            if (metrics.totalQuizSessions > 0) {
+              effectiveMockRatio = metrics.overallMockAccuracy;
+            } else if (exam.achievedScorePercent != null && exam.achievedScorePercent! > 0) {
+              effectiveMockRatio = exam.achievedScorePercent!.clamp(0.0, 1.0);
+            }
+
+            if (effectiveRetention == 0.0) {
+              effectiveRetention = activityService.getOverallRetentionRate();
+            }
+          }
+        } on Object catch (e, st) {
+          AppLogger.recordNonFatal(e, st);
+        }
+
+        if (effectiveMockRatio == 0.0 && exam.achievedScorePercent != null && exam.achievedScorePercent! > 0) {
+          effectiveMockRatio = exam.achievedScorePercent!.clamp(0.0, 1.0);
+        }
+
+        final effectiveExamType = exam.subjectTrack.isNotEmpty
+            ? exam.subjectTrack
+            : (targetTrack ?? exam.examName);
+
         final readinessResult = const CbtReadinessCalculator().compute(
-          syllabusCoverage: exam.completionProgress,
-          fsrsRetentionRate: (exam.achievedScorePercent ?? 0.80).clamp(0.0, 1.0),
-          mockScoreRatio: (exam.achievedScorePercent ?? 0.75).clamp(0.0, 1.0),
+          syllabusCoverage: effectiveCoverage,
+          fsrsRetentionRate: effectiveRetention,
+          mockScoreRatio: effectiveMockRatio,
           daysRemaining: days,
+          registeredCourses: effectiveCourses,
+          examType: effectiveExamType,
+          subjectAccuracies: subjectAccuracies,
+          subjectRetentions: subjectRetentions,
+          subjectQuestionCounts: subjectQuestionCounts,
+          totalQuestionsAnswered: totalQuestionsAnswered,
           explicitWeakestTopic: exam.examName,
         );
 

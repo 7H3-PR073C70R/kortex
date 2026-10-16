@@ -47,19 +47,22 @@ class AllCuratedCoursesPage extends HookWidget {
     final searchController = useTextEditingController();
 
     final resolvedDashboardBloc = dashboardBloc ??
-        (locator.isRegistered<DashboardBloc>()
-            ? locator<DashboardBloc>()
-            : null);
+        (context.read<DashboardBloc?>() ??
+            (locator.isRegistered<DashboardBloc>()
+                ? locator<DashboardBloc>()
+                : null));
 
     final resolvedDecksBloc = decksBloc ??
-        (locator.isRegistered<DecksBloc>()
-            ? locator<DecksBloc>()
-            : null);
+        (context.read<DecksBloc?>() ??
+            (locator.isRegistered<DecksBloc>()
+                ? locator<DecksBloc>()
+                : null));
 
     final resolvedCurateCoursesCubit = curateCoursesCubit ??
-        (locator.isRegistered<CurateCoursesCubit>()
-            ? locator<CurateCoursesCubit>()
-            : null);
+        (context.read<CurateCoursesCubit?>() ??
+            (locator.isRegistered<CurateCoursesCubit>()
+                ? locator<CurateCoursesCubit>()
+                : null));
 
     Widget buildContent(DashboardState dashState) {
       final feed = dashState.feed;

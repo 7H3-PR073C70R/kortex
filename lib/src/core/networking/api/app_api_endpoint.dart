@@ -152,12 +152,15 @@ class AppApiEndpoint {
 
   // Past Questions & Question Bank
   static const String pastQuestions = '/rest/v1/past_questions';
+  static const String questionSubmissions = '/rest/v1/question_submissions';
   static const String generateQuizQuestions =
       '/functions/v1/generate-quiz-questions';
   static const String generateDuelQuestionsRpc =
       '/rest/v1/rpc/generate_duel_questions';
   static const String submitQuizResultsRpc =
       '/rest/v1/rpc/fn_process_quiz_duel_outcome';
+  static const String submitCbtMockAttemptRpc =
+      '/rest/v1/rpc/submit_cbt_mock_attempt';
   static const String quizzes = '/rest/v1/quizzes';
 
   // Planner & Exam Countdown Timetable

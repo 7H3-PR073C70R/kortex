@@ -111,6 +111,33 @@ class PastQuestionModel {
     };
   }
 
+  Map<String, dynamic> toSubmissionJson() {
+    return {
+      'client_question_id': id,
+      'exam_type': examType.code,
+      'subject': subject,
+      'year': year,
+      'question_number': questionNumber,
+      'prompt': prompt,
+      'options': options,
+      'correct_option_index': correctOptionIndex,
+      'correct_option_label': correctOptionLabel,
+      'explanation': explanation,
+      'topic': topic,
+      'passage': passage,
+      'latex_formula': latexFormula,
+      'image_url': imageUrl,
+      'difficulty': difficulty,
+      'course_id': courseId,
+      'course_code': courseCode,
+      'metadata': {
+        'submitted_at': DateTime.now().toUtc().toIso8601String(),
+        'source': 'student_contribution',
+      },
+    };
+  }
+
+
   PastQuestionEntity toEntity() {
     return PastQuestionEntity(
       id: id,

@@ -92,6 +92,14 @@ class CramWorkloadCalculator {
   /// difficulty weighting, and lapse frequency penalties.
   /// When [empiricalQuizScorePercent] is provided, applies a Bimodal Cognitive Model:
   /// 50% FSRS theoretical retrievability + 50% empirical diagnostic quiz performance.
+  ///
+  /// Deprecated: prefer `CbtReadinessService.compute` or `CbtReadinessCalculator.compute`
+  /// for unified cross-app readiness scoring. This method computes card-level
+  /// bimodal FSRS retrievability projection.
+  @Deprecated(
+    'Use CbtReadinessService.compute() for unified cross-app readiness scoring. '
+    'This method is retained for card-level bimodal memory calibration.',
+  )
   double calculateExamReadinessScore({
     required int totalCards,
     required int masteredCards,

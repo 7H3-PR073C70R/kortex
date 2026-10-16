@@ -55,9 +55,10 @@ class CurateCoursesPage extends StatelessWidget {
     effectiveTrack ??= 'WAEC';
 
     final cubit = curateCoursesCubit ??
-        (locator.isRegistered<CurateCoursesCubit>()
-            ? locator<CurateCoursesCubit>()
-            : null);
+        (context.read<CurateCoursesCubit?>() ??
+            (locator.isRegistered<CurateCoursesCubit>()
+                ? locator<CurateCoursesCubit>()
+                : null));
 
     if (cubit != null) {
       if (cubit.state.status == CurateCoursesStatus.initial) {

@@ -13,10 +13,12 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/cbt_readiness_impact_card.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/session_summary/session_summary_actions_section.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/session_summary/session_summary_desktop_panel.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/session_summary/session_summary_header_section.dart';
+import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -138,19 +140,33 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
             ? savedTrack.trim()
             : 'JAMB');
 
-    var syllabusCoverage = 0.78;
-    var mockScore = 0.75;
+    final dashboardFeed = context.watch<DashboardBloc?>()?.state.displayFeed;
+    final plannerState = context.watch<CramPlannerCubit?>()?.state;
+
+    var syllabusCoverage = 0.0;
+    if (dashboardFeed != null && dashboardFeed.curatedCourses.isNotEmpty) {
+      final total = dashboardFeed.curatedCourses.fold<double>(
+        0,
+        (sum, c) => sum + c.syllabusCoverage.clamp(0.0, 1.0),
+      );
+      syllabusCoverage = (total / dashboardFeed.curatedCourses.length).clamp(0.0, 1.0);
+    }
+
+    var mockScore = 0.0;
     final activityService = widget.userActivityService;
     if (activityService != null) {
       final quizMetrics = activityService.getQuizPerformanceMetrics();
       if (quizMetrics.overallMockAccuracy > 0) {
         mockScore = quizMetrics.overallMockAccuracy;
       }
-      final summary = activityService.getAnalyticsSummary();
-      if (summary.overallRetentionRate > 0) {
-        syllabusCoverage = summary.overallRetentionRate;
-      }
     }
+
+    final effectiveDaysRemaining = plannerState?.selectedExam?.daysRemaining ??
+        (plannerState?.upcomingUncompletedExams.isNotEmpty == true
+            ? plannerState!.upcomingUncompletedExams
+                .map((e) => e.daysRemaining)
+                .reduce(math.min)
+            : (widget.nextReviewInDays > 0 ? widget.nextReviewInDays : null));
 
     final isDesktop = MediaQuery.of(context).size.width >= 900;
 
@@ -160,6 +176,8 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
       examTitle: examTitle,
       syllabusCoverage: syllabusCoverage,
       mockScore: mockScore,
+      daysRemaining: effectiveDaysRemaining,
+      registeredCourses: dashboardFeed?.curatedCourses,
     );
 
     final summaryHeader = SessionSummaryHeaderSection(

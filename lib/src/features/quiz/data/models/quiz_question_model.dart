@@ -10,6 +10,7 @@ class QuizQuestionModel extends QuizQuestionEntity {
     required super.explanation,
     required super.subTopic,
     super.latexFormula,
+    super.imageUrl,
     super.userSelectedAnswer,
     super.isAnswered = false,
     super.isCorrect = false,
@@ -43,6 +44,7 @@ class QuizQuestionModel extends QuizQuestionEntity {
       explanation: json['explanation'] as String? ?? '',
       subTopic: json['sub_topic'] as String? ?? 'General Knowledge',
       latexFormula: json['latex_formula'] as String?,
+      imageUrl: json['image_url'] as String?,
       userSelectedAnswer: json['user_selected_answer'] as String?,
       isAnswered: json['is_answered'] as bool? ?? false,
       isCorrect: json['is_correct'] as bool? ?? false,
@@ -59,6 +61,7 @@ class QuizQuestionModel extends QuizQuestionEntity {
       'explanation': explanation,
       'sub_topic': subTopic,
       if (latexFormula != null) 'latex_formula': latexFormula,
+      if (imageUrl != null) 'image_url': imageUrl,
       if (userSelectedAnswer != null)
         'user_selected_answer': userSelectedAnswer,
       'is_answered': isAnswered,

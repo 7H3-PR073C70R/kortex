@@ -126,18 +126,22 @@ class _TrackSelectionModalSheetState extends State<TrackSelectionModalSheet> {
       _selectedTrackId = track.id;
     });
 
-    (context.read<AuthBloc?>() ?? locator<AuthBloc>()).add(
+    final authBloc = context.read<AuthBloc?>() ??
+        (locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null);
+    authBloc?.add(
       AuthUpdateCourseTrackRequested(
         track: track.id,
         dailyTarget: track.defaultDailyTarget,
       ),
     );
 
-    if (locator.isRegistered<DashboardBloc>()) {
-      locator<DashboardBloc>().add(
-        const DashboardRefreshed(),
-      );
-    }
+    final dashboardBloc = context.read<DashboardBloc?>() ??
+        (locator.isRegistered<DashboardBloc>()
+            ? locator<DashboardBloc>()
+            : null);
+    dashboardBloc?.add(
+      const DashboardRefreshed(),
+    );
 
     if (mounted) {
       context.showSnackBar(

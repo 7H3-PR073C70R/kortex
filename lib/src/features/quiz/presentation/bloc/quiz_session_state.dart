@@ -12,6 +12,7 @@ enum QuizSessionStatus {
   loading,
   inProgress,
   questionAnswered,
+  submitting,
   completed,
   error,
 }
@@ -37,11 +38,14 @@ enum LifelineType {
 class QuizSessionState extends Equatable {
   const QuizSessionState({
     this.status = QuizSessionStatus.initial,
+    this.attemptId,
     this.quizTitle = 'Practice Quiz',
     this.questions = const [],
     this.currentIndex = 0,
     this.elapsedSeconds = 0,
     this.durationMinutes,
+    this.startedAt,
+    this.deadline,
     this.flaggedQuestionIds = const {},
     this.assessmentMode = AssessmentMode.discoveryMode,
     this.isHintRevealed = false,
@@ -70,11 +74,14 @@ class QuizSessionState extends Equatable {
   });
 
   final QuizSessionStatus status;
+  final String? attemptId;
   final String quizTitle;
   final List<QuizQuestionEntity> questions;
   final int currentIndex;
   final int elapsedSeconds;
   final int? durationMinutes;
+  final DateTime? startedAt;
+  final DateTime? deadline;
   final Set<String> flaggedQuestionIds;
   final AssessmentMode assessmentMode;
   final bool isHintRevealed;
@@ -129,21 +136,45 @@ class QuizSessionState extends Equatable {
 
   bool get isCurrentQuestionFlagged => isQuestionFlagged(currentQuestion?.id);
 
-  int get remainingSeconds {
+  int get remainingSeconds => getRemainingSeconds();
+
+  /// Calculates remaining seconds monotonically, optionally using [at] as the current time.
+  int getRemainingSeconds([DateTime? at]) {
+    final now = at ?? DateTime.now();
+    if (deadline != null) {
+      final diff = deadline!.difference(now).inSeconds;
+      return diff < 0 ? 0 : diff;
+    }
     if (durationMinutes == null) return 0;
     final totalSecs = durationMinutes! * 60;
-    return totalSecs - elapsedSeconds;
+    final rem = totalSecs - elapsedSeconds;
+    return rem < 0 ? 0 : rem;
   }
 
-  bool get isTimeExpired => durationMinutes != null && remainingSeconds <= 0;
+  bool get isTimeExpired => getIsTimeExpired();
 
-  bool get isTimeRunningLow =>
-      durationMinutes != null &&
-      remainingSeconds > 0 &&
-      remainingSeconds <= 300;
+  /// Determines if time is expired, optionally using [at] as the current time.
+  bool getIsTimeExpired([DateTime? at]) {
+    final now = at ?? DateTime.now();
+    if (deadline != null) {
+      return now.isAfter(deadline!);
+    }
+    return durationMinutes != null && getRemainingSeconds(now) <= 0;
+  }
+
+  bool get isTimeRunningLow => getIsTimeRunningLow();
+
+  /// Determines if time is running low (<= 5 mins remaining), optionally using [at] as current time.
+  bool getIsTimeRunningLow([DateTime? at]) {
+    final now = at ?? DateTime.now();
+    final rem = getRemainingSeconds(now);
+    return (deadline != null || durationMinutes != null) &&
+        rem > 0 &&
+        rem <= 300;
+  }
 
   String get formattedTimer {
-    final secs = durationMinutes != null
+    final secs = (deadline != null || durationMinutes != null)
         ? (remainingSeconds < 0 ? 0 : remainingSeconds)
         : elapsedSeconds;
     final minutes = (secs ~/ 60).toString().padLeft(2, '0');
@@ -192,14 +223,21 @@ class QuizSessionState extends Equatable {
   bool isOptionEliminated(int optionIndex) =>
       eliminatedOptionIndices.contains(optionIndex);
 
+  bool get isSubmitting => status == QuizSessionStatus.submitting;
+
   QuizSessionState copyWith({
     QuizSessionStatus? status,
+    String? attemptId,
     String? quizTitle,
     List<QuizQuestionEntity>? questions,
     int? currentIndex,
     int? elapsedSeconds,
     int? durationMinutes,
     bool clearDurationMinutes = false,
+    DateTime? startedAt,
+    bool clearStartedAt = false,
+    DateTime? deadline,
+    bool clearDeadline = false,
     Set<String>? flaggedQuestionIds,
     AssessmentMode? assessmentMode,
     bool? isHintRevealed,
@@ -226,6 +264,7 @@ class QuizSessionState extends Equatable {
   }) {
     return QuizSessionState(
       status: status ?? this.status,
+      attemptId: attemptId ?? this.attemptId,
       quizTitle: quizTitle ?? this.quizTitle,
       questions: questions ?? this.questions,
       currentIndex: currentIndex ?? this.currentIndex,
@@ -233,6 +272,8 @@ class QuizSessionState extends Equatable {
       durationMinutes: clearDurationMinutes
           ? null
           : (durationMinutes ?? this.durationMinutes),
+      startedAt: clearStartedAt ? null : (startedAt ?? this.startedAt),
+      deadline: clearDeadline ? null : (deadline ?? this.deadline),
       flaggedQuestionIds: flaggedQuestionIds ?? this.flaggedQuestionIds,
       assessmentMode: assessmentMode ?? this.assessmentMode,
       isHintRevealed: isHintRevealed ?? this.isHintRevealed,
@@ -267,11 +308,14 @@ class QuizSessionState extends Equatable {
   @override
   List<Object?> get props => [
     status,
+    attemptId,
     quizTitle,
     questions,
     currentIndex,
     elapsedSeconds,
     durationMinutes,
+    startedAt,
+    deadline,
     flaggedQuestionIds,
     assessmentMode,
     isHintRevealed,

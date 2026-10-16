@@ -87,6 +87,7 @@ void _initRepositoryLocator() {
         userStorageService: locator<UserStorageService>(),
         userActivityService: locator<UserActivityService>(),
         connectivity: Connectivity(),
+        analyticsService: locator<AnalyticsService>(),
       ),
     )
     ..registerLazySingleton<PastQuestionsRepository>(

@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_ingestion_service.dart';
 import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
@@ -63,8 +65,8 @@ class PastQuestionAiExtractorService {
         bytes: bytes,
         extension: extension,
       );
-    } on Object catch (e) {
-      debugPrint('[PastQuestionAiExtractor] Ingestion text error: $e');
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
 
     onProgress?.call(0.35, 'Extracting embedded images & diagram assets...');
@@ -74,8 +76,8 @@ class PastQuestionAiExtractorService {
     try {
       final images = await _extractImages(bytes: bytes, extension: extension);
       extractedImages.addAll(images);
-    } on Object catch (e) {
-      debugPrint('[PastQuestionAiExtractor] Image extraction note: $e');
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
 
     onProgress?.call(
@@ -143,8 +145,8 @@ class PastQuestionAiExtractorService {
           results.add(filePath);
         }
       }
-    } on Object catch (e) {
-      debugPrint('[PastQuestionAiExtractor] Failed saving images: $e');
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
 
     return results;
@@ -259,10 +261,11 @@ ${cleanSource.length > 12000 ? cleanSource.substring(0, 12000) : cleanSource}
           if (models.isNotEmpty) return models;
         }
       }
-    } on Object catch (e) {
-      debugPrint(
+    } on Object catch (e, st) {
+      AppLogger.info(
         '[PastQuestionAiExtractor] Cloud AI unavailable ($e), parsing document text directly.',
       );
+      AppLogger.recordNonFatal(e, st);
     }
 
     // 2. Parse actual extracted text using heuristic NLP document parser

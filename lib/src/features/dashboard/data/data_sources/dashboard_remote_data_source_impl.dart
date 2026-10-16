@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/database/app_database.dart';
 import 'package:kortex/src/core/error/exceptions.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
@@ -26,14 +27,29 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     UserActivityService? userActivityService,
     LocalStorageService? storageService,
     AppDatabase? database,
+    Dio? dio,
   }) : _userActivityService = userActivityService,
        _storageService = storageService,
-       _database = database;
+       _database = database,
+       _dio = dio;
 
   final DashboardApiClient _client;
   final UserActivityService? _userActivityService;
   final LocalStorageService? _storageService;
   final AppDatabase? _database;
+  final Dio? _dio;
+
+  Dio? get _effectiveDio {
+    if (_dio != null) return _dio;
+    try {
+      if (locator.isRegistered<Dio>()) {
+        return locator<Dio>();
+      }
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
+    return null;
+  }
 
   AppDatabase? get _effectiveDatabase {
     if (_database != null) return _database;
@@ -49,7 +65,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     if (_storageService != null) return _storageService;
     try {
       return locator<LocalStorageService>();
-    } on Object catch (_) {
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
       return null;
     }
   }
@@ -282,7 +299,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
             ),
           )
           .toList();
-    } on Object catch (_) {
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
       return const [];
     }
   }
@@ -309,7 +327,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
             ),
           )
           .toList();
-    } on Object catch (_) {
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
       return const [];
     }
   }
@@ -420,27 +439,92 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       feed = feed.copyWith(analyticsSummary: sanitisedAnalytics);
     }
 
-    if (_userActivityService != null &&
-        (feed.analyticsSummary.currentStreakDays > 0 ||
-            feed.analyticsSummary.xpPoints > 0 ||
-            feed.analyticsSummary.heatMapData.isNotEmpty)) {
-      unawaited(
-        _userActivityService.hydrateFromRemote(
-          streakDays: feed.analyticsSummary.currentStreakDays,
-          longestStreakDays: feed.analyticsSummary.longestStreakDays,
-          xpPoints: feed.analyticsSummary.xpPoints,
-          heatMapData: feed.analyticsSummary.heatMapData,
-        ),
-      );
+    if (_userActivityService != null) {
+      final quizMetrics = _userActivityService.getQuizPerformanceMetrics();
+      if (quizMetrics.totalQuizSessions == 0) {
+        // Cold start on clean install / new device: fetch remote quizzes and await hydration
+        // so readiness score and subject breakdowns are restored before feed returns to UI.
+        try {
+          final remoteQuizzes = await _fetchRecentQuizzes();
+          await _userActivityService.hydrateFromRemote(
+            streakDays: feed.analyticsSummary.currentStreakDays,
+            longestStreakDays: feed.analyticsSummary.longestStreakDays,
+            xpPoints: feed.analyticsSummary.xpPoints,
+            heatMapData: feed.analyticsSummary.heatMapData,
+            remoteQuizzes: remoteQuizzes,
+          );
+        } on Object catch (e, st) {
+          AppLogger.recordNonFatal(e, st);
+          unawaited(
+            _userActivityService.hydrateFromRemote(
+              streakDays: feed.analyticsSummary.currentStreakDays,
+              longestStreakDays: feed.analyticsSummary.longestStreakDays,
+              xpPoints: feed.analyticsSummary.xpPoints,
+              heatMapData: feed.analyticsSummary.heatMapData,
+            ),
+          );
+        }
+      } else {
+        // Returning device: immediately update streak/xp, sync new remote quizzes in background
+        unawaited(
+          () async {
+            try {
+              final remoteQuizzes = await _fetchRecentQuizzes();
+              await _userActivityService.hydrateFromRemote(
+                streakDays: feed.analyticsSummary.currentStreakDays,
+                longestStreakDays: feed.analyticsSummary.longestStreakDays,
+                xpPoints: feed.analyticsSummary.xpPoints,
+                heatMapData: feed.analyticsSummary.heatMapData,
+                remoteQuizzes: remoteQuizzes,
+              );
+            } on Object catch (e, st) {
+              AppLogger.recordNonFatal(e, st);
+            }
+          }(),
+        );
+      }
     }
 
-    if (liveAnalytics != null &&
-        (liveAnalytics.currentStreakDays > 0 ||
-            liveAnalytics.xpPoints > 0 ||
-            liveAnalytics.weeklyMinutesStudied > 0)) {
-      feed = feed.copyWith(analyticsSummary: liveAnalytics);
+    final updatedLiveAnalytics = _userActivityService?.getAnalyticsSummary();
+    if (updatedLiveAnalytics != null &&
+        (updatedLiveAnalytics.currentStreakDays > 0 ||
+            updatedLiveAnalytics.xpPoints > 0 ||
+            updatedLiveAnalytics.weeklyMinutesStudied > 0 ||
+            updatedLiveAnalytics.overallRetentionRate > 0)) {
+      feed = feed.copyWith(analyticsSummary: updatedLiveAnalytics);
     }
     return feed;
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchRecentQuizzes() async {
+    final dio = _effectiveDio;
+    if (dio == null) return const [];
+    try {
+      final response = await dio.get<dynamic>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.quizzes}',
+        queryParameters: {
+          'select':
+              'id,title,subject,total_questions,correct_answers,score_percent,duration_seconds,completed_at,course_id,course_code',
+          'order': 'completed_at.desc',
+          'limit': 50,
+        },
+        options: Options(
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 15),
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+      final dynamic data = response.data;
+      if (data is List) {
+        return data
+            .whereType<Map<dynamic, dynamic>>()
+            .map(Map<String, dynamic>.from)
+            .toList();
+      }
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
+    return const [];
   }
 
 
@@ -512,7 +596,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         return courses;
       }
       return _generateDefaultCatalogCourses();
-    } on Object catch (_) {
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
       return _generateDefaultCatalogCourses();
     }
   }
@@ -732,15 +817,15 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       if (db != null) {
         try {
           await db.deleteCourseModuleById(courseId);
-        } on Object catch (e) {
-          developer.log('Error deleting course module from SQLite: $e');
+        } on Object catch (e, st) {
+          AppLogger.recordNonFatal(e, st);
         }
       }
       await _client.syncUserCourses({
         'p_courses': updated.map((c) => c.toJson()).toList(),
       });
-    } on Object catch (e) {
-      developer.log('Error in deleteCuratedCourse: $e');
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
   }
 
@@ -784,7 +869,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   Future<AnalyticsSummaryModel> getDashboardAnalyticsSummary() async {
     try {
       return await _client.getDashboardAnalyticsSummary();
-    } on Object catch (_) {
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
       final liveAnalytics = _userActivityService?.getAnalyticsSummary();
       if (liveAnalytics != null) {
         return liveAnalytics;

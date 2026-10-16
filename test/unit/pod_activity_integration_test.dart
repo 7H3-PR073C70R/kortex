@@ -137,6 +137,7 @@ void main() {
             quizTitle: any(named: 'quizTitle'),
             questions: any(named: 'questions'),
             durationSeconds: any(named: 'durationSeconds'),
+            attemptId: any(named: 'attemptId'),
           ),
         ).thenAnswer((_) async => Right(result));
 
@@ -170,6 +171,7 @@ void main() {
             quizTitle: any(named: 'quizTitle'),
             questions: any(named: 'questions'),
             durationSeconds: any(named: 'durationSeconds'),
+            attemptId: any(named: 'attemptId'),
           ),
         ).thenAnswer((_) async => Right(result));
 
@@ -205,6 +207,7 @@ void main() {
             quizTitle: any(named: 'quizTitle'),
             questions: any(named: 'questions'),
             durationSeconds: any(named: 'durationSeconds'),
+            attemptId: any(named: 'attemptId'),
           ),
         ).thenAnswer((_) async => Right(result));
 
@@ -243,6 +246,7 @@ void main() {
             quizTitle: any(named: 'quizTitle'),
             questions: any(named: 'questions'),
             durationSeconds: any(named: 'durationSeconds'),
+            attemptId: any(named: 'attemptId'),
           ),
         ).thenAnswer((_) async => Right(result));
 
@@ -265,6 +269,7 @@ void main() {
             quizTitle: any(named: 'quizTitle'),
             questions: any(named: 'questions'),
             durationSeconds: any(named: 'durationSeconds'),
+            attemptId: any(named: 'attemptId'),
           ),
         ).thenAnswer(
           (_) async => const Left(ServerFailure(message: 'Submit failed')),

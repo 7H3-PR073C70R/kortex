@@ -8,6 +8,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/services/past_question_ai_extractor_service.dart';
@@ -186,8 +187,8 @@ class AddPastQuestionModalSheet extends HookWidget {
                 'No questions could be isolated from this file. You can enter them manually.',
           );
         }
-      } on Object catch (e) {
-        debugPrint('[AddPastQuestion] Extraction error: $e');
+      } on Object catch (e, st) {
+        AppLogger.recordNonFatal(e, st);
         if (context.mounted) {
           context.showSnackBar(
             message:
@@ -210,6 +211,7 @@ class AddPastQuestionModalSheet extends HookWidget {
 
       try {
         final bloc = pastQuestionsBloc ??
+            context.read<PastQuestionsBloc?>() ??
             (locator.isRegistered<PastQuestionsBloc>()
                 ? locator<PastQuestionsBloc>()
                 : null);
@@ -239,6 +241,7 @@ class AddPastQuestionModalSheet extends HookWidget {
 
       try {
         final bloc = pastQuestionsBloc ??
+            context.read<PastQuestionsBloc?>() ??
             (locator.isRegistered<PastQuestionsBloc>()
                 ? locator<PastQuestionsBloc>()
                 : null);

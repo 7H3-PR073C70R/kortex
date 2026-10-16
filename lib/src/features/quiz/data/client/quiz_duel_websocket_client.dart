@@ -1153,9 +1153,7 @@ class QuizDuelWebSocketClient {
           _finalizeMatch(duelId);
         }
       } on Object catch (e, stack) {
-        debugPrint(
-          '[QuizDuelWebSocketClient] Error during round transition: $e\n$stack',
-        );
+        AppLogger.recordNonFatal(e, stack);
         _finalizeMatch(duelId);
       }
     });

@@ -52,21 +52,25 @@ class AnalyticsDetailPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveBloc = dashboardBloc ??
-        (locator.isRegistered<DashboardBloc>()
-            ? locator<DashboardBloc>()
-            : null);
+        (context.read<DashboardBloc?>() ??
+            (locator.isRegistered<DashboardBloc>()
+                ? locator<DashboardBloc>()
+                : null));
     final effectiveActivityService = activityService ??
-        (locator.isRegistered<UserActivityService>()
-            ? locator<UserActivityService>()
-            : null);
+        (context.read<UserActivityService?>() ??
+            (locator.isRegistered<UserActivityService>()
+                ? locator<UserActivityService>()
+                : null));
     final effectiveAuthBloc = authBloc ??
-        (locator.isRegistered<AuthBloc>()
-            ? locator<AuthBloc>()
-            : null);
+        (context.read<AuthBloc?>() ??
+            (locator.isRegistered<AuthBloc>()
+                ? locator<AuthBloc>()
+                : null));
     final effectiveSubscriptionGuard = subscriptionGuard ??
-        (locator.isRegistered<SubscriptionGuard>()
-            ? locator<SubscriptionGuard>()
-            : null);
+        (context.read<SubscriptionGuard?>() ??
+            (locator.isRegistered<SubscriptionGuard>()
+                ? locator<SubscriptionGuard>()
+                : null));
 
     useEffect(() {
       effectiveBloc?.add(const DashboardStarted());

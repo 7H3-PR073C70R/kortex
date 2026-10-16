@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -13,7 +14,14 @@ import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 
 /// Modal bottom sheet showcasing ELO Leaderboards, Division Tiers, and Rankings (QZ-13).
 class QuizDuelLeaderboardSheet extends HookWidget {
-  const QuizDuelLeaderboardSheet({super.key});
+  const QuizDuelLeaderboardSheet({
+    this.repository,
+    this.authBloc,
+    super.key,
+  });
+
+  final QuizDuelRepository? repository;
+  final AuthBloc? authBloc;
 
   static Future<void> show(BuildContext context) {
     return AppAdaptiveSheet.showModal<void>(
@@ -30,9 +38,14 @@ class QuizDuelLeaderboardSheet extends HookWidget {
     final isDark = context.isDarkMode;
     final isDesktop = AppAdaptiveSheet.isDesktopOrWeb(context);
 
-    final repo = locator<QuizDuelRepository>();
-    final authBloc = locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null;
-    final currentUser = authBloc?.state.userProfile;
+    final repo = repository ??
+        (locator.isRegistered<QuizDuelRepository>()
+            ? locator<QuizDuelRepository>()
+            : null);
+    final effectiveAuthBloc = authBloc ??
+        (context.read<AuthBloc?>() ??
+            (locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null));
+    final currentUser = effectiveAuthBloc?.state.userProfile;
     final userElo = currentUser?.eloRating ?? 1250;
     final userTier = QuizDuelEloTier.fromElo(userElo);
 
@@ -42,6 +55,7 @@ class QuizDuelLeaderboardSheet extends HookWidget {
     );
 
     Future<void> fetchLeaderboard() async {
+      if (repo == null) return;
       leaderboardState.value = const AsyncSnapshot.waiting();
       await repo
           .getEloLeaderboard(

@@ -13,11 +13,13 @@ class SubmitQuizAnswersUseCase {
     required String quizTitle,
     required List<QuizQuestionEntity> questions,
     required int durationSeconds,
+    String? attemptId,
   }) {
     return _repository.submitQuizAnswers(
       quizTitle: quizTitle,
       questions: questions,
       durationSeconds: durationSeconds,
+      attemptId: attemptId,
     );
   }
 }

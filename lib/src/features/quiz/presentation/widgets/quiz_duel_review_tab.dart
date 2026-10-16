@@ -5,6 +5,7 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
@@ -51,6 +52,7 @@ class _QuizDuelReviewTabState extends State<QuizDuelReviewTab> {
         ? missedQuestions
         : widget.match.questions;
 
+    var saveSuccess = true;
     try {
       if (locator.isRegistered<ConvertFailedQuizToDeckUseCase>()) {
         final useCase = locator<ConvertFailedQuizToDeckUseCase>();
@@ -69,25 +71,35 @@ class _QuizDuelReviewTabState extends State<QuizDuelReviewTab> {
           courseCode: widget.match.subject,
         );
       }
-    } on Object catch (_) {
-      // Fallback state handling
+    } on Object catch (e, st) {
+      saveSuccess = false;
+      AppLogger.recordNonFatal(e, st);
     }
 
     if (!mounted) return;
     setState(() {
       _isSaving = false;
-      _isSavedAll = true;
-      for (final q in targetQuestions) {
-        _savedQuestionIds.add(q.id);
+      if (saveSuccess) {
+        _isSavedAll = true;
+        for (final q in targetQuestions) {
+          _savedQuestionIds.add(q.id);
+        }
       }
     });
 
     if (!context.mounted) return;
-    context.showSnackBar(
-      message:
-          'Saved ${targetQuestions.length} ${targetQuestions.length == 1 ? 'question' : 'questions'} from ${widget.match.subject} duel to Flashcards!',
-      type: SnackBarType.success,
-    );
+    if (saveSuccess) {
+      context.showSnackBar(
+        message:
+            'Saved ${targetQuestions.length} ${targetQuestions.length == 1 ? 'question' : 'questions'} from ${widget.match.subject} duel to Flashcards!',
+        type: SnackBarType.success,
+      );
+    } else {
+      context.showSnackBar(
+        message: 'Failed to save flashcards. Please try again.',
+        type: SnackBarType.error,
+      );
+    }
   }
 
   void _toggleSingleQuestion(String questionId) {

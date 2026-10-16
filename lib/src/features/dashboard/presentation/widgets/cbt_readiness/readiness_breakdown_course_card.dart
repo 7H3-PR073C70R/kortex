@@ -143,7 +143,7 @@ class ReadinessBreakdownCourseCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Accuracy: ${(sub.accuracyPercent * 100).round()}%',
+                      'Accuracy: ${(sub.accuracyPercent * 100).round()}%${sub.questionsAnswered > 0 ? ' (${sub.questionsAnswered} items)' : ''}',
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
                         fontSize: 11,

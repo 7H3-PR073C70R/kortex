@@ -63,8 +63,19 @@ class _StudyCirclePodPulseCardState extends State<StudyCirclePodPulseCard> {
         ? targetTrack.trim()
         : 'All Tracks';
 
-    final communityBloc = _bloc;
-    final userXp = _activityService?.getXpPoints() ?? 0;
+    final communityBloc = widget.communityBloc ??
+        _bloc ??
+        context.read<CommunityHubBloc?>() ??
+        (locator.isRegistered<CommunityHubBloc>()
+            ? locator<CommunityHubBloc>()
+            : null);
+    final activityService = widget.userActivityService ??
+        _activityService ??
+        context.read<UserActivityService?>() ??
+        (locator.isRegistered<UserActivityService>()
+            ? locator<UserActivityService>()
+            : null);
+    final userXp = activityService?.getXpPoints() ?? 0;
 
     Widget contentBuilder(CommunityState state) {
       final allCircles = state.studyCircles;

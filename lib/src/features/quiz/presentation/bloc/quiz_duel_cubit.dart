@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_duel_repository.dart';
@@ -227,7 +227,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
       if (state.status == QuizDuelStatus.roundSummary &&
           state.match?.duelId == duelId &&
           state.match?.currentQuestionIndex == questionIndex) {
-        debugPrint(
+        AppLogger.info(
           '[QuizDuelCubit] Summary safety watchdog fired for duel $duelId (round $questionIndex). Forcing advance.',
         );
         unawaited(_repository.forceAdvanceToNextRound(duelId));

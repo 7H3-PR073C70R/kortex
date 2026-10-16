@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
@@ -23,12 +24,14 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     CalculateDailyCramTargetUseCase? calculateTargetUseCase,
     CreateExamCountdownUseCase? createExamUseCase,
     CramWorkloadCalculator? calculator,
+    NotificationService? notificationService,
   }) : _repository = plannerRepository,
        _calculateTargetUseCase =
            calculateTargetUseCase ?? const CalculateDailyCramTargetUseCase(),
        _createExamUseCase =
            createExamUseCase ?? CreateExamCountdownUseCase(plannerRepository),
        _calculator = calculator ?? const CramWorkloadCalculator(),
+       _notificationService = notificationService,
        super(const CramPlannerState()) {
     _initDecksListener();
     _initActivityListener();
@@ -38,8 +41,31 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
   final CalculateDailyCramTargetUseCase _calculateTargetUseCase;
   final CreateExamCountdownUseCase _createExamUseCase;
   final CramWorkloadCalculator _calculator;
+  final NotificationService? _notificationService;
   StreamSubscription<DecksState>? _decksSubscription;
   StreamSubscription<dynamic>? _activitySubscription;
+
+  NotificationService? get _effectiveNotificationService =>
+      _notificationService ??
+      (locator.isRegistered<NotificationService>()
+          ? locator<NotificationService>()
+          : null);
+
+  void _syncExamReminders(List<ExamEventEntity> exams) {
+    final notifService = _effectiveNotificationService;
+    if (notifService == null) return;
+    for (final exam in exams) {
+      if (!exam.isPast && !exam.isCompleted && !exam.isCancelled) {
+        unawaited(
+          notifService.scheduleExamTargetReminders(
+            examName: exam.examName,
+            targetDate: exam.targetDate,
+            examId: exam.id,
+          ),
+        );
+      }
+    }
+  }
 
   void _initDecksListener() {
     if (locator.isRegistered<DecksBloc>()) {
@@ -349,6 +375,7 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
             urgencyLevel: urgency,
           ),
         );
+        _syncExamReminders(sorted);
       },
     );
   }
@@ -426,6 +453,7 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
             urgencyLevel: urgency,
           ),
         );
+        _syncExamReminders([newExam]);
       },
     );
   }
@@ -787,6 +815,7 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
             urgencyLevel: urgency,
           ),
         );
+        _syncExamReminders([updatedExam]);
       },
     );
   }
@@ -845,6 +874,12 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
             estimatedDailyMinutes: estMins,
             topPriorityExamId: topPriorityId,
             urgencyLevel: urgency,
+          ),
+        );
+        unawaited(
+          _effectiveNotificationService?.cancelExamTargetReminders(
+            examName: cancelledExam.examName,
+            examId: cancelledExam.id,
           ),
         );
       },

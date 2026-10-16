@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
@@ -79,7 +80,8 @@ class QuizAudioReaderButton extends HookWidget {
                     final script = _buildSpeechScript();
                     await handler.speak(script);
                   }
-                } on Object catch (_) {
+                } on Object catch (e, st) {
+                  AppLogger.recordNonFatal(e, st);
                   AppFeedback.incorrect();
                   if (context.mounted) {
                     context.showSnackBar(

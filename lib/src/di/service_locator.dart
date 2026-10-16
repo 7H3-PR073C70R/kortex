@@ -65,6 +65,7 @@ void _initServices() {
       () => UserActivityServiceImpl(
         locator<LocalStorageService>(),
         connectivity: Connectivity(),
+        dio: locator.isRegistered<Dio>() ? locator<Dio>() : null,
       ),
     )
     ..registerLazySingleton<ForumOfflineSyncQueue>(

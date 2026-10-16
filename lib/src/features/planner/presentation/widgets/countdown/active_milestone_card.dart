@@ -188,7 +188,9 @@ class ActiveMilestoneCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 3.5),
                             Text(
-                              'Readiness: ${readinessResult.scorePercent}%',
+                              readinessResult.isCalibrated
+                                  ? 'Readiness: ${readinessResult.scorePercent}%'
+                                  : 'Diagnostic Pending',
                               style: typography.caption.bold.copyWith(
                                 fontSize: 9.5,
                                 color: readinessResult.statusColor,

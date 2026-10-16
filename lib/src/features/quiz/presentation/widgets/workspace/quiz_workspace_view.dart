@@ -58,6 +58,18 @@ class QuizWorkspaceView extends HookWidget {
       return null;
     }, [focusNode]);
 
+    useEffect(() {
+      final observer = _QuizLifecycleObserver(
+        onResume: () {
+          if (context.mounted) {
+            context.read<QuizSessionCubit>().syncTimerWithDeadline();
+          }
+        },
+      );
+      WidgetsBinding.instance.addObserver(observer);
+      return () => WidgetsBinding.instance.removeObserver(observer);
+    }, const []);
+
     var effectiveCourseId = courseId;
     var effectiveCourseCode = courseCode ??
         (deckTitle != null && deckTitle!.contains('(')
@@ -130,7 +142,8 @@ class QuizWorkspaceView extends HookWidget {
         }
       },
       builder: (context, state) {
-        if (state.status == QuizSessionStatus.loading) {
+        if (state.status == QuizSessionStatus.loading ||
+            state.status == QuizSessionStatus.submitting) {
           return Scaffold(
             backgroundColor: isDark
                 ? colors.backgroundPrimary
@@ -490,5 +503,18 @@ class QuizWorkspaceView extends HookWidget {
         );
       },
     );
+  }
+}
+
+class _QuizLifecycleObserver extends WidgetsBindingObserver {
+  _QuizLifecycleObserver({required this.onResume});
+
+  final VoidCallback onResume;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      onResume();
+    }
   }
 }

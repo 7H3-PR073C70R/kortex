@@ -51,13 +51,15 @@ void main() {
       const readinessResult = CbtReadinessResult(
         scorePercent: 88,
         statusLabel: 'Exam Ready',
-        statusColor: Color(0xFF10B981),
+        statusTier: CbtReadinessStatusTier.onTrack,
+        statusColorValue: 0xFF10B981,
         syllabusCoverage: 0.9,
         fsrsRetentionRate: 0.86,
         mockScoreRatio: 0.88,
         projectedGrade: 'A',
         projectedScoreRange: '280 - 310',
       );
+
 
       await tester.pumpWidget(
         createTestApp(

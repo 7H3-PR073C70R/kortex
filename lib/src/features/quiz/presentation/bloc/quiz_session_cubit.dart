@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/analytics_service.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -25,6 +26,7 @@ import 'package:kortex/src/features/decks/domain/models/fsrs_user_settings.dart'
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/quiz/data/models/quiz_question_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/logic/millionaire_tiering_engine.dart';
 import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
@@ -38,7 +40,10 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     required SubmitQuizAnswersUseCase submitQuizUseCase,
     DecksRepository? decksRepository,
     CardSyncQueue? cardSyncQueue,
+    LocalStorageService? localStorageService,
     MillionaireTieringEngine? tieringEngine,
+    DateTime Function()? nowProvider,
+    AnalyticsService? analyticsService,
   }) : _generateQuizUseCase = generateQuizUseCase,
        _submitQuizUseCase = submitQuizUseCase,
        _decksRepository =
@@ -51,16 +56,33 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
            (locator.isRegistered<CardSyncQueue>()
                ? locator<CardSyncQueue>()
                : null),
+       _localStorageService =
+           localStorageService ??
+           (locator.isRegistered<LocalStorageService>()
+               ? locator<LocalStorageService>()
+               : null),
+       _analyticsService =
+           analyticsService ??
+           (locator.isRegistered<AnalyticsService>()
+               ? locator<AnalyticsService>()
+               : null),
        _tieringEngine = tieringEngine ?? const MillionaireTieringEngine(),
+       _now = nowProvider ?? DateTime.now,
        super(const QuizSessionState());
+
+  static const String activeCbtSessionStorageKey = '__kortex_active_cbt_session';
 
   final GenerateQuizFromDeckUseCase _generateQuizUseCase;
   final SubmitQuizAnswersUseCase _submitQuizUseCase;
   final DecksRepository? _decksRepository;
   final CardSyncQueue? _cardSyncQueue;
+  final LocalStorageService? _localStorageService;
+  final AnalyticsService? _analyticsService;
   final MillionaireTieringEngine _tieringEngine;
+  final DateTime Function() _now;
   List<QuizQuestionEntity> _reserveQuestions = [];
   Timer? _timer;
+  bool _isSubmitting = false;
 
   /// Starts a new quiz session from a deck.
   Future<void> startQuizFromDeck({
@@ -71,6 +93,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     AssessmentMode assessmentMode = AssessmentMode.discoveryMode,
   }) async {
     _timer?.cancel();
+    _isSubmitting = false;
     emit(
       state.copyWith(
         status: QuizSessionStatus.loading,
@@ -112,12 +135,25 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
               .where((q) => !tieredIds.contains(q.id))
               .toList();
         }
+        final now = _now();
+        final effectiveDuration = assessmentMode == AssessmentMode.millionaireMode
+            ? null
+            : durationMinutes;
+        final deadline = effectiveDuration != null && effectiveDuration > 0
+            ? now.add(Duration(minutes: effectiveDuration))
+            : null;
+        final attemptId = UuidUtils.generate();
+
         emit(
           state.copyWith(
             status: QuizSessionStatus.inProgress,
+            attemptId: attemptId,
             questions: finalQuestions,
             currentIndex: 0,
             elapsedSeconds: 0,
+            startedAt: now,
+            deadline: deadline,
+            durationMinutes: effectiveDuration,
             clearPendingAnswer: true,
             currentTier: 1,
             bankedTier: 0,
@@ -139,6 +175,33 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           ),
         );
         _startTimer();
+        unawaited(_persistActiveSession());
+
+        try {
+          final isDiagnostic =
+              (deckTitle ?? '').toLowerCase().contains('diagnostic') ||
+                  deckId.contains('diagnostic');
+          if (isDiagnostic) {
+            unawaited(
+              _analyticsService?.logCbtDiagnosticStarted(
+                trackOrExamName: deckTitle ?? 'Diagnostic Assessment',
+                questionCount: finalQuestions.length,
+              ),
+            );
+          } else if (assessmentMode == AssessmentMode.examSimulationMode) {
+            unawaited(
+              _analyticsService?.logCbtMockExamStarted(
+                examTrack: deckTitle ?? 'CBT Mock Exam',
+                attemptId: attemptId,
+                totalQuestions: finalQuestions.length,
+                durationMinutes: effectiveDuration ?? 0,
+                isTimed: effectiveDuration != null && effectiveDuration > 0,
+              ),
+            );
+          }
+        } on Object catch (e, st) {
+          AppLogger.recordNonFatal(e, st);
+        }
       },
     );
   }
@@ -163,17 +226,28 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           .where((q) => !tieredIds.contains(q.id))
           .toList();
     }
+    final now = _now();
+    final effectiveDuration = assessmentMode == AssessmentMode.millionaireMode
+        ? null
+        : durationMinutes;
+    final deadline = effectiveDuration != null && effectiveDuration > 0
+        ? now.add(Duration(minutes: effectiveDuration))
+        : null;
+    final attemptId = UuidUtils.generate();
+    _isSubmitting = false;
+
     emit(
       state.copyWith(
         status: QuizSessionStatus.inProgress,
+        attemptId: attemptId,
         quizTitle: title,
         questions: finalQuestions,
         currentIndex: 0,
         elapsedSeconds: 0,
+        startedAt: now,
+        deadline: deadline,
         clearPendingAnswer: true,
-        durationMinutes: assessmentMode == AssessmentMode.millionaireMode
-            ? null
-            : durationMinutes,
+        durationMinutes: effectiveDuration,
         flaggedQuestionIds: const {},
         assessmentMode: assessmentMode,
         millionaireScope: millionaireScope,
@@ -195,6 +269,32 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
       ),
     );
     _startTimer();
+    unawaited(_persistActiveSession());
+
+    try {
+      final isDiagnostic = title.toLowerCase().contains('diagnostic') ||
+          finalQuestions.any((q) => q.id.startsWith('diag_'));
+      if (isDiagnostic) {
+        unawaited(
+          _analyticsService?.logCbtDiagnosticStarted(
+            trackOrExamName: title,
+            questionCount: finalQuestions.length,
+          ),
+        );
+      } else if (assessmentMode == AssessmentMode.examSimulationMode) {
+        unawaited(
+          _analyticsService?.logCbtMockExamStarted(
+            examTrack: title,
+            attemptId: attemptId,
+            totalQuestions: finalQuestions.length,
+            durationMinutes: effectiveDuration ?? 0,
+            isTimed: effectiveDuration != null && effectiveDuration > 0,
+          ),
+        );
+      }
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
   }
 
   /// Re-opens already answered questions as a read-only walkthrough.
@@ -212,6 +312,8 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         questions: questions,
         currentIndex: 0,
         elapsedSeconds: 0,
+        clearStartedAt: true,
+        clearDeadline: true,
         clearDurationMinutes: true,
         flaggedQuestionIds: const {},
         assessmentMode: AssessmentMode.discoveryMode,
@@ -346,17 +448,62 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (state.status == QuizSessionStatus.inProgress ||
           state.status == QuizSessionStatus.questionAnswered) {
-        final newElapsed = state.elapsedSeconds + 1;
-        emit(state.copyWith(elapsedSeconds: newElapsed));
+        final now = _now();
+        final newElapsed = state.startedAt != null
+            ? now.difference(state.startedAt!).inSeconds
+            : state.elapsedSeconds + 1;
 
         // Auto-submit when countdown expires in timed CBT exam
-        if (state.durationMinutes != null &&
-            newElapsed >= (state.durationMinutes! * 60)) {
+        final expired = state.deadline != null
+            ? now.isAfter(state.deadline!)
+            : (state.durationMinutes != null &&
+                newElapsed >= (state.durationMinutes! * 60));
+
+        if (expired) {
           _timer?.cancel();
+          emit(state.copyWith(
+            elapsedSeconds: state.durationMinutes != null
+                ? state.durationMinutes! * 60
+                : newElapsed,
+          ));
           unawaited(submitQuiz());
+          return;
         }
+
+        emit(state.copyWith(elapsedSeconds: newElapsed));
       }
     });
+  }
+
+  /// Immediately recalculates remaining duration and elapsed time against
+  /// monotonic timestamps (e.g. on AppLifecycleState.resumed). Auto-submits if expired.
+  void syncTimerWithDeadline() {
+    if (state.status != QuizSessionStatus.inProgress &&
+        state.status != QuizSessionStatus.questionAnswered) {
+      return;
+    }
+    final now = _now();
+    final newElapsed = state.startedAt != null
+        ? now.difference(state.startedAt!).inSeconds
+        : state.elapsedSeconds;
+
+    final expired = state.deadline != null
+        ? now.isAfter(state.deadline!)
+        : (state.durationMinutes != null &&
+            newElapsed >= (state.durationMinutes! * 60));
+
+    if (expired) {
+      _timer?.cancel();
+      emit(state.copyWith(
+        elapsedSeconds: state.durationMinutes != null
+            ? state.durationMinutes! * 60
+            : newElapsed,
+      ));
+      unawaited(submitQuiz());
+      return;
+    }
+
+    emit(state.copyWith(elapsedSeconds: newElapsed));
   }
 
   /// Toggles the flagged status of the current question.
@@ -375,6 +522,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
       updatedFlags.add(questionId);
     }
     emit(state.copyWith(flaggedQuestionIds: updatedFlags));
+    unawaited(_persistActiveSession());
   }
 
   /// Sets the assessment mode (discovery / practice vs strict exam simulation).
@@ -546,7 +694,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         : cleanPrompt;
 
     return QuizQuestionEntity(
-      id: 'swap_${current.id}_${DateTime.now().millisecondsSinceEpoch}',
+      id: 'swap_${current.id}_${_now().millisecondsSinceEpoch}',
       prompt:
           'Alternative Tier $tier Challenge ($subTopic): Which foundational principle governs $subjectFocus?',
       type: QuizQuestionType.multipleChoice,
@@ -638,6 +786,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
                   : QuizSessionStatus.inProgress),
       ),
     );
+    unawaited(_persistActiveSession());
   }
 
   /// Navigates to the previous question.
@@ -695,6 +844,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         clearPendingAnswer: true,
       ),
     );
+    unawaited(_persistActiveSession());
   }
 
   /// Instant-graded Millionaire reveal with tier banking and shields.
@@ -731,6 +881,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           clearPendingAnswer: true,
         ),
       );
+      unawaited(_persistActiveSession());
 
       if (state.isLastQuestion) {
         unawaited(submitQuiz());
@@ -760,17 +911,15 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           ),
         );
       }
+      unawaited(_persistActiveSession());
     }
   }
 
   bool _matchesCorrectAnswer(QuizQuestionEntity question, String option) {
-    final cleanCorrect = QuizContentSanitizer.cleanOptionText(
-      question.correctAnswer,
-    ).toLowerCase();
-    final cleanSelected = QuizContentSanitizer.cleanOptionText(
+    return QuizContentSanitizer.isAnswerMatching(
       option,
-    ).toLowerCase();
-    return cleanCorrect == cleanSelected;
+      question.correctAnswer,
+    );
   }
 
   /// Commits the staged practice answer and reveals its verdict.
@@ -801,6 +950,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         clearPendingAnswer: true,
       ),
     );
+    unawaited(_persistActiveSession());
   }
 
   /// Drops a staged practice answer so the student can pick another option.
@@ -823,179 +973,235 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
 
   /// Submits all completed answers and computes result with topic weaknesses.
   Future<void> submitQuiz() async {
-    _timer?.cancel();
-    emit(state.copyWith(status: QuizSessionStatus.loading));
-
-    // Grade all answered questions so accuracy and review verdicts reflect the student's actual work
-    final gradedQuestions = state.questions.map((q) {
-      if (q.userSelectedAnswer == null || q.userSelectedAnswer!.trim().isEmpty) {
-        return q.copyWith(isCorrect: false);
-      }
-      final isCorrect = _matchesCorrectAnswer(q, q.userSelectedAnswer!);
-      return q.copyWith(
-        isCorrect: isCorrect,
-        isAnswered: true,
-      );
-    }).toList();
-
-    // Flag misses to FSRS sync queue
-    for (final q in gradedQuestions) {
-      if (!q.isCorrect && q.isAnswered) {
-        _flagMissedCardToFsrs(q.id);
-      }
+    if (isClosed ||
+        _isSubmitting ||
+        state.status == QuizSessionStatus.submitting ||
+        state.status == QuizSessionStatus.completed) {
+      return;
     }
+    _isSubmitting = true;
+    _timer?.cancel();
+    unawaited(clearActiveSession());
+    emit(state.copyWith(status: QuizSessionStatus.submitting));
 
-    // Flush pending FSRS review logs so missed question reviews are persisted immediately
     try {
-      final queue = _cardSyncQueue;
-      if (queue != null) {
-        await queue.flushPendingLogs();
+      // Grade all answered questions so accuracy and review verdicts reflect the student's actual work
+      final gradedQuestions = state.questions.map((q) {
+        if (q.userSelectedAnswer == null || q.userSelectedAnswer!.trim().isEmpty) {
+          return q.copyWith(isCorrect: false);
+        }
+        final isCorrect = _matchesCorrectAnswer(q, q.userSelectedAnswer!);
+        return q.copyWith(
+          isCorrect: isCorrect,
+          isAnswered: true,
+        );
+      }).toList();
+
+      // Flag misses to FSRS sync queue
+      for (final q in gradedQuestions) {
+        if (!q.isCorrect && q.isAnswered) {
+          _flagMissedCardToFsrs(q.id);
+        }
       }
-    } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
-    final result = await _submitQuizUseCase(
-      quizTitle: state.quizTitle,
-      questions: gradedQuestions,
-      durationSeconds: state.elapsedSeconds,
-    );
+      // Flush pending FSRS review logs so missed question reviews are persisted immediately
+      try {
+        final queue = _cardSyncQueue;
+        if (queue != null) {
+          await queue.flushPendingLogs();
+        }
+      } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
-    result.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: QuizSessionStatus.error,
-          errorMessage: failure.message,
-        ),
-      ),
-      (quizResult) async {
-        // Clear cached feed so Dashboard loads fresh review queue immediately
-        try {
-          if (locator.isRegistered<DashboardRepository>()) {
-            locator<DashboardRepository>().clearFeedCache();
-          }
-        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+      final attemptId = state.attemptId ?? UuidUtils.generate();
 
-        // Telemetry: Mock exam score submission trace & Crashlytics metrics
-        try {
-          final crashlytics = locator<CrashlyticsService>();
-          unawaited(
-            crashlytics.log(
-              'Mock exam / Quiz submitted: "${quizResult.quizTitle}", '
-              'score=${quizResult.correctAnswers}/${quizResult.totalQuestions}, '
-              'percentage=${quizResult.scorePercent}%',
+      final result = await _submitQuizUseCase(
+        quizTitle: state.quizTitle,
+        questions: gradedQuestions,
+        durationSeconds: state.elapsedSeconds,
+        attemptId: attemptId,
+      );
+
+      await result.fold(
+        (failure) async {
+          emit(
+            state.copyWith(
+              status: QuizSessionStatus.error,
+              errorMessage: failure.message,
             ),
           );
-          unawaited(
-            crashlytics.setCustomKey(
-              'last_quiz_title',
-              quizResult.quizTitle,
-            ),
-          );
-          unawaited(
-            crashlytics.setCustomKey(
-              'last_quiz_score',
-              quizResult.scorePercent,
-            ),
-          );
+        },
+        (quizResult) async {
+          // Clear cached feed so Dashboard loads fresh review queue immediately
+          try {
+            if (locator.isRegistered<DashboardRepository>()) {
+              locator<DashboardRepository>().clearFeedCache();
+            }
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
-          final performance = locator<PerformanceService>();
-          final trace = performance.newTrace('mock_exam_submission')
-            ..putAttribute('quiz_title', quizResult.quizTitle)
-            ..setMetric('total_questions', quizResult.totalQuestions)
-            ..setMetric('correct_answers', quizResult.correctAnswers)
-            ..setMetric('duration_seconds', quizResult.durationSeconds);
-          unawaited(trace.start().then((_) => trace.stop()));
-        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-
-        // Live UI state refresh for Auth streak, Decks, Dashboard, and Pod Focus Minutes
-        try {
-          if (locator.isRegistered<AuthBloc>()) {
-            locator<AuthBloc>().add(const AuthStreakIncremented());
-          }
-        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-        try {
-          if (locator.isRegistered<DecksBloc>()) {
-            locator<DecksBloc>().add(const DecksRefreshed());
-          }
-        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-        try {
-          if (locator.isRegistered<DashboardBloc>()) {
-            locator<DashboardBloc>().add(const DashboardRefreshed());
-          }
-        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-        try {
-          if (locator.isRegistered<UserActivityService>()) {
-            final isPerfect = quizResult.scorePercent >= 100;
-            final isHigh = quizResult.scorePercent >= 80;
-            final bonus = isPerfect ? 100 : (isHigh ? 50 : 0);
-            final customBase =
-                state.assessmentMode == AssessmentMode.millionaireMode
-                    ? (state.isWalkedAway || state.isSoftFailed
-                        ? state.bankedTierPrizeXp
-                        : state.currentTierPrizeXp)
-                    : XpActivityCategory.quizCompletion.defaultBaseXp +
-                        (quizResult.correctAnswers * 15) +
-                        bonus;
+          // Telemetry: Mock exam score submission trace & Crashlytics metrics
+          try {
+            final crashlytics = locator<CrashlyticsService>();
             unawaited(
-              locator<UserActivityService>().awardXp(
-                XpActivityCategory.quizCompletion,
-                customBaseAmount: customBase,
-                sourceId: quizResult.quizTitle,
-                metadata: {
-                  'quizTitle': quizResult.quizTitle,
-                  'scorePercent': quizResult.scorePercent,
-                  'correctAnswers': quizResult.correctAnswers,
-                },
+              crashlytics.log(
+                'Mock exam / Quiz submitted: "${quizResult.quizTitle}", '
+                'score=${quizResult.correctAnswers}/${quizResult.totalQuestions}, '
+                'percentage=${quizResult.scorePercent}%',
               ),
             );
-          }
-        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
-
-        try {
-          if (locator.isRegistered<StudyActivityTracker>()) {
-            final isCbt =
-                state.assessmentMode == AssessmentMode.examSimulationMode;
             unawaited(
-              locator<StudyActivityTracker>().recordActivityCompletion(
-                durationSeconds: quizResult.durationSeconds,
-                activityType: isCbt ? 'cbt' : 'quiz',
+              crashlytics.setCustomKey(
+                'last_quiz_title',
+                quizResult.quizTitle,
               ),
             );
-          }
-        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+            unawaited(
+              crashlytics.setCustomKey(
+                'last_quiz_score',
+                quizResult.scorePercent,
+              ),
+            );
 
-        // Reschedule daily study reminder forward so streak notifications do not fire redundantly today
-        try {
-          if (locator.isRegistered<NotificationService>()) {
-            final notifs = locator<NotificationService>();
-            final storage = locator.isRegistered<LocalStorageService>()
-                ? locator<LocalStorageService>()
-                : null;
-            final raw = storage?.getPreference(key: FsrsUserSettings.storageKey);
-            final settings = raw != null
-                ? FsrsUserSettings.fromJson(
-                    jsonDecode(raw) as Map<String, dynamic>,
-                  )
-                : const FsrsUserSettings();
-            if (settings.remindersEnabled) {
+            final performance = locator<PerformanceService>();
+            final trace = performance.newTrace('mock_exam_submission')
+              ..putAttribute('quiz_title', quizResult.quizTitle)
+              ..setMetric('total_questions', quizResult.totalQuestions)
+              ..setMetric('correct_answers', quizResult.correctAnswers)
+              ..setMetric('duration_seconds', quizResult.durationSeconds);
+            unawaited(trace.start().then((_) => trace.stop()));
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+
+          // CBT Observability: log diagnostic completed or mock exam submitted
+          try {
+            final isDiagnostic =
+                state.quizTitle.toLowerCase().contains('diagnostic') ||
+                    state.questions.any((q) => q.id.startsWith('diag_'));
+            final isAutoSubmit = state.isTimeExpired ||
+                (state.deadline != null && _now().isAfter(state.deadline!));
+            final examTrack = quizResult.quizTitle.isNotEmpty
+                ? quizResult.quizTitle
+                : (state.quizTitle.isNotEmpty ? state.quizTitle : 'CBT Mock Exam');
+
+            if (isDiagnostic) {
               unawaited(
-                notifs.scheduleStudyReminder(
-                  hour: settings.preferredReminderHour,
-                  minute: settings.preferredReminderMinute,
+                _analyticsService?.logCbtDiagnosticCompleted(
+                  trackOrExamName: examTrack,
+                  scorePercent: quizResult.scorePercent,
+                  totalQuestions: quizResult.totalQuestions,
+                  correctAnswers: quizResult.correctAnswers,
+                  durationSeconds: quizResult.durationSeconds,
+                ),
+              );
+            } else if (state.assessmentMode ==
+                AssessmentMode.examSimulationMode) {
+              unawaited(
+                _analyticsService?.logCbtMockExamSubmitted(
+                  examTrack: examTrack,
+                  attemptId: attemptId,
+                  scorePercent: quizResult.scorePercent,
+                  totalQuestions: quizResult.totalQuestions,
+                  correctAnswers: quizResult.correctAnswers,
+                  elapsedSeconds: quizResult.durationSeconds,
+                  isAutoSubmit: isAutoSubmit,
                 ),
               );
             }
+          } on Object catch (e, st) {
+            AppLogger.recordNonFatal(e, st);
           }
-        } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
-        emit(
-          state.copyWith(
-            status: QuizSessionStatus.completed,
-            questions: gradedQuestions,
-            result: quizResult,
-          ),
-        );
-      },
-    );
+          // Live UI state refresh for Auth streak, Decks, Dashboard, and Pod Focus Minutes
+          try {
+            if (locator.isRegistered<AuthBloc>()) {
+              locator<AuthBloc>().add(const AuthStreakIncremented());
+            }
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+          try {
+            if (locator.isRegistered<DecksBloc>()) {
+              locator<DecksBloc>().add(const DecksRefreshed());
+            }
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+          try {
+            if (locator.isRegistered<DashboardBloc>()) {
+              locator<DashboardBloc>().add(const DashboardRefreshed());
+            }
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+          try {
+            if (locator.isRegistered<UserActivityService>()) {
+              final isPerfect = quizResult.scorePercent >= 100;
+              final isHigh = quizResult.scorePercent >= 80;
+              final bonus = isPerfect ? 100 : (isHigh ? 50 : 0);
+              final customBase =
+                  state.assessmentMode == AssessmentMode.millionaireMode
+                      ? (state.isWalkedAway || state.isSoftFailed
+                          ? state.bankedTierPrizeXp
+                          : state.currentTierPrizeXp)
+                      : XpActivityCategory.quizCompletion.defaultBaseXp +
+                          (quizResult.correctAnswers * 15) +
+                          bonus;
+              unawaited(
+                locator<UserActivityService>().awardXp(
+                  XpActivityCategory.quizCompletion,
+                  customBaseAmount: customBase,
+                  sourceId: quizResult.quizTitle,
+                  metadata: {
+                    'quizTitle': quizResult.quizTitle,
+                    'scorePercent': quizResult.scorePercent,
+                    'correctAnswers': quizResult.correctAnswers,
+                  },
+                ),
+              );
+            }
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+
+          try {
+            if (locator.isRegistered<StudyActivityTracker>()) {
+              final isCbt =
+                  state.assessmentMode == AssessmentMode.examSimulationMode;
+              unawaited(
+                locator<StudyActivityTracker>().recordActivityCompletion(
+                  durationSeconds: quizResult.durationSeconds,
+                  activityType: isCbt ? 'cbt' : 'quiz',
+                ),
+              );
+            }
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+
+          // Reschedule daily study reminder forward so streak notifications do not fire redundantly today
+          try {
+            if (locator.isRegistered<NotificationService>()) {
+              final notifs = locator<NotificationService>();
+              final storage = locator.isRegistered<LocalStorageService>()
+                  ? locator<LocalStorageService>()
+                  : null;
+              final raw = storage?.getPreference(key: FsrsUserSettings.storageKey);
+              final settings = raw != null
+                  ? FsrsUserSettings.fromJson(
+                      jsonDecode(raw) as Map<String, dynamic>,
+                    )
+                  : const FsrsUserSettings();
+              if (settings.remindersEnabled) {
+                unawaited(
+                  notifs.scheduleStudyReminder(
+                    hour: settings.preferredReminderHour,
+                    minute: settings.preferredReminderMinute,
+                  ),
+                );
+              }
+            }
+          } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
+
+          emit(
+            state.copyWith(
+              status: QuizSessionStatus.completed,
+              questions: gradedQuestions,
+              result: quizResult,
+            ),
+          );
+        },
+      );
+    } finally {
+      _isSubmitting = false;
+    }
   }
 
   void _flagMissedCardToFsrs(String cardId) {
@@ -1009,7 +1215,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           resolvedCardId = parts.sublist(1, parts.length - 1).join('_');
         }
       }
-      final now = DateTime.now().toUtc();
+      final now = _now().toUtc();
       final log = FsrsReviewLog(
         id: UuidUtils.generate(),
         transactionUuid: UuidUtils.generate(),
@@ -1236,6 +1442,244 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         subTopic: QuizContentSanitizer.cleanSubTopic(q.subTopic),
       );
     }).toList();
+  }
+
+  /// Persists active in-progress exam session state to local storage.
+  Future<void> _persistActiveSession() async {
+    if (state.status != QuizSessionStatus.inProgress &&
+        state.status != QuizSessionStatus.questionAnswered) {
+      return;
+    }
+    if (state.assessmentMode != AssessmentMode.examSimulationMode &&
+        state.deadline == null) {
+      return;
+    }
+    try {
+      final storage = _localStorageService ??
+          (locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null);
+      if (storage == null) return;
+
+      final questionsJson = state.questions.map((q) {
+        return QuizQuestionModel(
+          id: q.id,
+          prompt: q.prompt,
+          type: q.type,
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation,
+          subTopic: q.subTopic,
+          latexFormula: q.latexFormula,
+          imageUrl: q.imageUrl,
+          userSelectedAnswer: q.userSelectedAnswer,
+          isAnswered: q.isAnswered,
+          isCorrect: q.isCorrect,
+        ).toJson();
+      }).toList();
+
+      final payload = jsonEncode({
+        'attemptId': state.attemptId,
+        'quizTitle': state.quizTitle,
+        'currentIndex': state.currentIndex,
+        'startedAt': state.startedAt?.toIso8601String(),
+        'deadline': state.deadline?.toIso8601String(),
+        'durationMinutes': state.durationMinutes,
+        'assessmentMode': state.assessmentMode.name,
+        'flaggedQuestionIds': state.flaggedQuestionIds.toList(),
+        'questions': questionsJson,
+        'savedAt': _now().millisecondsSinceEpoch,
+      });
+
+      await storage.savePreference(
+        key: activeCbtSessionStorageKey,
+        data: payload,
+      );
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
+  }
+
+  /// Clears any cached active exam session from local storage.
+  Future<void> clearActiveSession() async {
+    try {
+      final storage = _localStorageService ??
+          (locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null);
+      await storage?.deletePreference(key: activeCbtSessionStorageKey);
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
+  }
+
+  /// Restores an active CBT exam session persisted in local storage.
+  /// If the exam deadline passed while app was terminated, auto-grades and submits.
+  /// Returns `true` if active session is resumed inProgress, `false` otherwise.
+  Future<bool> restoreActiveSession() async {
+    try {
+      final storage = _localStorageService ??
+          (locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null);
+      final raw = storage?.getPreference(key: activeCbtSessionStorageKey);
+      if (raw == null || raw.trim().isEmpty) return false;
+
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return false;
+
+      final attemptId = (decoded['attemptId'] as String?) ??
+          (decoded['attempt_id'] as String?) ??
+          UuidUtils.generate();
+      final deadlineStr = decoded['deadline'] as String?;
+      final deadline =
+          deadlineStr != null ? DateTime.tryParse(deadlineStr) : null;
+      final startedAtStr = decoded['startedAt'] as String?;
+      final startedAt =
+          startedAtStr != null ? DateTime.tryParse(startedAtStr) : null;
+      final rawQuestions = decoded['questions'] as List<dynamic>? ?? [];
+      final questions = rawQuestions
+          .map((q) =>
+              QuizQuestionModel.fromJson(Map<String, dynamic>.from(q as Map)))
+          .toList();
+
+      if (questions.isEmpty) {
+        await clearActiveSession();
+        return false;
+      }
+
+      final now = _now();
+
+      // If deadline expired while the app was closed, auto-grade and submit immediately
+      if (deadline != null && now.isAfter(deadline)) {
+        final durationMins = decoded['durationMinutes'] as int?;
+        emit(
+          QuizSessionState(
+            status: QuizSessionStatus.inProgress,
+            attemptId: attemptId,
+            quizTitle: decoded['quizTitle'] as String? ?? 'CBT Practice Test',
+            questions: questions,
+            startedAt: startedAt,
+            deadline: deadline,
+            durationMinutes: durationMins,
+            elapsedSeconds: durationMins != null
+                ? durationMins * 60
+                : (startedAt != null ? now.difference(startedAt).inSeconds : 0),
+          ),
+        );
+        await submitQuiz();
+        await clearActiveSession();
+        return false;
+      }
+
+      final currentIndex = (decoded['currentIndex'] as int? ?? 0)
+          .clamp(0, questions.length - 1);
+      final flaggedIds =
+          (decoded['flaggedQuestionIds'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toSet();
+      final modeStr =
+          decoded['assessmentMode'] as String? ?? 'examSimulationMode';
+      final assessmentMode = AssessmentMode.values.firstWhere(
+        (m) => m.name == modeStr,
+        orElse: () => AssessmentMode.examSimulationMode,
+      );
+
+      final elapsed =
+          startedAt != null ? now.difference(startedAt).inSeconds : 0;
+
+      emit(
+        QuizSessionState(
+          status: QuizSessionStatus.inProgress,
+          attemptId: attemptId,
+          quizTitle: decoded['quizTitle'] as String? ?? 'CBT Practice Test',
+          questions: questions,
+          currentIndex: currentIndex,
+          elapsedSeconds: elapsed,
+          startedAt: startedAt,
+          deadline: deadline,
+          durationMinutes: decoded['durationMinutes'] as int?,
+          flaggedQuestionIds: flaggedIds,
+          assessmentMode: assessmentMode,
+        ),
+      );
+
+      _startTimer();
+
+      try {
+        final remainingSeconds =
+            deadline != null ? deadline.difference(now).inSeconds : 0;
+        final answeredCount = questions
+            .where((q) =>
+                q.isAnswered ||
+                (q.userSelectedAnswer != null &&
+                    q.userSelectedAnswer!.trim().isNotEmpty))
+            .length;
+        final totalQuestions = questions.length;
+        final examTrack =
+            decoded['quizTitle'] as String? ?? 'CBT Practice Test';
+
+        unawaited(
+          _analyticsService?.logCbtExamResumedAfterInterrupt(
+            examTrack: examTrack,
+            attemptId: attemptId,
+            remainingSeconds: remainingSeconds > 0 ? remainingSeconds : 0,
+            answeredQuestionsCount: answeredCount,
+            totalQuestions: totalQuestions,
+          ),
+        );
+      } on Object catch (e, st) {
+        AppLogger.recordNonFatal(e, st);
+      }
+
+      return true;
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+      await clearActiveSession();
+      return false;
+    }
+  }
+
+  /// Returns whether there is an active restorable CBT session saved locally.
+  static bool get hasActiveRestorableSession {
+    try {
+      final storage = locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null;
+      final raw = storage?.getPreference(key: activeCbtSessionStorageKey);
+      if (raw == null || raw.trim().isEmpty) return false;
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return false;
+      final deadlineStr = decoded['deadline'] as String?;
+      if (deadlineStr != null) {
+        final deadline = DateTime.tryParse(deadlineStr);
+        if (deadline != null && DateTime.now().isAfter(deadline)) {
+          return false;
+        }
+      }
+      final questions = decoded['questions'] as List<dynamic>?;
+      return questions != null && questions.isNotEmpty;
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+      return false;
+    }
+  }
+
+  /// Returns snapshot of active restorable CBT session if present.
+  static Map<String, dynamic>? getSavedActiveSessionSnapshot() {
+    try {
+      final storage = locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null;
+      final raw = storage?.getPreference(key: activeCbtSessionStorageKey);
+      if (raw == null || raw.trim().isEmpty) return null;
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+      return null;
+    }
+    return null;
   }
 
   @override

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -20,6 +21,7 @@ class ExplanationAccordion extends StatefulWidget {
     this.questionPrompt,
     this.courseCode,
     this.subjectTag,
+    this.communityHubBloc,
     super.key,
   });
 
@@ -28,6 +30,7 @@ class ExplanationAccordion extends StatefulWidget {
   final String? questionPrompt;
   final String? courseCode;
   final String? subjectTag;
+  final CommunityHubBloc? communityHubBloc;
 
   @override
   State<ExplanationAccordion> createState() => _ExplanationAccordionState();
@@ -174,19 +177,22 @@ class _ExplanationAccordionState extends State<ExplanationAccordion> {
                           syllabusTag = 'General',
                           isAnonymous = false,
                         }) {
-                          if (locator.isRegistered<CommunityHubBloc>()) {
-                            locator<CommunityHubBloc>().add(
-                              CreateForumPostEvent(
-                                title: title,
-                                content: content,
-                                track: track,
-                                latexContent: latexContent,
-                                isQuestion: true,
-                                syllabusTag: syllabusTag,
-                                isAnonymous: isAnonymous,
-                              ),
-                            );
-                          }
+                          final bloc = widget.communityHubBloc ??
+                              context.read<CommunityHubBloc?>() ??
+                              (locator.isRegistered<CommunityHubBloc>()
+                                  ? locator<CommunityHubBloc>()
+                                  : null);
+                          bloc?.add(
+                            CreateForumPostEvent(
+                              title: title,
+                              content: content,
+                              track: track,
+                              latexContent: latexContent,
+                              isQuestion: true,
+                              syllabusTag: syllabusTag,
+                              isAnonymous: isAnonymous,
+                            ),
+                          );
                         },
                       ),
                     );

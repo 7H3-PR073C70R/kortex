@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
@@ -83,8 +85,10 @@ abstract class UserActivityService {
   ({
     Map<String, double> subjectAccuracies,
     Map<String, double> subjectRetentions,
+    Map<String, int> subjectQuestionCounts,
     double overallMockAccuracy,
     int totalQuizSessions,
+    int totalQuestionsAnswered,
   }) getQuizPerformanceMetrics();
 
   int getCurrentStreak();
@@ -121,7 +125,12 @@ abstract class UserActivityService {
     int? xpPoints,
     int? streakFreezes,
     List<HeatMapDayModel>? heatMapData,
+    List<Map<String, dynamic>>? remoteQuizzes,
   });
+  Future<void> hydrateQuizSessions(
+    List<Map<String, dynamic>> remoteQuizzes,
+  );
+  List<Map<String, dynamic>> getRecordedSessions();
   Future<void> syncPendingProgressToBackend();
   Future<void> dispose();
 }
@@ -130,7 +139,9 @@ class UserActivityServiceImpl implements UserActivityService {
   UserActivityServiceImpl(
     this._localStorageService, {
     Connectivity? connectivity,
-  }) : _connectivity = connectivity {
+    Dio? dio,
+  }) : _connectivity = connectivity,
+       _dio = dio {
     if (_connectivity != null) {
       _initConnectivityListener();
     }
@@ -138,6 +149,7 @@ class UserActivityServiceImpl implements UserActivityService {
 
   final LocalStorageService _localStorageService;
   final Connectivity? _connectivity;
+  final Dio? _dio;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   final StreamController<AnalyticsSummaryModel> _analyticsStreamController =
       StreamController<AnalyticsSummaryModel>.broadcast();
@@ -404,8 +416,10 @@ class UserActivityServiceImpl implements UserActivityService {
   ({
     Map<String, double> subjectAccuracies,
     Map<String, double> subjectRetentions,
+    Map<String, int> subjectQuestionCounts,
     double overallMockAccuracy,
     int totalQuizSessions,
+    int totalQuestionsAnswered,
   }) getQuizPerformanceMetrics() {
     final sessions = _getSessions();
     final quizSessions = sessions.where((s) {
@@ -418,18 +432,23 @@ class UserActivityServiceImpl implements UserActivityService {
     final subjectCount = <String, int>{};
     final subjectRetSum = <String, double>{};
     final subjectRetCount = <String, int>{};
+    final subjectQuestionCounts = <String, int>{};
 
     var totalQuizScoreSum = 0.0;
+    var totalQuestionsAnswered = 0;
 
     for (final s in quizSessions) {
       final subj = (s['subject'] as String?)?.trim();
       final score = (s['retentionScore'] as num?)?.toDouble() ?? 0.0;
+      final qCount = math.max(1, (s['cardsReviewed'] as num?)?.toInt() ?? 1);
       totalQuizScoreSum += score;
+      totalQuestionsAnswered += qCount;
 
       if (subj != null && subj.isNotEmpty) {
         final key = subj.toLowerCase();
         subjectAccSum[key] = (subjectAccSum[key] ?? 0.0) + score;
         subjectCount[key] = (subjectCount[key] ?? 0) + 1;
+        subjectQuestionCounts[key] = (subjectQuestionCounts[key] ?? 0) + qCount;
       }
     }
 
@@ -462,8 +481,10 @@ class UserActivityServiceImpl implements UserActivityService {
     return (
       subjectAccuracies: accMap,
       subjectRetentions: retMap,
+      subjectQuestionCounts: subjectQuestionCounts,
       overallMockAccuracy: overallMock,
       totalQuizSessions: quizSessions.length,
+      totalQuestionsAnswered: totalQuestionsAnswered,
     );
   }
 
@@ -889,6 +910,7 @@ class UserActivityServiceImpl implements UserActivityService {
     int? xpPoints,
     int? streakFreezes,
     List<HeatMapDayModel>? heatMapData,
+    List<Map<String, dynamic>>? remoteQuizzes,
   }) async {
     final now = DateTime.now();
     final todayKey = _toDateKey(now);
@@ -948,7 +970,25 @@ class UserActivityServiceImpl implements UserActivityService {
       }
     }
 
-    // 5. Synthesize sessions from remote heat map if local sessions are empty
+    // 5. Hydrate quiz attempts from remote history to restore CBT readiness
+    var quizzes = remoteQuizzes;
+    if (quizzes == null) {
+      final existingSessions = _getSessions();
+      final hasLocalQuiz = existingSessions.any((s) {
+        final cat =
+            (s['category'] ?? s['activityCategory'])?.toString().toLowerCase();
+        return cat == 'quiz' || cat == 'cbt_mock' || cat == 'exam';
+      });
+      if (!hasLocalQuiz) {
+        quizzes = await _fetchQuizzesFromRemote();
+      }
+    }
+
+    if (quizzes != null && quizzes.isNotEmpty) {
+      await hydrateQuizSessions(quizzes);
+    }
+
+    // 6. Synthesize sessions from remote heat map if local sessions are still empty
     final existingSessions = _getSessions();
     if (existingSessions.isEmpty && heatMapData != null && heatMapData.isNotEmpty) {
       final synthesized = <Map<String, dynamic>>[];
@@ -975,6 +1015,214 @@ class UserActivityServiceImpl implements UserActivityService {
     _notifyAnalyticsUpdated();
   }
 
+  @override
+  Future<void> hydrateQuizSessions(
+    List<Map<String, dynamic>> remoteQuizzes,
+  ) async {
+    if (remoteQuizzes.isEmpty) return;
+
+    final existingSessions = _getSessions();
+    final candidateSessions = <Map<String, dynamic>>[];
+
+    for (final quiz in remoteQuizzes) {
+      final session = _convertRemoteQuizToSession(quiz);
+      if (session != null) {
+        candidateSessions.add(session);
+      }
+    }
+
+    if (candidateSessions.isEmpty) return;
+
+    final merged = List<Map<String, dynamic>>.from(existingSessions);
+
+    for (final candidate in candidateSessions) {
+      final isDuplicate = merged.any(
+        (existing) => _isDuplicateQuizSession(existing, candidate),
+      );
+      if (!isDuplicate) {
+        merged.add(candidate);
+      }
+    }
+
+    // Sort chronologically (oldest to newest)
+    merged.sort((a, b) {
+      final dtA = DateTime.tryParse(a['timestamp']?.toString() ?? '') ??
+          DateTime(1970);
+      final dtB = DateTime.tryParse(b['timestamp']?.toString() ?? '') ??
+          DateTime(1970);
+      return dtA.compareTo(dtB);
+    });
+
+    // Enforce 500 session cap to preserve memory and local storage bounds
+    if (merged.length > 500) {
+      merged.removeRange(0, merged.length - 500);
+    }
+
+    await _localStorageService.savePreference(
+      key: _sessionsKey,
+      data: jsonEncode(merged),
+    );
+
+    // If there is no last study date yet, check if any quiz was taken today
+    final lastDateStr =
+        _localStorageService.getPreference(key: _lastStudyDateKey);
+    if (lastDateStr == null || lastDateStr.isEmpty) {
+      final todayKey = _toDateKey(DateTime.now());
+      final hasTodayQuiz = candidateSessions.any((s) {
+        final ts = s['timestamp']?.toString();
+        if (ts == null) return false;
+        final dt = DateTime.tryParse(ts);
+        return dt != null && _toDateKey(dt) == todayKey;
+      });
+      if (hasTodayQuiz) {
+        await _localStorageService.savePreference(
+          key: _lastStudyDateKey,
+          data: todayKey,
+        );
+      }
+    }
+
+    _notifyAnalyticsUpdated();
+  }
+
+  Map<String, dynamic>? _convertRemoteQuizToSession(
+    Map<String, dynamic> quiz,
+  ) {
+    try {
+      final timestampStr = quiz['completed_at']?.toString() ??
+          quiz['created_at']?.toString() ??
+          quiz['timestamp']?.toString();
+      final timestamp = timestampStr != null && timestampStr.isNotEmpty
+          ? timestampStr
+          : DateTime.now().toUtc().toIso8601String();
+
+      final totalQuestions = (quiz['total_questions'] as num?)?.toInt() ??
+          (quiz['totalQuestions'] as num?)?.toInt() ??
+          (quiz['cardsReviewed'] as num?)?.toInt() ??
+          10;
+
+      final correctAnswers = (quiz['correct_answers'] as num?)?.toInt() ??
+          (quiz['correctAnswers'] as num?)?.toInt() ??
+          (quiz['masteredCards'] as num?)?.toInt();
+
+      var scoreRatio = 0.0;
+      if (correctAnswers != null && totalQuestions > 0) {
+        scoreRatio = (correctAnswers / totalQuestions).clamp(0.0, 1.0);
+      } else if (quiz.containsKey('score_percent') ||
+          quiz.containsKey('scorePercent')) {
+        final raw =
+            (quiz['score_percent'] ?? quiz['scorePercent']) as num?;
+        if (raw != null) {
+          scoreRatio = (raw.toDouble() / 100.0).clamp(0.0, 1.0);
+        }
+      } else if (quiz.containsKey('retentionScore')) {
+        final raw = quiz['retentionScore'] as num?;
+        if (raw != null) {
+          final val = raw.toDouble();
+          scoreRatio = val > 1.0
+              ? (val / 100.0).clamp(0.0, 1.0)
+              : val.clamp(0.0, 1.0);
+        }
+      }
+
+      final mastered = correctAnswers ?? (scoreRatio * totalQuestions).round();
+      final duration = (quiz['duration_seconds'] as num?)?.toInt() ??
+          (quiz['durationSeconds'] as num?)?.toInt() ??
+          0;
+
+      final subjectRaw = (quiz['subject'] as String?)?.trim();
+      final titleRaw = (quiz['title'] as String?)?.trim();
+      final effectiveSubject =
+          (subjectRaw != null && subjectRaw.isNotEmpty)
+              ? subjectRaw
+              : ((titleRaw != null && titleRaw.isNotEmpty)
+                  ? titleRaw
+                  : 'General');
+
+      final id = quiz['id']?.toString();
+      final courseId = quiz['course_id']?.toString() ??
+          quiz['courseId']?.toString();
+      final courseCode = quiz['course_code']?.toString() ??
+          quiz['courseCode']?.toString();
+
+      return <String, dynamic>{
+        if (id != null && id.isNotEmpty) 'id': id,
+        'timestamp': timestamp,
+        'cardsReviewed': totalQuestions,
+        'durationSeconds': duration,
+        'retentionScore': scoreRatio,
+        'masteredCards': mastered,
+        'category': 'quiz',
+        'subject': effectiveSubject,
+        if (courseId != null && courseId.isNotEmpty) 'courseId': courseId,
+        if (courseCode != null && courseCode.isNotEmpty)
+          'courseCode': courseCode,
+      };
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+      return null;
+    }
+  }
+
+  bool _isDuplicateQuizSession(
+    Map<String, dynamic> existing,
+    Map<String, dynamic> candidate,
+  ) {
+    final id1 = existing['id']?.toString();
+    final id2 = candidate['id']?.toString();
+    if (id1 != null && id2 != null && id1.isNotEmpty && id1 == id2) {
+      return true;
+    }
+
+    final ts1 = existing['timestamp']?.toString();
+    final ts2 = candidate['timestamp']?.toString();
+    if (ts1 != null && ts2 != null) {
+      final subj1 = existing['subject']?.toString().toLowerCase().trim();
+      final subj2 = candidate['subject']?.toString().toLowerCase().trim();
+      if (subj1 == subj2) {
+        if (ts1 == ts2) return true;
+        final dt1 = DateTime.tryParse(ts1);
+        final dt2 = DateTime.tryParse(ts2);
+        if (dt1 != null && dt2 != null) {
+          final diff = dt1.difference(dt2).inSeconds.abs();
+          if (diff <= 5) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchQuizzesFromRemote() async {
+    final dio = _dio ?? (locator.isRegistered<Dio>() ? locator<Dio>() : null);
+    if (dio == null) return const [];
+    try {
+      final response = await dio.get<dynamic>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.quizzes}',
+        queryParameters: {
+          'select':
+              'id,title,subject,total_questions,correct_answers,score_percent,duration_seconds,completed_at,course_id,course_code',
+          'order': 'completed_at.desc',
+          'limit': 100,
+        },
+        options: Options(
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 15),
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+      final dynamic data = response.data;
+      if (data is List) {
+        return data
+            .whereType<Map<dynamic, dynamic>>()
+            .map(Map<String, dynamic>.from)
+            .toList();
+      }
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
+    return const [];
+  }
+
   List<Map<String, dynamic>> _getSessions() {
     try {
       final raw = _localStorageService.getPreference(key: _sessionsKey);
@@ -985,6 +1233,9 @@ class UserActivityServiceImpl implements UserActivityService {
       return [];
     }
   }
+
+  @override
+  List<Map<String, dynamic>> getRecordedSessions() => _getSessions();
 
   static String _toDateKey(DateTime dt) {
     final year = dt.year.toString().padLeft(4, '0');

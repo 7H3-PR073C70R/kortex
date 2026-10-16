@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
@@ -176,6 +177,7 @@ abstract final class QuizForumPostCoordinator {
           isAnonymous = true,
         }) {
           final effectiveCommunityHubBloc = communityHubBloc ??
+              context.read<CommunityHubBloc?>() ??
               (locator.isRegistered<CommunityHubBloc>()
                   ? locator<CommunityHubBloc>()
                   : null);

@@ -199,19 +199,24 @@ class CbtPracticeConfigModalSheet extends HookWidget {
     final isStarting = useState<bool>(false);
     final reduceMotion = quizReduceMotion(context);
 
-    // Available count options
+    // Available count options clamped to available questions
     final countOptions = [
       10,
       20,
       30,
       40,
-    ].where((c) => c <= effectiveQuestions.length || c == 10).toList();
+    ].where((c) => c <= effectiveQuestions.length).toList();
     if (!countOptions.contains(effectiveQuestions.length) &&
-        effectiveQuestions.length < 40 &&
         effectiveQuestions.isNotEmpty) {
       countOptions
         ..add(effectiveQuestions.length)
         ..sort();
+    }
+    if (countOptions.isEmpty) {
+      countOptions.add(effectiveQuestions.isNotEmpty ? effectiveQuestions.length : 10);
+    }
+    if (!countOptions.contains(selectedCount.value)) {
+      selectedCount.value = countOptions.last;
     }
 
     void handleStart() {

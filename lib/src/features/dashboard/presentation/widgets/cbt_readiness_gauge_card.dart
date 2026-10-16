@@ -2,7 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/analytics_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/cbt_readiness/cbt_readiness_breakdown_sheet.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/cbt_readiness/readiness_gauge_painter.dart';
@@ -10,6 +14,8 @@ import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repo
 import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 
 export 'cbt_readiness/cbt_readiness_breakdown_sheet.dart';
+export 'cbt_readiness/cbt_readiness_weekly_trends_chart.dart';
+export 'cbt_readiness/day_one_diagnostic_banner.dart';
 export 'cbt_readiness/readiness_breakdown_actions_section.dart';
 export 'cbt_readiness/readiness_breakdown_course_card.dart';
 export 'cbt_readiness/readiness_breakdown_projected_card.dart';
@@ -26,6 +32,8 @@ class CbtReadinessGaugeCard extends StatefulWidget {
     required this.examTitle,
     required this.daysRemaining,
     this.pastQuestionsRepository,
+    this.userActivityService,
+    this.analyticsService,
     super.key,
   });
 
@@ -33,6 +41,8 @@ class CbtReadinessGaugeCard extends StatefulWidget {
   final String examTitle;
   final int daysRemaining;
   final PastQuestionsRepository? pastQuestionsRepository;
+  final UserActivityService? userActivityService;
+  final AnalyticsService? analyticsService;
 
   @override
   State<CbtReadinessGaugeCard> createState() => _CbtReadinessGaugeCardState();
@@ -60,6 +70,27 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
         if (mounted) unawaited(_arcController.forward());
       }),
     );
+    try {
+      final analytics = widget.analyticsService ??
+          (locator.isRegistered<AnalyticsService>()
+              ? locator<AnalyticsService>()
+              : null);
+      if (analytics != null) {
+        unawaited(
+          analytics.logReadinessScoreViewed(
+            readinessScore: widget.readinessResult.scorePercent.toDouble(),
+            statusTier: widget.readinessResult.statusTier.name,
+            confidenceIntervalLabel:
+                widget.readinessResult.confidenceIntervalLabel,
+            standardErrorMargin:
+                widget.readinessResult.confidenceMargin.toDouble(),
+            examTrack: widget.examTitle,
+          ),
+        );
+      }
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
   }
 
   @override
@@ -199,7 +230,9 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              '${(readinessResult.scorePercent * _arcAnimation.value).round()}%',
+                              readinessResult.isCalibrated
+                                  ? '${(readinessResult.scorePercent * _arcAnimation.value).round()}%'
+                                  : '--',
                               style: typography.title1.bold.copyWith(
                                 color: colors.textPrimary,
                                 fontSize: 22,
@@ -207,7 +240,7 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
                               ),
                             ),
                             Text(
-                              'Score',
+                              readinessResult.isCalibrated ? 'Score' : 'Pending',
                               style: typography.caption.medium.copyWith(
                                 color: colors.textSecondary,
                               ),
@@ -244,6 +277,53 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
                 ),
               ],
             ),
+            if (readinessResult.confidenceIntervalLabel.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: readinessResult.isSampleSufficient
+                      ? colors.surfaceBorder.withAlpha(isDark ? 30 : 20)
+                      : colors.warning.withAlpha(isDark ? 25 : 15),
+                  borderRadius: BorderRadius.circular(AppRadius.badge),
+                  border: Border.all(
+                    color: readinessResult.isSampleSufficient
+                        ? colors.surfaceBorder.withAlpha(isDark ? 60 : 45)
+                        : colors.warning.withAlpha(isDark ? 70 : 45),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      readinessResult.isSampleSufficient
+                          ? Icons.verified_outlined
+                          : Icons.info_outline_rounded,
+                      size: 14,
+                      color: readinessResult.isSampleSufficient
+                          ? colors.textSecondary
+                          : colors.warning,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        readinessResult.confidenceIntervalLabel,
+                        style: typography.caption.medium.copyWith(
+                          color: readinessResult.isSampleSufficient
+                              ? colors.textSecondary
+                              : (isDark ? colors.warning : const Color(0xFFB45309)),
+                          fontSize: 11,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (readinessResult.remediationSuggestion.isNotEmpty) ...[
               const SizedBox(height: 16),
               Container(
@@ -306,6 +386,8 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
                   daysRemaining: widget.daysRemaining,
                   scrollController: ScrollController(),
                   pastQuestionsRepository: widget.pastQuestionsRepository,
+                  userActivityService: widget.userActivityService,
+                  analyticsService: widget.analyticsService,
                 ),
               ),
             );
@@ -321,6 +403,8 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
                 daysRemaining: widget.daysRemaining,
                 scrollController: scrollController,
                 pastQuestionsRepository: widget.pastQuestionsRepository,
+                userActivityService: widget.userActivityService,
+                analyticsService: widget.analyticsService,
               );
             },
           );

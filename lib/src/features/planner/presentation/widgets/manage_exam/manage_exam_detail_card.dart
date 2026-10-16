@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
-import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 /// Card showing rich assessment details, status pills, readiness gauge, and pace.
@@ -18,8 +18,6 @@ class ManageExamDetailCard extends StatelessWidget {
   final ExamEventEntity exam;
   final int pace;
   final Color badgeColor;
-
-  static const _calculator = CramWorkloadCalculator();
 
   @override
   Widget build(BuildContext context) {
@@ -203,14 +201,18 @@ class ManageExamDetailCard extends StatelessWidget {
           const SizedBox(height: 10),
           // Bimodal Knowledge Calibration & Readiness Gauge
           () {
-            final readiness = _calculator.calculateExamReadinessScore(
-              totalCards: exam.totalCardsCount,
-              masteredCards: exam.masteredCardsCount,
-              averageStability: 18,
+            final readinessResult = const CbtReadinessCalculator().compute(
+              syllabusCoverage: exam.completionProgress,
+              fsrsRetentionRate:
+                  (exam.achievedScorePercent ?? 0.0).clamp(0.0, 1.0),
+              mockScoreRatio:
+                  (exam.achievedScorePercent ?? 0.0).clamp(0.0, 1.0),
               daysRemaining: exam.daysRemaining,
-              totalLapses: exam.totalLapses,
-              empiricalQuizScorePercent: exam.achievedScorePercent,
+              examType: exam.subjectTrack.isNotEmpty
+                  ? exam.subjectTrack
+                  : exam.examName,
             );
+            final readiness = readinessResult.scorePercent.toDouble();
             final readinessColor = readiness >= 75
                 ? colors.success
                 : (readiness >= 50 ? colors.warning : colors.error);

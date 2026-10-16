@@ -249,6 +249,7 @@ void main() {
             quizTitle: any(named: 'quizTitle'),
             questions: any(named: 'questions'),
             durationSeconds: any(named: 'durationSeconds'),
+            attemptId: any(named: 'attemptId'),
           ),
         ).thenAnswer((_) async => const Right(tResult));
         return cubit;
@@ -264,7 +265,7 @@ void main() {
         isA<QuizSessionState>().having(
           (s) => s.status,
           'status',
-          QuizSessionStatus.loading,
+          QuizSessionStatus.submitting,
         ),
         isA<QuizSessionState>()
             .having((s) => s.status, 'status', QuizSessionStatus.completed)
@@ -432,6 +433,7 @@ void main() {
             quizTitle: any(named: 'quizTitle'),
             questions: any(named: 'questions'),
             durationSeconds: any(named: 'durationSeconds'),
+            attemptId: any(named: 'attemptId'),
           ),
         ).thenAnswer((_) async => const Right(tResult));
 
@@ -447,6 +449,7 @@ void main() {
             quizTitle: any(named: 'quizTitle'),
             questions: any(named: 'questions'),
             durationSeconds: any(named: 'durationSeconds'),
+            attemptId: any(named: 'attemptId'),
           ),
         ).called(1);
       });

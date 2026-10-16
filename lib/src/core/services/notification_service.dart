@@ -637,6 +637,163 @@ class NotificationService {
     );
   }
 
+  // ── Exam Countdown Milestone Reminders ────────────────────────────────────────
+
+  /// Notification ID base offset for exam countdown reminders.
+  static const int examReminderBaseId = 2000;
+
+  /// Deterministically computes the notification ID for a specific exam milestone.
+  static int computeExamMilestoneNotificationId(String examKey, int milestoneIndex) {
+    final hash = examKey.hashCode.abs() % 100000;
+    return examReminderBaseId + (hash * 10) + milestoneIndex;
+  }
+
+  /// Schedules localized milestone notifications leading up to [targetDate]
+  /// for the specified [examName].
+  ///
+  /// Milestones scheduled (if occurring in the future):
+  /// - 30 days before exam (9:00 AM)
+  /// - 14 days before exam (9:00 AM)
+  /// - 7 days before exam (9:00 AM)
+  /// - 3 days before exam (9:00 AM)
+  /// - 1 day before exam (9:00 AM)
+  /// - Day of exam (6:30 AM morning boost)
+  ///
+  /// Returns the count of upcoming milestone reminders scheduled.
+  Future<int> scheduleExamTargetReminders({
+    required String examName,
+    required DateTime targetDate,
+    String? examId,
+  }) async {
+    final examKey = (examId != null && examId.isNotEmpty) ? examId : examName;
+    await cancelExamTargetReminders(examName: examName, examId: examId);
+
+    try {
+      tz_data.initializeTimeZones();
+    } on Object catch (_) {}
+
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledCount = 0;
+
+    final androidDetails = AndroidNotificationDetails(
+      channelStudyReminders,
+      channelName(channelStudyReminders),
+      channelDescription: channelDescription(channelStudyReminders),
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const darwinDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    final platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: darwinDetails,
+      macOS: darwinDetails,
+    );
+
+    final milestones = <({int daysBefore, int hour, int minute, String title, String body})>[
+      (
+        daysBefore: 30,
+        hour: 9,
+        minute: 0,
+        title: '30 Days Until $examName! 🎯',
+        body: 'A month of consistent study creates mastery. Review your daily cards and diagnostic topics now!',
+      ),
+      (
+        daysBefore: 14,
+        hour: 9,
+        minute: 0,
+        title: '2 Weeks Until $examName! ⏳',
+        body: 'Two weeks left to seal any weak areas. Focus on weak subtopics in your readiness breakdown.',
+      ),
+      (
+        daysBefore: 7,
+        hour: 9,
+        minute: 0,
+        title: '1 Week Until $examName! 🔥',
+        body: 'Final 7-day push! Run a full CBT simulation today to test your pacing and endurance.',
+      ),
+      (
+        daysBefore: 3,
+        hour: 9,
+        minute: 0,
+        title: '3 Days Until $examName! ⚡',
+        body: 'Keep your recall sharp. Solve high-yield flashcards and avoid cramming fatigue.',
+      ),
+      (
+        daysBefore: 1,
+        hour: 9,
+        minute: 0,
+        title: 'Tomorrow is $examName! 🌟',
+        body: 'You have prepared for this. Do a light 15-minute warmup review, rest well, and trust your training.',
+      ),
+      (
+        daysBefore: 0,
+        hour: 6,
+        minute: 30,
+        title: 'Today is the Day: $examName! 🚀',
+        body: 'Stay calm, manage your pacing, and conquer your exam. Kortex is rooting for you!',
+      ),
+    ];
+
+    for (var i = 0; i < milestones.length; i++) {
+      final milestone = milestones[i];
+      final targetTz = tz.TZDateTime.from(targetDate, tz.local);
+      final milestoneDay = targetTz.subtract(Duration(days: milestone.daysBefore));
+      final scheduledDate = tz.TZDateTime(
+        tz.local,
+        milestoneDay.year,
+        milestoneDay.month,
+        milestoneDay.day,
+        milestone.hour,
+        milestone.minute,
+      );
+
+      if (scheduledDate.isAfter(now)) {
+        final notifId = computeExamMilestoneNotificationId(examKey, i);
+        try {
+          await _localNotifications.zonedSchedule(
+            notifId,
+            milestone.title,
+            milestone.body,
+            scheduledDate,
+            platformDetails,
+            payload: '/planner',
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
+          );
+          scheduledCount++;
+          developer.log(
+            'NotificationService: Scheduled exam reminder #$notifId for "$examName" at $scheduledDate',
+          );
+        } on Object catch (e, st) {
+          AppLogger.recordNonFatal(e, st);
+        }
+      }
+    }
+
+    return scheduledCount;
+  }
+
+  /// Cancels any scheduled milestone countdown notifications for the given exam.
+  Future<void> cancelExamTargetReminders({
+    required String examName,
+    String? examId,
+  }) async {
+    final examKey = (examId != null && examId.isNotEmpty) ? examId : examName;
+    for (var i = 0; i < 6; i++) {
+      final notifId = computeExamMilestoneNotificationId(examKey, i);
+      try {
+        await _localNotifications.cancel(notifId);
+      } on Object catch (e, st) {
+        AppLogger.recordNonFatal(e, st);
+      }
+    }
+  }
+
   // ── Local Permissions ────────────────────────────────────────────────────────
 
   /// Request local notification permissions on iOS/macOS and Android.

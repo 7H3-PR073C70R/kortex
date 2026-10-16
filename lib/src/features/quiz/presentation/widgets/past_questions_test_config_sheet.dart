@@ -7,6 +7,7 @@ import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
+import 'package:kortex/src/features/quiz/domain/logic/exam_question_selector.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
@@ -51,6 +52,22 @@ void showPastQuestionsTestConfigSheet(
             final availableCount = filteredPool.isEmpty
                 ? state.questions.length
                 : filteredPool.length;
+
+            final rawCounts = [5, 10, 20, 40]
+                .where((c) => c <= availableCount)
+                .toList();
+            if (!rawCounts.contains(availableCount) &&
+                availableCount > 0 &&
+                availableCount < 40) {
+              rawCounts.add(availableCount);
+            }
+            final selectableCounts = rawCounts.isEmpty
+                ? [if (availableCount > 0) availableCount else 5]
+                : (rawCounts..sort());
+
+            if (!selectableCounts.contains(selectedCount)) {
+              selectedCount = selectableCounts.last;
+            }
 
             return SafeArea(
               top: isDesktop,
@@ -247,7 +264,7 @@ void showPastQuestionsTestConfigSheet(
                             const QuizMillionaireNotice()
                           else
                             Row(
-                              children: [5, 10, 20, 40].map((count) {
+                              children: selectableCounts.map((count) {
                                 final isSelected = selectedCount == count;
                                 return Expanded(
                                   child: Padding(
@@ -287,8 +304,6 @@ void showPastQuestionsTestConfigSheet(
                                 if (filtered.isNotEmpty) {
                                   pool = filtered;
                                 }
-                              } else {
-                                pool.shuffle();
                               }
 
                               final count = isMillionaireMode
@@ -298,10 +313,20 @@ void showPastQuestionsTestConfigSheet(
                                         ? pool.length
                                         : selectedCount);
 
-                              final testQuestions = pool
-                                  .take(count)
-                                  .map(QuizQuestionEntity.fromPastQuestion)
-                                  .toList();
+                              final testQuestions = isMillionaireMode
+                                  ? (List<PastQuestionEntity>.from(pool)
+                                        ..shuffle())
+                                      .take(count)
+                                      .map(QuizQuestionEntity.fromPastQuestion)
+                                      .toList()
+                                  : ExamQuestionSelector.selectPastQuestions(
+                                      pool: pool,
+                                      count: count,
+                                      seed: (selectedYear ?? 42).hashCode ^
+                                          count.hashCode,
+                                    )
+                                      .map(QuizQuestionEntity.fromPastQuestion)
+                                      .toList();
 
                               final testTitle = isMillionaireMode
                                   ? '${state.selectedExam.displayName} Millionaire Challenge'

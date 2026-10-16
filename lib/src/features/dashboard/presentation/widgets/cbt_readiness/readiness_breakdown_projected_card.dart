@@ -101,6 +101,16 @@ class ReadinessBreakdownProjectedCard extends StatelessWidget {
               height: 1.35,
             ),
           ),
+          if (readiness.confidenceIntervalLabel.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              readiness.confidenceIntervalLabel,
+              style: typography.caption.medium.copyWith(
+                color: colors.textSecondary,
+                fontSize: 11.5,
+              ),
+            ),
+          ],
           if (readiness.totalCourseCount > 0) ...[
             const SizedBox(height: 8),
             Row(

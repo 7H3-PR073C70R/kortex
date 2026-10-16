@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/analytics_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/cbt_readiness/cbt_readiness_weekly_trends_chart.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/cbt_readiness/readiness_breakdown_actions_section.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/cbt_readiness/readiness_breakdown_course_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/cbt_readiness/readiness_breakdown_projected_card.dart';
@@ -21,6 +24,8 @@ class CbtReadinessBreakdownSheet extends StatefulWidget {
     required this.daysRemaining,
     required this.scrollController,
     this.pastQuestionsRepository,
+    this.userActivityService,
+    this.analyticsService,
     super.key,
   });
 
@@ -29,6 +34,8 @@ class CbtReadinessBreakdownSheet extends StatefulWidget {
   final int daysRemaining;
   final ScrollController scrollController;
   final PastQuestionsRepository? pastQuestionsRepository;
+  final UserActivityService? userActivityService;
+  final AnalyticsService? analyticsService;
 
   @override
   State<CbtReadinessBreakdownSheet> createState() =>
@@ -47,6 +54,27 @@ class _CbtReadinessBreakdownSheetState
         (locator.isRegistered<PastQuestionsRepository>()
             ? locator<PastQuestionsRepository>()
             : null);
+    try {
+      final analytics = widget.analyticsService ??
+          (locator.isRegistered<AnalyticsService>()
+              ? locator<AnalyticsService>()
+              : null);
+      if (analytics != null) {
+        unawaited(
+          analytics.logReadinessScoreViewed(
+            readinessScore: widget.readinessResult.scorePercent.toDouble(),
+            statusTier: widget.readinessResult.statusTier.name,
+            confidenceIntervalLabel:
+                widget.readinessResult.confidenceIntervalLabel,
+            standardErrorMargin:
+                widget.readinessResult.confidenceMargin.toDouble(),
+            examTrack: widget.examTitle,
+          ),
+        );
+      }
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
     unawaited(_checkPastQuestionsAvailability());
   }
 
@@ -263,6 +291,21 @@ class _CbtReadinessBreakdownSheetState
 
                 // Projected Exam Score Card
                 ReadinessBreakdownProjectedCard(readiness: readiness),
+                const SizedBox(height: 18),
+
+                // Weekly CBT Readiness Trend Chart
+                () {
+                  final activityService = widget.userActivityService ??
+                      (locator.isRegistered<UserActivityService>()
+                          ? locator<UserActivityService>()
+                          : null);
+                  final sessions = activityService?.getRecordedSessions() ?? const [];
+                  return CbtReadinessWeeklyTrendsChart(
+                    currentReadinessScore: readiness.scorePercent.toDouble(),
+                    sessions: sessions,
+                    targetTrack: widget.examTitle,
+                  );
+                }(),
                 const SizedBox(height: 18),
 
                 // Registered Courses Breakdown Section Header

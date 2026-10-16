@@ -28,17 +28,58 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
     required this.syncCoursesUseCase,
     DeleteCuratedCourseUseCase? deleteCuratedCourseUseCase,
     this.dashboardBloc,
+    LocalStorageService? localStorageService,
+    AuthBloc? authBloc,
+    AuthRepository? authRepository,
+    DecksRemoteDataSource? decksRemoteDataSource,
+    DecksBloc? decksBloc,
   }) : _deleteCuratedCourseUseCase =
            deleteCuratedCourseUseCase ??
            (locator.isRegistered<DashboardRepository>()
                ? DeleteCuratedCourseUseCase(locator<DashboardRepository>())
                : null),
+       _localStorageService = localStorageService,
+       _authBloc = authBloc,
+       _authRepository = authRepository,
+       _decksRemoteDataSource = decksRemoteDataSource,
+       _decksBloc = decksBloc,
        super(const CurateCoursesState());
 
   final GetCuratedCoursesCatalogUseCase getCatalogUseCase;
   final SyncUserCoursesUseCase syncCoursesUseCase;
   final DeleteCuratedCourseUseCase? _deleteCuratedCourseUseCase;
   final DashboardBloc? dashboardBloc;
+  final LocalStorageService? _localStorageService;
+  final AuthBloc? _authBloc;
+  final AuthRepository? _authRepository;
+  final DecksRemoteDataSource? _decksRemoteDataSource;
+  final DecksBloc? _decksBloc;
+
+  LocalStorageService? get _effectiveLocalStorage =>
+      _localStorageService ??
+      (locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null);
+
+  AuthBloc? get _effectiveAuthBloc =>
+      _authBloc ??
+      (locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null);
+
+  AuthRepository? get _effectiveAuthRepository =>
+      _authRepository ??
+      (locator.isRegistered<AuthRepository>()
+          ? locator<AuthRepository>()
+          : null);
+
+  DecksRemoteDataSource? get _effectiveDecksRemoteDataSource =>
+      _decksRemoteDataSource ??
+      (locator.isRegistered<DecksRemoteDataSource>()
+          ? locator<DecksRemoteDataSource>()
+          : null);
+
+  DecksBloc? get _effectiveDecksBloc =>
+      _decksBloc ??
+      (locator.isRegistered<DecksBloc>() ? locator<DecksBloc>() : null);
 
   Future<void> loadCatalog({
     List<String> currentlyEnrolledIds = const [],
@@ -196,21 +237,23 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
 
         if (coursesToSync.isNotEmpty) {
           try {
-            final storage = locator<LocalStorageService>();
-            unawaited(
-              storage.savePreference(
-                key: PrefKeys.hasCompletedOnboarding,
-                data: 'true',
-              ),
-            );
+            final storage = _effectiveLocalStorage;
+            if (storage != null) {
+              unawaited(
+                storage.savePreference(
+                  key: PrefKeys.hasCompletedOnboarding,
+                  data: 'true',
+                ),
+              );
+            }
           } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
 
           try {
-            final authBloc = locator<AuthBloc>();
-            final profile = authBloc.state.userProfile;
+            final authBloc = _effectiveAuthBloc;
+            final profile = authBloc?.state.userProfile;
             if (profile != null && !profile.isOnboarded) {
               unawaited(
-                locator<AuthRepository>().completeOnboarding(
+                _effectiveAuthRepository?.completeOnboarding(
                   track: profile.targetTrack.isNotEmpty
                       ? profile.targetTrack
                       : (state.activeTrack.isNotEmpty
@@ -222,7 +265,7 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
                 ),
               );
             }
-            authBloc.add(
+            authBloc?.add(
               const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
             );
           } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
@@ -267,16 +310,14 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
     dashboardBloc?.add(const DashboardRefreshed());
 
     if (deleteAssociatedDecks &&
-        locator.isRegistered<DecksRemoteDataSource>()) {
+        _effectiveDecksRemoteDataSource != null) {
       try {
-        await locator<DecksRemoteDataSource>().deleteDecksForCourse(
+        await _effectiveDecksRemoteDataSource!.deleteDecksForCourse(
           courseId,
           courseCode: course.courseCode.isNotEmpty ? course.courseCode : null,
           subject: course.title.isNotEmpty ? course.title : null,
         );
-        if (locator.isRegistered<DecksBloc>()) {
-          locator<DecksBloc>().add(const DecksRefreshed());
-        }
+        _effectiveDecksBloc?.add(const DecksRefreshed());
       } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
     }
   }

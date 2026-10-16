@@ -1,7 +1,8 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/utils/app_logger.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 import 'package:kortex/src/features/decks/domain/entities/fsrs_card_state.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dart';
@@ -117,8 +118,8 @@ class AssessmentOrchestratorService {
         subject: courseCode,
         activityCategory: 'quiz',
       );
-    } on Object catch (e) {
-      debugPrint('[AssessmentOrchestrator] Error updating activity: $e');
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
 
     // 2. Identify failed questions
@@ -174,14 +175,15 @@ class AssessmentOrchestratorService {
             }
           },
         );
-      } on Object catch (e) {
-        debugPrint('[AssessmentOrchestrator] Post-assessment FSRS recalibration error: $e');
+      } on Object catch (e, st) {
+        AppLogger.recordNonFatal(e, st);
       }
     }
 
     // 4. Calculate composite Readiness Index
     final readinessIndex = calculateReadinessIndex(
       recentScorePercent: scorePercent,
+      targetTrack: activeTrack,
     );
 
     return AssessmentOrchestrationResult(
@@ -199,17 +201,54 @@ class AssessmentOrchestratorService {
     required double recentScorePercent,
     int daysRemaining = 14,
     List<dynamic>? registeredCourses,
+    double? syllabusCoverage,
+    String? targetTrack,
   }) {
     final overallRetention = _userActivityService.getOverallRetentionRate();
     final mockRatio = (recentScorePercent / 100).clamp(0.0, 1.0);
-    final coverage = (overallRetention * 0.90).clamp(0.0, 1.0);
+
+    final double effectiveCoverage;
+    if (syllabusCoverage != null) {
+      effectiveCoverage = syllabusCoverage.clamp(0.0, 1.0);
+    } else if (registeredCourses != null && registeredCourses.isNotEmpty) {
+      final total = registeredCourses.fold<double>(
+        0,
+        (sum, c) =>
+            sum +
+            RegisteredCourseInput.fromDynamic(c)
+                .syllabusCoverage
+                .clamp(0.0, 1.0),
+      );
+      effectiveCoverage = (total / registeredCourses.length).clamp(0.0, 1.0);
+    } else {
+      effectiveCoverage = 0.0;
+    }
+
+    var subjectAccuracies = const <String, double>{};
+    var subjectRetentions = const <String, double>{};
+    var subjectQuestionCounts = const <String, int>{};
+    var totalQuestionsAnswered = 0;
+    try {
+      final metrics = _userActivityService.getQuizPerformanceMetrics();
+      subjectAccuracies = metrics.subjectAccuracies;
+      subjectRetentions = metrics.subjectRetentions;
+      subjectQuestionCounts = metrics.subjectQuestionCounts;
+      totalQuestionsAnswered = metrics.totalQuestionsAnswered;
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
+    }
 
     final result = const CbtReadinessCalculator().compute(
-      syllabusCoverage: coverage,
+      syllabusCoverage: effectiveCoverage,
       fsrsRetentionRate: overallRetention,
       mockScoreRatio: mockRatio,
       daysRemaining: daysRemaining,
       registeredCourses: registeredCourses,
+      examType: targetTrack ?? 'WAEC',
+      subjectAccuracies: subjectAccuracies,
+      subjectRetentions: subjectRetentions,
+      subjectQuestionCounts: subjectQuestionCounts,
+      totalQuestionsAnswered: totalQuestionsAnswered,
     );
     return result.scorePercent.toDouble();
   }
@@ -253,8 +292,8 @@ class AssessmentOrchestratorService {
           await _decksRepository.updateDeckCards(deckId, recalibratedCards);
         },
       );
-    } on Object catch (e) {
-      debugPrint('[AssessmentOrchestrator] Error on exam schedule changed: $e');
+    } on Object catch (e, st) {
+      AppLogger.recordNonFatal(e, st);
     }
   }
 }

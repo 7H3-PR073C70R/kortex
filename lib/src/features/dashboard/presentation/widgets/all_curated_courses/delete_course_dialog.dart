@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -19,10 +20,12 @@ Future<void> confirmDeleteCuratedCourse({
   DashboardBloc? dashboardBloc,
 }) async {
   final resolvedCurateCoursesCubit = curateCoursesCubit ??
+      context.read<CurateCoursesCubit?>() ??
       (locator.isRegistered<CurateCoursesCubit>()
           ? locator<CurateCoursesCubit>()
           : null);
   final resolvedDashboardBloc = dashboardBloc ??
+      context.read<DashboardBloc?>() ??
       (locator.isRegistered<DashboardBloc>()
           ? locator<DashboardBloc>()
           : null);
