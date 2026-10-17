@@ -190,7 +190,7 @@ class AboutSupportPage extends StatelessWidget {
                   final router = locator<AppRouter>();
                   unawaited(
                     router.navigate(
-                      const MainRoute(children: [DashboardRoute()]),
+                      MainRoute(children: [DashboardRoute()]),
                     ),
                   );
                   WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -127,7 +127,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
         defaultTargetPlatform == TargetPlatform.linux;
 
     if (!hasCompletedOnboarding && !isWebOrDesktop) {
-      await context.router.replaceAll([const OnboardingRoute()]);
+      await context.router.replaceAll([OnboardingRoute()]);
     } else {
       await context.router.replaceAll([const AuthRoute()]);
     }

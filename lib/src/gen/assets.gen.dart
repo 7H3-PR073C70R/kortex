@@ -100,6 +100,16 @@ class $AssetsImagesGen {
   ];
 }
 
+class $AssetsNlpGen {
+  const $AssetsNlpGen();
+
+  /// File path: assets/nlp/parser_weights.json
+  String get parserWeights => 'assets/nlp/parser_weights.json';
+
+  /// List of all assets
+  List<String> get values => [parserWeights];
+}
+
 class $AssetsSvgsGen {
   const $AssetsSvgsGen();
 
@@ -141,6 +151,7 @@ abstract final class AppAssets {
   static const $AssetsAudioGen audio = $AssetsAudioGen();
   static const $AssetsIconsGen icons = $AssetsIconsGen();
   static const $AssetsImagesGen images = $AssetsImagesGen();
+  static const $AssetsNlpGen nlp = $AssetsNlpGen();
   static const $AssetsSvgsGen svgs = $AssetsSvgsGen();
 }
 

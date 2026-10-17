@@ -250,7 +250,7 @@ class _GeneratedCardsReviewView extends HookWidget {
                   onTap: () {
                     unawaited(
                       locator<AppRouter>().navigate(
-                        const MainRoute(children: [DecksRoute()]),
+                        MainRoute(children: [DecksRoute()]),
                       ),
                     );
                   },

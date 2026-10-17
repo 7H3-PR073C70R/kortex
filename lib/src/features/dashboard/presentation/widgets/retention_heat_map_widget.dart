@@ -245,7 +245,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget>
                       onTap: () {
                         unawaited(HapticFeedback.lightImpact());
                         unawaited(
-                          context.router.push(const AnalyticsDetailRoute()),
+                          context.router.push(AnalyticsDetailRoute()),
                         );
                       },
                       child: Container(

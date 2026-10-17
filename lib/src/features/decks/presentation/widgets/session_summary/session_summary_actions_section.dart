@@ -87,7 +87,7 @@ class SessionSummaryActionsSection extends StatelessWidget {
             onPressed: () {
               unawaited(
                 context.router.replaceAll([
-                  const MainRoute(children: [DashboardRoute()]),
+                  MainRoute(children: [DashboardRoute()]),
                 ]),
               );
             },
@@ -132,7 +132,7 @@ class SessionSummaryActionsSection extends StatelessWidget {
             onPressed: () {
               unawaited(
                 context.router.replaceAll([
-                  const MainRoute(children: [DashboardRoute()]),
+                  MainRoute(children: [DashboardRoute()]),
                 ]),
               );
             },
@@ -146,7 +146,7 @@ class SessionSummaryActionsSection extends StatelessWidget {
             onPressed: () {
               unawaited(
                 context.router.replaceAll([
-                  const MainRoute(children: [DecksRoute()]),
+                  MainRoute(children: [DecksRoute()]),
                 ]),
               );
             },

@@ -20,13 +20,13 @@ class MainNavItem {
 }
 
 final List<MainNavItem> kNavItems5 = [
-  const MainNavItem(
+  MainNavItem(
     route: DashboardRoute(),
     icon: Icons.grid_view_rounded,
     activeIcon: Icons.grid_view_rounded,
     labelBuilder: getHomeLabel,
   ),
-  const MainNavItem(
+  MainNavItem(
     route: DecksRoute(),
     icon: Icons.layers_outlined,
     activeIcon: Icons.layers_rounded,
@@ -38,7 +38,7 @@ final List<MainNavItem> kNavItems5 = [
     activeIcon: Icons.forum_rounded,
     labelBuilder: getForumLabel,
   ),
-  const MainNavItem(
+  MainNavItem(
     route: StudyHubRoute(),
     icon: Icons.hub_outlined,
     activeIcon: Icons.hub_rounded,
@@ -53,19 +53,19 @@ final List<MainNavItem> kNavItems5 = [
 ];
 
 final List<MainNavItem> kNavItems4 = [
-  const MainNavItem(
+  MainNavItem(
     route: DashboardRoute(),
     icon: Icons.grid_view_rounded,
     activeIcon: Icons.grid_view_rounded,
     labelBuilder: getHomeLabel,
   ),
-  const MainNavItem(
+  MainNavItem(
     route: DecksRoute(),
     icon: Icons.layers_outlined,
     activeIcon: Icons.layers_rounded,
     labelBuilder: getDecksLabel,
   ),
-  const MainNavItem(
+  MainNavItem(
     route: StudyHubRoute(),
     icon: Icons.hub_outlined,
     activeIcon: Icons.hub_rounded,

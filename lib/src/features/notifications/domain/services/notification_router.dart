@@ -37,13 +37,13 @@ class NotificationRouter {
           clean.startsWith('/exam') ||
           clean.startsWith('exam:') ||
           clean == '/timetable') {
-        await router.push(const ExamTimetableRoute());
+        await router.push(ExamTimetableRoute());
         return true;
       }
 
       // 3. Decks root
       if (clean == '/decks' || clean == 'decks') {
-        await router.push(const DecksRoute());
+        await router.push(DecksRoute());
         return true;
       }
 
@@ -102,7 +102,7 @@ class NotificationRouter {
 
       // 10. Analytics
       if (clean == '/analytics' || clean == 'analytics') {
-        await router.push(const AnalyticsDetailRoute());
+        await router.push(AnalyticsDetailRoute());
         return true;
       }
 
@@ -159,7 +159,7 @@ class NotificationRouter {
         if (deckId != null && deckId.isNotEmpty) {
           await router.push(StudySessionRoute(deckId: deckId));
         } else {
-          await router.push(const DecksRoute());
+          await router.push(DecksRoute());
         }
         return true;
       }
@@ -176,7 +176,7 @@ class NotificationRouter {
         } else if (documentId != null && documentId.isNotEmpty) {
           await router.push(DocumentIngestionRoute());
         } else {
-          await router.push(const DecksRoute());
+          await router.push(DecksRoute());
         }
         return true;
       }
@@ -212,7 +212,7 @@ class NotificationRouter {
           await router.push(LiveStudyRoomRoute(room: room));
           return true;
         }
-        await router.push(const StudyHubRoute());
+        await router.push(StudyHubRoute());
         return true;
       }
 
@@ -241,7 +241,7 @@ class NotificationRouter {
 
       // 22. Study Hub
       if (clean == '/study-hub' || clean == 'study-hub') {
-        await router.push(const StudyHubRoute());
+        await router.push(StudyHubRoute());
         return true;
       }
 
@@ -337,7 +337,7 @@ class NotificationRouter {
           routeStr.contains('planner') ||
           routeStr.contains('timetable') ||
           metadata['type'] == 'exam_countdown') {
-        await router.push(const ExamTimetableRoute());
+        await router.push(ExamTimetableRoute());
         return true;
       }
 
@@ -355,19 +355,19 @@ class NotificationRouter {
           await router.push(LiveStudyRoomRoute(room: room));
           return true;
         }
-        await router.push(const StudyHubRoute());
+        await router.push(StudyHubRoute());
         return true;
       }
 
       // 7. Deck Marketplace Clones
       if (routeStr.contains('marketplace') ||
           metadata['type'] == 'deck_cloned') {
-        await router.push(const StudyHubRoute());
+        await router.push(StudyHubRoute());
         return true;
       }
 
       // Fallback: If no matching deep-link route, push to Study Hub
-      await router.push(const StudyHubRoute());
+      await router.push(StudyHubRoute());
       return true;
     } on Object catch (err) {
       debugPrint('[NotificationRouter] Routing error: $err');
@@ -384,10 +384,10 @@ class NotificationRouter {
         clean == 'planner' ||
         clean.startsWith('/exam') ||
         clean.startsWith('exam:')) {
-      return const ExamTimetableRoute();
+      return ExamTimetableRoute();
     }
     if (clean == '/decks' || clean == 'decks') {
-      return const DecksRoute();
+      return DecksRoute();
     }
     if (clean == '/past-questions' || clean == 'past-questions') {
       return PastQuestionsBoardRoute();
@@ -410,7 +410,7 @@ class NotificationRouter {
       return const LeaderboardRoute();
     }
     if (clean == '/analytics') {
-      return const AnalyticsDetailRoute();
+      return AnalyticsDetailRoute();
     }
     if (clean == '/courses') {
       return CurateCoursesRoute();
@@ -432,7 +432,7 @@ class NotificationRouter {
           uri?.queryParameters['deck_id'];
       return deckId != null && deckId.isNotEmpty
           ? StudySessionRoute(deckId: deckId)
-          : const DecksRoute();
+          : DecksRoute();
     }
     if (clean == '/deck-detail' || clean.startsWith('/deck-detail?')) {
       final uri = Uri.tryParse(clean);
@@ -440,7 +440,7 @@ class NotificationRouter {
           uri?.queryParameters['deck_id'];
       return deckId != null && deckId.isNotEmpty
           ? DeckDetailRoute(deckId: deckId)
-          : const DecksRoute();
+          : DecksRoute();
     }
     if (clean == '/quiz-duel' || clean.startsWith('/quiz-duel?')) {
       final uri = Uri.tryParse(clean);

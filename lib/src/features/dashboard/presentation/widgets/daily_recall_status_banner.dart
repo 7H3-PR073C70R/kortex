@@ -61,7 +61,7 @@ class DailyRecallStatusBanner extends StatelessWidget {
                   AutoTabsRouter.of(context).setActiveIndex(1);
                 } on Object catch (e, st) {
                   AppLogger.debug('[DailyRecallStatusBanner] AutoTabsRouter not found, pushing DecksRoute: $e', error: e, stackTrace: st);
-                  unawaited(context.router.push(const DecksRoute()));
+                  unawaited(context.router.push(DecksRoute()));
                 }
               }
             },
