@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /internal_leads
+Disallow: /internal_leads.html
+Disallow: /workspace/assets/
+Disallow: /*.env*
+
+Sitemap: https://kortex-study-app-2026.web.app/sitemap.xml
