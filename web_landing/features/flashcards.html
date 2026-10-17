@@ -1,212 +1,259 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" data-accent="sage">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Kortexify Flashcards & Spaced Repetition | Turn notes into active-recall flashcards automatically scheduled right before you forget.">
-  <title>Flashcards & Spaced Repetition | Kortexify Features</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart Flashcards & Spaced Repetition | Kortexify</title>
+<meta name="description" content="Turn lecture slides and syllabus notes into 3D active recall flashcards. Powered by FSRS spaced repetition algorithms for maximum long-term memory retention.">
 
-  <link rel="icon" type="image/svg+xml" href="../assets/kortexify_logo.svg?v=2">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- Compiled Static Tailwind CSS -->
-  <link rel="stylesheet" href="../css/tailwind.min.css?v=1.0">
-  
-  <link rel="stylesheet" href="../css/variables.css?v=7.0">
-  <link rel="stylesheet" href="../css/animations.css?v=7.0">
-  <link rel="stylesheet" href="../css/styles.css?v=7.0">
+<link rel="canonical" href="https://kortex-study-app-2026.web.app/features/flashcards.html">
+<meta name="theme-color" content="#0D0D0F">
+<script>try{const t=localStorage.getItem('kx-theme');if(t){document.documentElement.dataset.theme=t;const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#F6F6F8':'#0D0D0F'}}catch(e){}</script>
 
-  <style>
-    .flashcard-3d {
-      perspective: 1000px;
-    }
-    .flashcard-inner {
-      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-      transform-style: preserve-3d;
-    }
-    .flashcard-3d:hover .flashcard-inner {
-      transform: rotateY(180deg);
-    }
-    .flashcard-front, .flashcard-back {
-      backface-visibility: hidden;
-    }
-    .flashcard-back {
-      transform: rotateY(180deg);
-    }
-  </style>
+<!-- OpenGraph / Social Sharing -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kortex-study-app-2026.web.app/features/flashcards.html">
+<meta property="og:site_name" content="Kortexify">
+<meta property="og:title" content="Smart Flashcards & Spaced Repetition | Kortexify">
+<meta property="og:description" content="Turn lecture slides into active recall flashcards with FSRS spaced scheduling, LaTeX formulas, and offline Anki export.">
+<meta property="og:image" content="https://kortex-study-app-2026.web.app/assets/images/social_og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<!-- Twitter Cards -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Smart Flashcards & Spaced Repetition | Kortexify">
+<meta name="twitter:description" content="Turn lecture slides into active recall flashcards with FSRS spaced scheduling, LaTeX formulas, and offline Anki export.">
+<meta name="twitter:image" content="https://kortex-study-app-2026.web.app/assets/images/social_og.jpg">
+
+<!-- Favicon -->
+<link rel="icon" href="../assets/kortexify_logo.svg" type="image/svg+xml">
+<link rel="alternate icon" href="../assets/favicon.ico">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
+<!-- Design System CSS -->
+<link rel="stylesheet" href="../css/kx.css">
+<style>
+.feature-hero{padding:clamp(3.5rem,7vw,5.5rem) 0 2rem;text-align:center}
+.interactive-card-area{max-width:620px;margin:2rem auto 4.5rem;perspective:1000px}
+.flashcard-stage{position:relative;width:100%;min-height:330px;transition:transform .6s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d;cursor:pointer}
+.flashcard-stage.flipped{transform:rotateY(180deg)}
+.flashcard-face{position:absolute;inset:0;background:var(--card);border:2px solid var(--line);border-radius:var(--radius-xl);padding:32px;display:flex;flex-direction:column;justify-content:space-between;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 24px 60px -20px rgba(0,0,0,.35)}
+.flashcard-face.back{transform:rotateY(180deg);background:var(--bg2);border-color:var(--sage)}
+.card-deck-tag{display:flex;align-items:center;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--mute)}
+.card-question{font-size:1.35rem;font-weight:700;line-height:1.45;color:var(--ink);margin:auto 0;text-align:center}
+.card-answer{font-size:1.1rem;font-weight:600;line-height:1.55;color:var(--ink);margin:auto 0;text-align:center}
+.rating-preview{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:1rem}
+.rating-pill{padding:8px;border-radius:var(--radius-md);text-align:center;font-size:.75rem;font-weight:700;font-family:'JetBrains Mono',monospace}
+.rating-pill.again{background:color-mix(in srgb,var(--rd) 18%,transparent);color:var(--rd)}
+.rating-pill.hard{background:color-mix(in srgb,var(--ochre) 18%,transparent);color:var(--ochre)}
+.rating-pill.good{background:color-mix(in srgb,var(--cyan) 18%,transparent);color:var(--cyan)}
+.rating-pill.easy{background:color-mix(in srgb,var(--gn) 18%,transparent);color:var(--gn)}
+
+.feature-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:3.5rem 0}
+@media(max-width:880px){.feature-benefits{grid-template-columns:1fr}}
+.benefit-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:30px;display:flex;flex-direction:column;gap:14px}
+.benefit-icon{width:46px;height:46px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);display:grid;place-items:center;font-size:1.3rem;color:var(--sage)}
+</style>
 </head>
-<body class="bg-[var(--bg-canvas)] text-[var(--text-primary)] antialiased font-['Inter']">
+<body>
+<a href="#main" class="skip-link">Skip to main content</a>
 
-  <!-- Header Navigation -->
-  <header class="site-header sticky top-0 z-50 w-full backdrop-blur-md bg-[var(--nav-bg)] border-b border-[var(--nav-border)]">
-    <div class="max-w-[1340px] mx-auto px-5 h-[66px] flex items-center justify-between">
-      
-      <div class="flex items-center gap-10">
-        <a href="../index.html" class="flex items-center gap-2.5 font-['Plus_Jakarta_Sans'] font-extrabold text-lg text-[var(--text-primary)]">
-          <img src="../assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-8 h-8 rounded-lg">
-          <span class="tracking-wide">KORTEXIFY</span>
-        </a>
+<!-- Navigation Header -->
+<header class="nav"><div class="wrap">
+<a class="logo" href="../index.html" aria-label="Kortexify home">
+  <svg width="30" height="30" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E"/>
+        <stop offset="35%" stop-color="#5B8C93"/>
+        <stop offset="70%" stop-color="#4A6B5D"/>
+        <stop offset="100%" stop-color="#D4A373"/>
+      </linearGradient>
+      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E"/>
+        <stop offset="60%" stop-color="#5B8C93"/>
+        <stop offset="100%" stop-color="#4A6B5D"/>
+      </radialGradient>
+      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/>
+        <stop offset="50%" stop-color="#5B8C93" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/>
+      </linearGradient>
+    </defs>
+    <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="url(#gridGrad)" stroke-width="2.5"/>
+    <path d="M156 140V372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round"/>
+    <path d="M356 140L256 256L356 372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="156" cy="140" r="13" fill="#788C7E"/>
+    <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
+    <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
+    <circle cx="356" cy="372" r="13" fill="#D4A373"/>
+    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/>
+    <circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
+  </svg>
+  <span>Kortexify</span>
+</a>
+<a class="l" href="../index.html#how">How it works</a>
+<a class="l" href="../index.html#tutor">Syllabot</a>
+<a class="l" href="../index.html#education">Education & Exams</a>
+<a class="l" href="../pricing.html">Pricing</a>
+<a class="l" href="../downloads.html">Downloads</a>
+<button class="ic" id="th" aria-label="Toggle light or dark theme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+<a class="btn p s" href="/workspace/login" data-mag>Start free</a>
+</div></header>
 
-        <nav class="hidden lg:flex items-center gap-7">
-          <div class="relative group py-4">
-            <button class="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-primary)] transition-colors">
-              <span>Features</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:rotate-180 transition-transform"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-            <div class="absolute top-full left-0 hidden group-hover:block w-60 p-2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-2xl z-50">
-              <a href="flashcards.html" class="flex items-center gap-3 p-2.5 rounded-xl bg-[var(--color-primary-subtle)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-primary-subtle)] flex items-center justify-center text-xs">🎴</span>
-                <div>
-                  <p class="text-xs font-bold text-[var(--color-primary)]">Smart Flashcards</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">Remember more in less time</p>
-                </div>
-              </a>
-              <a href="solver.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-secondary-subtle)] flex items-center justify-center text-xs">🤖</span>
-                <div>
-                  <p class="text-xs font-semibold text-[var(--text-primary)]">Syllabot AI Tutor</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">Ask questions from your course</p>
-                </div>
-              </a>
-              <a href="questions.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-latex-subtle)] flex items-center justify-center text-xs">⏱️</span>
-                <div>
-                  <p class="text-xs font-semibold text-[var(--text-primary)]">Practice Exams & Duels</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">JAMB, WAEC, SAT & 1v1 duels</p>
-                </div>
-              </a>
-              <a href="study_rooms.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-primary-subtle)] flex items-center justify-center text-xs">🎙️</span>
-                <div>
-                  <p class="text-xs font-semibold text-[var(--text-primary)]">Live Study Rooms</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">Voice chat & shared whiteboard</p>
-                </div>
-              </a>
-            </div>
-          </div>
-
-          <a href="../about.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">About Us</a>
-          <a href="../pricing.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Pricing</a>
-          <a href="../downloads.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Downloads</a>
-          <a href="../contact.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Contact</a>
-        </nav>
-      </div>
-
-      <div class="hidden lg:flex items-center gap-4">
-        <a href="/workspace/login" class="px-4 py-2 rounded-full border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-          Log In
-        </a>
-        <a href="/workspace/login" class="px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-xs font-bold text-[var(--text-inverse)] hover:brightness-110 transition-all shadow-md">
-          Start for free
-        </a>
-      </div>
-
+<main id="main">
+  <!-- Feature Hero -->
+  <section class="feature-hero">
+    <div class="wrap">
+      <p class="eyebrow rv">3D Active Recall & Spaced Repetition</p>
+      <h1 class="rv" style="--d:.1s">Learn faster. <em>Retain for exams.</em></h1>
+      <p class="lead rv" style="--d:.2s;max-width:38em;margin:1rem auto 2.5rem">Transform bulky PDF textbooks and lecture slide handouts into interactive active recall flashcards. Mathematically scheduled right before your memory decays.</p>
     </div>
-  </header>
+  </section>
 
-  <!-- Hero Section -->
-  <main class="py-16 px-5 max-w-[1240px] mx-auto">
-    
-    <div class="text-center max-w-3xl mx-auto mb-16 reveal-on-scroll">
-      <span class="inline-block px-4 py-1.5 rounded-full bg-[var(--color-primary-subtle)] border border-[var(--border-primary)] text-xs font-bold text-[var(--color-primary)] uppercase tracking-wider mb-4">
-        3D ACTIVE RECALL ENGINE
-      </span>
-      <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] leading-tight mb-6">
-        Remember 90% of what you learn, right before your exams.
-      </h1>
-      <p class="text-base sm:text-lg text-[var(--text-secondary)] leading-relaxed">
-        Kortexify creates 3D active recall flashcards from your documents and uses SuperMemo-2 spaced repetition algorithms to schedule reviews exactly when your memory needs a boost.
-      </p>
-    </div>
-
-    <!-- 3D Interactive Flip Flashcard Mockup -->
-    <div class="max-w-[650px] mx-auto mb-20 flashcard-3d cursor-pointer reveal-on-scroll">
-      <div class="flashcard-inner relative w-full h-[340px]">
-        
-        <!-- Front Side -->
-        <div class="flashcard-front absolute inset-0 bg-[var(--bg-card)] border-2 border-[var(--color-primary)] rounded-3xl p-8 flex flex-col justify-between shadow-2xl">
-          <div class="flex items-center justify-between text-xs font-mono text-[var(--text-muted)]">
-            <span>Deck: Human Anatomy & Physiology</span>
-            <span>Hover to flip 🔄</span>
+  <!-- Interactive 3D Card Stage -->
+  <section><div class="wrap">
+    <div class="interactive-card-area rv" style="--d:.25s">
+      <div class="flashcard-stage" id="demoCard" role="region" aria-label="Interactive sample flashcard" tabindex="0">
+        <!-- Front Face -->
+        <div class="flashcard-face front">
+          <div class="card-deck-tag">
+            <span>DECK: HUMAN PHYSIOLOGY & MEDICINE</span>
+            <span>CLICK TO FLIP 🔄</span>
           </div>
-          <div class="text-center my-auto">
-            <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] block mb-2">QUESTION</span>
-            <h3 class="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
-              What is the primary action of the Sinoatrial (SA) node in cardiac conduction?
-            </h3>
+          <div class="card-question">
+            What is the physiological role of the Sinoatrial (SA) node in the human cardiac conduction system?
           </div>
-          <div class="text-center text-[11px] text-[var(--text-muted)]">
-            Tap or hover card to reveal answer
+          <div style="text-align:center;font-size:.82rem;color:var(--mute)">
+            Press Enter or click card to verify recall
           </div>
         </div>
 
-        <!-- Back Side -->
-        <div class="flashcard-back absolute inset-0 bg-[var(--bg-surface-elevated1)] border-2 border-emerald-400 rounded-3xl p-8 flex flex-col justify-between shadow-2xl">
-          <div class="flex items-center justify-between text-xs font-mono text-emerald-400 font-bold">
-            <span>ANSWER DEEP-DIVE</span>
-            <span>Mastered ⭐</span>
+        <!-- Back Face -->
+        <div class="flashcard-face back">
+          <div class="card-deck-tag">
+            <span style="color:var(--sage)">VERIFIED ANSWER & RETRIEVAL LOG</span>
+            <span>FLIP BACK ↩</span>
           </div>
-          <div class="my-auto text-center space-y-3">
-            <h4 class="text-lg font-bold text-[var(--text-primary)]">
-              Acts as the heart's natural pacemaker by spontaneously generating electrical impulses that initiate atrial contraction.
-            </h4>
-            <p class="text-xs text-[var(--text-secondary)]">
-              Intrinsic rate: 60-100 bpm. Located in the right atrium near the superior vena cava.
-            </p>
+          <div class="card-answer">
+            Acts as the primary electrical pacemaker, spontaneously depolarizing to trigger synchronous atrial contraction at 60–100 bpm.
           </div>
-          
-          <!-- Rating Buttons Mock -->
-          <div class="grid grid-cols-4 gap-2 text-center text-[11px] font-bold">
-            <span class="py-2 rounded-xl bg-rose-500/20 text-rose-400">Again (&lt;1d)</span>
-            <span class="py-2 rounded-xl bg-amber-500/20 text-amber-400">Hard (2d)</span>
-            <span class="py-2 rounded-xl bg-blue-500/20 text-blue-400">Good (4d)</span>
-            <span class="py-2 rounded-xl bg-emerald-500/20 text-emerald-400">Easy (7d)</span>
+          <div class="rating-preview">
+            <div class="rating-pill again">Again (&lt;1d)</div>
+            <div class="rating-pill hard">Hard (2d)</div>
+            <div class="rating-pill good">Good (4d)</div>
+            <div class="rating-pill easy">Easy (7d)</div>
           </div>
         </div>
-
       </div>
     </div>
+  </div></section>
 
-    <!-- CTA Section -->
-    <div class="text-center p-12 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] max-w-[800px] mx-auto">
-      <h2 class="text-3xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] mb-3">
-        Ready to boost your memory?
-      </h2>
-      <p class="text-xs text-[var(--text-secondary)] mb-6">
-        Generate your first active recall deck in seconds.
-      </p>
-      <a href="/workspace/login" class="inline-block px-8 py-3.5 rounded-full bg-[var(--color-primary)] text-sm font-bold text-[var(--text-inverse)] hover:scale-105 transition-transform shadow-xl">
-        Generate Free Flashcard Deck
-      </a>
+  <!-- Core Capabilities Grid -->
+  <section><div class="wrap">
+    <div class="section-title rv">
+      <p class="eyebrow">Engine Features</p>
+      <h2>Engineered for academic depth</h2>
     </div>
 
-  </main>
-
-  <!-- Site Footer -->
-  <footer class="site-footer bg-[var(--bg-canvas)] border-t border-[var(--border-subtle)] py-12 mt-20">
-    <div class="max-w-[1240px] mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-6">
-      
-      <div class="flex items-center gap-2.5">
-        <img src="../assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-6 h-6">
-        <span class="font-['Plus_Jakarta_Sans'] font-extrabold text-sm text-[var(--text-primary)] tracking-wide">KORTEXIFY</span>
+    <div class="feature-benefits">
+      <div class="benefit-card rv" style="--d:.1s">
+        <div class="benefit-icon">⚡</div>
+        <h3>Atomic Concept Extraction</h3>
+        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Upload your course lecture decks or syllabus notes. Kortexify isolates atomic facts, definitions, and key formulas into focused testable cards.</p>
       </div>
 
-      <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[var(--text-secondary)]">
-        <a href="../index.html" class="hover:text-[var(--text-primary)]">Home</a>
-        <a href="../about.html" class="hover:text-[var(--text-primary)]">About Us</a>
-        <a href="../pricing.html" class="hover:text-[var(--text-primary)]">Pricing</a>
-        <a href="../downloads.html" class="hover:text-[var(--text-primary)]">Downloads</a>
-        <a href="../privacy.html" class="hover:text-[var(--text-primary)]">Privacy Policy</a>
-        <a href="../terms.html" class="hover:text-[var(--text-primary)]">Terms of Service</a>
-        <a href="../contact.html" class="hover:text-[var(--text-primary)]">Contact</a>
+      <div class="benefit-card rv" style="--d:.15s">
+        <div class="benefit-icon">🧠</div>
+        <h3>FSRS Spaced Repetition</h3>
+        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Built on the state-of-the-art Free Spaced Repetition Scheduler (FSRS). Reviews adapt continuously to your difficulty ratings, eliminating over-review.</p>
       </div>
 
-      <p class="text-xs text-[var(--text-muted)]">&copy; 2026 Kortexify Inc. All rights reserved.</p>
+      <div class="benefit-card rv" style="--d:.2s">
+        <div class="benefit-icon">📐</div>
+        <h3>Full LaTeX & Code Syntax</h3>
+        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Renders complex math, biochemistry reactions, physics equations, and computer science code blocks with high-contrast, crystal-clear typography.</p>
+      </div>
     </div>
-  </footer>
+  </div></section>
 
-  <script src="../js/animations.js?v=7.0"></script>
+  <!-- Bottom CTA -->
+  <section class="final-cta"><div class="wrap text-center">
+    <h2 class="rv">Build your personal mastery deck today.</h2>
+    <p class="lead rv" style="--d:.1s;margin:1rem auto 2rem">Study directly in your browser or download the desktop app for 100% offline study sessions.</p>
+    <div class="cta-actions rv" style="--d:.2s">
+      <a class="btn p" href="/workspace/login" data-mag>Start Free Now &rarr;</a>
+      <a class="btn" href="../downloads.html">Get Desktop Apps</a>
+    </div>
+  </div></section>
+</main>
+
+<!-- Unified Site Footer -->
+<footer class="footer"><div class="wrap">
+<div class="foot-grid">
+  <div>
+    <div class="brand-row">
+      <svg width="26" height="26" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="rgba(120,140,126,0.2)" stroke-width="2.5"/>
+        <path d="M156 140V372" stroke="#788C7E" stroke-width="44" stroke-linecap="round"/>
+        <path d="M356 140L256 256L356 372" stroke="#D4A373" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="156" cy="140" r="13" fill="#788C7E"/>
+        <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
+        <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
+        <circle cx="356" cy="372" r="13" fill="#D4A373"/>
+        <circle cx="256" cy="256" r="30" fill="#5B8C93"/>
+      </svg>
+      <span class="foot-title">Kortexify</span>
+    </div>
+    <p class="foot-lead">Active study workspace combining spaced repetition, grounded Socratic tutoring, and timed CBT practice across higher education.</p>
+  </div>
+  <div class="foot-col">
+    <div class="foot-hd">Product</div>
+    <a href="../index.html#how">How it works</a>
+    <a href="../index.html#tutor">Syllabot AI</a>
+    <a href="flashcards.html">Smart Flashcards</a>
+    <a href="questions.html">CBT Practice</a>
+    <a href="../downloads.html">Desktop Apps</a>
+  </div>
+  <div class="foot-col">
+    <div class="foot-hd">Resources</div>
+    <a href="../pricing.html">Pricing & Plans</a>
+    <a href="../about.html">About Us</a>
+    <a href="glossary.html">Cognitive Glossary</a>
+    <a href="../contact.html">Help & Support</a>
+  </div>
+  <div class="foot-col">
+    <div class="foot-hd">Legal & Security</div>
+    <a href="../privacy.html">Privacy Policy</a>
+    <a href="../terms.html">Terms of Service</a>
+    <a href="../contact.html#security">Security Disclosure</a>
+  </div>
+</div>
+<div class="foot-bottom">
+  <div>&copy; 2026 Kortexify. Cognitive active recall for higher education.</div>
+  <div class="foot-badge"><span></span> Operational · Flutter Web Client 3.x</div>
+</div>
+</div></footer>
+
+<script src="../js/kx.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const card = document.getElementById('demoCard');
+  if (card) {
+    const toggle = () => card.classList.toggle('flipped');
+    card.addEventListener('click', toggle);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
+      }
+    });
+  }
+});
+</script>
 </body>
 </html>

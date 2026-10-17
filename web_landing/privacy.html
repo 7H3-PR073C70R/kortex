@@ -1,342 +1,190 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" data-accent="sage">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Kortexify Privacy Policy. Learn how we protect student data, encrypt notes, and ensure 100% offline-first privacy.">
-  <title>Privacy Policy | Kortexify</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy Policy | Kortexify — Student Data Protection</title>
+<meta name="description" content="Kortexify Privacy Policy. Learn how we protect student notes, secure local study cards, and ensure zero-retention private AI processing.">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="assets/kortexify_logo.svg?v=2">
-  <link rel="alternate icon" href="assets/favicon.ico?v=2">
+<link rel="canonical" href="https://kortex-study-app-2026.web.app/privacy.html">
+<meta name="theme-color" content="#0D0D0F">
+<script>try{const t=localStorage.getItem('kx-theme');if(t){document.documentElement.dataset.theme=t;const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#F6F6F8':'#0D0D0F'}}catch(e){}</script>
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+<!-- OpenGraph / Social Sharing -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kortex-study-app-2026.web.app/privacy.html">
+<meta property="og:site_name" content="Kortexify">
+<meta property="og:title" content="Privacy Policy | Kortexify — Student Data Protection">
+<meta property="og:description" content="Offline-first architecture, local SQLite storage, encrypted sync, and zero sale of student personal data or lecture notes.">
+<meta property="og:image" content="https://kortex-study-app-2026.web.app/assets/images/social_og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 
-  <!-- Compiled Static Tailwind CSS -->
-  <link rel="stylesheet" href="css/tailwind.min.css?v=1.0">
+<!-- Twitter Cards -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Privacy Policy | Kortexify — Student Data Protection">
+<meta name="twitter:description" content="Offline-first architecture, local SQLite storage, encrypted sync, and zero sale of student personal data or lecture notes.">
+<meta name="twitter:image" content="https://kortex-study-app-2026.web.app/assets/images/social_og.jpg">
 
-  <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=8.0">
-  <link rel="stylesheet" href="css/animations.css?v=8.0">
-  <link rel="stylesheet" href="css/styles.css?v=8.0">
+<!-- Favicon -->
+<link rel="icon" href="assets/kortexify_logo.svg" type="image/svg+xml">
+<link rel="alternate icon" href="assets/favicon.ico">
 
-  <!-- No-JS fallback: reveal classes must never hide legal copy -->
-  <noscript><style>.reveal-on-scroll, [data-reveal-group] > * { opacity: 1 !important; transform: none !important; }</style></noscript>
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;600&display=swap">
 
-  <style>
-    .legal-container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: calc(var(--section-spacing) + 1.5rem) clamp(1.2rem, 3.5vw, 2.5rem) var(--section-spacing);
-    }
-    .legal-header {
-      margin-bottom: 2.5rem;
-      border-bottom: 1px solid var(--border-subtle);
-      padding-bottom: 1.75rem;
-    }
-    .legal-title {
-      font-family: var(--font-heading);
-      font-size: var(--text-h1);
-      font-weight: 800;
-      color: var(--text-primary);
-      margin-bottom: 0.5rem;
-      letter-spacing: var(--letter-spacing-tight);
-    }
-    .legal-meta {
-      font-size: var(--text-body-sm);
-      color: var(--text-muted);
-    }
-    .legal-section {
-      margin-bottom: 2.25rem;
-    }
-    .legal-section h2 {
-      font-family: var(--font-heading);
-      font-size: 1.3rem;
-      font-weight: 750;
-      letter-spacing: var(--letter-spacing-tight);
-      color: var(--text-primary);
-      margin-bottom: 0.85rem;
-      margin-top: 1.8rem;
-    }
-    .legal-section p, .legal-section li {
-      font-size: var(--text-body);
-      color: var(--text-secondary);
-      line-height: 1.65;
-      margin-bottom: 0.85rem;
-    }
-    .legal-section ul {
-      padding-left: 1.4rem;
-      margin-bottom: 1rem;
-    }
-    .legal-highlight-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-primary);
-      border-radius: var(--radius-md);
-      padding: 1.4rem;
-      margin: 1.5rem 0;
-      box-shadow: var(--shadow-xs);
-    }
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--text-secondary);
-      font-size: var(--text-body-sm);
-      font-weight: 600;
-      margin-bottom: 1.5rem;
-      transition: color var(--duration-fast);
-    }
-    .back-link:hover {
-      color: var(--text-primary);
-    }
-
-    /* Privacy commitment padlock (inline SVG, theme aware) */
-    .pv-lock { flex-shrink: 0; }
-    .pv-ring {
-      fill: none;
-      stroke: var(--color-primary);
-      stroke-width: 2;
-      opacity: 0.5;
-      transform-box: fill-box;
-      transform-origin: center;
-      animation: pvPulse 3.2s var(--ease-in-out-quart) infinite;
-    }
-    @keyframes pvPulse {
-      0% { transform: scale(0.9); opacity: 0.55; }
-      70%, 100% { transform: scale(1.12); opacity: 0; }
-    }
-    .pv-body {
-      fill: var(--color-primary-subtle);
-      stroke: var(--text-secondary);
-      stroke-width: 2;
-    }
-    .pv-shackle { fill: none; stroke: var(--text-secondary); stroke-width: 2.5; }
-    .pv-pin {
-      fill: none;
-      stroke: var(--color-primary);
-      stroke-width: 2;
-      stroke-linecap: round;
-    }
-
-    /* Data journey figure */
-    .pv-flow-figure {
-      margin: 0 0 2.5rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 1.4rem 1.4rem 1.1rem;
-      box-shadow: var(--shadow-xs);
-    }
-    .pv-flow-svg { width: 100%; max-width: 420px; height: auto; margin: 0 auto; display: block; }
-    .pvf-line {
-      fill: none;
-      stroke: var(--text-secondary);
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-    .pvf-thin {
-      stroke: var(--text-muted);
-      stroke-width: 2;
-      stroke-linecap: round;
-      opacity: 0.8;
-    }
-    .pvf-device { fill: var(--color-primary-subtle); }
-    .pvf-lockbody { fill: var(--color-primary-subtle); }
-    .pvf-flow {
-      fill: none;
-      stroke: var(--color-primary);
-      stroke-width: 3.5;
-      stroke-linecap: round;
-      stroke-dasharray: 3 18;
-      animation: pvfDash 1.8s linear infinite;
-    }
-    @keyframes pvfDash {
-      to { stroke-dashoffset: -42; }
-    }
-    .pv-flow-figure figcaption {
-      text-align: center;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      line-height: 1.55;
-      margin-top: 0.9rem;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .pvf-flow { animation: none; opacity: 0.7; }
-      .pv-ring { animation: none; }
-    }
-  </style>
+<!-- Design System CSS -->
+<link rel="stylesheet" href="css/kx.css">
+<style>
+.legal-wrap{max-width:820px;margin:3rem auto 6rem;padding:0 24px}
+.legal-box{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:36px;margin-bottom:2.5rem}
+.legal-box h2{font-size:1.35rem;font-weight:700;letter-spacing:-.01em;margin-bottom:1rem;color:var(--ink)}
+.legal-box h3{font-size:1.1rem;font-weight:700;margin:1.4rem 0 .5rem;color:var(--ink)}
+.legal-box p, .legal-box li{font-size:.95rem;color:var(--mute);line-height:1.75;margin-bottom:1rem}
+.legal-box ul{padding-left:1.5rem;margin-bottom:1.25rem}
+.legal-highlight{background:var(--bg2);border-left:3px solid var(--sage);border-radius:0 var(--radius-md) var(--radius-md) 0;padding:18px 22px;margin:1.5rem 0}
+.legal-highlight p{margin-bottom:0;color:var(--ink);font-weight:500}
+</style>
 </head>
 <body>
+<a href="#main" class="skip-link">Skip to main content</a>
 
-  <!-- Scroll Progress -->
-  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+<!-- Navigation Header -->
+<header class="nav"><div class="wrap">
+<a class="logo" href="index.html" aria-label="Kortexify home">
+  <svg width="30" height="30" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E"/>
+        <stop offset="35%" stop-color="#5B8C93"/>
+        <stop offset="70%" stop-color="#4A6B5D"/>
+        <stop offset="100%" stop-color="#D4A373"/>
+      </linearGradient>
+      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E"/>
+        <stop offset="60%" stop-color="#5B8C93"/>
+        <stop offset="100%" stop-color="#4A6B5D"/>
+      </radialGradient>
+      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/>
+        <stop offset="50%" stop-color="#5B8C93" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/>
+      </linearGradient>
+    </defs>
+    <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="url(#gridGrad)" stroke-width="2.5"/>
+    <path d="M156 140V372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round"/>
+    <path d="M356 140L256 256L356 372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="156" cy="140" r="13" fill="#788C7E"/>
+    <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
+    <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
+    <circle cx="356" cy="372" r="13" fill="#D4A373"/>
+    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/>
+    <circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
+  </svg>
+  <span>Kortexify</span>
+</a>
+<a class="l" href="index.html#how">How it works</a>
+<a class="l" href="index.html#tutor">Syllabot</a>
+<a class="l" href="index.html#education">Education & Exams</a>
+<a class="l" href="pricing.html">Pricing</a>
+<a class="l" href="downloads.html">Downloads</a>
+<button class="ic" id="th" aria-label="Toggle light or dark theme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+<a class="btn p s" href="/workspace/login" data-mag>Start free</a>
+</div></header>
 
-  <!-- Header Navigation -->
-  <header class="site-header sticky top-0 z-50 w-full backdrop-blur-md bg-[var(--nav-bg)] border-b border-[var(--nav-border)]">
-    <div class="max-w-[1340px] mx-auto px-5 h-[66px] flex items-center justify-between">
-      
-      <!-- Left: Logo & Navigation Links -->
-      <div class="flex items-center gap-10">
-        <a href="index.html" class="flex items-center gap-2.5 font-['Plus_Jakarta_Sans'] font-extrabold text-lg text-[var(--text-primary)]">
-          <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-8 h-8 rounded-lg">
-          <span class="tracking-wide">KORTEXIFY</span>
-        </a>
+<main id="main">
+  <!-- Page Hero -->
+  <section class="page-hero">
+    <div class="wrap">
+      <p class="eyebrow rv">Data Security & Privacy</p>
+      <h1 class="rv" style="--d:.1s">Your notes belong to you. <em>Period.</em></h1>
+      <p class="lead rv" style="--d:.2s">Last updated: October 2026. Review how Kortexify enforces offline-first data protection, encrypted synchronization, and zero-retention AI pipelines.</p>
+    </div>
+  </section>
 
-        <!-- Desktop Navigation -->
-        <nav class="hidden lg:flex items-center gap-7">
-          <a href="index.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Features</a>
-          <a href="about.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">About Us</a>
-          <a href="pricing.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Pricing</a>
-          <a href="downloads.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Downloads</a>
-          <a href="contact.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Contact</a>
-        </nav>
+  <!-- Legal Body Content -->
+  <div class="legal-wrap">
+    <div class="legal-box rv" style="--d:.25s">
+      <div class="legal-highlight">
+        <p><strong>Core Privacy Pledge:</strong> Kortexify operates under an offline-first architecture. We do not sell your personal data, uploaded syllabi, lecture decks, or active recall cards to third-party ad networks. Your academic files are parsed strictly to generate your personal study tools.</p>
       </div>
 
-      <!-- Right: Theme Controls + Auth Actions -->
-      <div class="hidden lg:flex items-center gap-4">
-        <!-- Palette Accent Switcher -->
-        <div class="accent-picker" title="Switch Accent Color" role="group" aria-label="Color Accents">
-          <button class="accent-dot active" data-set-accent="sage" type="button" aria-label="Muted Sage"></button>
-          <button class="accent-dot" data-set-accent="ochre" type="button" aria-label="Warm Ochre"></button>
-          <button class="accent-dot" data-set-accent="moss" type="button" aria-label="Alpine Moss"></button>
-          <button class="accent-dot" data-set-accent="bronze" type="button" aria-label="Deep Bronze"></button>
-          <button class="accent-dot" data-set-accent="terracotta" type="button" aria-label="Terracotta"></button>
-          <button class="accent-dot" data-set-accent="quartz" type="button" aria-label="Quartz Cyan"></button>
-        </div>
-
-        <!-- Light / Dark Mode Button -->
-        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle theme">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-        </button>
-
-        <!-- Log In (Ghost Button) -->
-        <a href="/workspace/login" class="px-4 py-2 rounded-full border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-          Log In
-        </a>
-
-        <!-- Sign Up (Primary Button) -->
-        <a href="/workspace/login" class="px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-xs font-bold text-[var(--text-inverse)] shadow-md hover:brightness-110 transition-all">
-          Sign Up
-        </a>
-      </div>
-    </div>
-  </header>
-
-  <main class="legal-container">
-
-    <div class="legal-header reveal-on-scroll">
-      <h1 class="legal-title">Privacy Policy</h1>
-      <p class="legal-meta">Last Updated: September 2026 • Effective Date: September 2026</p>
-    </div>
-
-    <div class="legal-highlight-box" style="display: flex; align-items: flex-start; gap: 16px;">
-      <svg class="pv-lock" viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="A closed padlock">
-        <circle class="pv-ring" cx="32" cy="32" r="26"/>
-        <rect class="pv-body" x="21" y="31" width="22" height="16" rx="4"/>
-        <path class="pv-shackle" d="M26 31 v-6 a6 6 0 0 1 12 0 v6"/>
-        <circle class="pv-pin" cx="32" cy="37.5" r="1.8" fill="var(--color-primary)"/>
-        <line class="pv-pin" x1="32" y1="39.5" x2="32" y2="43"/>
-      </svg>
-      <div>
-        <strong style="color: var(--color-primary);">Our Core Privacy Commitment:</strong>
-        <p style="margin-top: 0.5rem; margin-bottom: 0;">Kortexify is built around offline-first architecture. We never sell your personal data, lecture handouts, or study cards to third-party advertisers. Your uploaded PDFs, notes, and formulas are processed locally or through zero-retention private pipelines strictly to power your study decks.</p>
-      </div>
-    </div>
-
-    <figure class="pv-flow-figure reveal-on-scroll">
-      <svg viewBox="0 0 340 96" class="pv-flow-svg" role="img" aria-label="Notes travel from your device through an encrypted line to sync">
-        <rect class="pvf-line pvf-device" x="14" y="22" width="40" height="52" rx="7"/>
-        <line class="pvf-thin" x1="25" y1="38" x2="43" y2="38"/>
-        <line class="pvf-thin" x1="25" y1="48" x2="43" y2="48"/>
-        <line class="pvf-thin" x1="25" y1="58" x2="37" y2="58"/>
-        <path class="pvf-line" d="M62 48 H136"/>
-        <path class="pvf-flow" d="M62 48 H136"/>
-        <rect class="pvf-line pvf-lockbody" x="146" y="40" width="24" height="17" rx="4"/>
-        <path class="pvf-line" d="M152 40 v-5 a6 6 0 0 1 12 0 v5"/>
-        <circle cx="158" cy="47" r="1.6" fill="var(--color-primary)"/>
-        <path class="pvf-line" d="M178 48 H252"/>
-        <path class="pvf-flow" d="M178 48 H252"/>
-        <path class="pvf-line" d="M262 62 a10 10 0 1 1 3 -19 a13 13 0 0 1 25 3 a8.5 8.5 0 1 1 -3 16 z"/>
-      </svg>
-      <figcaption>Your cards and notes live on your device. Sync only runs when you turn it on, and everything in transit is encrypted.</figcaption>
-    </figure>
-
-    <section class="legal-section reveal-on-scroll">
       <h2>1. Information We Collect</h2>
-      <p>When you use Kortexify, we only store data required to run your personalized spaced repetition engine:</p>
+      <p>We deliberately minimize data collection to the minimum required to power spaced repetition and synchronization:</p>
       <ul>
-        <li><strong>Account Information (Optional):</strong> If you choose to sync across devices, your email and authentication credentials.</li>
-        <li><strong>Study Materials & Notes:</strong> Uploaded PDF documents, syllabi, notes, generated flashcards, and review history (intervals, stability, retrievability logs).</li>
-        <li><strong>Local Storage:</strong> All cards and FSRS states live primarily in your on-device SQLite database.</li>
+        <li><strong>Account Credentials:</strong> If you create a cross-device sync account, we store your email address and cryptographic authentication tokens.</li>
+        <li><strong>Study Content & Academic Materials:</strong> Notes, syllabus PDFs, generated flashcards, and review performance logs (FSRS retrievability, difficulty factor, and repetition counts).</li>
+        <li><strong>Local Storage State:</strong> On native desktop apps, your entire library is stored in local SQLite databases sandboxed by your operating system.</li>
       </ul>
-    </section>
 
-    <section class="legal-section reveal-on-scroll">
-      <h2>2. How We Use Your Information</h2>
-      <p>Your data is processed strictly for cognitive service delivery:</p>
+      <h2>2. Grounded AI Processing & Model Safeguards</h2>
+      <p>When you ask Syllabot to generate flashcards or explain a derivation from lecture slides:</p>
       <ul>
-        <li>Generating active recall flashcards, LaTeX formulas, and Socratic hints via Syllabot AI.</li>
-        <li>Calculating personalized FSRS-6 review intervals based on your historical memory stability.</li>
-        <li>Synchronizing your decks and offline study progress across your authorized devices.</li>
+        <li>Content is processed using private API endpoints with zero-retention service agreements.</li>
+        <li>Your proprietary coursework, exam notes, and student research are <strong>never</strong> used to train public machine learning foundation models.</li>
+        <li>All extracted LaTeX formulas and card decks remain under your complete ownership.</li>
       </ul>
-    </section>
 
-    <section class="legal-section reveal-on-scroll">
-      <h2>3. AI Processing & Privacy Safeguards</h2>
-      <p>When extracting LaTeX equations or generating Socratic prompts, content is parsed locally whenever device capability permits. Cloud fallbacks operate under strict zero-retention agreements: your study materials are never used to train public models.</p>
-    </section>
+      <h2>3. Data Storage, Encryption & Sync</h2>
+      <p>All network transmissions are strictly encrypted via TLS 1.3. When cloud backup is active, cloud records are protected by AES-256 encryption at rest, fortified with granular Row Level Security (RLS) policies guaranteeing that only your authenticated user ID can decrypt your study decks.</p>
 
-    <section class="legal-section reveal-on-scroll">
-      <h2>4. Data Storage & Security</h2>
-      <p>All data in transit is encrypted using modern TLS 1.3. On-device databases are isolated within your operating system sandbox. Any cloud synchronization utilizes AES-256 encryption with granular Row Level Security (RLS) policies.</p>
-    </section>
+      <h2>4. Data Portability & Deletion</h2>
+      <p>You can export your cards and study progress at any time into open formats including standard Anki packages (.apkg), Markdown, and JSON. If you delete your account, all associated server backups are purged permanently.</p>
 
-    <section class="legal-section reveal-on-scroll">
-      <h2>5. Your Rights & Data Portability</h2>
-      <p>You own your academic materials. At any time, you can:</p>
-      <ul>
-        <li>Export all your decks in standard Anki (.apkg), Markdown, or PDF format.</li>
-        <li>Delete your local or cloud database with a single tap.</li>
-      </ul>
-    </section>
-
-    <section class="legal-section reveal-on-scroll">
-      <h2>6. Contact Us</h2>
-      <p>If you have any questions or privacy inquiries, contact our team at <a href="mailto:privacy@kortexify.app" style="color: var(--color-primary); font-weight: 600;">privacy@kortexify.app</a> or visit our <a href="contact.html" style="color: var(--color-primary); font-weight: 600;">Contact Page</a>.</p>
-    </section>
-  </main>
-
-  <!-- Site Footer -->
-  <footer class="site-footer bg-[var(--bg-canvas)] border-t border-[var(--border-subtle)] py-12">
-    <div class="max-w-[1240px] mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-6">
-      
-      <div class="flex items-center gap-2.5">
-        <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-6 h-6">
-        <span class="font-['Plus_Jakarta_Sans'] font-extrabold text-sm text-[var(--text-primary)] tracking-wide">KORTEXIFY</span>
-      </div>
-
-      <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[var(--text-secondary)]">
-        <a href="index.html" class="hover:text-[var(--text-primary)]">Home</a>
-        <a href="about.html" class="hover:text-[var(--text-primary)]">About Us</a>
-        <a href="pricing.html" class="hover:text-[var(--text-primary)]">Pricing</a>
-        <a href="downloads.html" class="hover:text-[var(--text-primary)]">Downloads</a>
-        <a href="privacy.html" class="hover:text-[var(--text-primary)] font-semibold text-[var(--color-primary)]">Privacy Policy</a>
-        <a href="terms.html" class="hover:text-[var(--text-primary)]">Terms of Service</a>
-        <a href="contact.html" class="hover:text-[var(--text-primary)]">Contact</a>
-      </div>
-
-      <p class="text-xs text-[var(--text-muted)]">&copy; 2026 Kortexify Inc. All rights reserved.</p>
+      <h2>5. Inquiries & Data Requests</h2>
+      <p>For questions or data access requests, contact our privacy officer directly at <a href="mailto:privacy@kortexify.app" style="color:var(--cyan);font-weight:600">privacy@kortexify.app</a> or via our <a href="contact.html" style="color:var(--cyan);font-weight:600">Contact page</a>.</p>
     </div>
-  </footer>
+  </div>
+</main>
 
-  <!-- Scripts -->
-  <script src="js/storage.js?v=6.15"></script>
-  <script src="js/animations.js?v=6.15"></script>
-  <script src="js/main.js?v=6.15"></script>
+<!-- Unified Site Footer -->
+<footer class="footer"><div class="wrap">
+<div class="foot-grid">
+  <div>
+    <div class="brand-row">
+      <svg width="26" height="26" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="rgba(120,140,126,0.2)" stroke-width="2.5"/>
+        <path d="M156 140V372" stroke="#788C7E" stroke-width="44" stroke-linecap="round"/>
+        <path d="M356 140L256 256L356 372" stroke="#D4A373" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="156" cy="140" r="13" fill="#788C7E"/>
+        <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
+        <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
+        <circle cx="356" cy="372" r="13" fill="#D4A373"/>
+        <circle cx="256" cy="256" r="30" fill="#5B8C93"/>
+      </svg>
+      <span class="foot-title">Kortexify</span>
+    </div>
+    <p class="foot-lead">Active study workspace combining spaced repetition, grounded Socratic tutoring, and timed CBT practice across higher education.</p>
+  </div>
+  <div class="foot-col">
+    <div class="foot-hd">Product</div>
+    <a href="index.html#how">How it works</a>
+    <a href="index.html#tutor">Syllabot AI</a>
+    <a href="features/flashcards.html">Smart Flashcards</a>
+    <a href="features/questions.html">CBT Practice</a>
+    <a href="downloads.html">Desktop Apps</a>
+  </div>
+  <div class="foot-col">
+    <div class="foot-hd">Resources</div>
+    <a href="pricing.html">Pricing & Plans</a>
+    <a href="about.html">About Us</a>
+    <a href="features/glossary.html">Cognitive Glossary</a>
+    <a href="contact.html">Help & Support</a>
+  </div>
+  <div class="foot-col">
+    <div class="foot-hd">Legal & Security</div>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms of Service</a>
+    <a href="contact.html#security">Security Disclosure</a>
+  </div>
+</div>
+<div class="foot-bottom">
+  <div>&copy; 2026 Kortexify. Cognitive active recall for higher education.</div>
+  <div class="foot-badge"><span></span> Operational · Flutter Web Client 3.x</div>
+</div>
+</div></footer>
+
+<script src="js/kx.js"></script>
 </body>
 </html>
