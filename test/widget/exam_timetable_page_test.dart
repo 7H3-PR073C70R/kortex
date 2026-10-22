@@ -45,6 +45,21 @@ void main() {
       () => mockStorage.getPreference(key: any(named: 'key')),
     ).thenReturn('true');
 
+    when(
+      () => mockNotification.scheduleExamTargetReminders(
+        examName: any(named: 'examName'),
+        targetDate: any(named: 'targetDate'),
+        examId: any(named: 'examId'),
+      ),
+    ).thenAnswer((_) async => 1);
+
+    when(
+      () => mockNotification.cancelExamTargetReminders(
+        examName: any(named: 'examName'),
+        examId: any(named: 'examId'),
+      ),
+    ).thenAnswer((_) async {});
+
     cubit = CramPlannerCubit(plannerRepository: mockRepository);
 
     locator

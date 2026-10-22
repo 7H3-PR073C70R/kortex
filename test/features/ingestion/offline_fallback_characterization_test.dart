@@ -45,6 +45,14 @@ void main() {
         return;
       }
 
+      if (name.contains('scanned')) {
+        expect(
+          () => service.extractTextFromBytes(bytes, fileType: ext, filename: name),
+          throwsA(isA<ScannedDocumentException>()),
+        );
+        return;
+      }
+
       final text = service.extractTextFromBytes(
         bytes,
         fileType: ext,

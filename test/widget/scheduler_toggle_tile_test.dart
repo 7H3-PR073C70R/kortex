@@ -25,7 +25,7 @@ void main() {
     }
 
     testWidgets(
-      'renders FSRS-6 active neural engine status',
+      'renders SMART RECALL active neural engine status',
       (tester) async {
         await tester.pumpWidget(
           createTestApp(
@@ -39,9 +39,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Spaced Repetition Scheduler'), findsOneWidget);
-        expect(find.text('FSRS-6'), findsOneWidget);
+        expect(find.text('SMART RECALL'), findsOneWidget);
         expect(
-          find.textContaining('Adaptive 21-parameter neural scheduling'),
+          find.textContaining('Smart adaptive scheduling'),
           findsOneWidget,
         );
       },
