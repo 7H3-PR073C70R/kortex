@@ -80,8 +80,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         add(AuthStatusChanged(status));
       }
     });
-
-    add(const AuthCheckRequested());
   }
 
   final LoginWithEmailUseCase _loginWithEmailUseCase;
@@ -102,7 +100,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final userStorage = locator.isRegistered<UserStorageService>()
         ? locator<UserStorageService>()
         : null;
-    final hasSession = userStorage?.hasActiveSession() ?? false;
+    final hasSession = userStorage != null ? userStorage.hasActiveSession() : true;
 
     if (!hasSession) {
       emit(

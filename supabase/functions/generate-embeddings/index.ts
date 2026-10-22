@@ -26,25 +26,58 @@ interface EmbedRequest {
   courseCode?: string;
 }
 
+/**
+ * Memory-efficient text chunker using streaming regex word scanning.
+ * Avoids allocating massive arrays of words (`text.split(/\s+/)`),
+ * preventing V8 isolate memory spikes on large texts/textbooks.
+ */
 function chunkText(text: string, chunkSize = 500, overlap = 50): string[] {
-  const words = text.split(/\s+/);
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+
+  // Short-circuit for short texts (approx 6 chars per word)
+  if (trimmed.length < chunkSize * 6) {
+    return [trimmed];
+  }
+
   const chunks: string[] = [];
+  const wordRegex = /\S+/g;
+  let wordCount = 0;
+  let chunkStartIndex = 0;
+  let nextChunkStartIndex = 0;
+  let match: RegExpExecArray | null;
 
-  if (words.length <= chunkSize) {
-    return [text];
+  const stepWords = Math.max(1, chunkSize - overlap);
+
+  while ((match = wordRegex.exec(trimmed)) !== null) {
+    wordCount++;
+
+    if (wordCount === stepWords) {
+      nextChunkStartIndex = match.index;
+    }
+
+    if (wordCount >= chunkSize) {
+      const chunkEndIndex = wordRegex.lastIndex;
+      chunks.push(trimmed.slice(chunkStartIndex, chunkEndIndex).trim());
+
+      // Overlap: restart word counting from nextChunkStartIndex
+      wordRegex.lastIndex = nextChunkStartIndex;
+      chunkStartIndex = nextChunkStartIndex;
+      wordCount = 0;
+    }
   }
 
-  let start = 0;
-  while (start < words.length) {
-    const end = Math.min(start + chunkSize, words.length);
-    const chunk = words.slice(start, end).join(" ");
-    chunks.push(chunk);
-    if (end === words.length) break;
-    start += chunkSize - overlap;
+  if (chunkStartIndex < trimmed.length) {
+    const remainder = trimmed.slice(chunkStartIndex).trim();
+    if (remainder.length > 0) {
+      chunks.push(remainder);
+    }
   }
 
-  return chunks;
+  return chunks.length > 0 ? chunks : [trimmed];
 }
+
+const SUB_BATCH_SIZE = 25;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -74,7 +107,10 @@ serve(async (req) => {
     const { documentId, rawText, chunks, metadata = {}, courseCode } = payload;
     const userId = effectiveUserId || payload.userId;
 
-    if (!documentId || (!rawText && (!chunks || chunks.length === 0))) {
+    const hasChunks = Array.isArray(chunks) && chunks.length > 0;
+    const hasRawText = typeof rawText === "string" && rawText.trim().length > 0;
+
+    if (!documentId || (!hasRawText && !hasChunks)) {
       return new Response(
         JSON.stringify({ error: "documentId and either rawText or chunks are required" }),
         {
@@ -99,30 +135,37 @@ serve(async (req) => {
       }
     }
 
-    const cacheKey = `doc_embeddings:${documentId}:${rawText?.length ?? chunks?.length ?? 0}`;
+    const cacheKey = `doc_embeddings:${documentId}:${hasChunks ? chunks!.length : (rawText?.length ?? 0)}`;
     const cacheResult = await SemanticCacheProvider.getCachedResponse(
       supabase,
       cacheKey,
       { courseCode }
     );
 
-    if (cacheResult.hit && cacheResult.data?.records) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          document_id: documentId,
-          chunks_created: cacheResult.data.records.length,
-          cache_hit: true,
-        }),
-        {
-          status: 200,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-            "X-Cache": "HIT",
-          },
-        }
-      );
+    if (cacheResult.hit && cacheResult.data) {
+      const chunksCount =
+        cacheResult.data.chunks_created ??
+        cacheResult.data.records?.length ??
+        0;
+
+      if (chunksCount > 0) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            document_id: documentId,
+            chunks_created: chunksCount,
+            cache_hit: true,
+          }),
+          {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "X-Cache": "HIT",
+            },
+          }
+        );
+      }
     }
 
     let validDocumentId: string | null = null;
@@ -148,100 +191,111 @@ serve(async (req) => {
           "Study Document";
         const { data: createdDoc } = await supabase
           .from("documents")
-          .insert({
-            id: documentId,
-            user_id: userId,
-            filename: docTitle,
-            file_type: (metadata.fileType as string) || "pdf",
-            file_size_bytes: (metadata.fileSizeBytes as number) || 0,
-            storage_path:
-              (metadata.storagePath as string) || `${documentId}.pdf`,
-            content_hash:
-              (metadata.contentHash as string) || `hash_${documentId}`,
-            processing_status: "completed",
-          })
+          .upsert(
+            {
+              id: documentId,
+              user_id: userId,
+              filename: docTitle,
+              file_type: (metadata.fileType as string) || "pdf",
+              file_size_bytes: (metadata.fileSizeBytes as number) || 0,
+              storage_path:
+                (metadata.storagePath as string) || `${documentId}.pdf`,
+              content_hash:
+                (metadata.contentHash as string) || `hash_${documentId}`,
+              processing_status: "completed",
+            },
+            { onConflict: "id", ignoreDuplicates: true }
+          )
           .select("id")
           .maybeSingle();
 
-        if (createdDoc) {
-          validDocumentId = createdDoc.id;
-        }
+        validDocumentId = createdDoc?.id ?? documentId;
       }
     }
 
-    const recordsToInsert = [];
+    // Prepare normalized chunks for processing
+    type NormalizedItem = {
+      content: string;
+      chunk_index: number;
+      page_number?: number;
+      paragraph_number?: number;
+      metadata?: Record<string, unknown>;
+    };
 
-    if (chunks && chunks.length > 0) {
-      const validItems = chunks.filter(
-        (c) => c.content && c.content.trim().length > 0
+    let itemsToProcess: NormalizedItem[] = [];
+
+    if (hasChunks) {
+      const validItems = chunks!.filter(
+        (c) => c && typeof c.content === "string" && c.content.trim().length > 0
       );
-      const textList = validItems.map((c) => c.content.trim());
+      itemsToProcess = validItems.map((c, i) => ({
+        content: c.content.trim(),
+        chunk_index: c.chunk_index ?? i,
+        page_number: c.page_number ?? (c.metadata?.page_number as number | undefined),
+        paragraph_number:
+          c.paragraph_number ?? (c.metadata?.paragraph_number as number | undefined),
+        metadata: c.metadata,
+      }));
+    } else if (hasRawText) {
+      const textChunks = chunkText(rawText!);
+      itemsToProcess = textChunks.map((chunk, i) => ({
+        content: chunk,
+        chunk_index: i,
+      }));
+    }
+
+    // Process in sub-batches of SUB_BATCH_SIZE (25) to avoid WORKER_RESOURCE_LIMIT
+    // and keep Deno V8 isolate memory usage completely flat (O(1) relative to total items).
+    let totalChunksInserted = 0;
+
+    for (let i = 0; i < itemsToProcess.length; i += SUB_BATCH_SIZE) {
+      const subBatch = itemsToProcess.slice(i, i + SUB_BATCH_SIZE);
+      const textList = subBatch.map((item) => item.content);
       const embeddings = await getBatchEmbeddings(textList);
 
-      for (let i = 0; i < validItems.length; i++) {
-        const item = validItems[i];
-        const content = item.content.trim();
-        const embedding = embeddings ? embeddings[i] : null;
+      const recordsToInsert = [];
+      for (let j = 0; j < subBatch.length; j++) {
+        const item = subBatch[j];
+        const embedding = embeddings ? embeddings[j] : null;
 
         recordsToInsert.push({
           document_id: validDocumentId,
           user_id: userId,
-          content,
+          content: item.content,
           metadata: {
             ...metadata,
             document_id: documentId,
             client_document_id: documentId,
             ...item.metadata,
-            chunk_index: item.chunk_index ?? i,
-            total_chunks: validItems.length,
+            chunk_index: item.chunk_index,
+            total_chunks: itemsToProcess.length,
             if_page: item.page_number,
-            page_number: item.page_number ?? item.metadata?.page_number,
-            paragraph_number:
-              item.paragraph_number ?? item.metadata?.paragraph_number,
+            page_number: item.page_number,
+            paragraph_number: item.paragraph_number,
             document_title: metadata.filename ?? metadata.documentTitle,
           },
           embedding: embedding ? JSON.stringify(embedding) : null,
         });
       }
-    } else if (rawText) {
-      const textChunks = chunkText(rawText);
-      const embeddings = await getBatchEmbeddings(textChunks);
 
-      for (let i = 0; i < textChunks.length; i++) {
-        const chunk = textChunks[i];
-        const embedding = embeddings ? embeddings[i] : null;
+      if (recordsToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from("document_chunks")
+          .insert(recordsToInsert);
 
-        recordsToInsert.push({
-          document_id: validDocumentId,
-          user_id: userId,
-          content: chunk,
-          metadata: {
-            ...metadata,
-            document_id: documentId,
-            client_document_id: documentId,
-            chunk_index: i,
-            total_chunks: textChunks.length,
-            document_title: metadata.filename ?? metadata.documentTitle,
-          },
-          embedding: embedding ? JSON.stringify(embedding) : null,
-        });
+        if (insertError) {
+          console.error("[generate-embeddings] DB insert error:", insertError);
+          throw insertError;
+        }
+        totalChunksInserted += recordsToInsert.length;
       }
     }
 
-    if (recordsToInsert.length > 0) {
-      const { error: insertError } = await supabase
-        .from("document_chunks")
-        .insert(recordsToInsert);
-
-      if (insertError) {
-        throw insertError;
-      }
-    }
-
+    // Cache lightweight metadata (count only) to avoid blowing up semantic cache table and memory
     await SemanticCacheProvider.setCachedResponse(
       supabase,
       cacheKey,
-      { records: recordsToInsert },
+      { chunks_created: totalChunksInserted },
       { courseCode }
     );
 
@@ -249,7 +303,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         document_id: documentId,
-        chunks_created: recordsToInsert.length,
+        chunks_created: totalChunksInserted,
         cache_hit: false,
       }),
       {

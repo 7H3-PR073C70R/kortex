@@ -129,7 +129,7 @@ void _initServices() {
         updateCourseTrackUseCase: locator<UpdateCourseTrackUseCase>(),
         verifyOtpUseCase: locator<AuthVerifyOtpUseCase>(),
         authRepository: locator<AuthRepository>(),
-      ),
+      )..add(const AuthCheckRequested()),
     )
     ..registerLazySingleton<AuthRouteGuard>(
       () => AuthRouteGuard(

@@ -4,7 +4,9 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/widgets.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
 import 'package:kortex/src/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
@@ -466,19 +468,30 @@ class NotificationRouter {
     String postId, {
     String? replyId,
   }) async {
-    // Fallback: create entity placeholder so navigation succeeds even offline or before thread cache resolves
-    final fallbackPost = ForumPostEntity(
-      id: postId,
-      title: 'Academic Discussion',
-      content: '',
-      authorId: 'user-unknown',
-      authorName: 'Scholar',
-      track: 'General',
-      createdAt: DateTime.now(),
-    );
+    ForumPostEntity? post;
+    if (locator.isRegistered<CommunityRepository>()) {
+      final repo = locator<CommunityRepository>();
+      final result = await repo.fetchForumThreadTree(postId: postId);
+      post = result.fold((l) => null, (r) => r.post);
+      if (post == null) {
+        await router.push(const CommunityHubRoute());
+        return true;
+      }
+    } else {
+      // Fallback: create entity placeholder so navigation succeeds even offline or before thread cache resolves
+      post = ForumPostEntity(
+        id: postId,
+        title: 'Academic Discussion',
+        content: '',
+        authorId: 'user-unknown',
+        authorName: 'Scholar',
+        track: 'General',
+        createdAt: DateTime.now(),
+      );
+    }
     await router.push(
       ForumThreadDetailRoute(
-        post: fallbackPost,
+        post: post,
         highlightReplyId: replyId,
       ),
     );

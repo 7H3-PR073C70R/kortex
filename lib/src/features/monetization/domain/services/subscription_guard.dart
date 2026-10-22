@@ -368,9 +368,13 @@ class SubscriptionGuard {
   }) async {
     if (isPro) return true;
     AppFeedback.selection();
-    final upgraded = await context.router.push<bool>(
-      PaywallRoute(),
-    );
-    return upgraded == true || isPro;
+    try {
+      final upgraded = await context.router.push<bool>(
+        PaywallRoute(),
+      );
+      return upgraded == true || isPro;
+    } on Object catch (_) {
+      return false;
+    }
   }
 }

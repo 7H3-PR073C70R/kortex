@@ -135,10 +135,13 @@ jobs:
           name: web-build
           path: web_landing/workspace/
 
-      - name: Sync App Directory
+      - name: Sync App Directory & Service Worker
         run: |
           mkdir -p web_landing/app
           cp -r web_landing/workspace/* web_landing/app/
+          cp web_landing/workspace/firebase-messaging-sw.js web_landing/
+          mkdir -p web_landing/icons
+          cp -r web_landing/workspace/icons/* web_landing/icons/
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5

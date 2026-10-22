@@ -182,6 +182,9 @@ class OfflineCardBuilder {
         final trimmed = line.trim();
         if (trimmed.isNotEmpty &&
             trimmed.length <= 80 &&
+            !trimmed.endsWith('.') &&
+            !trimmed.endsWith('!') &&
+            !trimmed.endsWith('?') &&
             !trimmed.startsWith('<!--') &&
             !trimmed.startsWith('Page ') &&
             !trimmed.startsWith('http') &&
@@ -582,6 +585,18 @@ class OfflineCardBuilder {
   // Assembly & Quality Deduplication
   // ---------------------------------------------------------------------------
 
+  static const _metaStructuralWords = {
+    'chapter', 'chapters', 'section', 'sections', 'part', 'parts',
+    'figure', 'figures', 'table', 'tables', 'page', 'pages',
+    'example', 'examples', 'definition', 'definitions',
+    'overview', 'summary', 'introduction', 'manual', 'reference',
+    'references', 'handbook', 'tutorial', 'tutorials', 'document',
+    'textbook', 'course', 'lecture', 'lectures', 'notes', 'study',
+    'deck', 'edition', 'version', 'versions', 'author', 'authors',
+    'appendix', 'appendices', 'exercise', 'exercises', 'topic', 'topics',
+    'guide', 'guides', 'volume', 'volumes', 'bullet', 'bullets',
+  };
+
   /// Extracts keywords that should be excluded from cloze blanks:
   /// - Document title and context words (e.g. "Kotlin" in Kotlin Reference).
   /// - Meta-document structural vocabulary (chapter, section, figure, etc.).
@@ -591,17 +606,7 @@ class OfflineCardBuilder {
     int totalBlocks = 0,
     Map<String, int> termFrequency = const {},
   }) {
-    final exclusions = <String>{
-      'chapter', 'chapters', 'section', 'sections', 'part', 'parts',
-      'figure', 'figures', 'table', 'tables', 'page', 'pages',
-      'example', 'examples', 'definition', 'definitions',
-      'overview', 'summary', 'introduction', 'manual', 'reference',
-      'references', 'handbook', 'tutorial', 'tutorials', 'document',
-      'textbook', 'course', 'lecture', 'lectures', 'notes', 'study',
-      'deck', 'edition', 'version', 'versions', 'author', 'authors',
-      'appendix', 'appendices', 'exercise', 'exercises', 'topic', 'topics',
-      'guide', 'guides', 'volume', 'volumes', 'bullet', 'bullets',
-    };
+    final exclusions = <String>{..._metaStructuralWords};
 
     // 2. Document title & context keywords
     if (docContext.isNotEmpty && docContext != 'Study Deck') {
@@ -711,7 +716,7 @@ class OfflineCardBuilder {
     ExtractionReport? report,
   }) {
     final seen = <String>{};
-    final seenFrontTokens = <String, Set<String>>{};
+    final seenFrontTokensBySubdeck = <String, List<Set<String>>>{};
     final seenSourceSentences = <String>{};
     final seenAnswersBySubdeck = <String, Set<String>>{};
     final result = <OfflineCard>[];
@@ -721,7 +726,7 @@ class OfflineCardBuilder {
 
     Set<String> contentTokens(String s) {
       final clean = s.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N}\s]', unicode: true), ' ');
-      return clean.split(RegExp(r'\s+')).where((w) => w.length > 2).toSet()
+      return clean.split(RegExp(r'\s+')).where((w) => w.length > 2 || RegExp(r'^\d+$').hasMatch(w)).toSet()
         ..removeAll({
           'what', 'does', 'how', 'why', 'who', 'where', 'when',
           'the', 'and', 'for', 'with', 'involve', 'complete',
@@ -730,10 +735,12 @@ class OfflineCardBuilder {
         });
     }
 
-    bool isSemanticDuplicate(String front) {
+    bool isSemanticDuplicate(String front, String subDeck) {
       final tokens = contentTokens(front);
       if (tokens.isEmpty) return false;
-      for (final existing in seenFrontTokens.values) {
+      final existingList = seenFrontTokensBySubdeck[subDeck];
+      if (existingList == null) return false;
+      for (final existing in existingList) {
         if (existing.isEmpty) continue;
         final intersection = tokens.intersection(existing).length;
         final union = tokens.union(existing).length;
@@ -764,7 +771,8 @@ class OfflineCardBuilder {
         return false;
       }
 
-      if (isSemanticDuplicate(card.front)) {
+      final subDeck = subDeckKey(card);
+      if (isSemanticDuplicate(card.front, subDeck)) {
         report?.recordDrop(
           rule: 'semantic_duplicate_card_front',
           sampleText: card.front,
@@ -785,7 +793,6 @@ class OfflineCardBuilder {
       }
 
       // 2. Deduplicate cards yielding identical answers within the same sub-deck
-      final subDeck = subDeckKey(card);
       final rawAnswer = extractCardAnswer(card);
       final normAns = norm(rawAnswer);
       if (normAns.length >= 2 && normAns.length <= 80) {
@@ -800,7 +807,7 @@ class OfflineCardBuilder {
       }
 
       seen.add(normFront);
-      seenFrontTokens[normFront] = contentTokens(card.front);
+      seenFrontTokensBySubdeck.putIfAbsent(subDeck, () => []).add(contentTokens(card.front));
       if (sourceSent.length >= 20) {
         seenSourceSentences.add(sourceSent);
       }
@@ -886,9 +893,10 @@ class OfflineCardBuilder {
   };
 
   static final _bulletRe = RegExp(
-    r'^([-•*●▪◦–—]|\d{1,2}[.)]|[a-z][.)])\s+(\S.*)$',
+    r'^(step\s+\d+[:.)]|[-•*●▪◦–—]|\d{1,2}[.)]|[a-z][.)])\s+(\S.*)$',
+    caseSensitive: false,
   );
-  static final _orderedRe = RegExp(r'^\d{1,2}[.)]\s');
+  static final _orderedRe = RegExp(r'^(?:\d{1,2}[.)]|step\s+\d+[:.)])\s', caseSensitive: false);
   static final _markdownHeadingRe = RegExp(r'^#{1,6}\s+(\S.*)$');
   static final _numberedHeadingRe = RegExp(
     r'^\d+(?:\.\d+)+\.?\s+([A-Z].{2,70})$',
@@ -2311,7 +2319,7 @@ class OfflineCardBuilder {
       page: pageNum,
       sectionPath: block?.provenance?.sectionPath.isNotEmpty == true
           ? block!.provenance!.sectionPath
-          : [if (heading != null && heading.isNotEmpty) heading else if (docContext.isNotEmpty) docContext],
+          : [if (heading != null && heading.isNotEmpty) heading else 'Section ${blockIndex + 1}'],
       bbox: block?.provenance?.bbox,
       blockId: 'p${pageNum}_b${blockIndex}_paragraph',
     );
@@ -2734,6 +2742,16 @@ class OfflineCardBuilder {
     'note', 'remember', 'consider', 'assume', 'suppose',
   };
 
+  static const _clozeBadSubjectStarts = {
+    // Pronouns & demonstratives with dangling references
+    'it', 'this', 'that', 'these', 'those', 'they', 'them', 'their', 'theirs',
+    'there', 'he', 'him', 'his', 'she', 'her', 'hers', 'we', 'us', 'our', 'ours',
+    'you', 'your', 'yours', 'i', 'me', 'my', 'mine',
+    'which', 'who', 'whom', 'whose',
+    'here', 'however', 'therefore', 'furthermore', 'moreover', 'instead', 'otherwise',
+    'note', 'remember',
+  };
+
   static const _clauseKeywords = {
     'need', 'needs', 'want', 'wants', 'should', 'must', 'could', 'would', 'might',
     'are', 'is', 'were', 'was', 'have', 'has', 'had', 'do', 'does', 'did',
@@ -2884,7 +2902,7 @@ class OfflineCardBuilder {
       page: pageNum,
       sectionPath: block?.provenance?.sectionPath.isNotEmpty == true
           ? block!.provenance!.sectionPath
-          : [if (heading != null && heading.isNotEmpty) heading else if (docContext.isNotEmpty) docContext],
+          : [if (heading != null && heading.isNotEmpty) heading else 'Section ${blockIndex + 1}'],
       bbox: block?.provenance?.bbox,
       blockId: 'p${pageNum}_b${blockIndex}_definition',
     );
@@ -3064,7 +3082,7 @@ class OfflineCardBuilder {
         .toLowerCase()
         .replaceAll(RegExp(r'[^\p{L}]', unicode: true), '');
     // Reject cloze cards starting with pronouns ("It occurs in the _____")
-    if (_badSubjectStarts.contains(firstWord)) return null;
+    if (_clozeBadSubjectStarts.contains(firstWord)) return null;
 
     if (RegExp(
       r'^\s*(?:copyright\b|all\s+rights\s+reserved\b|dear\s+[a-z]+|welcome\s+to\b|in\s+witness\s+whereof\b|signed\s+by\b)',
@@ -3114,6 +3132,42 @@ class OfflineCardBuilder {
         best = word;
       }
     }
+
+    // Fallback: If all candidates were excluded because of corpus-wide dominant terms,
+    // allow selecting the highest-scoring candidate that is not a stopword, title, heading, or meta-word.
+    if (best == null) {
+      final docContextWords = docContext.isNotEmpty
+          ? _tokens(docContext).map((t) => t.toLowerCase()).toSet()
+          : const <String>{};
+      for (final m in matches) {
+        final word = m.group(0)!;
+        final lowerWord = word.toLowerCase();
+        if (word.length < 3 && !RegExp(r'^\p{Lu}{2,}$', unicode: true).hasMatch(word)) continue;
+        if (_stopWords.contains(lowerWord)) continue;
+        if (_metaStructuralWords.contains(lowerWord)) continue;
+        if (docContextWords.contains(lowerWord)) continue;
+        final stem = lowerWord.replaceAll(RegExp(r"['’]s$"), '');
+        if (docContextWords.contains(stem)) continue;
+        if (headingWords != null && (headingWords.contains(lowerWord) || headingWords.contains(stem))) {
+          continue;
+        }
+
+        var score = math.log(1 + word.length);
+        final midSentence = m.start > 0;
+        if (RegExp(r'^\p{Lu}{2,}[\p{Ll}\p{N}]*$', unicode: true).hasMatch(word)) {
+          score *= 2.2;
+        } else if (midSentence && RegExp(r'^\p{Lu}', unicode: true).hasMatch(word)) {
+          score *= 1.8;
+        } else if (RegExp(r'\d').hasMatch(word)) {
+          score *= 1.5;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          best = word;
+        }
+      }
+    }
+
     if (best == null) return null;
 
     final blank = effectiveSentence.replaceAll(
@@ -3137,7 +3191,7 @@ class OfflineCardBuilder {
       page: pageNum,
       sectionPath: block?.provenance?.sectionPath.isNotEmpty == true
           ? block!.provenance!.sectionPath
-          : [if (heading != null && heading.isNotEmpty) heading else if (docContext.isNotEmpty) docContext],
+          : [if (heading != null && heading.isNotEmpty) heading else 'Section ${blockIndex + 1}'],
       bbox: block?.provenance?.bbox,
       blockId: 'p${pageNum}_b${blockIndex}_cloze',
     );

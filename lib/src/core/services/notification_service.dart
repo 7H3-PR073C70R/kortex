@@ -359,7 +359,7 @@ class NotificationService {
   // ── FCM Token ────────────────────────────────────────────────────────────────
 
   /// Retrieve the current FCM token for this device.
-  Future<String?> getToken() async {
+  Future<String?> getToken({String? vapidKey}) async {
     if (!_isAvailable) return null;
     try {
       if (!kIsWeb && (Platform.isIOS || Platform.isMacOS)) {
@@ -372,7 +372,7 @@ class NotificationService {
           return null;
         }
       }
-      return await _messaging!.getToken();
+      return await _messaging!.getToken(vapidKey: vapidKey);
     } on Object catch (e) {
       developer.log('NotificationService: failed to fetch FCM token: $e');
       return null;
