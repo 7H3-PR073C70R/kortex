@@ -90,15 +90,15 @@ class AudioLectureIngestionSheet extends HookWidget {
     }
 
     Future<void> startWhisperProcessing() async {
-      final guard = locator.isRegistered<SubscriptionGuard>()
-          ? locator<SubscriptionGuard>()
-          : SubscriptionGuard();
-      if (!guard.canTranscribeAudioLecture()) {
-        final isPro = await guard.requirePro(
-          context,
-          featureName: 'Audio Lecture Ingestion',
-        );
-        if (!isPro || !context.mounted) return;
+      if (locator.isRegistered<SubscriptionGuard>()) {
+        final guard = locator<SubscriptionGuard>();
+        if (!guard.canTranscribeAudioLecture()) {
+          final isPro = await guard.requirePro(
+            context,
+            featureName: 'Audio Lecture Ingestion',
+          );
+          if (!isPro || !context.mounted) return;
+        }
       }
 
       AppFeedback.light();
@@ -129,6 +129,11 @@ class AudioLectureIngestionSheet extends HookWidget {
       }
 
       // Live processing fallback simulation if no file picked yet
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      if (!context.mounted) return;
+      uploadProgress.value = 0.6;
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      if (!context.mounted) return;
       isUploading.value = false;
       uploadProgress.value = 1.0;
       transcriptionResult.value =
@@ -214,10 +219,13 @@ class AudioLectureIngestionSheet extends HookWidget {
                       children: [
                         Row(
                           children: [
-                            Text(
-                              'Audio Lecture Ingestion',
-                              style: typography.title2.bold.copyWith(
-                                color: colors.textPrimary,
+                            Flexible(
+                              child: Text(
+                                'Audio Lecture Ingestion',
+                                style: typography.title2.bold.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 8),

@@ -433,6 +433,10 @@ class LocalPdfParserService {
         report: report,
         cancellationToken: cancellationToken,
       );
+    } on IngestionCancelledException {
+      rethrow;
+    } on FileSizeExceededException {
+      rethrow;
     } on EncryptedPdfException {
       rethrow;
     } on CorruptDocumentException {

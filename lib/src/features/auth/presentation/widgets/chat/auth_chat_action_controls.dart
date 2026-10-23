@@ -275,7 +275,7 @@ class AuthChatActionControls extends StatelessWidget {
                   onAddUserMessage('Go to Dashboard');
                   unawaited(
                     context.router.replace(
-                      const DashboardRoute(),
+                      DashboardRoute(),
                     ),
                   );
                 },

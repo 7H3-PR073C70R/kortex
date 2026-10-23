@@ -24,6 +24,10 @@ class RagRemoteDataSourceImpl implements RagRemoteDataSource {
     return list.map(DocumentChunkModel.fromJson).toList();
   }
 
+  /// Maximum chunks dispatched per HTTP call to the generate-embeddings edge function.
+  /// Prevents Deno isolate memory & compute spikes (WORKER_RESOURCE_LIMIT / 546) on large textbooks.
+  static const int maxBatchSize = 25;
+
   @override
   Future<int> generateDocumentEmbeddings({
     required String documentId,
@@ -31,9 +35,27 @@ class RagRemoteDataSourceImpl implements RagRemoteDataSource {
     List<Map<String, dynamic>>? chunks,
     Map<String, dynamic>? metadata,
   }) async {
+    if (chunks != null && chunks.length > maxBatchSize) {
+      var totalCreated = 0;
+      for (var i = 0; i < chunks.length; i += maxBatchSize) {
+        final end = (i + maxBatchSize < chunks.length)
+            ? i + maxBatchSize
+            : chunks.length;
+        final batch = chunks.sublist(i, end);
+        final res = await _client.generateEmbeddings(
+          documentId: documentId,
+          chunks: batch,
+          metadata: metadata,
+        );
+        totalCreated +=
+            (res['chunks_created'] as num?)?.toInt() ?? batch.length;
+      }
+      return totalCreated;
+    }
+
     final res = await _client.generateEmbeddings(
       documentId: documentId,
-      rawText: rawText,
+      rawText: (chunks != null && chunks.isNotEmpty) ? null : rawText,
       chunks: chunks,
       metadata: metadata,
     );

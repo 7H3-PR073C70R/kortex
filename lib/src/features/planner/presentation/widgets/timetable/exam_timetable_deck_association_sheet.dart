@@ -78,7 +78,7 @@ class ExamTimetableDeckAssociationSheet {
                   Navigator.of(sheetCtx).pop();
                   unawaited(
                     context.navigateTo(
-                      const MainRoute(children: [DecksRoute()]),
+                      MainRoute(children: [DecksRoute()]),
                     ),
                   );
                 },
@@ -317,7 +317,7 @@ class ExamTimetableDeckAssociationSheet {
                       Navigator.of(sheetCtx).pop();
                       unawaited(
                         context.navigateTo(
-                          const MainRoute(children: [DecksRoute()]),
+                          MainRoute(children: [DecksRoute()]),
                         ),
                       );
                     },

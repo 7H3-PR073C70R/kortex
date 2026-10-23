@@ -8,6 +8,7 @@ import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/shared/widgets/app_adaptive_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
@@ -107,6 +108,17 @@ class ReportContentModalSheet extends HookWidget {
         if (locator.isRegistered<CommunityRepository>()) {
           final repository = locator<CommunityRepository>();
           await repository.reportContent(
+            contentType: contentType,
+            contentId: contentId,
+            postId: postId,
+            reason: selectedReason.value.label,
+            details: detailsController.text.trim().isNotEmpty
+                ? detailsController.text.trim()
+                : null,
+          );
+        } else if (locator.isRegistered<CommunityRemoteDataSource>()) {
+          final dataSource = locator<CommunityRemoteDataSource>();
+          await dataSource.reportContent(
             contentType: contentType,
             contentId: contentId,
             postId: postId,

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>404 · Page Not Found — Kortexify</title>
+<meta name="robots" content="noindex, follow">
+<meta name="theme-color" content="#0D0D0F">
+<link rel="icon" href="assets/kortexify_logo.svg" type="image/svg+xml">
+<link rel="alternate icon" href="assets/favicon.ico">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #F6F6F8;
+  --bg2: #ECECEF;
+  --card: #FFFFFF;
+  --ink: #18181B;
+  --mute: #52525B;
+  --line: #E2E2E6;
+  --acc: #4A6B5D;
+  --sage: #788C7E;
+  --cy: #5B8C93;
+  --oc: #D4A373;
+  --te: #C86D51;
+  --gn: #52796F;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D0D0F;
+    --bg2: #141417;
+    --card: #1D1D22;
+    --ink: #FAFAFA;
+    --mute: #A1A1AA;
+    --line: rgba(255, 255, 255, .1);
+    --acc: #788C7E;
+    --cy: #5B8C93;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0D0D0F;
+  --bg2: #141417;
+  --card: #1D1D22;
+  --ink: #FAFAFA;
+  --mute: #A1A1AA;
+  --line: rgba(255, 255, 255, .1);
+  --acc: #788C7E;
+  --cy: #5B8C93;
+}
+
+* { box-sizing: border-box; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.6 'Plus Jakarta Sans', system-ui, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--cy); outline-offset: 3px; }
+
+.wrap { max-width: 1240px; margin: auto; padding: 0 clamp(20px, 5vw, 48px); width: 100%; }
+
+/* Navigation */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+.nav .wrap { display: flex; align-items: center; gap: 1.4rem; height: 64px; }
+.logo { display: flex; align-items: center; gap: .65rem; font-weight: 800; letter-spacing: -.02em; font-size: 1.1rem; margin-right: auto; }
+.logo svg { width: 30px; height: 30px; flex-shrink: 0; }
+.nav a.l { font-size: .88rem; font-weight: 600; color: var(--mute); transition: color .2s; }
+.nav a.l:hover { color: var(--ink); }
+.ic { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: none; display: grid; place-items: center; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .85rem 1.45rem;
+  border-radius: 99px;
+  font-weight: 700;
+  font-size: .92rem;
+  border: 1px solid var(--line);
+  transition: transform .25s var(--ease), box-shadow .3s, background .3s;
+}
+.btn.p { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.p:hover { box-shadow: 0 12px 36px -10px var(--sage); transform: translateY(-1px); }
+.btn.s { background: var(--card); color: var(--ink); }
+.btn.s:hover { border-color: var(--mute); transform: translateY(-1px); }
+
+/* Main Stage */
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 20px 60px;
+  text-align: center;
+}
+
+.box {
+  max-width: 620px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  padding: clamp(32px, 6vw, 56px);
+  box-shadow: 0 20px 60px -20px rgba(0,0,0,0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.box::before {
+  content: "";
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(120, 140, 126, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: rgba(200, 109, 81, 0.12);
+  border: 1px solid rgba(200, 109, 81, 0.32);
+  color: var(--te);
+  font: 600 .75rem 'JetBrains Mono', monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+h1 {
+  font-size: clamp(2.4rem, 6vw, 3.8rem);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.05;
+  margin-bottom: 1rem;
+}
+h1 em {
+  font: italic 400 1.05em 'Instrument Serif', Georgia, serif;
+  color: var(--acc);
+}
+
+p.desc {
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
+  color: var(--mute);
+  line-height: 1.6;
+  margin-bottom: 2.2rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 2rem;
+}
+
+.links {
+  border-top: 1px solid var(--line);
+  padding-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  font-size: .88rem;
+  color: var(--mute);
+  flex-wrap: wrap;
+}
+.links a:hover { color: var(--ink); text-decoration: underline; }
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--line);
+  padding: 24px 0;
+  font-size: .82rem;
+  color: var(--mute);
+}
+footer .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a href="/" class="logo" aria-label="Kortexify Home">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="kg404" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#8BA396"/>
+            <stop offset="50%" stop-color="#788C7E"/>
+            <stop offset="100%" stop-color="#4A574E"/>
+          </linearGradient>
+          <linearGradient id="accent404" x1="16" y1="12" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#D4B389"/>
+            <stop offset="100%" stop-color="#D4A373"/>
+          </linearGradient>
+        </defs>
+        <rect width="48" height="48" rx="14" fill="#0D0D0F"/>
+        <rect x="1" y="1" width="46" height="46" rx="13" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+        <path d="M15 11V37" stroke="url(#kg404)" stroke-width="4.5" stroke-linecap="round"/>
+        <path d="M17 24L31 12" stroke="url(#accent404)" stroke-width="4.5" stroke-linecap="round"/>
+        <path d="M22 20L34 37" stroke="url(#kg404)" stroke-width="4.5" stroke-linecap="round"/>
+        <circle cx="15" cy="11" r="2.5" fill="#FAFAFA"/>
+        <circle cx="15" cy="37" r="2.5" fill="#FAFAFA"/>
+        <circle cx="31" cy="12" r="2.5" fill="#D4A373"/>
+        <circle cx="34" cy="37" r="2.5" fill="#788C7E"/>
+        <circle cx="15" cy="24" r="2" fill="#5B8C93"/>
+      </svg>
+      <span>Kortexify</span>
+    </a>
+
+    <a href="/pricing.html" class="l">Pricing</a>
+    <a href="/downloads.html" class="l">Downloads</a>
+    <a href="/about.html" class="l">About</a>
+
+    <button id="themeToggle" class="ic" aria-label="Toggle theme">
+      <svg id="thIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+      </svg>
+    </button>
+
+    <a href="/workspace/login" class="btn p">Launch App</a>
+  </div>
+</header>
+
+<main class="main">
+  <div class="box">
+    <div class="tag">404 · Recall Lapsed</div>
+    <h1>Lost from <em>working memory</em></h1>
+    <p class="desc">The page or resource you're searching for does not exist, has been reorganized, or was entered incorrectly. Your notes, decks, and syllabus schedules remain secure.</p>
+    
+    <div class="actions">
+      <a href="/" class="btn p">Return to Homepage</a>
+      <a href="/workspace/login" class="btn s">Open Workspace</a>
+    </div>
+
+    <div class="links">
+      <a href="/pricing.html">Pricing Plans</a>
+      <a href="/downloads.html">Desktop & Mobile</a>
+      <a href="/contact.html">Support Desk</a>
+      <a href="/privacy.html">Privacy</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>© 2026 Kortexify Technologies Inc. All rights reserved.</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">Status: All study systems operational</div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  const root = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  const icon = document.getElementById('thIcon');
+
+  function updateIcon(isDark) {
+    if (isDark) {
+      icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+    } else {
+      icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+    }
+  }
+
+  const saved = localStorage.getItem('kortex_theme');
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = saved ? saved === 'dark' : prefersDark;
+  
+  if (saved) {
+    root.setAttribute('data-theme', saved);
+  }
+  updateIcon(isDark);
+
+  btn.addEventListener('click', () => {
+    const current = root.getAttribute('data-theme') || (prefersDark ? 'dark' : 'light');
+    const next = current === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('kortex_theme', next);
+    updateIcon(next === 'dark');
+  });
+})();
+</script>
+
+</body>
+</html>

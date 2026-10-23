@@ -44,7 +44,10 @@ class GenerateDocumentEmbeddingsUseCase {
 
     return _repository.generateDocumentEmbeddings(
       documentId: documentId,
-      rawText: rawText ?? (snippets?.map((s) => s.rawText).join('\n\n') ?? ''),
+      rawText: rawText ??
+          (chunkPayloads.isEmpty
+              ? (snippets?.map((s) => s.rawText).join('\n\n') ?? '')
+              : ''),
       chunks: chunkPayloads.isNotEmpty ? chunkPayloads : null,
       metadata: metadata,
     );

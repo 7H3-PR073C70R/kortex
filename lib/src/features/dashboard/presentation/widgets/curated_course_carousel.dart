@@ -157,7 +157,7 @@ class CuratedCourseCarousel extends StatelessWidget {
                   onTap: () {
                     AppFeedback.light();
                     unawaited(
-                      context.router.push(const AllCuratedCoursesRoute()),
+                      context.router.push(AllCuratedCoursesRoute()),
                     );
                   },
                   child: Row(

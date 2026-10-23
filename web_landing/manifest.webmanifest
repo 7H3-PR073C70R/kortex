@@ -1,0 +1,23 @@
+{
+  "name": "Kortexify — The AI Study Workspace",
+  "short_name": "Kortexify",
+  "description": "Forget about forgetting. Turn lecture slides, textbooks, and past questions into adaptive flashcards, timed mocks, and Socratic tutoring.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0D0F",
+  "theme_color": "#0D0D0F",
+  "icons": [
+    {
+      "src": "assets/kortexify_logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["education", "productivity"]
+}

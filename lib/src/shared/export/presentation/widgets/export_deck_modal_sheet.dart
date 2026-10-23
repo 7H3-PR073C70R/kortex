@@ -425,10 +425,12 @@ class _ExportOptionTile extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        title,
-                        style: typography.callout.bold.copyWith(
-                          color: colors.textPrimary,
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: typography.callout.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
                         ),
                       ),
                       if (isPro) ...[

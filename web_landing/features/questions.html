@@ -1,298 +1,283 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" data-accent="sage">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Kortexify Practice Exam Simulator | Practice with AI-generated exam questions tailored to your actual syllabus with real-time performance tracking.">
-  <title>Practice Exam Simulator | Kortexify Features</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Practice Exam Simulator & CBT Prep | Kortexify</title>
+<meta name="description" content="Simulate real computer-based tests (CBT) for university exams, JAMB/UTME, WAEC, and SAT with instant step-by-step solutions and weakness queues.">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="../assets/kortexify_logo.svg?v=2">
+<link rel="canonical" href="https://kortex-study-app-2026.web.app/features/questions.html">
+<meta name="theme-color" content="#0D0D0F">
+<script>try{const t=localStorage.getItem('kx-theme');if(t){document.documentElement.dataset.theme=t;const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#F6F6F8':'#0D0D0F'}}catch(e){}</script>
 
-  <!-- Fonts & Tailwind -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- Compiled Static Tailwind CSS -->
-  <link rel="stylesheet" href="../css/tailwind.min.css?v=1.0">
-  
-  <link rel="stylesheet" href="../css/variables.css?v=7.0">
-  <link rel="stylesheet" href="../css/animations.css?v=7.0">
-  <link rel="stylesheet" href="../css/styles.css?v=7.0">
+<!-- OpenGraph / Social Sharing -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kortex-study-app-2026.web.app/features/questions.html">
+<meta property="og:site_name" content="Kortexify">
+<meta property="og:title" content="Practice Exam Simulator & CBT Prep | Kortexify">
+<meta property="og:description" content="Simulate real computer-based tests for university degrees and standardized entrance exams with instant explanations.">
+<meta property="og:image" content="https://kortex-study-app-2026.web.app/assets/images/social_og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 
-  <style>
-    @keyframes floatCard {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-8px) rotate(0.5deg); }
-    }
-    @keyframes glowPulse {
-      0%, 100% { box-shadow: 0 0 15px rgba(120, 140, 126, 0.2); }
-      50% { box-shadow: 0 0 35px rgba(120, 140, 126, 0.45); }
-    }
-    .animate-float-slow {
-      animation: floatCard 4s ease-in-out infinite;
-    }
-    .animate-glow-pulse {
-      animation: glowPulse 3s ease-in-out infinite;
-    }
-    .option-btn {
-      transition: all 0.2s ease;
-    }
-    .option-btn:hover {
-      border-color: var(--color-primary);
-      background: var(--bg-surface-elevated1);
-    }
-    .option-btn.selected {
-      border-color: var(--color-primary);
-      background: var(--color-primary-subtle);
-    }
-  </style>
+<!-- Twitter Cards -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Practice Exam Simulator & CBT Prep | Kortexify">
+<meta name="twitter:description" content="Simulate real computer-based tests for university degrees and standardized entrance exams with instant explanations.">
+<meta name="twitter:image" content="https://kortex-study-app-2026.web.app/assets/images/social_og.jpg">
+
+<!-- Favicon -->
+<link rel="icon" href="../assets/kortexify_logo.svg" type="image/svg+xml">
+<link rel="alternate icon" href="../assets/favicon.ico">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
+<!-- Design System CSS -->
+<link rel="stylesheet" href="../css/kx.css">
+<style>
+.exam-hero{padding:clamp(3.5rem,7vw,5.5rem) 0 2rem;text-align:center}
+.cbt-widget{max-width:820px;margin:2rem auto 4.5rem;background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:34px;box-shadow:0 30px 80px -25px rgba(0,0,0,.45)}
+.cbt-header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.cbt-badge{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:700;color:var(--sage)}
+.cbt-badge::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--gn);display:inline-block;box-shadow:0 0 8px var(--gn)}
+.cbt-timer{font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:700;color:var(--ochre);background:var(--bg2);border:1px solid var(--line);padding:4px 12px;border-radius:var(--radius-full)}
+
+.cbt-qtitle{font-size:1.25rem;font-weight:700;line-height:1.45;color:var(--ink);margin-bottom:1.5rem}
+.cbt-opts{display:flex;flex-direction:column;gap:12px}
+.cbt-opt{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius-md);padding:14px 18px;cursor:pointer;transition:all .2s var(--ease);text-align:left;color:var(--ink);font-family:inherit;font-size:.92rem}
+.cbt-opt:hover{border-color:var(--sage);background:color-mix(in srgb,var(--card) 90%,var(--sage))}
+.cbt-opt.selected{border-color:var(--gn);background:color-mix(in srgb,var(--gn) 12%,transparent)}
+.cbt-opt .opt-letter{width:26px;height:26px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;font-size:.8rem;font-weight:700;flex-shrink:0;margin-right:12px}
+.cbt-opt.selected .opt-letter{background:var(--gn);color:#fff;border-color:var(--gn)}
+
+.cbt-explanation{margin-top:1.5rem;padding:18px 22px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--cyan) 10%,transparent);border:1px solid color-mix(in srgb,var(--cyan) 30%,transparent);font-size:.88rem;line-height:1.6}
+.cbt-explanation strong{color:var(--cyan);display:block;margin-bottom:4px}
+
+.feature-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:3.5rem 0}
+@media(max-width:880px){.feature-benefits{grid-template-columns:1fr}}
+.benefit-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:30px;display:flex;flex-direction:column;gap:14px}
+.benefit-icon{width:46px;height:46px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);display:grid;place-items:center;font-size:1.3rem;color:var(--sage)}
+</style>
 </head>
-<body class="bg-[var(--bg-canvas)] text-[var(--text-primary)] antialiased font-['Inter']">
+<body>
+<a href="#main" class="skip-link">Skip to main content</a>
 
-  <!-- Header Navigation -->
-  <header class="site-header sticky top-0 z-50 w-full backdrop-blur-md bg-[var(--nav-bg)] border-b border-[var(--nav-border)]">
-    <div class="max-w-[1340px] mx-auto px-5 h-[66px] flex items-center justify-between">
-      
-      <div class="flex items-center gap-10">
-        <a href="../index.html" class="flex items-center gap-2.5 font-['Plus_Jakarta_Sans'] font-extrabold text-lg text-[var(--text-primary)]">
-          <img src="../assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-8 h-8 rounded-lg">
-          <span class="tracking-wide">KORTEXIFY</span>
-        </a>
+<!-- Navigation Header -->
+<header class="nav"><div class="wrap">
+<a class="logo" href="../index.html" aria-label="Kortexify home">
+  <svg width="30" height="30" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E"/>
+        <stop offset="35%" stop-color="#5B8C93"/>
+        <stop offset="70%" stop-color="#4A6B5D"/>
+        <stop offset="100%" stop-color="#D4A373"/>
+      </linearGradient>
+      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E"/>
+        <stop offset="60%" stop-color="#5B8C93"/>
+        <stop offset="100%" stop-color="#4A6B5D"/>
+      </radialGradient>
+      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/>
+        <stop offset="50%" stop-color="#5B8C93" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/>
+      </linearGradient>
+    </defs>
+    <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="url(#gridGrad)" stroke-width="2.5"/>
+    <path d="M156 140V372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round"/>
+    <path d="M356 140L256 256L356 372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="156" cy="140" r="13" fill="#788C7E"/>
+    <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
+    <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
+    <circle cx="356" cy="372" r="13" fill="#D4A373"/>
+    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/>
+    <circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
+  </svg>
+  <span>Kortexify</span>
+</a>
+<a class="l" href="../index.html#how">How it works</a>
+<a class="l" href="../index.html#tutor">Syllabot</a>
+<a class="l" href="../index.html#education">Education & Exams</a>
+<a class="l" href="../pricing.html">Pricing</a>
+<a class="l" href="../downloads.html">Downloads</a>
+<button class="ic" id="th" aria-label="Toggle light or dark theme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+<a class="btn p s" href="/workspace/login" data-mag>Start free</a>
+</div></header>
 
-        <nav class="hidden lg:flex items-center gap-7">
-          <div class="relative group py-4">
-            <button class="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-primary)] transition-colors">
-              <span>Features</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:rotate-180 transition-transform"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-            <div class="absolute top-full left-0 hidden group-hover:block w-60 p-2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-2xl z-50">
-              <a href="flashcards.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-primary-subtle)] flex items-center justify-center text-xs">🎴</span>
-                <div>
-                  <p class="text-xs font-semibold text-[var(--text-primary)]">Smart Flashcards</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">Remember more in less time</p>
-                </div>
-              </a>
-              <a href="solver.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-secondary-subtle)] flex items-center justify-center text-xs">🤖</span>
-                <div>
-                  <p class="text-xs font-semibold text-[var(--text-primary)]">Syllabot AI Tutor</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">Ask questions from your course</p>
-                </div>
-              </a>
-              <a href="questions.html" class="flex items-center gap-3 p-2.5 rounded-xl bg-[var(--color-latex-subtle)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-latex-subtle)] flex items-center justify-center text-xs">⏱️</span>
-                <div>
-                  <p class="text-xs font-bold text-[var(--color-primary)]">Practice Exams & Duels</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">JAMB, WAEC, SAT & 1v1 duels</p>
-                </div>
-              </a>
-              <a href="study_rooms.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-primary-subtle)] flex items-center justify-center text-xs">🎙️</span>
-                <div>
-                  <p class="text-xs font-semibold text-[var(--text-primary)]">Live Study Rooms</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">Voice chat & shared whiteboard</p>
-                </div>
-              </a>
-            </div>
+<main id="main">
+  <!-- Hero Section -->
+  <section class="exam-hero">
+    <div class="wrap">
+      <p class="eyebrow rv">Timed CBT Exam Simulator</p>
+      <h1 class="rv" style="--d:.1s">Walk into your exams with <em>calm certainty.</em></h1>
+      <p class="lead rv" style="--d:.2s;max-width:38em;margin:1rem auto 2.5rem">Practice authentic computer-based tests for university semesters, polytechnic diplomas, and standardized entrance examinations (JAMB, WAEC, SAT). With instant step-by-step solutions.</p>
+    </div>
+  </section>
+
+  <!-- Interactive CBT Exam Widget -->
+  <section><div class="wrap">
+    <div class="cbt-widget rv" style="--d:.25s" role="region" aria-label="Interactive practice question sample">
+      <div class="cbt-header">
+        <div class="cbt-badge">CBT TEST MODE • BIOCHEMISTRY & ORGANIC REACTIONS</div>
+        <div class="cbt-timer">⏱️ 18:42 REMAINING</div>
+      </div>
+
+      <div style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--mute);margin-bottom:.8rem">
+        QUESTION 04 OF 25 • SECTION: REGIOSELECTIVITY
+      </div>
+
+      <div class="cbt-qtitle">
+        Which of the following reaction conditions converts an alkene to an alcohol with anti-Markovnikov regioselectivity?
+      </div>
+
+      <div class="cbt-opts" id="cbtOpts">
+        <button type="button" class="cbt-opt" data-correct="false">
+          <div style="display:flex;align-items:center">
+            <span class="opt-letter">A</span>
+            <span>H₂O in catalytic H₂SO₄ (Acid-catalyzed hydration)</span>
           </div>
+        </button>
 
-          <a href="../about.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">About Us</a>
-          <a href="../pricing.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Pricing</a>
-          <a href="../downloads.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Downloads</a>
-          <a href="../contact.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Contact</a>
-        </nav>
-      </div>
+        <button type="button" class="cbt-opt selected" data-correct="true">
+          <div style="display:flex;align-items:center">
+            <span class="opt-letter">B</span>
+            <span>1. BH₃·THF / 2. H₂O₂, NaOH (Hydroboration-Oxidation)</span>
+          </div>
+          <span style="font-size:.8rem;font-weight:700;color:var(--gn)">✓ Correct Key</span>
+        </button>
 
-      <div class="hidden lg:flex items-center gap-4">
-        <a href="/workspace/login" class="px-4 py-2 rounded-full border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-          Log In
-        </a>
-        <a href="/workspace/login" class="px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-xs font-bold text-[var(--text-inverse)] hover:brightness-110 transition-all shadow-md">
-          Start for free
-        </a>
-      </div>
-
-    </div>
-  </header>
-
-  <!-- Main Hero Section -->
-  <main class="py-16 px-5 max-w-[1240px] mx-auto">
-    
-    <div class="text-center max-w-3xl mx-auto mb-16 reveal-on-scroll">
-      <span class="inline-block px-4 py-1.5 rounded-full bg-[var(--color-primary-subtle)] border border-[var(--border-primary)] text-xs font-bold text-[var(--color-primary)] uppercase tracking-wider mb-4">
-        AI EXAM SIMULATOR
-      </span>
-      <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] leading-tight mb-6">
-        Prepare like it’s the real exam. Walk in with zero anxiety.
-      </h1>
-      <p class="text-base sm:text-lg text-[var(--text-secondary)] leading-relaxed">
-        Drop your lecture slides, past question banks, or syllabus. Kortexify generates realistic timed practice exams with instant step-by-step scoring.
-      </p>
-    </div>
-
-    <!-- Animated Interactive Practice Exam Mockup Widget -->
-    <div class="max-w-[900px] mx-auto mb-20 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-6 sm:p-10 shadow-2xl animate-glow-pulse reveal-on-scroll">
-      
-      <!-- Mock Exam Header -->
-      <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4 mb-6">
-        <div class="flex items-center gap-3">
-          <span class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
-          <span class="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Live Practice Exam • Organic Chemistry II</span>
-        </div>
-        <div class="px-3 py-1 rounded-full bg-[var(--bg-surface-elevated1)] text-xs font-mono font-bold text-[var(--color-primary)]">
-          ⏱️ 14:32 Remaining
-        </div>
-      </div>
-
-      <!-- Question Content -->
-      <div class="space-y-6">
-        <div class="flex items-center justify-between text-xs text-[var(--text-muted)] font-mono">
-          <span>Question 4 of 20</span>
-          <span>Difficulty: Hard (JAMB / WAEC Standard)</span>
-        </div>
-
-        <h3 class="text-lg sm:text-xl font-bold text-[var(--text-primary)] leading-snug">
-          Which of the following reagents will convert an alkene to an alcohol with anti-Markovnikov regioselectivity?
-        </h3>
-
-        <!-- Options Grid -->
-        <div class="grid grid-cols-1 gap-3 pt-2">
-          <button class="option-btn p-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated1)] text-left text-xs sm:text-sm text-[var(--text-primary)] flex items-center gap-3">
-            <span class="w-6 h-6 rounded-full border border-[var(--border-subtle)] flex items-center justify-center font-bold text-[11px]">A</span>
-            <span>H₂O, H₂SO₄ (Acid-catalyzed hydration)</span>
-          </button>
-          
-          <button class="option-btn selected p-4 rounded-2xl border-2 border-[var(--color-primary)] bg-[var(--color-primary-subtle)] text-left text-xs sm:text-sm text-[var(--text-primary)] flex items-center justify-between font-semibold">
-            <div class="flex items-center gap-3">
-              <span class="w-6 h-6 rounded-full bg-[var(--color-primary)] text-[var(--text-inverse)] flex items-center justify-center font-bold text-[11px]">B</span>
-              <span>1. BH₃·THF / 2. H₂O₂, NaOH (Hydroboration-Oxidation)</span>
-            </div>
-            <span class="text-xs text-emerald-400 font-bold">✓ Correct Option</span>
-          </button>
-
-          <button class="option-btn p-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated1)] text-left text-xs sm:text-sm text-[var(--text-primary)] flex items-center gap-3">
-            <span class="w-6 h-6 rounded-full border border-[var(--border-subtle)] flex items-center justify-center font-bold text-[11px]">C</span>
+        <button type="button" class="cbt-opt" data-correct="false">
+          <div style="display:flex;align-items:center">
+            <span class="opt-letter">C</span>
             <span>1. Hg(OAc)₂, H₂O / 2. NaBH₄ (Oxymercuration-Demercuration)</span>
-          </button>
+          </div>
+        </button>
 
-          <button class="option-btn p-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated1)] text-left text-xs sm:text-sm text-[var(--text-primary)] flex items-center gap-3">
-            <span class="w-6 h-6 rounded-full border border-[var(--border-subtle)] flex items-center justify-center font-bold text-[11px]">D</span>
+        <button type="button" class="cbt-opt" data-correct="false">
+          <div style="display:flex;align-items:center">
+            <span class="opt-letter">D</span>
             <span>OsO₄, NMO (Syn-dihydroxylation)</span>
-          </button>
-        </div>
-
-        <!-- AI Explanation Breakdown -->
-        <div class="p-5 rounded-2xl bg-[var(--color-primary-tint)] border border-[var(--border-primary)] text-xs leading-relaxed space-y-2">
-          <p class="font-bold text-[var(--color-primary)] flex items-center gap-2">
-            <span>🤖 Kortexify AI Step-by-Step Explanation:</span>
-          </p>
-          <p class="text-[var(--text-secondary)]">
-            Hydroboration-oxidation adds OH to the less substituted carbon (anti-Markovnikov) via a syn-addition mechanism. Oxymercuration and acid hydration yield Markovnikov addition.
-          </p>
-        </div>
-
+          </div>
+        </button>
       </div>
 
-      <!-- Action Button -->
-      <div class="mt-8 pt-4 border-t border-[var(--border-subtle)] flex justify-between items-center">
-        <span class="text-xs text-[var(--text-muted)]">⚡ Score calculated in 0.04s</span>
-        <a href="/workspace/login" class="px-6 py-2.5 rounded-full bg-[var(--color-primary)] text-xs font-bold text-[var(--text-inverse)] hover:scale-105 transition-transform shadow-lg">
-          Generate Exam For My Notes &rarr;
-        </a>
+      <div class="cbt-explanation">
+        <strong>💡 Grounded Socratic Derivation:</strong>
+        Hydroboration-Oxidation proceeds through concerted syn-addition where boron attaches to the sterically less hindered carbon, resulting in clean anti-Markovnikov alcohol formation. In contrast, acid hydration and oxymercuration produce Markovnikov addition.
       </div>
+    </div>
+  </div></section>
 
+  <!-- Key Benefits Grid -->
+  <section><div class="wrap">
+    <div class="section-title rv">
+      <p class="eyebrow">Preparation System</p>
+      <h2>Built around real testing conditions</h2>
     </div>
 
-    <!-- Detailed Feature Highlights Grid -->
-    <section class="py-12 border-t border-[var(--border-subtle)]">
-      <div class="text-center max-w-2xl mx-auto mb-16">
-        <h2 class="text-3xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)]">
-          Why Kortexify Practice Exams outperform traditional study tools
-        </h2>
+    <div class="feature-benefits">
+      <div class="benefit-card rv" style="--d:.1s">
+        <div class="benefit-icon">⏱️</div>
+        <h3>Realistic CBT Timing</h3>
+        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Train your pacing under strict countdown timers identical to real university portal and standardized examination screens.</p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
-        <div class="bg-[var(--bg-card)] p-8 rounded-3xl border border-[var(--border-subtle)]">
-          <div class="w-12 h-12 rounded-2xl bg-[var(--color-primary-subtle)] flex items-center justify-center text-xl mb-4">🎯</div>
-          <h3 class="text-lg font-bold text-[var(--text-primary)] mb-2">Exact Syllabus Alignment</h3>
-          <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
-            Questions aren't generic. Kortexify extracts key learning objectives from your exact course PDFs and lecture slides.
-          </p>
-        </div>
-
-        <div class="bg-[var(--bg-card)] p-8 rounded-3xl border border-[var(--border-subtle)]">
-          <div class="w-12 h-12 rounded-2xl bg-[var(--color-secondary-subtle)] flex items-center justify-center text-xl mb-4">⚡</div>
-          <h3 class="text-lg font-bold text-[var(--text-primary)] mb-2">Instant Detailed Solutions</h3>
-          <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
-            Don't just see what you got wrong. Get step-by-step mathematical and conceptual derivations for every option.
-          </p>
-        </div>
-
-        <div class="bg-[var(--bg-card)] p-8 rounded-3xl border border-[var(--border-subtle)]">
-          <div class="w-12 h-12 rounded-2xl bg-[var(--color-latex-subtle)] flex items-center justify-center text-xl mb-4">📈</div>
-          <h3 class="text-lg font-bold text-[var(--text-primary)] mb-2">Weakness Queue</h3>
-          <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
-            Failed questions are automatically fed into your spaced repetition queue until you achieve 100% mastery.
-          </p>
-        </div>
-
+      <div class="benefit-card rv" style="--d:.15s">
+        <div class="benefit-icon">🔄</div>
+        <h3>Automated Weakness Queue</h3>
+        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Missed questions do not vanish. They are automatically routed into your daily active recall flashcard queue until you achieve verified mastery.</p>
       </div>
-    </section>
 
-    <!-- CTA Banner -->
-    <div class="mt-20 text-center p-12 rounded-3xl bg-gradient-to-r from-[var(--bg-card)] to-[var(--bg-surface-elevated1)] border border-[var(--border-subtle)] max-w-[800px] mx-auto">
-      <h2 class="text-3xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] mb-3">
-        Ready to test your knowledge?
-      </h2>
-      <p class="text-xs text-[var(--text-secondary)] mb-6">
-        No credit card required. Create your first practice exam in under 60 seconds.
-      </p>
-      <a href="/workspace/login" class="inline-block px-8 py-3.5 rounded-full bg-[var(--color-primary)] text-sm font-bold text-[var(--text-inverse)] hover:scale-105 transition-transform shadow-xl">
-        Start Free Practice Exam Now
-      </a>
+      <div class="benefit-card rv" style="--d:.2s">
+        <div class="benefit-icon">📊</div>
+        <h3>Topic Mastery Analytics</h3>
+        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Pinpoint exactly which chapters or modules require revision before exam day, backed by speed and retrievability analytics.</p>
+      </div>
     </div>
+  </div></section>
 
-  </main>
-
-  <!-- Site Footer -->
-  <footer class="site-footer bg-[var(--bg-canvas)] border-t border-[var(--border-subtle)] py-12 mt-20">
-    <div class="max-w-[1240px] mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-6">
-      
-      <div class="flex items-center gap-2.5">
-        <img src="../assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" class="w-6 h-6">
-        <span class="font-['Plus_Jakarta_Sans'] font-extrabold text-sm text-[var(--text-primary)] tracking-wide">KORTEXIFY</span>
-      </div>
-
-      <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[var(--text-secondary)]">
-        <a href="../index.html" class="hover:text-[var(--text-primary)]">Home</a>
-        <a href="../about.html" class="hover:text-[var(--text-primary)]">About Us</a>
-        <a href="../pricing.html" class="hover:text-[var(--text-primary)]">Pricing</a>
-        <a href="../downloads.html" class="hover:text-[var(--text-primary)]">Downloads</a>
-        <a href="../privacy.html" class="hover:text-[var(--text-primary)]">Privacy Policy</a>
-        <a href="../terms.html" class="hover:text-[var(--text-primary)]">Terms of Service</a>
-        <a href="../contact.html" class="hover:text-[var(--text-primary)]">Contact</a>
-      </div>
-
-      <p class="text-xs text-[var(--text-muted)]">&copy; 2026 Kortexify Inc. All rights reserved.</p>
+  <!-- Bottom CTA -->
+  <section class="final-cta"><div class="wrap text-center">
+    <h2 class="rv">Ready to test yourself before exam week?</h2>
+    <p class="lead rv" style="--d:.1s;margin:1rem auto 2rem">Generate practice exams directly from your syllabus or choose from standardized banks.</p>
+    <div class="cta-actions rv" style="--d:.2s">
+      <a class="btn p" href="/workspace/login" data-mag>Launch CBT Simulator &rarr;</a>
+      <a class="btn" href="../downloads.html">Get Desktop App</a>
     </div>
-  </footer>
+  </div></section>
+</main>
 
-  <script src="../js/animations.js?v=7.0"></script>
-  <!-- KaTeX Script & Auto-Render -->
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"
-    onload="renderMathInElement(document.body, {
-      delimiters: [
-        {left: '$$', right: '$$', display: true},
-        {left: '\\[', right: '\\]', display: true},
-        {left: '$', right: '$', display: false},
-        {left: '\\(', right: '\\)', display: false}
-      ],
-      throwOnError: false
-    });"></script>
+<!-- Unified Site Footer -->
+<footer class="footer"><div class="wrap">
+<div class="foot-grid">
+  <div>
+    <div class="brand-row">
+      <svg width="26" height="26" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="rgba(120,140,126,0.2)" stroke-width="2.5"/>
+        <path d="M156 140V372" stroke="#788C7E" stroke-width="44" stroke-linecap="round"/>
+        <path d="M356 140L256 256L356 372" stroke="#D4A373" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="156" cy="140" r="13" fill="#788C7E"/>
+        <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
+        <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
+        <circle cx="356" cy="372" r="13" fill="#D4A373"/>
+        <circle cx="256" cy="256" r="30" fill="#5B8C93"/>
+      </svg>
+      <span class="foot-title">Kortexify</span>
+    </div>
+    <p class="foot-lead">Active study workspace combining spaced repetition, grounded Socratic tutoring, and timed CBT practice across higher education.</p>
+  </div>
+  <div class="foot-col">
+    <div class="foot-hd">Product</div>
+    <a href="../index.html#how">How it works</a>
+    <a href="../index.html#tutor">Syllabot AI</a>
+    <a href="flashcards.html">Smart Flashcards</a>
+    <a href="questions.html">CBT Practice</a>
+    <a href="../downloads.html">Desktop Apps</a>
+  </div>
+  <div class="foot-col">
+    <div class="foot-hd">Resources</div>
+    <a href="../pricing.html">Pricing & Plans</a>
+    <a href="../about.html">About Us</a>
+    <a href="glossary.html">Cognitive Glossary</a>
+    <a href="../contact.html">Help & Support</a>
+  </div>
+  <div class="foot-col">
+    <div class="foot-hd">Legal & Security</div>
+    <a href="../privacy.html">Privacy Policy</a>
+    <a href="../terms.html">Terms of Service</a>
+    <a href="../contact.html#security">Security Disclosure</a>
+  </div>
+</div>
+<div class="foot-bottom">
+  <div>&copy; 2026 Kortexify. Cognitive active recall for higher education.</div>
+  <div class="foot-badge"><span></span> Operational · Flutter Web Client 3.x</div>
+</div>
+</div></footer>
+
+<script src="../js/kx.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const opts = document.querySelectorAll('#cbtOpts .cbt-opt');
+  opts.forEach(opt => {
+    opt.addEventListener('click', () => {
+      opts.forEach(o => {
+        o.classList.remove('selected');
+        const badge = o.querySelector('span:last-child');
+        if (badge && badge.textContent.includes('✓')) badge.remove();
+      });
+      opt.classList.add('selected');
+      if (opt.dataset.correct === 'true') {
+        const span = document.createElement('span');
+        span.style.cssText = 'font-size:.8rem;font-weight:700;color:var(--gn)';
+        span.textContent = '✓ Correct Key';
+        opt.appendChild(span);
+      }
+    });
+  });
+});
+</script>
 </body>
 </html>

@@ -111,7 +111,7 @@ void showAnalyticsNeuralRepairSheet(
                       try {
                         unawaited(
                           context.router.push(
-                            const MainRoute(children: [DecksRoute()]),
+                            MainRoute(children: [DecksRoute()]),
                           ),
                         );
                       } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }

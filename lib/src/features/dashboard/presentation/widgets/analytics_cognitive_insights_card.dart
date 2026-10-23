@@ -278,7 +278,7 @@ class AnalyticsCognitiveInsightsCard extends StatelessWidget {
                           AppFeedback.celebration();
                           try {
                             unawaited(
-                              context.router.push(const ExamTimetableRoute()),
+                              context.router.push(ExamTimetableRoute()),
                             );
                           } on Object catch (e, st) { AppLogger.recordNonFatal(e, st); }
                         },

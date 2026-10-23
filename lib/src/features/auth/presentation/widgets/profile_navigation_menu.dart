@@ -78,7 +78,7 @@ class ProfileNavigationMenu extends StatelessWidget {
               onTap: () => _handleSection(
                 context,
                 ProfileSettingsSection.academicTrack,
-                const AcademicTrackSettingsRoute(),
+                AcademicTrackSettingsRoute(),
               ),
             ),
             _NavTile(
@@ -116,7 +116,7 @@ class ProfileNavigationMenu extends StatelessWidget {
               onTap: () => _handleSection(
                 context,
                 ProfileSettingsSection.syllabotAi,
-                const SyllabotAiSettingsRoute(),
+                SyllabotAiSettingsRoute(),
               ),
             ),
             _NavTile(

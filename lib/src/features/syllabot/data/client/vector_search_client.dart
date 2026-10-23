@@ -41,8 +41,10 @@ class VectorSearchClient {
       '${AppApiEndpoint.baseUri}${AppApiEndpoint.generateEmbeddings}',
       data: {
         'documentId': documentId,
-        'rawText': ?rawText,
-        'chunks': ?chunks,
+        if (chunks != null && chunks.isNotEmpty)
+          'chunks': chunks
+        else
+          'rawText': ?rawText,
         'metadata': metadata ?? {},
       },
     );

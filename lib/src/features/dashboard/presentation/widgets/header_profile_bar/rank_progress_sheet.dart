@@ -249,7 +249,7 @@ void showRankProgressSheet(
                             Navigator.of(sheetContext).pop();
                             unawaited(
                               context.router.push(
-                                const AnalyticsDetailRoute(),
+                                AnalyticsDetailRoute(),
                               ),
                             );
                           },

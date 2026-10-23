@@ -142,8 +142,8 @@ class QuizSessionState extends Equatable {
   int getRemainingSeconds([DateTime? at]) {
     final now = at ?? DateTime.now();
     if (deadline != null) {
-      final diff = deadline!.difference(now).inSeconds;
-      return diff < 0 ? 0 : diff;
+      final diffMs = deadline!.difference(now).inMilliseconds;
+      return diffMs <= 0 ? 0 : (diffMs / 1000).ceil();
     }
     if (durationMinutes == null) return 0;
     final totalSecs = durationMinutes! * 60;

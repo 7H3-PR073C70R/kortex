@@ -4,7 +4,9 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/widgets.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/utils/app_logger.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
 import 'package:kortex/src/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
@@ -37,13 +39,13 @@ class NotificationRouter {
           clean.startsWith('/exam') ||
           clean.startsWith('exam:') ||
           clean == '/timetable') {
-        await router.push(const ExamTimetableRoute());
+        await router.push(ExamTimetableRoute());
         return true;
       }
 
       // 3. Decks root
       if (clean == '/decks' || clean == 'decks') {
-        await router.push(const DecksRoute());
+        await router.push(DecksRoute());
         return true;
       }
 
@@ -102,7 +104,7 @@ class NotificationRouter {
 
       // 10. Analytics
       if (clean == '/analytics' || clean == 'analytics') {
-        await router.push(const AnalyticsDetailRoute());
+        await router.push(AnalyticsDetailRoute());
         return true;
       }
 
@@ -159,7 +161,7 @@ class NotificationRouter {
         if (deckId != null && deckId.isNotEmpty) {
           await router.push(StudySessionRoute(deckId: deckId));
         } else {
-          await router.push(const DecksRoute());
+          await router.push(DecksRoute());
         }
         return true;
       }
@@ -176,7 +178,7 @@ class NotificationRouter {
         } else if (documentId != null && documentId.isNotEmpty) {
           await router.push(DocumentIngestionRoute());
         } else {
-          await router.push(const DecksRoute());
+          await router.push(DecksRoute());
         }
         return true;
       }
@@ -212,7 +214,7 @@ class NotificationRouter {
           await router.push(LiveStudyRoomRoute(room: room));
           return true;
         }
-        await router.push(const StudyHubRoute());
+        await router.push(StudyHubRoute());
         return true;
       }
 
@@ -241,7 +243,7 @@ class NotificationRouter {
 
       // 22. Study Hub
       if (clean == '/study-hub' || clean == 'study-hub') {
-        await router.push(const StudyHubRoute());
+        await router.push(StudyHubRoute());
         return true;
       }
 
@@ -337,7 +339,7 @@ class NotificationRouter {
           routeStr.contains('planner') ||
           routeStr.contains('timetable') ||
           metadata['type'] == 'exam_countdown') {
-        await router.push(const ExamTimetableRoute());
+        await router.push(ExamTimetableRoute());
         return true;
       }
 
@@ -355,19 +357,19 @@ class NotificationRouter {
           await router.push(LiveStudyRoomRoute(room: room));
           return true;
         }
-        await router.push(const StudyHubRoute());
+        await router.push(StudyHubRoute());
         return true;
       }
 
       // 7. Deck Marketplace Clones
       if (routeStr.contains('marketplace') ||
           metadata['type'] == 'deck_cloned') {
-        await router.push(const StudyHubRoute());
+        await router.push(StudyHubRoute());
         return true;
       }
 
       // Fallback: If no matching deep-link route, push to Study Hub
-      await router.push(const StudyHubRoute());
+      await router.push(StudyHubRoute());
       return true;
     } on Object catch (err) {
       debugPrint('[NotificationRouter] Routing error: $err');
@@ -384,10 +386,10 @@ class NotificationRouter {
         clean == 'planner' ||
         clean.startsWith('/exam') ||
         clean.startsWith('exam:')) {
-      return const ExamTimetableRoute();
+      return ExamTimetableRoute();
     }
     if (clean == '/decks' || clean == 'decks') {
-      return const DecksRoute();
+      return DecksRoute();
     }
     if (clean == '/past-questions' || clean == 'past-questions') {
       return PastQuestionsBoardRoute();
@@ -410,7 +412,7 @@ class NotificationRouter {
       return const LeaderboardRoute();
     }
     if (clean == '/analytics') {
-      return const AnalyticsDetailRoute();
+      return AnalyticsDetailRoute();
     }
     if (clean == '/courses') {
       return CurateCoursesRoute();
@@ -432,7 +434,7 @@ class NotificationRouter {
           uri?.queryParameters['deck_id'];
       return deckId != null && deckId.isNotEmpty
           ? StudySessionRoute(deckId: deckId)
-          : const DecksRoute();
+          : DecksRoute();
     }
     if (clean == '/deck-detail' || clean.startsWith('/deck-detail?')) {
       final uri = Uri.tryParse(clean);
@@ -440,7 +442,7 @@ class NotificationRouter {
           uri?.queryParameters['deck_id'];
       return deckId != null && deckId.isNotEmpty
           ? DeckDetailRoute(deckId: deckId)
-          : const DecksRoute();
+          : DecksRoute();
     }
     if (clean == '/quiz-duel' || clean.startsWith('/quiz-duel?')) {
       final uri = Uri.tryParse(clean);
@@ -466,19 +468,30 @@ class NotificationRouter {
     String postId, {
     String? replyId,
   }) async {
-    // Fallback: create entity placeholder so navigation succeeds even offline or before thread cache resolves
-    final fallbackPost = ForumPostEntity(
-      id: postId,
-      title: 'Academic Discussion',
-      content: '',
-      authorId: 'user-unknown',
-      authorName: 'Scholar',
-      track: 'General',
-      createdAt: DateTime.now(),
-    );
+    ForumPostEntity? post;
+    if (locator.isRegistered<CommunityRepository>()) {
+      final repo = locator<CommunityRepository>();
+      final result = await repo.fetchForumThreadTree(postId: postId);
+      post = result.fold((l) => null, (r) => r.post);
+      if (post == null) {
+        await router.push(const CommunityHubRoute());
+        return true;
+      }
+    } else {
+      // Fallback: create entity placeholder so navigation succeeds even offline or before thread cache resolves
+      post = ForumPostEntity(
+        id: postId,
+        title: 'Academic Discussion',
+        content: '',
+        authorId: 'user-unknown',
+        authorName: 'Scholar',
+        track: 'General',
+        createdAt: DateTime.now(),
+      );
+    }
     await router.push(
       ForumThreadDetailRoute(
-        post: fallbackPost,
+        post: post,
         highlightReplyId: replyId,
       ),
     );

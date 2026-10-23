@@ -55,7 +55,7 @@ void main() {
       expect(find.text('Relaxed'), findsOneWidget);
       expect(find.text('Balanced'), findsOneWidget);
       expect(find.text('Intensive'), findsOneWidget);
-      expect(find.text('Custom FSRS-6'), findsOneWidget);
+      expect(find.text('Custom Pace'), findsOneWidget);
       expect(find.text('Save & Sync Deck Pace'), findsOneWidget);
     });
 

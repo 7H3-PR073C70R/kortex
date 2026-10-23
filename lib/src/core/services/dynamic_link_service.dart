@@ -256,7 +256,7 @@ class DynamicLinkService {
             return DeckDetailRoute(deckId: payload.targetId);
           }
         }
-        return const DecksRoute();
+        return DecksRoute();
 
       case DynamicLinkType.forum:
         if (payload.targetId.isNotEmpty) {
@@ -293,7 +293,7 @@ class DynamicLinkService {
           );
           return LiveStudyRoomRoute(room: room);
         }
-        return const StudyHubRoute();
+        return StudyHubRoute();
 
       case DynamicLinkType.promo:
         return PaywallRoute();

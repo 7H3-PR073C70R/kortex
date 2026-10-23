@@ -261,7 +261,7 @@ class SyllabotChatView extends HookWidget {
                 }
                 unawaited(
                   context.router.root.navigate(
-                    const MainRoute(children: [DecksRoute()]),
+                    MainRoute(children: [DecksRoute()]),
                   ),
                 );
               },

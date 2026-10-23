@@ -1,623 +1,386 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" data-accent="sage">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Kortexify | The ultimate study tool for students. Turn notes into flashcards, practice with past exam questions, ask your AI tutor, and study live with friends.">
-  <meta name="keywords" content="study app, flashcards, past questions, jamb, waec, sat, ai tutor, study rooms">
-  <meta name="author" content="Kortexify Technologies">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kortexify | Forget about forgetting — AI Study Workspace for Higher Ed & Exams</title>
+<meta name="description" content="Turn your lecture slides, dense textbooks, and notes into flashcards that return right before you forget, timed mock exams, and a Socratic AI tutor that knows your syllabus. Built for BSc, HND, OND, MSc, PhD, JAMB, WAEC & SAT.">
 
-  <!-- Open Graph / Social Sharing -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://kortex-study-app-2026.web.app/">
-  <meta property="og:title" content="Kortexify | The best study tool to ace your exams">
-  <meta property="og:description" content="Turn your notes into flashcards, practice exams, and interactive study sessions with AI. Try free.">
-  <meta property="og:image" content="assets/images/social_og.jpg">
+<link rel="canonical" href="https://kortex-study-app-2026.web.app/">
+<meta name="theme-color" content="#0D0D0F">
+<script>try{const t=localStorage.getItem('kx-theme');if(t){document.documentElement.dataset.theme=t;const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#F6F6F8':'#0D0D0F'}}catch(e){}</script>
 
-  <title>Kortexify | The best study tool to ace your exams</title>
+<!-- OpenGraph / Social Sharing -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kortex-study-app-2026.web.app/">
+<meta property="og:site_name" content="Kortexify">
+<meta property="og:title" content="Kortexify — The AI Study Workspace for Higher Education & Exams">
+<meta property="og:description" content="Turn lecture slides, dense textbooks, and past questions into adaptive spaced-repetition cards, CBT mocks & Socratic AI tutoring. Built for BSc, HND, OND, MSc, PhD & entrance exams.">
+<meta property="og:image" content="https://kortex-study-app-2026.web.app/assets/images/social_og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:alt" content="Kortexify - Forget about forgetting. AI Study Workspace for Higher Education & Exams.">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="assets/kortexify_logo.svg?v=2">
-  <link rel="alternate icon" href="assets/favicon.ico?v=2">
+<!-- Twitter Cards -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Kortexify — The AI Study Workspace for Higher Education & Exams">
+<meta name="twitter:description" content="Turn lecture slides, dense textbooks, and past questions into adaptive spaced-repetition cards, CBT mocks & Socratic AI tutoring. Built for BSc, HND, OND, MSc, PhD & entrance exams.">
+<meta name="twitter:image" content="https://kortex-study-app-2026.web.app/assets/images/social_og.jpg">
+<meta name="twitter:image:alt" content="Kortexify - Forget about forgetting. AI Study Workspace for Higher Education & Exams.">
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<!-- Web Application Manifest -->
+<link rel="manifest" href="manifest.webmanifest">
 
-  <!-- Compiled Static Tailwind CSS -->
-  <link rel="stylesheet" href="css/tailwind.min.css?v=1.0">
+<!-- Favicon -->
+<link rel="icon" href="assets/kortexify_logo.svg" type="image/svg+xml">
+<link rel="alternate icon" href="assets/favicon.ico">
 
-  <!-- Local Kortex Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=8.0">
-  <link rel="stylesheet" href="css/animations.css?v=8.0">
-  <link rel="stylesheet" href="css/styles.css?v=8.0">
+<!-- Structured Data (JSON-LD) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://kortex-study-app-2026.web.app/#organization",
+      "name": "Kortexify Technologies",
+      "url": "https://kortex-study-app-2026.web.app/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://kortex-study-app-2026.web.app/assets/kortexify_logo.svg",
+        "width": 512,
+        "height": 512
+      }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://kortex-study-app-2026.web.app/#software",
+      "name": "Kortexify",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Web, macOS, Windows, Linux, Android, iOS",
+      "url": "https://kortex-study-app-2026.web.app/",
+      "description": "AI study workspace featuring adaptive spaced-repetition flashcards, Socratic AI tutoring, and timed CBT mock exams for higher education and entrance tests.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "publisher": {
+        "@id": "https://kortex-study-app-2026.web.app/#organization"
+      }
+    }
+  ]
+}
+</script>
 
-  <style>
-    .dropzone-box {
-      border: 2px dashed var(--border-primary);
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      background: var(--bg-card-glass);
-    }
-    .dropzone-box:hover {
-      border-color: var(--color-primary);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
-    }
-    .hover-pill-btn {
-      position: relative;
-      overflow: hidden;
-      transition: all 0.3s ease;
-    }
-    .hover-pill-btn .default-text {
-      display: block;
-      transition: transform 0.25s ease, opacity 0.25s ease;
-    }
-    .hover-pill-btn .hover-text {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transform: translateY(100%);
-      transition: transform 0.25s ease, opacity 0.25s ease;
-    }
-    .hover-pill-btn:hover .default-text {
-      opacity: 0;
-      transform: translateY(-100%);
-    }
-    .hover-pill-btn:hover .hover-text {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .feature-card-hover {
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .feature-card-hover:hover {
-      transform: translateY(-4px);
-      border-color: var(--border-highlight);
-    }
-  </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap">
+</noscript>
+<style>
+:root{
+  --bg:#F6F6F8;
+  --bg2:#ECECEF;
+  --card:#FFFFFF;
+  --ink:#18181B;
+  --mute:#52525B;
+  --line:#E2E2E6;
+  --acc:#4A6B5D;
+  --sage:#788C7E;
+  --cy:#5B8C93;
+  --oc:#D4A373;
+  --te:#C86D51;
+  --gn:#52796F;
+  --ease:cubic-bezier(.16,1,.3,1);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D0D0F;
+    --bg2:#141417;
+    --card:#1D1D22;
+    --ink:#FAFAFA;
+    --mute:#A1A1AA;
+    --line:rgba(255,255,255,.1);
+    --acc:#788C7E;
+    --cy:#5B8C93;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D0D0F;
+  --bg2:#141417;
+  --card:#1D1D22;
+  --ink:#FAFAFA;
+  --mute:#A1A1AA;
+  --line:rgba(255,255,255,.1);
+  --acc:#788C7E;
+  --cy:#5B8C93;
+}
+html{scroll-behavior:smooth;scroll-padding-top:calc(72px + env(safe-area-inset-top,0px))}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.6 'Plus Jakarta Sans',system-ui,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:60}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:70;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+em{font:italic 400 1.08em 'Instrument Serif',Georgia,serif;color:var(--acc);letter-spacing:0}
+a{color:inherit;text-decoration:none}button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--cy);outline-offset:3px}
+.skip-link{position:fixed;top:-100px;left:1rem;z-index:100;background:var(--ink);color:var(--bg);padding:.6rem 1.2rem;border-radius:10px;font-weight:700;font-size:.9rem;text-decoration:none;transition:top .25s var(--ease);box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.skip-link:focus-visible{top:calc(1rem + env(safe-area-inset-top,0px))}
+.wrap{max-width:1240px;margin:auto;padding:0 clamp(20px,5vw,48px)}
+.eyebrow{font:500 .72rem 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+h2{font-size:clamp(2rem,5.2vw,4rem);line-height:1.02;letter-spacing:-.035em;font-weight:800;margin:.6rem 0 1rem}
+.lead{color:var(--mute);font-size:clamp(1.02rem,1.5vw,1.25rem);max-width:34em}
+/* nav */
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;padding-top:env(safe-area-inset-top,0px);backdrop-filter:blur(16px);background:color-mix(in srgb,var(--bg) 72%,transparent);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:1.4rem;height:64px}
+.logo{display:flex;align-items:center;gap:.65rem;font-weight:800;letter-spacing:-.02em;font-size:1.1rem;margin-right:auto}
+.logo svg{width:30px;height:30px;flex-shrink:0}
+.nav a.l{font-size:.88rem;font-weight:600;color:var(--mute);transition:color .2s}.nav a.l:hover{color:var(--ink)}
+.ic{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:none;display:grid;place-items:center}
+.btn{display:inline-flex;align-items:center;gap:.55rem;padding:.9rem 1.55rem;border-radius:99px;font-weight:700;font-size:.95rem;border:1px solid var(--line);transition:transform .25s var(--ease),box-shadow .3s,background .3s;will-change:transform}
+.btn.p{background:var(--ink);color:var(--bg);border-color:var(--ink)}.btn.p:hover{box-shadow:0 14px 40px -12px var(--sage)}
+.btn.s{padding:.55rem 1.1rem;font-size:.85rem}
+@media(max-width:780px){.nav a.l{display:none}}
+/* reveal */
+.rv{opacity:0;transform:translateY(32px);transition:opacity .9s var(--ease),transform .9s var(--ease);transition-delay:var(--d,0s)}.rv.in{opacity:1;transform:none}
+.w{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.12em;margin-bottom:-.12em}.w>i{display:inline-block;font-style:inherit;transform:translateY(112%);transition:transform 1.1s var(--ease);transition-delay:calc(var(--i)*65ms)}.in .w>i{transform:none}
+/* hero */
+.hero{position:relative;padding:clamp(120px,16vh,170px) 0 80px;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(520px circle at var(--mx,70%) var(--my,30%),color-mix(in srgb,var(--sage) 28%,transparent),transparent 70%)}
+.pill{position:absolute;border-radius:99px;transform:translateY(var(--y,0px)) rotate(var(--r));z-index:0}
+.hero .wrap{position:relative;z-index:2;display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,4vw,64px);align-items:center}
+h1{font-size:clamp(3rem,9.4vw,7.6rem);line-height:.92;letter-spacing:-.05em;font-weight:800;margin:1.1rem 0 1.4rem}
+.cta{display:flex;flex-wrap:wrap;gap:.8rem;margin:2rem 0 .9rem}
+.fine{font-size:.82rem;color:var(--mute)}
+@media(max-width:900px){.hero .wrap{grid-template-columns:1fr}}
+.demo{background:color-mix(in srgb,var(--card) 82%,transparent);border:1px solid var(--line);border-radius:28px;padding:20px;backdrop-filter:blur(14px);box-shadow:0 40px 90px -40px rgba(0,0,0,.45)}
+.c3{perspective:1000px;height:170px;cursor:pointer;border-radius:20px}.fl{position:relative;height:100%;transition:transform .8s var(--ease);transform-style:preserve-3d}.fl.on{transform:rotateY(180deg)}
+.fa{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;border:1px solid var(--line);background:var(--bg);padding:22px;display:flex;flex-direction:column;justify-content:center}
+.fa small{font:500 .68rem 'JetBrains Mono',monospace;color:var(--mute);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem}.fa b{font-size:1.2rem;line-height:1.3;letter-spacing:-.01em}.bk{transform:rotateY(180deg);background:color-mix(in srgb,var(--sage) 16%,var(--bg))}
+.rt{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.rt button{border:1px solid var(--line);background:none;border-radius:14px;padding:.6rem .2rem;font-size:.78rem;font-weight:700;position:relative;overflow:hidden;transition:transform .2s,opacity .3s}
+.rt button::before{content:"";position:absolute;inset:auto 0 0;height:3px;background:var(--c)}.rt button:hover{transform:translateY(-2px)}.rt:not(.ok) button{opacity:.4;pointer-events:none}
+.hint{font-size:.78rem;color:var(--mute);display:flex;justify-content:space-between;gap:1rem}.hint b{color:var(--ink)}
+.cv{width:100%;height:auto;display:block;margin-top:6px}.cv .g{stroke:var(--line);stroke-width:1}.cv .gh{fill:none;stroke:var(--te);stroke-width:2;stroke-dasharray:5 6;opacity:.8}.cv .sv{fill:none;stroke:var(--cy);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}.cv text{font:500 9px 'JetBrains Mono',monospace;fill:var(--mute)}
+/* marquee */
+.mq{overflow:hidden;border-block:1px solid var(--line);padding:1.2rem 0;background:var(--bg2)}.mq>div{display:flex;gap:3.2rem;width:max-content;animation:mq 32s linear infinite}.mq span{font:800 clamp(1.1rem,2.4vw,1.7rem) 'Plus Jakarta Sans';letter-spacing:-.02em;color:var(--mute);white-space:nowrap}.mq span::after{content:"✦";margin-left:3.2rem;color:var(--oc);font-size:.8em}
+@keyframes mq{to{transform:translateX(-50%)}}
+/* scene */
+.scene{height:340vh;position:relative}.stick{position:sticky;top:0;height:100vh;height:100svh;display:grid;grid-template-columns:1fr 1fr;gap:4vw;align-items:center;padding:0 clamp(20px,6vw,90px);overflow:hidden}
+.steps{list-style:none;padding:0;position:relative;padding-left:26px}.steps::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:2px;background:var(--line)}.steps::after{content:"";position:absolute;left:0;top:8px;width:2px;height:calc((100% - 16px)*var(--p,0));background:linear-gradient(var(--sage),var(--oc))}
+.steps li{margin:1.4rem 0;opacity:.55;transition:opacity .6s var(--ease),transform .6s var(--ease)}.steps li.on{opacity:1;transform:translateX(10px)}
+.steps b{display:block;font-size:clamp(2.4rem,6.4vw,5.2rem);font-weight:800;letter-spacing:-.05em;line-height:1}.steps span{display:block;max-width:26em;color:var(--mute);margin-top:.4rem}
+.stage{position:relative;width:min(100%,500px);aspect-ratio:1;margin:auto}
+.dz{position:absolute;inset:4% 8% 8%;border:2px dashed var(--sage);border-radius:26px;opacity:.5;transition:opacity .6s}[data-s="2"] .dz{opacity:0}
+.doc{position:absolute;inset:6% 10% 10%;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:7%;box-shadow:0 30px 80px -30px rgba(0,0,0,.4);transform:translateY(-130%) rotate(-8deg);opacity:0;transition:transform 1.3s var(--ease),opacity .6s}
+.stage.v .doc{transform:none;opacity:1}[data-s="2"] .doc{transform:translateX(-16%) scale(.86)}
+.doc h4{font:500 .72rem 'JetBrains Mono',monospace;color:var(--mute);letter-spacing:.06em}.ln{height:9px;border-radius:9px;background:var(--line);margin:.75rem 0}.ln:nth-child(3n){width:70%}
+.hl{display:block;padding:.4rem .55rem;border-radius:9px;font:500 .8rem 'JetBrains Mono',monospace;margin:.9rem 0;background:linear-gradient(var(--cy),var(--cy)) 0 0/0% 100% no-repeat;transition:background-size .9s var(--ease) .2s,color .4s}
+[data-s="1"] .hl,[data-s="2"] .hl{background-size:100% 100%;color:#fff}
+.scan{position:absolute;left:8%;right:8%;top:12%;height:2px;background:var(--acc);box-shadow:0 0 26px 7px color-mix(in srgb,var(--sage) 60%,transparent);opacity:0}[data-s="1"] .scan{opacity:1;animation:scan 2s ease-in-out infinite alternate}@keyframes scan{to{top:86%}}
+.fc{position:absolute;right:0;top:calc(8% + var(--k)*24%);width:50%;aspect-ratio:3/1.9;border-radius:16px;background:var(--card);border:1px solid var(--line);padding:.9rem;font-size:.78rem;font-weight:700;line-height:1.3;opacity:0;transform:translateX(-80%) scale(.8);transition:all 1.1s var(--ease);transition-delay:calc(var(--k)*140ms);box-shadow:0 18px 40px -20px rgba(0,0,0,.4)}
+.fc::before{content:"";position:absolute;left:0;top:14%;bottom:14%;width:4px;border-radius:4px;background:var(--c)}.fc small{display:block;font:500 .62rem 'JetBrains Mono',monospace;color:var(--mute);margin-top:.35rem}
+[data-s="2"] .fc{opacity:1;transform:rotate(calc(var(--k)*2deg - 2deg))}
+.rm .scene{height:auto}.rm .stick{position:static;height:auto;min-height:0;padding-block:4rem}
+@media(max-width:860px){.stick{grid-template-columns:1fr;gap:1rem;align-content:center}.stage{width:min(78vw,340px)}.steps li{margin:.5rem 0}.steps span{display:none}.steps li.on span{display:block;font-size:.9rem}}
+/* tutor */
+.sec{padding:clamp(80px,12vw,150px) 0}.two{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,6vw,90px);align-items:center}@media(max-width:860px){.two{grid-template-columns:1fr}}
+.chat{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:22px;display:flex;flex-direction:column;gap:12px;min-height:380px;box-shadow:0 40px 90px -50px rgba(0,0,0,.5)}
+.bub{max-width:86%;padding:.85rem 1.1rem;border-radius:20px;font-size:.95rem;opacity:0;transform:translateY(10px);transition:all .6s var(--ease)}.bub.in{opacity:1;transform:none}
+.me{align-self:flex-end;background:var(--ink);color:var(--bg);border-bottom-right-radius:6px}.ai{background:color-mix(in srgb,var(--sage) 18%,var(--bg));border-bottom-left-radius:6px}.ai small{display:block;font:500 .66rem 'JetBrains Mono',monospace;color:var(--acc);letter-spacing:.08em;margin-bottom:.25rem}
+.m{font:500 .92em 'JetBrains Mono',monospace;color:var(--cy)}.cur::after{content:"";display:inline-block;width:2px;height:1em;background:var(--acc);margin-left:2px;vertical-align:-2px;animation:bl 1s steps(1) infinite}@keyframes bl{50%{opacity:0}}
+/* bento */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-top:2.4rem}.bc{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:24px;position:relative;overflow:hidden;transition:transform .5s var(--ease),border-color .3s}.bc:hover{transform:translateY(-6px);border-color:var(--sage)}
+.b1{grid-column:span 3;grid-row:span 2}.b2,.b3{grid-column:span 3}.b4{grid-column:1/-1}@media(max-width:860px){.bento>*{grid-column:1/-1!important}}
+.bc h3{font-size:1.25rem;letter-spacing:-.02em;margin:.4rem 0 .3rem}.bc p{color:var(--mute);font-size:.92rem}
+.top{display:flex;justify-content:space-between;align-items:center;font:500 .75rem 'JetBrains Mono',monospace;color:var(--mute)}.tm{color:var(--te);font-weight:500;font-size:.95rem}
+.q{font-weight:700;margin:1rem 0 .7rem;letter-spacing:-.01em}.op{border:1px solid var(--line);border-radius:12px;padding:.55rem .8rem;margin:.4rem 0;font-size:.88rem;display:flex;gap:.6rem}.op.sel{border-color:var(--cy);background:color-mix(in srgb,var(--cy) 14%,transparent);animation:pr 2.4s ease-in-out infinite}@keyframes pr{50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--cy) 22%,transparent)}}
+.pal{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-top:1rem}.pal i{aspect-ratio:1;border-radius:7px;border:1px solid var(--line);transition:all .4s var(--ease)}.pal i.d{background:var(--gn);border-color:var(--gn);transform:scale(1.08)}
+.vs{display:flex;align-items:center;gap:10px;margin:1.1rem 0 .6rem;font-weight:700;font-size:.85rem}.bar{flex:1;height:12px;border-radius:12px;background:var(--te);overflow:hidden;position:relative}.bar i{position:absolute;inset:0 auto 0 0;background:var(--gn);animation:tug 3.6s ease-in-out infinite;border-radius:12px}@keyframes tug{0%,100%{width:62%}50%{width:42%}}
+.xp{display:inline-block;margin-top:.4rem;font:500 .8rem 'JetBrains Mono',monospace;color:var(--oc);animation:xp 3.6s ease-in-out infinite}@keyframes xp{0%,40%{opacity:0;transform:translateY(8px)}55%,90%{opacity:1;transform:none}100%{opacity:0}}
+.av{display:flex;margin:1rem 0 .4rem}.av i{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font:700 .8rem 'Plus Jakarta Sans';color:#fff;margin-left:-8px;border:3px solid var(--card);background:var(--c);position:relative}.av i:first-child{margin-left:0}.av i::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--c);animation:rg 2.4s ease-out infinite;animation-delay:calc(var(--k)*.5s)}@keyframes rg{from{transform:scale(.8);opacity:.9}to{transform:scale(1.35);opacity:0}}
+.live{display:inline-flex;align-items:center;gap:.4rem}.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--te);animation:bl 1.2s infinite}
+.wv{display:flex;align-items:flex-end;gap:4px;height:54px;margin:1rem 0 .6rem}.wv i{flex:1;background:linear-gradient(var(--oc),var(--sage));border-radius:4px;transform-origin:bottom;animation:wv 1.4s ease-in-out infinite;animation-delay:calc(var(--k)*-.11s)}@keyframes wv{50%{transform:scaleY(.25)}}
+.tg{display:flex;gap:6px;flex-wrap:wrap}.tg span{border:1px solid var(--line);border-radius:99px;padding:.2rem .7rem;font-size:.75rem;font-weight:600}
+/* final */
+.final{text-align:center;position:relative;overflow:hidden}.final h2{font-size:clamp(2.6rem,8.5vw,7rem);letter-spacing:-.05em;line-height:.95}.final .cta{justify-content:center}
+.climb{width:min(100%,900px);margin:2rem auto 0;display:block}.climb path{fill:none;stroke:var(--cy);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 3s var(--ease)}.climb.in path{stroke-dashoffset:0}.climb text{font:500 12px 'JetBrains Mono',monospace;fill:var(--mute)}.climb circle{fill:var(--oc)}
+footer{border-top:1px solid var(--line);padding:2rem 0 5rem;font-size:.85rem;color:var(--mute)}footer .wrap{display:flex;flex-wrap:wrap;gap:1rem 1.6rem;justify-content:space-between}footer nav{display:flex;gap:1.3rem;flex-wrap:wrap}footer a:hover{color:var(--ink)}
+/* retention meter */
+.meter{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:55;display:flex;align-items:center;gap:.7rem;padding:.55rem .9rem;border-radius:99px;background:color-mix(in srgb,var(--card) 85%,transparent);backdrop-filter:blur(12px);border:1px solid var(--line);font:500 .7rem 'JetBrains Mono',monospace;color:var(--mute)}.meter b{color:var(--ink);font-size:.95rem;min-width:2.6ch}.meter svg{width:70px;height:26px}.meter path{fill:none;stroke:var(--cy);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}.rv,.bub{opacity:1;transform:none}.w>i{transform:none}html{scroll-behavior:auto}.scene{height:auto}.stick{position:static;height:auto;min-height:0;padding-block:4rem}.steps li{opacity:1;transform:none}.doc,.fc{opacity:1;transform:none}}
+</style>
+<noscript><style>.rv,.bub{opacity:1;transform:none}.w>i{transform:none}.doc,.fc{opacity:1;transform:none}.scene{height:auto}.stick{position:static;height:auto;min-height:0;padding-block:4rem}.steps li{opacity:1;transform:none}.steps span{display:block}</style></noscript>
 </head>
-<body class="bg-[var(--bg-canvas)] text-[var(--text-primary)] antialiased font-['Inter']">
+<body>
+<a href="#main" class="skip-link">Skip to main content</a>
+<header class="nav"><div class="wrap">
+<a class="logo" href="#main" aria-label="Kortexify home">
+  <svg width="30" height="30" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E"/>
+        <stop offset="35%" stop-color="#5B8C93"/>
+        <stop offset="70%" stop-color="#4A6B5D"/>
+        <stop offset="100%" stop-color="#D4A373"/>
+      </linearGradient>
+      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E"/>
+        <stop offset="60%" stop-color="#5B8C93"/>
+        <stop offset="100%" stop-color="#4A6B5D"/>
+      </radialGradient>
+      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/>
+        <stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/>
+      </linearGradient>
+    </defs>
+    <g stroke="url(#gridGrad)" stroke-width="1.2" stroke-linecap="round">
+      <line x1="256" y1="256" x2="256" y2="56"/>
+      <line x1="256" y1="256" x2="429.2" y2="156"/>
+      <line x1="256" y1="256" x2="429.2" y2="356"/>
+      <line x1="256" y1="256" x2="256" y2="456"/>
+      <line x1="256" y1="256" x2="82.8" y2="356"/>
+      <line x1="256" y1="256" x2="82.8" y2="156"/>
+      <polygon points="256,156 342.6,206 342.6,306 256,356 169.4,306 169.4,206" fill="none"/>
+      <line x1="82.8" y1="156" x2="429.2" y2="156"/>
+      <line x1="82.8" y1="356" x2="429.2" y2="356"/>
+      <line x1="169.4" y1="206" x2="169.4" y2="306"/>
+      <line x1="342.6" y1="206" x2="342.6" y2="306"/>
+    </g>
+    <polygon points="256,56 429.2,156 429.2,356 256,456 82.8,356 82.8,156" stroke="url(#kortexGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <g stroke="url(#kortexGrad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="156" y1="140" x2="156" y2="372"/>
+      <line x1="156" y1="256" x2="256" y2="256"/>
+      <line x1="256" y1="256" x2="356" y2="140"/>
+      <line x1="256" y1="256" x2="356" y2="372"/>
+    </g>
+    <circle cx="256" cy="56" r="10" fill="#788C7E"/>
+    <circle cx="429.2" cy="156" r="10" fill="#5B8C93"/>
+    <circle cx="429.2" cy="356" r="10" fill="#4A6B5D"/>
+    <circle cx="256" cy="456" r="10" fill="#D4A373"/>
+    <circle cx="82.8" cy="356" r="10" fill="#4A6B5D"/>
+    <circle cx="82.8" cy="156" r="10" fill="#788C7E"/>
+    <circle cx="156" cy="140" r="13" fill="#788C7E"/>
+    <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
+    <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
+    <circle cx="356" cy="372" r="13" fill="#D4A373"/>
+    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/>
+    <circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
+  </svg>
+  <span>Kortexify</span>
+</a>
+<a class="l" href="#how">How it works</a><a class="l" href="#tutor">Syllabot</a><a class="l" href="#education">Education & Exams</a><a class="l" href="pricing.html">Pricing</a>
+<button class="ic" id="th" aria-label="Toggle light or dark theme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+<a class="btn p s" href="/workspace/login" data-mag>Start free</a>
+</div></header>
 
-  <!-- Scroll Progress -->
-  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+<main id="main">
+<section class="hero">
+<i class="pill" data-par="-.12" style="--r:-38deg;--y:0px;width:46vw;max-width:620px;height:120px;right:-12vw;top:90px;background:linear-gradient(90deg,var(--sage),color-mix(in srgb,var(--sage) 30%,transparent));opacity:.55"></i>
+<i class="pill" data-par=".08" style="--r:-38deg;--y:0px;width:30vw;max-width:380px;height:92px;right:2vw;bottom:40px;background:linear-gradient(90deg,var(--oc),color-mix(in srgb,var(--oc) 25%,transparent));opacity:.5"></i>
+<div class="wrap"><div>
+<p class="eyebrow rv">BSc · HND · OND · MSc · PhD · JAMB · WAEC · SAT</p>
+<h1 data-split>Forget about <em>forgetting.</em></h1>
+<p class="lead rv" style="--d:.5s">Drop your lecture slides, dense textbooks, or exam notes. Kortexify turns them into flashcards that return right before you forget, timed mock exams, and a Socratic AI tutor that masters your syllabus.</p>
+<div class="cta rv" style="--d:.65s"><a class="btn p" href="/workspace/login" data-mag>Start studying free →</a><a class="btn" href="#how" data-mag>See how it works</a></div>
+<p class="fine rv" style="--d:.75s">Free to start. No credit card needed.</p>
+</div>
+<div class="demo rv" style="--d:.5s" aria-label="Interactive spaced repetition demo">
+<div class="c3" id="c3" tabindex="0" role="button" aria-label="Question · tap to flip"><div class="fl" id="fl"><div class="fa"><small>Question · tap to flip</small><b id="qf">Which species attacks the benzene ring in nitration?</b></div><div class="fa bk"><small>Answer</small><b id="qb">The nitronium ion, NO₂⁺</b></div></div></div>
+<div class="rt" id="rt"><button style="--c:var(--te)" data-f=".4" disabled>Again</button><button style="--c:var(--oc)" data-f="1.3" disabled>Hard</button><button style="--c:var(--cy)" data-f="2.4" disabled>Good</button><button style="--c:var(--gn)" data-f="3.6" disabled>Easy</button></div>
+<div class="hint"><span id="hn">Flip the card, then rate how it felt.</span><span>Memory at review <b>≈ 90%</b></span></div>
+<svg class="cv" viewBox="0 0 360 112" aria-hidden="true"><path class="g" d="M8 8H352M8 56H352M8 104H352"/><text x="8" y="20">100%</text><text x="300" y="100">day 90</text><path id="gh" class="gh"/><path id="sv" class="sv"/></svg>
+</div></div>
+</section>
 
-  <!-- Header Navigation -->
-  <header class="site-header sticky top-0 z-50 w-full backdrop-blur-md bg-[var(--nav-bg)] border-b border-[var(--nav-border)]">
-    <div class="max-w-[1340px] mx-auto px-5 h-[66px] flex items-center justify-between">
-      
-      <!-- Left: Logo & Navigation Links -->
-      <div class="flex items-center gap-10">
-        <a href="index.html" class="flex items-center gap-2.5 font-['Plus_Jakarta_Sans'] font-extrabold text-lg text-[var(--text-primary)]">
-          <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" width="32" height="32" class="w-8 h-8 rounded-lg">
-          <span class="tracking-wide">KORTEXIFY</span>
-        </a>
+<div class="mq" aria-label="Education levels and exams supported" id="education"><div id="mq"><span>BSc / Undergraduate</span><span>HND & OND</span><span>Postgrad (MSc & PhD)</span><span>JAMB / UTME</span><span>WAEC / GCE</span><span>NECO / SSCE</span><span>SAT & GRE</span><span>IELTS / TOEFL</span><span>Professional Boards</span></div></div>
 
-        <!-- Desktop Navigation -->
-        <nav class="hidden lg:flex items-center gap-7">
-          <!-- Features Dropdown -->
-          <div class="relative group py-4">
-            <button class="flex items-center gap-1.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-              <span>Features</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:rotate-180 transition-transform"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-            <div class="absolute top-full left-0 hidden group-hover:block w-60 p-2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-2xl z-50">
-              <a href="features/flashcards.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-primary-subtle)] flex items-center justify-center text-xs">🎴</span>
-                <div>
-                  <p class="text-xs font-semibold text-[var(--text-primary)]">Smart Flashcards</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">Remember more in less time</p>
-                </div>
-              </a>
-              <a href="features/solver.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-secondary-subtle)] flex items-center justify-center text-xs">🤖</span>
-                <div>
-                  <p class="text-xs font-semibold text-[var(--text-primary)]">Syllabot AI Tutor</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">Ask questions from your course</p>
-                </div>
-              </a>
-              <a href="features/questions.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-latex-subtle)] flex items-center justify-center text-xs">⏱️</span>
-                <div>
-                  <p class="text-xs font-semibold text-[var(--text-primary)]">Practice Exams & Duels</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">JAMB, WAEC, SAT & 1v1 duels</p>
-                </div>
-              </a>
-              <a href="features/study_rooms.html" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-                <span class="w-7 h-7 rounded-lg bg-[var(--color-primary-subtle)] flex items-center justify-center text-xs">🎙️</span>
-                <div>
-                  <p class="text-xs font-semibold text-[var(--text-primary)]">Live Study Rooms</p>
-                  <p class="text-[11px] text-[var(--text-muted)]">Voice chat & shared whiteboard</p>
-                </div>
-              </a>
-            </div>
-          </div>
+<section class="scene" id="how"><div class="stick">
+<ol class="steps" id="steps">
+<li class="on"><b>Drop.</b><span>Lecture slides, textbook PDFs, photos of research notes. Kortexify parses them, formulas included.</span></li>
+<li><b>Parse.</b><span>Equations, LaTeX, and code snippets stay mathematically intact, with zero broken characters.</span></li>
+<li><b>Master.</b><span>Adaptive forgetting curves bring each concept back at the precise moment it starts to fade.</span></li></ol>
+<div class="stage" id="stage" data-s="0" aria-hidden="true"><div class="dz"></div>
+<div class="doc"><h4>LECTURE 04 · ORGANIC REACTIONS</h4><div class="ln"></div><div class="ln"></div><span class="hl">Nitration occurs via the nitronium ion (NO₂⁺)</span><div class="ln"></div><span class="hl">∫ x eˣ dx = (x − 1)eˣ + C</span><div class="ln"></div><div class="ln"></div></div>
+<div class="scan"></div>
+<div class="fc" style="--k:0;--c:var(--cy)">What attacks the ring in nitration?<small>CARD 1 · DUE TOMORROW</small></div>
+<div class="fc" style="--k:1;--c:var(--oc)">Integrate x·eˣ with parts<small>CARD 2 · DUE IN 3 DAYS</small></div>
+<div class="fc" style="--k:2;--c:var(--gn)">Why is the aromatic ring stable?<small>CARD 3 · DUE IN 6 DAYS</small></div></div>
+</div></section>
 
-          <a href="about.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">About Us</a>
-          <a href="pricing.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Pricing</a>
-          <a href="downloads.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Downloads</a>
-          <a href="contact.html" class="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Contact</a>
-        </nav>
-      </div>
+<section class="sec" id="tutor"><div class="wrap two">
+<div><p class="eyebrow rv">Syllabot AI tutor</p><h2 data-split>A tutor that asks, <em>not tells.</em></h2><p class="lead rv">Guided Socratic questions lead you to first-principles understanding without spoiling answers, grounded directly in your syllabus and textbook materials.</p></div>
+<div class="chat rv" id="chat" aria-label="Example conversation with Syllabot"><div class="bub me" id="b1">How do I solve <span class="m">∫ x eˣ dx</span>?</div><div class="bub ai" id="b2"><small>SYLLABOT</small><span id="t2"></span></div><div class="bub me" id="b3">The x gets simpler when differentiated!</div><div class="bub ai" id="b4"><small>SYLLABOT</small><span id="t4"></span></div></div>
+</div></section>
 
-      <!-- Right: Theme Controls + Auth Actions -->
-      <div class="hidden lg:flex items-center gap-4">
-        <!-- Palette Accent Switcher -->
-        <div class="accent-picker" title="Switch Accent Color" role="group" aria-label="Color Accents">
-          <button class="accent-dot active" data-set-accent="sage" type="button" aria-label="Muted Sage"></button>
-          <button class="accent-dot" data-set-accent="ochre" type="button" aria-label="Warm Ochre"></button>
-          <button class="accent-dot" data-set-accent="moss" type="button" aria-label="Alpine Moss"></button>
-          <button class="accent-dot" data-set-accent="bronze" type="button" aria-label="Deep Bronze"></button>
-          <button class="accent-dot" data-set-accent="terracotta" type="button" aria-label="Terracotta"></button>
-          <button class="accent-dot" data-set-accent="quartz" type="button" aria-label="Quartz Cyan"></button>
-        </div>
+<section class="sec" id="exams" style="padding-top:0"><div class="wrap">
+<p class="eyebrow rv">Practise like it counts</p><h2 data-split>Beat the clock. <em>Together.</em></h2>
+<div class="bento">
+<div class="bc b1 rv"><div class="top"><span>MOCK EXAM · PHYSICS</span><span class="tm" id="tm">34:12</span></div><p class="q">A body accelerates uniformly from rest. Which graph shows its velocity against time?</p><div class="op"><b>A</b>Horizontal line</div><div class="op sel"><b>B</b>Straight line through the origin</div><div class="op"><b>C</b>Downward curve</div><div class="op"><b>D</b>Parabola</div><div class="pal" id="pal"></div><h3>Timed CBT mocks</h3><p>Real past questions, a ticking countdown, and question navigation palettes — from semester finals to JAMB & SAT.</p></div>
+<div class="bc b2 rv" style="--d:.1s"><div class="top"><span>1V1 DUEL</span><span>LIVE</span></div><div class="vs"><span>You</span><div class="bar"><i></i></div><span>Rival</span></div><span class="xp">+150 XP</span><h3>1v1 duels</h3><p>Challenge department classmates or study partners on timed past questions.</p></div>
+<div class="bc b3 rv" style="--d:.2s"><div class="top"><span class="live">STUDY ROOM</span><span>VOICE ON</span></div><div class="av"><i style="--c:var(--sage);--k:0">AO</i><i style="--c:var(--te);--k:1">TK</i><i style="--c:var(--cy);--k:2">LM</i><i style="--c:var(--oc);--k:3">+3</i></div><h3>Live study rooms</h3><p>Voice rooms and shared whiteboards keep you accountable through late-night sessions.</p></div>
+<div class="bc b4 rv" style="--d:.3s"><div class="top"><span>FOCUS</span><span>BUILT IN</span></div><div class="wv" id="wv"></div><div class="tg"><span>Lo-fi</span><span>Rain</span><span>Binaural</span></div><h3 style="margin-top:.8rem">Calm, on tap</h3><p>Audio read-aloud and ambient focus soundscapes built directly into your workstation.</p></div>
+</div></div></section>
 
-        <!-- Light / Dark Mode Button -->
-        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle theme">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-        </button>
+<section class="sec final" id="go"><div class="wrap">
+<p class="eyebrow rv">Exam & Defense Day</p><h2 data-split>Walk in <em>calm.</em></h2>
+<svg class="climb rv" viewBox="0 0 900 220" role="img" aria-label="A memory curve that climbs steadily toward exam day"><path pathLength="1" d="M10 200 L90 168 L96 190 L200 138 L206 164 L330 104 L336 132 L470 78 L476 104 L620 52 L626 76 L780 22 L880 14"/><circle cx="880" cy="14" r="9"/><text x="10" y="216">today</text><text x="820" y="48">exam day</text></svg>
+<div class="cta rv"><a class="btn p" href="/workspace/login" data-mag>Start studying free →</a><a class="btn" href="downloads.html" data-mag>Get the app</a></div>
+<p class="fine rv">Join students from colleges, universities, and secondary schools who master material every day.</p>
+</div></section>
+</main>
 
-        <!-- Log In (Ghost Button) -->
-        <a href="/workspace/login" class="px-4 py-2 rounded-full border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated1)] transition-colors">
-          Log In
-        </a>
+<footer><div class="wrap"><span>© Kortexify Technologies</span><nav><a href="about.html">About</a><a href="pricing.html">Pricing</a><a href="downloads.html">Downloads</a><a href="contact.html">Contact</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></nav></div></footer>
+<div class="meter" aria-hidden="true">retention <b id="mv">38%</b><svg viewBox="0 0 70 26"><path id="mp" pathLength="1" d="M2 22L12 17L14 22L26 14L28 20L44 9L46 16L68 3"/></svg></div>
 
-        <!-- Sign Up / Start Free (Primary Button) -->
-        <a href="/workspace/login" class="hover-pill-btn px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-xs font-bold text-[var(--text-inverse)] shadow-md hover:brightness-110 transition-all">
-          <span class="default-text">Start for free</span>
-          <span class="hover-text">No credit card required</span>
-        </a>
-      </div>
-
-      <!-- Mobile Hamburger Button -->
-      <button id="mobileMenuBtn" class="lg:hidden p-2 text-[var(--text-primary)]" aria-label="Open navigation menu">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </button>
-
-    </div>
-
-    <!-- Mobile Navigation Overlay Drawer -->
-    <div id="mobileMenuDrawer" class="hidden lg:hidden bg-[var(--bg-card)] border-b border-[var(--border-subtle)] px-6 py-6 space-y-4">
-      <a href="features/flashcards.html" class="block text-base font-medium text-[var(--text-primary)]">Smart Flashcards</a>
-      <a href="features/solver.html" class="block text-base font-medium text-[var(--text-primary)]">Syllabot AI Tutor</a>
-      <a href="features/questions.html" class="block text-base font-medium text-[var(--text-primary)]">Practice Exams & Duels</a>
-      <a href="features/study_rooms.html" class="block text-base font-medium text-[var(--text-primary)]">Live Study Rooms</a>
-      <a href="pricing.html" class="block text-base font-medium text-[var(--text-primary)]">Pricing</a>
-      <a href="downloads.html" class="block text-base font-medium text-[var(--text-primary)]">Downloads</a>
-      
-      <div class="pt-4 border-t border-[var(--border-subtle)] flex flex-col gap-3">
-        <a href="/workspace/login" class="w-full text-center py-2.5 rounded-full border border-[var(--border-subtle)] text-sm font-semibold text-[var(--text-primary)]">
-          Log In
-        </a>
-        <a href="/workspace/login" class="w-full text-center py-2.5 rounded-full bg-[var(--color-primary)] text-sm font-bold text-[var(--text-inverse)]">
-          Sign Up Free
-        </a>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main id="main-content">
-
-    <!-- HERO SECTION -->
-    <section class="pt-16 pb-20 px-5 max-w-[1240px] mx-auto text-center">
-      
-      <!-- Top Announcement Pill -->
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--color-primary-subtle)] border border-[var(--border-primary)] text-xs font-semibold text-[var(--color-primary)] mb-6">
-        <span class="w-2 h-2 rounded-full bg-[var(--color-primary)] animate-pulse"></span>
-        <span>Kortexify Web is now live. Continue in your browser</span>
-      </div>
-
-      <!-- Main Title -->
-      <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-[1.15] font-['Plus_Jakarta_Sans'] mb-6">
-        Pass your hardest exams in half the time.
-      </h1>
-
-      <p class="text-lg sm:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 leading-relaxed">
-        Turn your notes into smart flashcards, practice with real past questions, chat with your AI tutor, and study live with friends.
-      </p>
-
-      <!-- Instant Upload / Dropzone CTA -->
-      <div class="max-w-2xl mx-auto mb-10">
-        <div class="dropzone-box rounded-3xl p-8 text-center cursor-pointer relative overflow-hidden" onclick="window.location.href='/workspace/login'">
-          <div class="w-16 h-16 rounded-2xl bg-[var(--color-primary-tint)] border border-[var(--border-primary)] flex items-center justify-center mx-auto mb-4 text-2xl">
-            📂
-          </div>
-          <h3 class="text-lg font-bold text-[var(--text-primary)] mb-1">
-            Drop your course notes or PDFs here to start
-          </h3>
-          <p class="text-xs text-[var(--text-muted)] mb-5">
-            Supports PDF, slides, images, and text files
-          </p>
-          
-          <div class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--color-primary)] text-sm font-bold text-[var(--text-inverse)] shadow-lg hover:scale-[1.02] transition-transform">
-            <span>Create Free Study Deck</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </div>
-        </div>
-        <p class="text-[11px] text-[var(--text-muted)] mt-3">Free to start. No credit card required. Private and secure</p>
-      </div>
-
-      <!-- University Trust Banner -->
-      <div class="pt-8 border-t border-[var(--border-subtle)]">
-        <p class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-6">
-          Trusted by students from top institutions worldwide
-        </p>
-        <div class="flex flex-wrap items-center justify-center gap-8 sm:gap-12 opacity-60 grayscale hover:grayscale-0 transition-all">
-          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">HARVARD</span>
-          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">OXFORD</span>
-          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">CAMBRIDGE</span>
-          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">STANFORD</span>
-          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">MIT</span>
-          <span class="text-sm font-bold font-['Plus_Jakarta_Sans'] tracking-widest">IMPERIAL</span>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- CATCHY FEATURE SHOWCASE GRID -->
-    <section id="features" class="py-20 bg-[var(--bg-canvas-subtle)] border-y border-[var(--border-subtle)]">
-      <div class="max-w-[1240px] mx-auto px-5">
-        
-        <div class="text-center max-w-2xl mx-auto mb-16">
-          <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">Catchy Features</span>
-          <h2 class="text-3xl sm:text-4xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] mt-2">
-            Everything you need to study faster and score higher
-          </h2>
-          <p class="text-base text-[var(--text-secondary)] mt-3">
-            Simple, powerful tools built to help you learn without losing sleep.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          
-          <!-- Feature 1: Flashcards -->
-          <div class="feature-card-hover bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] flex flex-col justify-between">
-            <div>
-              <div class="w-12 h-12 rounded-2xl bg-[var(--color-primary-subtle)] flex items-center justify-center text-xl mb-5">
-                🎴
-              </div>
-              <h3 class="text-lg font-bold text-[var(--text-primary)] mb-2">Smart Flashcards</h3>
-              <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
-                Interactive flashcards automatically scheduled to review right before you forget.
-              </p>
-            </div>
-            <a href="features/flashcards.html" class="text-xs font-semibold text-[var(--color-primary)] hover:underline inline-flex items-center gap-1">
-              <span>See How It Works</span> &rarr;
-            </a>
-          </div>
-
-          <!-- Feature 2: Syllabot AI -->
-          <div class="feature-card-hover bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] flex flex-col justify-between">
-            <div>
-              <div class="w-12 h-12 rounded-2xl bg-[var(--color-secondary-subtle)] flex items-center justify-center text-xl mb-5">
-                🤖
-              </div>
-              <h3 class="text-lg font-bold text-[var(--text-primary)] mb-2">Syllabot AI Tutor</h3>
-              <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
-                Your personal 24/7 AI study partner that answers questions directly from your course files.
-              </p>
-            </div>
-            <a href="features/solver.html" class="text-xs font-semibold text-[var(--color-primary)] hover:underline inline-flex items-center gap-1">
-              <span>Meet Syllabot</span> &rarr;
-            </a>
-          </div>
-
-          <!-- Feature 3: Practice Exams & Duels -->
-          <div class="feature-card-hover bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] flex flex-col justify-between">
-            <div>
-              <div class="w-12 h-12 rounded-2xl bg-[var(--color-latex-subtle)] flex items-center justify-center text-xl mb-5">
-                ⏱️
-              </div>
-              <h3 class="text-lg font-bold text-[var(--text-primary)] mb-2">Practice Exams & Duels</h3>
-              <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
-                Test yourself with real past exam questions or challenge classmates to live 1v1 quiz battles.
-              </p>
-            </div>
-            <a href="features/questions.html" class="text-xs font-semibold text-[var(--color-primary)] hover:underline inline-flex items-center gap-1">
-              <span>Explore Practice Exams</span> &rarr;
-            </a>
-          </div>
-
-          <!-- Feature 4: Live Study Rooms -->
-          <div class="feature-card-hover bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] flex flex-col justify-between">
-            <div>
-              <div class="w-12 h-12 rounded-2xl bg-[var(--color-primary-subtle)] flex items-center justify-center text-xl mb-5">
-                🎙️
-              </div>
-              <h3 class="text-lg font-bold text-[var(--text-primary)] mb-2">Live Study Rooms</h3>
-              <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
-                Join live group study rooms with voice chat and shared whiteboards to stay motivated.
-              </p>
-            </div>
-            <a href="features/study_rooms.html" class="text-xs font-semibold text-[var(--color-primary)] hover:underline inline-flex items-center gap-1">
-              <span>Join Study Rooms</span> &rarr;
-            </a>
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-
-    <!-- CONTINUOUS HOW IT WORKS ANIMATION SECTION -->
-    <section class="py-20 px-5 max-w-[1240px] mx-auto">
-      <div class="text-center max-w-3xl mx-auto mb-16 reveal-on-scroll">
-        <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">CONTINUOUS FEATURE VISUALIZER</span>
-        <h2 class="text-3xl sm:text-4xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] mt-2">
-          Watch Kortexify work in real-time
-        </h2>
-        <p class="text-base text-[var(--text-secondary)] mt-3">
-          From uploading raw notes to active recall mastery and 1v1 study battles.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
-        <!-- Step 1 Animation: Scan & Convert -->
-        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] relative overflow-hidden flex flex-col justify-between reveal-on-scroll">
-          <div>
-            <div class="relative h-44 rounded-2xl bg-[var(--bg-surface-elevated1)] border border-[var(--border-subtle)] p-4 overflow-hidden mb-5">
-              <div class="continuous-scan-beam"></div>
-              <div class="space-y-2 text-[11px] text-[var(--text-muted)] font-mono opacity-75">
-                <p class="font-bold text-[var(--text-primary)]">Lecture 04: Organic Reactions</p>
-                <p>• Electrophilic aromatic substitution mechanism...</p>
-                <p>• Benzene ring resonance energy = 36 kcal/mol...</p>
-                <p>• Nitration occurs via nitronium ion (NO2+)...</p>
-              </div>
-              <div class="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Generating Flashcards</span>
-              </div>
-            </div>
-            <h3 class="text-base font-bold text-[var(--text-primary)] mb-1">1. Auto Flashcard Extraction</h3>
-            <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
-              Upload any PDF or slide deck and watch Kortexify extract key concepts into active recall flashcards in under 5 seconds.
-            </p>
-          </div>
-        </div>
-
-        <!-- Step 2 Animation: Syllabot AI Formula Solver -->
-        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] relative overflow-hidden flex flex-col justify-between reveal-on-scroll delay-1">
-          <div>
-            <div class="relative h-44 rounded-2xl bg-[var(--bg-surface-elevated1)] border border-[var(--border-subtle)] p-4 flex flex-col justify-between mb-5">
-              <div class="space-y-2">
-                <div class="inline-block px-3 py-1 rounded-xl bg-[var(--bg-card)] text-[11px] font-medium text-[var(--text-primary)] border border-[var(--border-subtle)]">
-                  Student: How do I solve $\int x e^x dx$?
-                </div>
-                <div class="inline-block p-2.5 rounded-xl bg-[var(--color-primary-subtle)] text-[11px] font-semibold text-[var(--color-primary)] border border-[var(--border-primary)]">
-                  Syllabot: Use Integration by Parts:
-                  <div class="mt-1 font-mono text-[10px] text-[var(--text-primary)] font-bold">$\int u dv = uv - \int v du$</div>
-                  <span class="typing-cursor"></span>
-                </div>
-              </div>
-              <div class="flex items-center justify-between text-[10px] text-[var(--text-muted)] border-t border-[var(--border-subtle)] pt-2 mt-2">
-                <span>Verified with Course Syllabus</span>
-                <span class="text-emerald-400 font-bold">✓ 100% Accurate</span>
-              </div>
-            </div>
-            <h3 class="text-base font-bold text-[var(--text-primary)] mb-1">2. Course-Aware AI Tutoring</h3>
-            <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
-              Ask Syllabot any STEM question. Get instant Socratic explanations and math formula renderings tailored to your syllabus.
-            </p>
-          </div>
-        </div>
-
-        <!-- Step 3 Animation: Live Room Voice & Duels -->
-        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)] relative overflow-hidden flex flex-col justify-between reveal-on-scroll delay-2">
-          <div>
-            <div class="relative h-44 rounded-2xl bg-[var(--bg-surface-elevated1)] border border-[var(--border-subtle)] p-4 flex flex-col justify-between mb-5">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  <span class="text-xs font-bold text-[var(--text-primary)]">Live Room #402</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <div class="continuous-audio-bar"></div>
-                  <div class="continuous-audio-bar"></div>
-                  <div class="continuous-audio-bar"></div>
-                  <div class="continuous-audio-bar"></div>
-                </div>
-              </div>
-
-              <div class="bg-[var(--bg-card)] p-2.5 rounded-xl border border-[var(--border-subtle)] flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="w-6 h-6 rounded-full bg-indigo-500 text-[10px] font-bold text-white flex items-center justify-center">1v1</span>
-                  <span class="text-xs font-semibold text-[var(--text-primary)]">Exam Duel vs Alex</span>
-                </div>
-                <span class="text-xs font-extrabold text-amber-400">+150 XP</span>
-              </div>
-
-              <div class="text-[10px] text-[var(--text-muted)] text-center">
-                Shared Whiteboard & Voice Audio Active
-              </div>
-            </div>
-            <h3 class="text-base font-bold text-[var(--text-primary)] mb-1">3. Live Study Rooms & 1v1 Duels</h3>
-            <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
-              Study live with classmates, sketch on shared whiteboards, and battle in 1v1 timed past question duels.
-            </p>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- STUDENT REVIEWS SECTION -->
-    <section id="reviews" class="py-20 px-5 max-w-[1240px] mx-auto">
-      <div class="text-center max-w-2xl mx-auto mb-16">
-        <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">Student Reviews</span>
-        <h2 class="text-3xl sm:text-4xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] mt-2">
-          Loved by students everywhere
-        </h2>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)]">
-          <div class="flex items-center gap-1 text-amber-400 mb-3 text-sm">★★★★★</div>
-          <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-5">
-            "Kortexify made preparing for my Chemistry finals so much easier. Turning notes into flashcards in seconds is a game changer."
-          </p>
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full bg-[var(--color-primary)] text-[var(--text-inverse)] flex items-center justify-center font-bold text-xs">EG</div>
-            <div>
-              <p class="text-xs font-bold text-[var(--text-primary)]">Elena G.</p>
-              <p class="text-[11px] text-[var(--text-muted)]">Pre-Med Student</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)]">
-          <div class="flex items-center gap-1 text-amber-400 mb-3 text-sm">★★★★★</div>
-          <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-5">
-            "The 1v1 quiz battles with my classmates are super fun and actually help us retain what we learned during lectures."
-          </p>
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full bg-[var(--color-secondary)] text-[var(--text-inverse)] flex items-center justify-center font-bold text-xs">LK</div>
-            <div>
-              <p class="text-xs font-bold text-[var(--text-primary)]">Luqman K.</p>
-              <p class="text-[11px] text-[var(--text-muted)]">Engineering Student</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-[var(--bg-card)] p-6 rounded-3xl border border-[var(--border-subtle)]">
-          <div class="flex items-center gap-1 text-amber-400 mb-3 text-sm">★★★★★</div>
-          <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-5">
-            "Studying in the live voice rooms keeps me accountable. It feels like having a study group whenever I need one."
-          </p>
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full bg-[var(--color-latex)] text-[var(--text-inverse)] flex items-center justify-center font-bold text-xs">SV</div>
-            <div>
-              <p class="text-xs font-bold text-[var(--text-primary)]">Sien V.</p>
-              <p class="text-[11px] text-[var(--text-muted)]">Law Student</p>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- FREQUENTLY ASKED QUESTIONS -->
-    <section id="faq" class="py-20 bg-[var(--bg-canvas-subtle)] border-t border-[var(--border-subtle)]">
-      <div class="max-w-[800px] mx-auto px-5">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)]">
-            Frequently Asked Questions
-          </h2>
-        </div>
-
-        <div class="space-y-4">
-          
-          <details class="bg-[var(--bg-card)] p-5 rounded-2xl border border-[var(--border-subtle)] group">
-            <summary class="font-semibold text-sm cursor-pointer list-none flex justify-between items-center text-[var(--text-primary)]">
-              <span>Is Kortexify really free to start?</span>
-              <span class="text-xs transition-transform group-open:rotate-180">&blacktriangledown;</span>
-            </summary>
-            <p class="text-xs text-[var(--text-secondary)] mt-3 leading-relaxed">
-              Yes. You can upload notes, create flashcards, practice with exam questions, and chat with your AI tutor completely free without entering any credit card information.
-            </p>
-          </details>
-
-          <details class="bg-[var(--bg-card)] p-5 rounded-2xl border border-[var(--border-subtle)] group">
-            <summary class="font-semibold text-sm cursor-pointer list-none flex justify-between items-center text-[var(--text-primary)]">
-              <span>Is my data private and secure?</span>
-              <span class="text-xs transition-transform group-open:rotate-180">&blacktriangledown;</span>
-            </summary>
-            <p class="text-xs text-[var(--text-secondary)] mt-3 leading-relaxed">
-              Yes. Your notes and study materials are private to your account and never shared with third parties or your school.
-            </p>
-          </details>
-
-          <details class="bg-[var(--bg-card)] p-5 rounded-2xl border border-[var(--border-subtle)] group">
-            <summary class="font-semibold text-sm cursor-pointer list-none flex justify-between items-center text-[var(--text-primary)]">
-              <span>Can I use Kortexify on Web and Desktop?</span>
-              <span class="text-xs transition-transform group-open:rotate-180">&blacktriangledown;</span>
-            </summary>
-            <p class="text-xs text-[var(--text-secondary)] mt-3 leading-relaxed">
-              Yes. Kortexify works directly in your web browser without installation, or as a desktop app for Mac, Windows, and Linux.
-            </p>
-          </details>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- FINAL CTA BANNER -->
-    <section class="py-20 px-5 text-center bg-gradient-to-b from-[var(--bg-canvas)] to-[var(--bg-surface-elevated1)]">
-      <div class="max-w-[700px] mx-auto">
-        <h2 class="text-3xl sm:text-4xl font-extrabold font-['Plus_Jakarta_Sans'] text-[var(--text-primary)] mb-4">
-          Ready to walk into your next exam feeling prepared?
-        </h2>
-        <p class="text-sm text-[var(--text-secondary)] mb-8">
-          Join thousands of students studying calmer and scoring higher.
-        </p>
-        
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a href="/workspace/login" class="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[var(--color-primary)] text-sm font-bold text-[var(--text-inverse)] shadow-lg hover:scale-[1.03] transition-all">
-            Start Studying Free &rarr;
-          </a>
-          <a href="/workspace/login" class="w-full sm:w-auto px-8 py-3.5 rounded-full border border-[var(--border-subtle)] text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-card)] transition-all">
-            Log In to Account
-          </a>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Site Footer -->
-  <footer class="site-footer bg-[var(--bg-canvas)] border-t border-[var(--border-subtle)] py-12">
-    <div class="max-w-[1240px] mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-6">
-      
-      <div class="flex items-center gap-2.5">
-        <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" width="24" height="24" class="w-6 h-6">
-        <span class="font-['Plus_Jakarta_Sans'] font-extrabold text-sm text-[var(--text-primary)] tracking-wide">KORTEXIFY</span>
-      </div>
-
-      <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[var(--text-secondary)]">
-        <a href="index.html" class="hover:text-[var(--text-primary)] font-semibold text-[var(--color-primary)]">Home</a>
-        <a href="about.html" class="hover:text-[var(--text-primary)]">About Us</a>
-        <a href="pricing.html" class="hover:text-[var(--text-primary)]">Pricing</a>
-        <a href="downloads.html" class="hover:text-[var(--text-primary)]">Downloads</a>
-        <a href="privacy.html" class="hover:text-[var(--text-primary)]">Privacy Policy</a>
-        <a href="terms.html" class="hover:text-[var(--text-primary)]">Terms of Service</a>
-        <a href="contact.html" class="hover:text-[var(--text-primary)]">Contact</a>
-      </div>
-
-      <p class="text-xs text-[var(--text-muted)]">&copy; 2026 Kortexify Inc. All rights reserved.</p>
-    </div>
-  </footer>
-
-  <!-- Scripts -->
-  <script src="js/storage.js?v=8.0"></script>
-  <script src="js/animations.js?v=8.0"></script>
-  <script src="js/main.js?v=8.0"></script>
-
-  <script>
-    const mobileBtn = document.getElementById('mobileMenuBtn');
-    const mobileDrawer = document.getElementById('mobileMenuDrawer');
-    if (mobileBtn && mobileDrawer) {
-      mobileBtn.addEventListener('click', () => {
-        mobileDrawer.classList.toggle('hidden');
-      });
-    }
-  </script>
-  <!-- KaTeX CSS & Auto-Render -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"
-    onload="renderMathInElement(document.body, {
-      delimiters: [
-        {left: '$$', right: '$$', display: true},
-        {left: '\\[', right: '\\]', display: true},
-        {left: '$', right: '$', display: false},
-        {left: '\\(', right: '\\)', display: false}
-      ],
-      throwOnError: false
-    });"></script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],rm=matchMedia('(prefers-reduced-motion:reduce)').matches,root=document.documentElement;
+if(rm)document.body.classList.add('rm');
+try{const t=localStorage.getItem('kx-theme');if(t)root.dataset.theme=t}catch(e){}
+$('#th').onclick=()=>{const d=root.dataset.theme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'),n=d==='dark'?'light':'dark';root.dataset.theme=n;const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=n==='light'?'#F6F6F8':'#0D0D0F';try{localStorage.setItem('kx-theme',n)}catch(e){}};
+/* word-split headlines */
+const split=el=>{let i=0;el.setAttribute('aria-label',el.textContent);const w=n=>[...n.childNodes].forEach(c=>{if(c.nodeType===3){const f=document.createDocumentFragment();c.textContent.split(/(\s+)/).forEach(t=>{if(!t.trim()){f.append(t);return}const s=document.createElement('span');s.className='w';s.setAttribute('aria-hidden','true');s.innerHTML='<i style="--i:'+i+++'">'+t+'</i>';f.append(s)});c.replaceWith(f)}else w(c)});w(el)};
+$$('[data-split]').forEach(split);
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.18});
+$$('.rv,[data-split]').forEach(e=>io.observe(e));
+/* marquee + bars + palette */
+const mq=$('#mq');mq.append(...[...mq.children].map(c=>{const k=c.cloneNode(true);k.setAttribute('aria-hidden','true');return k}));
+$('#wv').innerHTML=Array.from({length:26},(_,k)=>'<i style="--k:'+k+';height:'+(30+Math.abs(Math.sin(k*1.7))*70)+'%"></i>').join('');
+const pal=$('#pal');pal.innerHTML='<i></i>'.repeat(20);let pi=0;setInterval(()=>{const d=pal.children;if(pi>=20){[...d].forEach(x=>x.classList.remove('d'));pi=0}else d[pi++].classList.add('d')},rm?9e9:650);
+let tl=34*60+12;setInterval(()=>{tl=tl>0?tl-1:34*60+12;$('#tm').textContent=String(tl/60|0).padStart(2,'0')+':'+String(tl%60).padStart(2,'0')},rm?9e9:1000);
+/* spaced-repetition demo */
+const D=[['Which species attacks the benzene ring in nitration?','The nitronium ion, NO₂⁺'],['What is the unit of electric charge?','The coulomb (C)'],['Integration by parts formula?','∫u dv = uv − ∫v du'],['What does a catalyst change?','The activation energy, not the equilibrium']];
+const fl=$('#fl'),rt=$('#rt'),hn=$('#hn'),W=360,X=d=>8+d/90*(W-16),Y=r=>104-r*96;
+let day=0,S=10,ci=0,segs=[];
+const ghost=()=>{let d='';for(let t=0;t<=90;t+=3)d+=(t?'L':'M')+X(t).toFixed(1)+' '+Y(Math.exp(-t/10)).toFixed(1);$('#gh').setAttribute('d',d)};
+const draw=()=>{let d='M'+X(0)+' '+Y(1);segs.forEach(g=>{for(let k=1;k<=10;k++){const t=g.n*k/10;d+='L'+X(g.s+t).toFixed(1)+' '+Y(Math.exp(-t/g.S)).toFixed(1)}d+='L'+X(g.s+g.n).toFixed(1)+' '+Y(1).toFixed(1)});const p=$('#sv');p.setAttribute('d',d);if(!rm){const L=p.getTotalLength();p.style.transition='none';p.style.strokeDasharray=L;p.style.strokeDashoffset=L*.35;p.getBoundingClientRect();p.style.transition='stroke-dashoffset .9s var(--ease)';p.style.strokeDashoffset=0}};
+const flip=()=>{const on=fl.classList.toggle('on');rt.classList.toggle('ok',on);$$('#rt button').forEach(b=>b.disabled=!on)};
+$('#c3').onclick=flip;$('#c3').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}};
+rt.onclick=e=>{const b=e.target.closest('button');if(!b)return;S=Math.min(400,Math.max(2,S*parseFloat(b.dataset.f)));let n=Math.max(1,Math.round(.105*S));if(day+n>90){day=0;S=10;segs=[];n=Math.max(1,Math.round(.105*S))}segs.push({s:day,n,S});day+=n;hn.textContent='Next review in '+n+(n>1?' days':' day')+' · stability grows each time';draw();fl.classList.remove('on');rt.classList.remove('ok');$$('#rt button').forEach(b=>b.disabled=true);ci=(ci+1)%D.length;setTimeout(()=>{$('#qf').textContent=D[ci][0];$('#qb').textContent=D[ci][1]},400)};
+ghost();
+/* chat */
+const typ=(el,t)=>new Promise(r=>{if(rm){el.textContent=t;return r()}let i=0;el.classList.add('cur');const k=setInterval(()=>{el.textContent=t.slice(0,++i);if(i>=t.length){clearInterval(k);el.classList.remove('cur');r()}},24)});
+const wait=ms=>new Promise(r=>setTimeout(r,rm?0:ms)),show=id=>$(id).classList.add('in');
+new IntersectionObserver(async(es,o)=>{if(!es[0].isIntersecting)return;o.disconnect();show('#b1');await wait(700);show('#b2');await typ($('#t2'),'Good one. Look at the integrand, x·eˣ. Which factor gets simpler every time you differentiate it?');await wait(900);show('#b3');await wait(800);show('#b4');await typ($('#t4'),'Exactly. So let u = x. What are dv and v, and what does du become?')},{threshold:.5}).observe($('#chat'));
+/* scroll choreography */
+const stage=$('#stage'),steps=$$('#steps li'),scene=$('.scene'),pills=$$('[data-par]');let tk=0;
+new IntersectionObserver(es=>{if(es[0].isIntersecting)stage.classList.add('v')},{threshold:.2}).observe(stage);
+const frame=()=>{tk=0;const y=scrollY,h=root.scrollHeight-innerHeight,p=h>0?Math.min(1,y/h):0,v=Math.round(38+58*(1-Math.pow(1-p,2)));$('#mv').textContent=v+'%';$('#mp').style.strokeDashoffset=1-p;
+pills.forEach(e=>e.style.setProperty('--y',(y*parseFloat(e.dataset.par)).toFixed(1)+'px'));
+const r=scene.getBoundingClientRect(),pr=rm?1:Math.min(1,Math.max(0,-r.top/(r.height-innerHeight))),s=rm?2:pr<.3?0:pr<.62?1:2;
+scene.style.setProperty('--p',pr);steps[0].parentNode.style.setProperty('--p',pr);if(stage.dataset.s!=s){stage.dataset.s=s;steps.forEach((li,i)=>li.classList.toggle('on',rm||i===s))}};
+addEventListener('scroll',()=>{if(!tk){tk=1;requestAnimationFrame(frame)}},{passive:true});addEventListener('resize',frame);frame();
+if(rm)steps.forEach(l=>l.classList.add('on'));
+/* hero glow + magnetic buttons (pointer devices only) */
+if(matchMedia('(hover:hover)').matches&&!rm){const h=$('.hero');h.addEventListener('pointermove',e=>{const r=h.getBoundingClientRect();h.style.setProperty('--mx',(e.clientX-r.left)+'px');h.style.setProperty('--my',(e.clientY-r.top)+'px')});
+$$('[data-mag]').forEach(b=>{b.addEventListener('pointermove',e=>{const r=b.getBoundingClientRect();b.style.transform='translate('+((e.clientX-r.left-r.width/2)*.22).toFixed(1)+'px,'+((e.clientY-r.top-r.height/2)*.32).toFixed(1)+'px)'});b.addEventListener('pointerleave',()=>b.style.transform='')})}
+})();
+</script>
 </body>
 </html>

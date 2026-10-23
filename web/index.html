@@ -280,7 +280,12 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for (let registration of registrations) {
-          registration.unregister();
+          const scriptUrl = registration.active?.scriptURL ||
+                            registration.installing?.scriptURL ||
+                            registration.waiting?.scriptURL || '';
+          if (!scriptUrl.includes('firebase-messaging-sw.js')) {
+            registration.unregister();
+          }
         }
       });
     }

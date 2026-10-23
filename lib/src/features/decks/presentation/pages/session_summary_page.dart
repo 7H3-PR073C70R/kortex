@@ -80,7 +80,7 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
     unawaited(HapticFeedback.lightImpact());
     unawaited(
       context.router.replaceAll([
-        const MainRoute(children: [DashboardRoute()]),
+        MainRoute(children: [DashboardRoute()]),
       ]),
     );
   }

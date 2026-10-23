@@ -162,7 +162,7 @@ class ManageExamMilestonesList extends StatelessWidget {
                 onTap: () {
                   final router = context.router;
                   Navigator.of(context).pop();
-                  unawaited(router.push(const ExamTimetableRoute()));
+                  unawaited(router.push(ExamTimetableRoute()));
                 },
                 borderRadius: AppRadius.radiusCard,
                 child: Container(

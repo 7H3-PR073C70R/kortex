@@ -1,169 +1,102 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title id="page-title">Shared Content | Kortexify</title>
-  
-  <meta property="og:type" content="website">
-  <meta property="og:title" id="og-title" content="Shared Academic Content on Kortexify">
-  <meta property="og:description" id="og-desc" content="Open this link in Kortexify to access flashcards, forum discussions, quiz duels, or study rooms.">
-  <meta property="og:image" content="assets/images/social_og.jpg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title id="page-title">Shared Content | Kortexify</title>
+<meta name="description" content="Open this shared study deck, room, or CBT exam in the Kortexify app.">
 
-  <link rel="icon" type="image/svg+xml" href="assets/kortexify_logo.svg?v=2">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:title" id="og-title" content="Shared Academic Content on Kortexify">
+<meta property="og:description" id="og-desc" content="Open this link in Kortexify to access flashcards, forum discussions, quiz duels, or study rooms.">
+<meta property="og:image" content="https://kortex-study-app-2026.web.app/assets/images/social_og.jpg">
 
-  <style>
-    :root {
-      --bg: #0b0d14;
-      --card-bg: rgba(22, 27, 44, 0.75);
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --text: #f3f4f6;
-      --text-muted: #9ca3af;
-      --border: rgba(255, 255, 255, 0.1);
-    }
-    body {
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-      background: var(--bg);
-      font-family: 'Inter', sans-serif;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-image: 
-        radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 60%),
-        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
-    }
-    .container {
-      width: 90%;
-      max-width: 480px;
-      padding: 32px 24px;
-      background: var(--card-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-      text-align: center;
-    }
-    .badge {
-      display: inline-block;
-      padding: 6px 14px;
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 100px;
-      color: var(--primary);
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      margin-bottom: 20px;
-    }
-    .logo {
-      width: 56px;
-      height: 56px;
-      margin-bottom: 16px;
-    }
-    h1 {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 24px;
-      font-weight: 800;
-      margin: 0 0 12px 0;
-      color: #ffffff;
-    }
-    p {
-      font-size: 15px;
-      line-height: 1.6;
-      color: var(--text-muted);
-      margin: 0 0 28px 0;
-    }
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 14px 20px;
-      margin-bottom: 12px;
-      border-radius: 14px;
-      font-size: 15px;
-      font-weight: 600;
-      text-decoration: none;
-      box-sizing: border-box;
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
-      color: #ffffff;
-      border: none;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
-    }
-    .btn-primary:hover {
-      opacity: 0.95;
-      transform: translateY(-1px);
-    }
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-    .footer-note {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 24px;
-    }
-  </style>
+<!-- Favicon -->
+<link rel="icon" href="assets/kortexify_logo.svg" type="image/svg+xml">
+<link rel="alternate icon" href="assets/favicon.ico">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
+<!-- Design System CSS -->
+<link rel="stylesheet" href="css/kx.css">
+<style>
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.share-card{width:100%;max-width:480px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:36px 28px;text-align:center;box-shadow:0 30px 80px -25px rgba(0,0,0,.5)}
+.share-badge{display:inline-block;padding:4px 14px;border-radius:var(--radius-full);background:color-mix(in srgb,var(--sage) 18%,transparent);border:1px solid color-mix(in srgb,var(--sage) 35%,transparent);color:var(--sage);font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin:16px 0 12px}
+.share-card h1{font-size:1.45rem;font-weight:800;letter-spacing:-.01em;margin-bottom:10px;color:var(--ink)}
+.share-card p{font-size:.9rem;color:var(--mute);line-height:1.55;margin-bottom:24px}
+.share-actions{display:flex;flex-direction:column;gap:10px}
+</style>
 </head>
 <body>
-  <div class="container">
-    <img src="assets/kortexify_logo.svg" alt="Kortexify Logo" class="logo">
-    <div class="badge" id="type-badge">Kortex Link</div>
+  <div class="share-card">
+    <svg width="48" height="48" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="margin:0 auto">
+      <defs>
+        <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#788C7E"/>
+          <stop offset="35%" stop-color="#5B8C93"/>
+          <stop offset="70%" stop-color="#4A6B5D"/>
+          <stop offset="100%" stop-color="#D4A373"/>
+        </linearGradient>
+        <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#788C7E"/>
+          <stop offset="60%" stop-color="#5B8C93"/>
+          <stop offset="100%" stop-color="#4A6B5D"/>
+        </radialGradient>
+      </defs>
+      <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="rgba(120,140,126,0.25)" stroke-width="2.5"/>
+      <path d="M156 140V372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round"/>
+      <path d="M356 140L256 256L356 372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="156" cy="140" r="13" fill="#788C7E"/>
+      <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
+      <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
+      <circle cx="356" cy="372" r="13" fill="#D4A373"/>
+      <circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
+    </svg>
+
+    <div class="share-badge" id="type-badge">Kortex Link</div>
     <h1 id="title">Shared Academic Item</h1>
-    <p id="description">Open this shared link in Kortexify workspace or download the app to join.</p>
+    <p id="description">Open this shared deck, question set, or study room in your Kortexify workspace.</p>
 
-    <a id="open-app-btn" href="#" class="btn btn-primary">Open in Kortexify App</a>
-    <a href="https://kortex-study-app-2026.web.app/" class="btn btn-secondary">Visit Web Landing</a>
+    <div class="share-actions">
+      <a id="open-app-btn" href="/workspace/login" class="btn p" style="width:100%" data-mag>Open in Kortexify</a>
+      <a href="index.html" class="btn" style="width:100%">Visit Website Home</a>
+    </div>
 
-    <div class="footer-note">
-      Kortexify AI-Augmented Academic Workspace
+    <div style="font-size:.75rem;color:var(--mute);margin-top:20px;font-family:'JetBrains Mono',monospace">
+      Kortexify · Cognitive Active Recall
     </div>
   </div>
 
+  <script src="js/kx.js"></script>
   <script>
-    (function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const type = urlParams.get('type') || 'content';
-      const id = urlParams.get('id') || urlParams.get('code') || '';
-      const title = urlParams.get('title') || 'Shared Item';
-      const desc = urlParams.get('desc') || urlParams.get('description') || 'Open this link in Kortexify to view shared content.';
+  (function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const type = urlParams.get('type') || 'content';
+    const id = urlParams.get('id') || urlParams.get('code') || '';
+    const title = urlParams.get('title') || 'Shared Study Item';
+    const desc = urlParams.get('desc') || urlParams.get('description') || 'Open this link in Kortexify to view shared study materials.';
 
-      // Format badges
-      const badgeElem = document.getElementById('type-badge');
-      badgeElem.innerText = type.replace('_', ' ').toUpperCase();
+    const badgeElem = document.getElementById('type-badge');
+    badgeElem.textContent = type.replace('_', ' ').toUpperCase();
 
-      document.getElementById('title').innerText = title;
-      document.getElementById('description').innerText = desc;
-      document.getElementById('page-title').innerText = title + ' | Kortexify';
+    document.getElementById('title').textContent = title;
+    document.getElementById('description').textContent = desc;
+    document.getElementById('page-title').textContent = title + ' | Kortexify';
 
-      // Build custom app scheme: kortex://share?type=...&id=...
-      const appSchemeUrl = 'kortex://share' + window.location.search;
-      const openBtn = document.getElementById('open-app-btn');
-      openBtn.href = appSchemeUrl;
+    const appSchemeUrl = 'kortex://share' + window.location.search;
+    const openBtn = document.getElementById('open-app-btn');
+    openBtn.href = appSchemeUrl;
 
-      // Auto-attempt redirect on mobile devices
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (isMobile && id) {
-        setTimeout(function() {
-          window.location.href = appSchemeUrl;
-        }, 300);
-      }
-    })();
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile && id) {
+      setTimeout(() => {
+        window.location.href = appSchemeUrl;
+      }, 350);
+    }
+  })();
   </script>
 </body>
 </html>
