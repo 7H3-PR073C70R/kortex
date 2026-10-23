@@ -30,300 +30,126 @@
 <link rel="icon" href="assets/kortexify_logo.svg" type="image/svg+xml">
 <link rel="alternate icon" href="assets/favicon.ico">
 
-<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;600&display=swap">
-
-<!-- Design System CSS -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap"><style>.rv,.bub{opacity:1;transform:none}.w>i{transform:none}.step{opacity:1}</style></noscript>
 <link rel="stylesheet" href="css/kx.css">
-<style>
-.contact-layout{display:grid;grid-template-columns:1fr 1.3fr;gap:36px;margin:3rem 0 5rem;align-items:start}
-@media(max-width:880px){.contact-layout{grid-template-columns:1fr}}
-.channel-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:32px;display:flex;flex-direction:column;gap:24px}
-.channel-item{display:flex;align-items:flex-start;gap:16px}
-.channel-icon{width:44px;height:44px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);display:grid;place-items:center;font-size:1.25rem;color:var(--sage);flex-shrink:0}
-.channel-info h4{font-size:.98rem;font-weight:700;margin-bottom:.25rem}
-.channel-info p{font-size:.85rem;color:var(--mute);line-height:1.5;margin-bottom:.35rem}
-.channel-info a{font-size:.86rem;font-weight:600;color:var(--cyan)}
-.channel-info a:hover{text-decoration:underline}
-
-.support-guarantee{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px 22px;margin-top:1rem}
-.support-guarantee h5{font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:8px;color:var(--gn);margin-bottom:.35rem}
-.support-guarantee p{font-size:.82rem;color:var(--mute);line-height:1.55}
-
-.form-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:36px}
-.field-grp{margin-bottom:1.25rem}
-.field-label{display:block;font-size:.85rem;font-weight:600;margin-bottom:.45rem;color:var(--ink)}
-.field-label .req{color:var(--rd)}
-.input-text, .input-select, .input-area{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius-md);padding:.75rem 1rem;font-family:inherit;font-size:.9rem;color:var(--ink);transition:border-color .2s var(--ease),box-shadow .2s var(--ease)}
-.input-text:focus, .input-select:focus, .input-area:focus{border-color:var(--cyan);outline:none;box-shadow:0 0 0 2px color-mix(in srgb,var(--cyan) 25%,transparent)}
-.input-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888890' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;cursor:pointer}
-.input-area{min-height:120px;resize:vertical}
-.check-row{display:flex;align-items:center;gap:10px;margin-top:.4rem;cursor:pointer}
-.check-row input[type="checkbox"]{width:18px;height:18px;border-radius:4px;accent-color:var(--sage);cursor:pointer}
-.check-label{font-size:.82rem;color:var(--mute);user-select:none}
-
-.submission-msg{display:none;margin-top:1.2rem;padding:14px 18px;border-radius:var(--radius-md);font-size:.88rem;line-height:1.5}
-.submission-msg.success{display:block;background:color-mix(in srgb,var(--gn) 14%,transparent);border:1px solid color-mix(in srgb,var(--gn) 40%,transparent);color:var(--gn)}
-.submission-msg.error{display:block;background:color-mix(in srgb,var(--rd) 14%,transparent);border:1px solid color-mix(in srgb,var(--rd) 40%,transparent);color:var(--rd)}
-</style>
 </head>
 <body>
 <a href="#main" class="skip-link">Skip to main content</a>
-
-<!-- Navigation Header -->
 <header class="nav"><div class="wrap">
 <a class="logo" href="index.html" aria-label="Kortexify home">
   <svg width="30" height="30" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
-      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E"/>
-        <stop offset="35%" stop-color="#5B8C93"/>
-        <stop offset="70%" stop-color="#4A6B5D"/>
-        <stop offset="100%" stop-color="#D4A373"/>
-      </linearGradient>
-      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E"/>
-        <stop offset="60%" stop-color="#5B8C93"/>
-        <stop offset="100%" stop-color="#4A6B5D"/>
-      </radialGradient>
-      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/>
-        <stop offset="50%" stop-color="#5B8C93" stop-opacity="0.22"/>
-        <stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/>
-      </linearGradient>
+      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E"/><stop offset="35%" stop-color="#5B8C93"/><stop offset="70%" stop-color="#4A6B5D"/><stop offset="100%" stop-color="#D4A373"/></linearGradient>
+      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E"/><stop offset="60%" stop-color="#5B8C93"/><stop offset="100%" stop-color="#4A6B5D"/></radialGradient>
+      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/><stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/></linearGradient>
     </defs>
-    <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="url(#gridGrad)" stroke-width="2.5"/>
-    <path d="M156 140V372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round"/>
-    <path d="M356 140L256 256L356 372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="156" cy="140" r="13" fill="#788C7E"/>
-    <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
-    <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
-    <circle cx="356" cy="372" r="13" fill="#D4A373"/>
-    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/>
-    <circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
+    <g stroke="url(#gridGrad)" stroke-width="1.2" stroke-linecap="round"><line x1="256" y1="256" x2="256" y2="56"/><line x1="256" y1="256" x2="429.2" y2="156"/><line x1="256" y1="256" x2="429.2" y2="356"/><line x1="256" y1="256" x2="256" y2="456"/><line x1="256" y1="256" x2="82.8" y2="356"/><line x1="256" y1="256" x2="82.8" y2="156"/><polygon points="256,156 342.6,206 342.6,306 256,356 169.4,306 169.4,206" fill="none"/><line x1="82.8" y1="156" x2="429.2" y2="156"/><line x1="82.8" y1="356" x2="429.2" y2="356"/><line x1="169.4" y1="206" x2="169.4" y2="306"/><line x1="342.6" y1="206" x2="342.6" y2="306"/></g>
+    <polygon points="256,56 429.2,156 429.2,356 256,456 82.8,356 82.8,156" stroke="url(#kortexGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <g stroke="url(#kortexGrad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"><line x1="156" y1="140" x2="156" y2="372"/><line x1="156" y1="256" x2="256" y2="256"/><line x1="256" y1="256" x2="356" y2="140"/><line x1="256" y1="256" x2="356" y2="372"/></g>
+    <circle cx="256" cy="56" r="10" fill="#788C7E"/><circle cx="429.2" cy="156" r="10" fill="#5B8C93"/><circle cx="429.2" cy="356" r="10" fill="#4A6B5D"/><circle cx="256" cy="456" r="10" fill="#D4A373"/><circle cx="82.8" cy="356" r="10" fill="#4A6B5D"/><circle cx="82.8" cy="156" r="10" fill="#788C7E"/>
+    <circle cx="156" cy="140" r="13" fill="#788C7E"/><circle cx="156" cy="372" r="13" fill="#4A6B5D"/><circle cx="356" cy="140" r="13" fill="#5B8C93"/><circle cx="356" cy="372" r="13" fill="#D4A373"/>
+    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/><circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
   </svg>
   <span>Kortexify</span>
 </a>
-<a class="l" href="index.html#how">How it works</a>
-<a class="l" href="index.html#tutor">Syllabot</a>
-<a class="l" href="index.html#education">Education & Exams</a>
-<a class="l" href="pricing.html">Pricing</a>
-<a class="l" href="downloads.html">Downloads</a>
+<a class="l" href="index.html#how">How it works</a><a class="l" href="index.html#tutor">Syllabot</a><a class="l" href="index.html#education">Education & Exams</a><a class="l" href="pricing.html">Pricing</a>
 <button class="ic" id="th" aria-label="Toggle light or dark theme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
 <a class="btn p s" href="/workspace/login" data-mag>Start free</a>
 </div></header>
 
 <main id="main">
-  <!-- Page Hero -->
-  <section class="page-hero">
-    <div class="wrap">
-      <p class="eyebrow rv">Direct Communication</p>
-      <h1 class="rv" style="--d:.1s">Talk to our <em>engineering & educator team.</em></h1>
-      <p class="lead rv" style="--d:.2s">Have questions about setting up Kortexify for your university, syllabus coverage, or billing? Reach out and an actual team member will reply within 24 hours.</p>
-    </div>
-  </section>
+<section class="hero">
+<i class="pill a" data-par="-.12" aria-hidden="true"></i>
+<i class="pill b" data-par=".08" aria-hidden="true"></i>
+<div class="wrap"><div>
+<p class="eyebrow rv">Direct communication</p>
+<h1 data-split>Talk to the people <em>who build it.</em></h1>
+<p class="lead rv" style="--d:.5s">Have questions about setting up Kortexify for your university, syllabus coverage, or billing? Reach out and an actual educator or engineer will reply within 24 hours.</p>
 
-  <!-- Contact Channels & Form -->
-  <section><div class="wrap">
-    <div class="contact-layout">
-      
-      <!-- Channels Column -->
-      <div class="channel-card rv" style="--d:.15s">
-        <div class="channel-item">
-          <div class="channel-icon">💬</div>
-          <div class="channel-info">
-            <h4>Student & Academic Support</h4>
-            <p>Help with spaced repetition decks, syllabus uploads, or offline sync issues:</p>
-            <a href="mailto:support@kortexify.app">support@kortexify.app &rarr;</a>
-          </div>
-        </div>
-
-        <div class="channel-item">
-          <div class="channel-icon">🎓</div>
-          <div class="channel-info">
-            <h4>Universities & Campus Ambassadors</h4>
-            <p>Faculty pilots, student union partnerships, and department question banks:</p>
-            <a href="mailto:ambassadors@kortexify.app">ambassadors@kortexify.app &rarr;</a>
-          </div>
-        </div>
-
-        <div class="channel-item" id="security">
-          <div class="channel-icon">🛡️</div>
-          <div class="channel-info">
-            <h4>Security & Privacy Inquiries</h4>
-            <p>Responsible vulnerability disclosures and data portability requests:</p>
-            <a href="mailto:security@kortexify.app">security@kortexify.app &rarr;</a>
-          </div>
-        </div>
-
-        <div class="support-guarantee">
-          <h5>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Guaranteed Response Time
-          </h5>
-          <p>Every inquiry is routed directly to active educators and software engineers. We prioritize student questions with impending exam deadlines.</p>
-        </div>
-      </div>
-
-      <!-- Form Column -->
-      <div class="form-card rv" style="--d:.2s">
-        <form id="mainContactForm">
-          <div class="field-grp">
-            <label class="field-label" for="contactName">Full Name <span class="req">*</span></label>
-            <input type="text" id="contactName" class="input-text" placeholder="e.g. Wuke Anjolaoluwa" required autocomplete="name">
-          </div>
-
-          <div class="field-grp">
-            <label class="field-label" for="contactEmail">Student or Institutional Email <span class="req">*</span></label>
-            <input type="email" id="contactEmail" class="input-text" placeholder="wuke@university.edu" required autocomplete="email">
-          </div>
-
-          <div class="field-grp">
-            <label class="field-label" for="contactTopic">Inquiry Category</label>
-            <select id="contactTopic" class="input-select">
-              <option value="early_access">Desktop & Web App Access</option>
-              <option value="exam_past_questions">JAMB, WAEC, SAT & Exam Questions</option>
-              <option value="campus_partnership">Campus Ambassador & Department Pilot</option>
-              <option value="billing_payments">Billing, NGN/USD Payment Assistance</option>
-              <option value="feature_request">Feature Suggestion & Feedback</option>
-              <option value="bug_report">Bug Report / Technical Issue</option>
-              <option value="other">General Inquiry</option>
-            </select>
-          </div>
-
-          <div class="field-grp">
-            <label class="field-label" for="contactMessage">Message <span class="req">*</span></label>
-            <textarea id="contactMessage" class="input-area" placeholder="How can we assist you with your courses or exam preparation?" required></textarea>
-          </div>
-
-          <label class="check-row" for="contactNewsletterOptIn">
-            <input type="checkbox" id="contactNewsletterOptIn" checked>
-            <span class="check-label">Keep me updated on major study tools and new course libraries</span>
-          </label>
-
-          <!-- Anti-Spam Bot Trap -->
-          <div style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;width:0;height:0;overflow:hidden" aria-hidden="true">
-            <label for="company_fax_hp">Leave blank</label>
-            <input type="text" id="company_fax_hp" name="company_fax_hp" tabindex="-1" autocomplete="off">
-          </div>
-
-          <div style="margin-top:1.5rem">
-            <button type="submit" class="btn p" id="contactSubmitBtn" style="width:100%" data-mag>
-              <span>Send Message &rarr;</span>
-            </button>
-            <div id="contactFeedback" class="submission-msg"></div>
-          </div>
-        </form>
-      </div>
-
-    </div>
-  </div></section>
+<p class="fine rv" style="--d:.75s">We prioritize students with impending exam deadlines.</p>
+</div><div class="rv" style="--d:.5s"><div class="demo">
+<div class="top"><span>NEW MESSAGE</span><span>REPLY &lt; 24H</span></div>
+<form id="mainContactForm" class="pane">
+<div class="field"><label for="contactName">Full name <i>*</i></label><input type="text" id="contactName" placeholder="e.g. Wuke Anjolaoluwa" required autocomplete="name"></div>
+<div class="field"><label for="contactEmail">Student or institutional email <i>*</i></label><input type="email" id="contactEmail" placeholder="wuke@university.edu" required autocomplete="email"></div>
+<div class="field"><label for="contactTopic">Inquiry category</label><select id="contactTopic">
+<option value="early_access">Desktop & Web App Access</option><option value="exam_past_questions">JAMB, WAEC, SAT & Exam Questions</option><option value="campus_partnership">Campus Ambassador & Department Pilot</option><option value="billing_payments">Billing, NGN/USD Payment Assistance</option><option value="feature_request">Feature Suggestion & Feedback</option><option value="bug_report">Bug Report / Technical Issue</option><option value="other">General Inquiry</option>
+</select></div>
+<div class="field"><label for="contactMessage">Message <i>*</i></label><textarea id="contactMessage" placeholder="How can we assist you with your courses or exam preparation?" required></textarea></div>
+<label class="check" for="contactNewsletterOptIn"><input type="checkbox" id="contactNewsletterOptIn" checked>Keep me updated on major study tools and new course libraries</label>
+<div class="hp" aria-hidden="true"><label for="company_fax_hp">Leave blank</label><input type="text" id="company_fax_hp" name="company_fax_hp" tabindex="-1" autocomplete="off"></div>
+<button type="submit" class="btn p w" id="contactSubmitBtn" style="margin-top:1.3rem"><span>Send message →</span></button>
+<div id="contactFeedback" class="msg" role="status" aria-live="polite"></div>
+</form>
+</div></div></div>
+</section>
+<section class="sec tight"><div class="wrap">
+<p class="eyebrow rv">Channels</p><h2 data-split>Or write to us <em>directly.</em></h2>
+<div class="bento b3">
+<div class="bc rv"><div class="top"><span>STUDENTS</span><span>SUPPORT</span></div>
+<h3 style="margin-top:1rem">Student & academic support</h3><p>Help with spaced repetition decks, syllabus uploads, or offline sync issues.</p>
+<div class="foot"><a class="ink-link" href="mailto:support@kortexify.app">support@kortexify.app →</a></div></div>
+<div class="bc rv" style="--d:.1s"><div class="top"><span>CAMPUS</span><span>PARTNERS</span></div>
+<h3 style="margin-top:1rem">Universities & campus ambassadors</h3><p>Faculty pilots, student union partnerships, and department question banks.</p>
+<div class="foot"><a class="ink-link" href="mailto:ambassadors@kortexify.app">ambassadors@kortexify.app →</a></div></div>
+<div class="bc rv" style="--d:.2s" id="security"><div class="top"><span>SECURITY</span><span>DISCLOSURE</span></div>
+<h3 style="margin-top:1rem">Security & privacy inquiries</h3><p>Responsible vulnerability disclosures and data portability requests.</p>
+<div class="foot"><a class="ink-link" href="mailto:security@kortexify.app">security@kortexify.app →</a></div></div>
+</div></div></section>
+<section class="sec final"><div class="wrap">
+<p class="eyebrow rv">Exam & defense day</p><h2 data-split>Walk in <em>calm.</em></h2>
+<p class="lead rv">While you wait for a reply, your first deck is a minute away.</p>
+<svg class="climb rv" viewBox="0 0 900 220" role="img" aria-label="A memory curve that climbs steadily toward exam day"><path pathLength="1" d="M10 200 L90 168 L96 190 L200 138 L206 164 L330 104 L336 132 L470 78 L476 104 L620 52 L626 76 L780 22 L880 14"/><circle cx="880" cy="14" r="9"/><text x="10" y="216">today</text><text x="820" y="48">exam day</text></svg>
+<div class="cta rv"><a class="btn p" href="/workspace/login" data-mag>Start studying free →</a><a class="btn" href="pricing.html" data-mag>See pricing</a></div>
+</div></section>
 </main>
 
-<!-- Unified Site Footer -->
-<footer class="footer"><div class="wrap">
-<div class="foot-grid">
-  <div>
-    <div class="brand-row">
-      <svg width="26" height="26" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="rgba(120,140,126,0.2)" stroke-width="2.5"/>
-        <path d="M156 140V372" stroke="#788C7E" stroke-width="44" stroke-linecap="round"/>
-        <path d="M356 140L256 256L356 372" stroke="#D4A373" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="156" cy="140" r="13" fill="#788C7E"/>
-        <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
-        <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
-        <circle cx="356" cy="372" r="13" fill="#D4A373"/>
-        <circle cx="256" cy="256" r="30" fill="#5B8C93"/>
-      </svg>
-      <span class="foot-title">Kortexify</span>
-    </div>
-    <p class="foot-lead">Active study workspace combining spaced repetition, grounded Socratic tutoring, and timed CBT practice across higher education.</p>
-  </div>
-  <div class="foot-col">
-    <div class="foot-hd">Product</div>
-    <a href="index.html#how">How it works</a>
-    <a href="index.html#tutor">Syllabot AI</a>
-    <a href="features/flashcards.html">Smart Flashcards</a>
-    <a href="features/questions.html">CBT Practice</a>
-    <a href="downloads.html">Desktop Apps</a>
-  </div>
-  <div class="foot-col">
-    <div class="foot-hd">Resources</div>
-    <a href="pricing.html">Pricing & Plans</a>
-    <a href="about.html">About Us</a>
-    <a href="features/glossary.html">Cognitive Glossary</a>
-    <a href="contact.html">Help & Support</a>
-  </div>
-  <div class="foot-col">
-    <div class="foot-hd">Legal & Security</div>
-    <a href="privacy.html">Privacy Policy</a>
-    <a href="terms.html">Terms of Service</a>
-    <a href="contact.html#security">Security Disclosure</a>
-  </div>
-</div>
-<div class="foot-bottom">
-  <div>&copy; 2026 Kortexify. Cognitive active recall for higher education.</div>
-  <div class="foot-badge"><span></span> Operational · Flutter Web Client 3.x</div>
-</div>
-</div></footer>
+<footer><div class="wrap"><span>© Kortexify Technologies</span><nav aria-label="Site"><a href="about.html">About</a><a href="pricing.html">Pricing</a><a href="downloads.html">Downloads</a><a href="contact.html">Contact</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></nav></div>
+<div class="wrap"><span class="mono">FEATURES</span><nav aria-label="Features"><a href="features/flashcards.html">Smart flashcards</a><a href="features/questions.html">CBT practice</a><a href="features/solver.html">Syllabot solver</a><a href="features/glossary.html">Course glossary</a><a href="features/study_rooms.html">Study rooms</a></nav></div></footer>
+<div class="meter" aria-hidden="true">retention <b id="mv">38%</b><svg viewBox="0 0 70 26"><path id="mp" pathLength="1" d="M2 22L12 17L14 22L26 14L28 20L44 9L46 16L68 3"/></svg></div>
 
 <script src="js/kx.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const contactForm = document.getElementById('mainContactForm');
-  const contactSubmitBtn = document.getElementById('contactSubmitBtn');
-  const contactFeedback = document.getElementById('contactFeedback');
-
-  const SUPABASE_URL  = 'https://mongizqfijuhycdxltpw.supabase.co';
-  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbmdpenFmaWp1aHljZHhsdHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjk0ODksImV4cCI6MjEwMzcwNTQ4OX0.WdbPP0hWHnm2P7IWOOPOPv8emJsNql2jf5z6XnPa0wg';
-  const CONTACT_URL   = `${SUPABASE_URL}/functions/v1/submit-contact`;
-
-  if (contactForm) {
-    contactForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const name            = document.getElementById('contactName').value.trim();
-      const email           = document.getElementById('contactEmail').value.trim();
-      const topic           = document.getElementById('contactTopic').value;
-      const message         = document.getElementById('contactMessage').value.trim();
-      const newsletterOptIn = document.getElementById('contactNewsletterOptIn').checked;
-      const honeypot        = document.getElementById('company_fax_hp')?.value || '';
-
-      contactSubmitBtn.disabled = true;
-      const originalHTML = contactSubmitBtn.innerHTML;
-      contactSubmitBtn.innerHTML = '<span>Sending message…</span>';
-      contactFeedback.className = 'submission-msg';
-
-      try {
-        const res = await fetch(CONTACT_URL, {
-          method : 'POST',
-          headers: {
-            'Content-Type' : 'application/json',
-            'apikey'       : SUPABASE_ANON,
-            'Authorization': `Bearer ${SUPABASE_ANON}`,
-          },
-          body: JSON.stringify({ name, email, topic, message, newsletterOptIn, hp: honeypot }),
-        });
-
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          throw new Error(data.error || `Submission failed (${res.status}). Please try again.`);
-        }
-
-        contactSubmitBtn.disabled = false;
-        contactSubmitBtn.innerHTML = originalHTML;
-        contactFeedback.className = 'submission-msg success';
-        contactFeedback.innerHTML = '✓ <strong>Message Received!</strong> Thank you for reaching out. A team member will reply within 24 hours.';
-        contactForm.reset();
-
-      } catch (err) {
-        contactSubmitBtn.disabled = false;
-        contactSubmitBtn.innerHTML = originalHTML;
-        contactFeedback.className = 'submission-msg error';
-        contactFeedback.textContent = err.message || 'An unexpected error occurred. Please try again.';
-      }
+const SUPABASE_URL = 'https://mongizqfijuhycdxltpw.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbmdpenFmaWp1aHljZHhsdHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjk0ODksImV4cCI6MjEwMzcwNTQ4OX0.WdbPP0hWHnm2P7IWOOPOPv8emJsNql2jf5z6XnPa0wg';
+const CONTACT_URL = `${SUPABASE_URL}/functions/v1/submit-contact`;
+const form = document.getElementById('mainContactForm');
+const submitBtn = document.getElementById('contactSubmitBtn');
+const feedback = document.getElementById('contactFeedback');
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const payload = {
+    name: document.getElementById('contactName').value.trim(),
+    email: document.getElementById('contactEmail').value.trim(),
+    topic: document.getElementById('contactTopic').value,
+    message: document.getElementById('contactMessage').value.trim(),
+    newsletterOptIn: document.getElementById('contactNewsletterOptIn').checked,
+    hp: document.getElementById('company_fax_hp')?.value || '',
+  };
+  const originalHTML = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span>Sending message…</span>';
+  feedback.className = 'msg';
+  try {
+    const res = await fetch(CONTACT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` },
+      body: JSON.stringify(payload),
     });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Submission failed (${res.status}). Please try again.`);
+    feedback.className = 'msg success';
+    feedback.innerHTML = '✓ <strong>Message received.</strong> Thank you for reaching out. A team member will reply within 24 hours.';
+    form.reset();
+  } catch (err) {
+    feedback.className = 'msg error';
+    feedback.textContent = err.message || 'An unexpected error occurred. Please try again.';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalHTML;
   }
 });
 </script>

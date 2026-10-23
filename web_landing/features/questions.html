@@ -30,254 +30,95 @@
 <link rel="icon" href="../assets/kortexify_logo.svg" type="image/svg+xml">
 <link rel="alternate icon" href="../assets/favicon.ico">
 
-<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;600&display=swap">
-
-<!-- Design System CSS -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap"><style>.rv,.bub{opacity:1;transform:none}.w>i{transform:none}.step{opacity:1}</style></noscript>
 <link rel="stylesheet" href="../css/kx.css">
-<style>
-.exam-hero{padding:clamp(3.5rem,7vw,5.5rem) 0 2rem;text-align:center}
-.cbt-widget{max-width:820px;margin:2rem auto 4.5rem;background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:34px;box-shadow:0 30px 80px -25px rgba(0,0,0,.45)}
-.cbt-header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:24px;flex-wrap:wrap;gap:12px}
-.cbt-badge{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:700;color:var(--sage)}
-.cbt-badge::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--gn);display:inline-block;box-shadow:0 0 8px var(--gn)}
-.cbt-timer{font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:700;color:var(--ochre);background:var(--bg2);border:1px solid var(--line);padding:4px 12px;border-radius:var(--radius-full)}
-
-.cbt-qtitle{font-size:1.25rem;font-weight:700;line-height:1.45;color:var(--ink);margin-bottom:1.5rem}
-.cbt-opts{display:flex;flex-direction:column;gap:12px}
-.cbt-opt{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius-md);padding:14px 18px;cursor:pointer;transition:all .2s var(--ease);text-align:left;color:var(--ink);font-family:inherit;font-size:.92rem}
-.cbt-opt:hover{border-color:var(--sage);background:color-mix(in srgb,var(--card) 90%,var(--sage))}
-.cbt-opt.selected{border-color:var(--gn);background:color-mix(in srgb,var(--gn) 12%,transparent)}
-.cbt-opt .opt-letter{width:26px;height:26px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;font-size:.8rem;font-weight:700;flex-shrink:0;margin-right:12px}
-.cbt-opt.selected .opt-letter{background:var(--gn);color:#fff;border-color:var(--gn)}
-
-.cbt-explanation{margin-top:1.5rem;padding:18px 22px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--cyan) 10%,transparent);border:1px solid color-mix(in srgb,var(--cyan) 30%,transparent);font-size:.88rem;line-height:1.6}
-.cbt-explanation strong{color:var(--cyan);display:block;margin-bottom:4px}
-
-.feature-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:3.5rem 0}
-@media(max-width:880px){.feature-benefits{grid-template-columns:1fr}}
-.benefit-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:30px;display:flex;flex-direction:column;gap:14px}
-.benefit-icon{width:46px;height:46px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);display:grid;place-items:center;font-size:1.3rem;color:var(--sage)}
-</style>
 </head>
 <body>
 <a href="#main" class="skip-link">Skip to main content</a>
-
-<!-- Navigation Header -->
 <header class="nav"><div class="wrap">
 <a class="logo" href="../index.html" aria-label="Kortexify home">
   <svg width="30" height="30" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
-      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E"/>
-        <stop offset="35%" stop-color="#5B8C93"/>
-        <stop offset="70%" stop-color="#4A6B5D"/>
-        <stop offset="100%" stop-color="#D4A373"/>
-      </linearGradient>
-      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E"/>
-        <stop offset="60%" stop-color="#5B8C93"/>
-        <stop offset="100%" stop-color="#4A6B5D"/>
-      </radialGradient>
-      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/>
-        <stop offset="50%" stop-color="#5B8C93" stop-opacity="0.22"/>
-        <stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/>
-      </linearGradient>
+      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E"/><stop offset="35%" stop-color="#5B8C93"/><stop offset="70%" stop-color="#4A6B5D"/><stop offset="100%" stop-color="#D4A373"/></linearGradient>
+      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E"/><stop offset="60%" stop-color="#5B8C93"/><stop offset="100%" stop-color="#4A6B5D"/></radialGradient>
+      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/><stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/></linearGradient>
     </defs>
-    <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="url(#gridGrad)" stroke-width="2.5"/>
-    <path d="M156 140V372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round"/>
-    <path d="M356 140L256 256L356 372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="156" cy="140" r="13" fill="#788C7E"/>
-    <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
-    <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
-    <circle cx="356" cy="372" r="13" fill="#D4A373"/>
-    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/>
-    <circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
+    <g stroke="url(#gridGrad)" stroke-width="1.2" stroke-linecap="round"><line x1="256" y1="256" x2="256" y2="56"/><line x1="256" y1="256" x2="429.2" y2="156"/><line x1="256" y1="256" x2="429.2" y2="356"/><line x1="256" y1="256" x2="256" y2="456"/><line x1="256" y1="256" x2="82.8" y2="356"/><line x1="256" y1="256" x2="82.8" y2="156"/><polygon points="256,156 342.6,206 342.6,306 256,356 169.4,306 169.4,206" fill="none"/><line x1="82.8" y1="156" x2="429.2" y2="156"/><line x1="82.8" y1="356" x2="429.2" y2="356"/><line x1="169.4" y1="206" x2="169.4" y2="306"/><line x1="342.6" y1="206" x2="342.6" y2="306"/></g>
+    <polygon points="256,56 429.2,156 429.2,356 256,456 82.8,356 82.8,156" stroke="url(#kortexGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <g stroke="url(#kortexGrad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"><line x1="156" y1="140" x2="156" y2="372"/><line x1="156" y1="256" x2="256" y2="256"/><line x1="256" y1="256" x2="356" y2="140"/><line x1="256" y1="256" x2="356" y2="372"/></g>
+    <circle cx="256" cy="56" r="10" fill="#788C7E"/><circle cx="429.2" cy="156" r="10" fill="#5B8C93"/><circle cx="429.2" cy="356" r="10" fill="#4A6B5D"/><circle cx="256" cy="456" r="10" fill="#D4A373"/><circle cx="82.8" cy="356" r="10" fill="#4A6B5D"/><circle cx="82.8" cy="156" r="10" fill="#788C7E"/>
+    <circle cx="156" cy="140" r="13" fill="#788C7E"/><circle cx="156" cy="372" r="13" fill="#4A6B5D"/><circle cx="356" cy="140" r="13" fill="#5B8C93"/><circle cx="356" cy="372" r="13" fill="#D4A373"/>
+    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/><circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
   </svg>
   <span>Kortexify</span>
 </a>
-<a class="l" href="../index.html#how">How it works</a>
-<a class="l" href="../index.html#tutor">Syllabot</a>
-<a class="l" href="../index.html#education">Education & Exams</a>
-<a class="l" href="../pricing.html">Pricing</a>
-<a class="l" href="../downloads.html">Downloads</a>
+<a class="l" href="../index.html#how">How it works</a><a class="l" href="../index.html#tutor">Syllabot</a><a class="l" href="../index.html#education">Education & Exams</a><a class="l" href="../pricing.html">Pricing</a>
 <button class="ic" id="th" aria-label="Toggle light or dark theme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
 <a class="btn p s" href="/workspace/login" data-mag>Start free</a>
 </div></header>
 
 <main id="main">
-  <!-- Hero Section -->
-  <section class="exam-hero">
-    <div class="wrap">
-      <p class="eyebrow rv">Timed CBT Exam Simulator</p>
-      <h1 class="rv" style="--d:.1s">Walk into your exams with <em>calm certainty.</em></h1>
-      <p class="lead rv" style="--d:.2s;max-width:38em;margin:1rem auto 2.5rem">Practice authentic computer-based tests for university semesters, polytechnic diplomas, and standardized entrance examinations (JAMB, WAEC, SAT). With instant step-by-step solutions.</p>
-    </div>
-  </section>
+<section class="hero">
+<i class="pill a" data-par="-.12" aria-hidden="true"></i>
+<i class="pill b" data-par=".08" aria-hidden="true"></i>
+<div class="wrap"><div>
+<p class="eyebrow rv">Timed CBT exam simulator</p>
+<h1 data-split>Walk into exams with <em>calm certainty.</em></h1>
+<p class="lead rv" style="--d:.5s">Practice authentic computer-based tests for university semesters, polytechnic diplomas, and standardized entrance examinations (JAMB, WAEC, SAT), with instant step-by-step solutions.</p>
+<div class="cta rv" style="--d:.65s"><a class="btn p" href="/workspace/login" data-mag>Launch CBT simulator →</a><a class="btn" href="#system" data-mag>How it prepares you</a></div>
 
-  <!-- Interactive CBT Exam Widget -->
-  <section><div class="wrap">
-    <div class="cbt-widget rv" style="--d:.25s" role="region" aria-label="Interactive practice question sample">
-      <div class="cbt-header">
-        <div class="cbt-badge">CBT TEST MODE • BIOCHEMISTRY & ORGANIC REACTIONS</div>
-        <div class="cbt-timer">⏱️ 18:42 REMAINING</div>
-      </div>
-
-      <div style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--mute);margin-bottom:.8rem">
-        QUESTION 04 OF 25 • SECTION: REGIOSELECTIVITY
-      </div>
-
-      <div class="cbt-qtitle">
-        Which of the following reaction conditions converts an alkene to an alcohol with anti-Markovnikov regioselectivity?
-      </div>
-
-      <div class="cbt-opts" id="cbtOpts">
-        <button type="button" class="cbt-opt" data-correct="false">
-          <div style="display:flex;align-items:center">
-            <span class="opt-letter">A</span>
-            <span>H₂O in catalytic H₂SO₄ (Acid-catalyzed hydration)</span>
-          </div>
-        </button>
-
-        <button type="button" class="cbt-opt selected" data-correct="true">
-          <div style="display:flex;align-items:center">
-            <span class="opt-letter">B</span>
-            <span>1. BH₃·THF / 2. H₂O₂, NaOH (Hydroboration-Oxidation)</span>
-          </div>
-          <span style="font-size:.8rem;font-weight:700;color:var(--gn)">✓ Correct Key</span>
-        </button>
-
-        <button type="button" class="cbt-opt" data-correct="false">
-          <div style="display:flex;align-items:center">
-            <span class="opt-letter">C</span>
-            <span>1. Hg(OAc)₂, H₂O / 2. NaBH₄ (Oxymercuration-Demercuration)</span>
-          </div>
-        </button>
-
-        <button type="button" class="cbt-opt" data-correct="false">
-          <div style="display:flex;align-items:center">
-            <span class="opt-letter">D</span>
-            <span>OsO₄, NMO (Syn-dihydroxylation)</span>
-          </div>
-        </button>
-      </div>
-
-      <div class="cbt-explanation">
-        <strong>💡 Grounded Socratic Derivation:</strong>
-        Hydroboration-Oxidation proceeds through concerted syn-addition where boron attaches to the sterically less hindered carbon, resulting in clean anti-Markovnikov alcohol formation. In contrast, acid hydration and oxymercuration produce Markovnikov addition.
-      </div>
-    </div>
-  </div></section>
-
-  <!-- Key Benefits Grid -->
-  <section><div class="wrap">
-    <div class="section-title rv">
-      <p class="eyebrow">Preparation System</p>
-      <h2>Built around real testing conditions</h2>
-    </div>
-
-    <div class="feature-benefits">
-      <div class="benefit-card rv" style="--d:.1s">
-        <div class="benefit-icon">⏱️</div>
-        <h3>Realistic CBT Timing</h3>
-        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Train your pacing under strict countdown timers identical to real university portal and standardized examination screens.</p>
-      </div>
-
-      <div class="benefit-card rv" style="--d:.15s">
-        <div class="benefit-icon">🔄</div>
-        <h3>Automated Weakness Queue</h3>
-        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Missed questions do not vanish. They are automatically routed into your daily active recall flashcard queue until you achieve verified mastery.</p>
-      </div>
-
-      <div class="benefit-card rv" style="--d:.2s">
-        <div class="benefit-icon">📊</div>
-        <h3>Topic Mastery Analytics</h3>
-        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Pinpoint exactly which chapters or modules require revision before exam day, backed by speed and retrievability analytics.</p>
-      </div>
-    </div>
-  </div></section>
-
-  <!-- Bottom CTA -->
-  <section class="final-cta"><div class="wrap text-center">
-    <h2 class="rv">Ready to test yourself before exam week?</h2>
-    <p class="lead rv" style="--d:.1s;margin:1rem auto 2rem">Generate practice exams directly from your syllabus or choose from standardized banks.</p>
-    <div class="cta-actions rv" style="--d:.2s">
-      <a class="btn p" href="/workspace/login" data-mag>Launch CBT Simulator &rarr;</a>
-      <a class="btn" href="../downloads.html">Get Desktop App</a>
-    </div>
-  </div></section>
+</div><div class="rv" style="--d:.5s"><div class="demo" role="region" aria-label="Interactive practice question">
+<div class="top"><span>CBT · BIOCHEMISTRY · Q04 / 25</span><span class="tm" data-countdown="18:42">18:42</span></div>
+<p class="q">Which conditions convert an alkene to an alcohol with anti-Markovnikov regioselectivity?</p>
+<div id="cbtOpts">
+<button type="button" class="op" data-correct="false"><b>A</b>H₂O in catalytic H₂SO₄ (acid-catalyzed hydration)</button>
+<button type="button" class="op" data-correct="true"><b>B</b>1. BH₃·THF / 2. H₂O₂, NaOH (hydroboration–oxidation)</button>
+<button type="button" class="op" data-correct="false"><b>C</b>1. Hg(OAc)₂, H₂O / 2. NaBH₄ (oxymercuration)</button>
+<button type="button" class="op" data-correct="false"><b>D</b>OsO₄, NMO (syn-dihydroxylation)</button>
+</div>
+<div class="note" id="cbtNote" hidden><b>SOCRATIC DERIVATION</b>Hydroboration–oxidation is a concerted syn-addition: boron attaches to the less hindered carbon, giving the anti-Markovnikov alcohol. Acid hydration and oxymercuration both follow Markovnikov's rule.</div>
+<div class="pal" data-pal="25" style="grid-template-columns:repeat(25,1fr);gap:4px"></div>
+</div></div></div>
+</section>
+<section class="sec" id="system"><div class="wrap">
+<p class="eyebrow rv">Preparation system</p><h2 data-split>Built around real <em>testing conditions.</em></h2>
+<div class="bento b3">
+<div class="bc rv"><div class="top"><span>01 · PACING</span><span class="tm" data-countdown="45:00">45:00</span></div>
+<div class="viz"><div class="vs"><span>Q</span><div class="bar track"><i style="--v:62%"></i></div><span>62%</span></div></div>
+<h3>Realistic CBT timing</h3><p>Train your pacing under strict countdown timers identical to real university portal and standardized examination screens.</p></div>
+<div class="bc rv" style="--d:.1s"><div class="top"><span>02 · WEAKNESS QUEUE</span><span>AUTO</span></div>
+<div class="viz rows"><div class="row"><b>Q04 · Regioselectivity</b><span>DUE TOMORROW</span></div><div class="row"><b>Q17 · SN1 vs SN2</b><span>DUE IN 3 DAYS</span></div></div>
+<h3>Automated weakness queue</h3><p>Missed questions don't vanish. They're routed into your daily active recall queue until you reach verified mastery.</p></div>
+<div class="bc rv" style="--d:.2s"><div class="top"><span>03 · MASTERY</span><span>BY TOPIC</span></div>
+<div class="viz" style="display:grid;gap:8px"><div class="vs"><span style="width:7.5em">Alkenes</span><div class="bar track"><i style="--v:86%"></i></div></div><div class="vs"><span style="width:7.5em">Stereochem</span><div class="bar track"><i style="--v:58%"></i></div></div><div class="vs"><span style="width:7.5em">Kinetics</span><div class="bar track"><i style="--v:34%"></i></div></div></div>
+<h3>Topic mastery analytics</h3><p>Pinpoint exactly which chapters or modules need revision before exam day, backed by speed and retrievability analytics.</p></div>
+</div></div></section>
+<section class="sec final"><div class="wrap">
+<p class="eyebrow rv">Exam & defense day</p><h2 data-split>Test yourself <em>before exam week.</em></h2>
+<p class="lead rv">Generate practice exams directly from your syllabus or choose from standardized banks.</p>
+<svg class="climb rv" viewBox="0 0 900 220" role="img" aria-label="A memory curve that climbs steadily toward exam day"><path pathLength="1" d="M10 200 L90 168 L96 190 L200 138 L206 164 L330 104 L336 132 L470 78 L476 104 L620 52 L626 76 L780 22 L880 14"/><circle cx="880" cy="14" r="9"/><text x="10" y="216">today</text><text x="820" y="48">exam day</text></svg>
+<div class="cta rv"><a class="btn p" href="/workspace/login" data-mag>Launch CBT simulator →</a><a class="btn" href="../downloads.html" data-mag>Get the desktop app</a></div>
+</div></section>
 </main>
 
-<!-- Unified Site Footer -->
-<footer class="footer"><div class="wrap">
-<div class="foot-grid">
-  <div>
-    <div class="brand-row">
-      <svg width="26" height="26" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="rgba(120,140,126,0.2)" stroke-width="2.5"/>
-        <path d="M156 140V372" stroke="#788C7E" stroke-width="44" stroke-linecap="round"/>
-        <path d="M356 140L256 256L356 372" stroke="#D4A373" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="156" cy="140" r="13" fill="#788C7E"/>
-        <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
-        <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
-        <circle cx="356" cy="372" r="13" fill="#D4A373"/>
-        <circle cx="256" cy="256" r="30" fill="#5B8C93"/>
-      </svg>
-      <span class="foot-title">Kortexify</span>
-    </div>
-    <p class="foot-lead">Active study workspace combining spaced repetition, grounded Socratic tutoring, and timed CBT practice across higher education.</p>
-  </div>
-  <div class="foot-col">
-    <div class="foot-hd">Product</div>
-    <a href="../index.html#how">How it works</a>
-    <a href="../index.html#tutor">Syllabot AI</a>
-    <a href="flashcards.html">Smart Flashcards</a>
-    <a href="questions.html">CBT Practice</a>
-    <a href="../downloads.html">Desktop Apps</a>
-  </div>
-  <div class="foot-col">
-    <div class="foot-hd">Resources</div>
-    <a href="../pricing.html">Pricing & Plans</a>
-    <a href="../about.html">About Us</a>
-    <a href="glossary.html">Cognitive Glossary</a>
-    <a href="../contact.html">Help & Support</a>
-  </div>
-  <div class="foot-col">
-    <div class="foot-hd">Legal & Security</div>
-    <a href="../privacy.html">Privacy Policy</a>
-    <a href="../terms.html">Terms of Service</a>
-    <a href="../contact.html#security">Security Disclosure</a>
-  </div>
-</div>
-<div class="foot-bottom">
-  <div>&copy; 2026 Kortexify. Cognitive active recall for higher education.</div>
-  <div class="foot-badge"><span></span> Operational · Flutter Web Client 3.x</div>
-</div>
-</div></footer>
+<footer><div class="wrap"><span>© Kortexify Technologies</span><nav aria-label="Site"><a href="../about.html">About</a><a href="../pricing.html">Pricing</a><a href="../downloads.html">Downloads</a><a href="../contact.html">Contact</a><a href="../privacy.html">Privacy</a><a href="../terms.html">Terms</a></nav></div>
+<div class="wrap"><span class="mono">FEATURES</span><nav aria-label="Features"><a href="../features/flashcards.html">Smart flashcards</a><a href="../features/questions.html">CBT practice</a><a href="../features/solver.html">Syllabot solver</a><a href="../features/glossary.html">Course glossary</a><a href="../features/study_rooms.html">Study rooms</a></nav></div></footer>
+<div class="meter" aria-hidden="true">retention <b id="mv">38%</b><svg viewBox="0 0 70 26"><path id="mp" pathLength="1" d="M2 22L12 17L14 22L26 14L28 20L44 9L46 16L68 3"/></svg></div>
 
 <script src="../js/kx.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const opts = document.querySelectorAll('#cbtOpts .cbt-opt');
-  opts.forEach(opt => {
-    opt.addEventListener('click', () => {
-      opts.forEach(o => {
-        o.classList.remove('selected');
-        const badge = o.querySelector('span:last-child');
-        if (badge && badge.textContent.includes('✓')) badge.remove();
-      });
-      opt.classList.add('selected');
-      if (opt.dataset.correct === 'true') {
-        const span = document.createElement('span');
-        span.style.cssText = 'font-size:.8rem;font-weight:700;color:var(--gn)';
-        span.textContent = '✓ Correct Key';
-        opt.appendChild(span);
-      }
-    });
-  });
-});
+const opts = [...document.querySelectorAll('#cbtOpts .op')];
+const note = document.getElementById('cbtNote');
+opts.forEach(opt => opt.addEventListener('click', () => {
+  const right = opt.dataset.correct === 'true';
+  opts.forEach(o => o.classList.remove('ok', 'no', 'sel'));
+  opt.classList.add(right ? 'ok' : 'no');
+  if (!right) opts.find(o => o.dataset.correct === 'true').classList.add('sel');
+  note.hidden = false;
+}));
 </script>
 </body>
 </html>

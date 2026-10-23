@@ -30,225 +30,81 @@
 <link rel="icon" href="../assets/kortexify_logo.svg" type="image/svg+xml">
 <link rel="alternate icon" href="../assets/favicon.ico">
 
-<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;600&display=swap">
-
-<!-- Design System CSS -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap"><style>.rv,.bub{opacity:1;transform:none}.w>i{transform:none}.step{opacity:1}</style></noscript>
 <link rel="stylesheet" href="../css/kx.css">
-<style>
-.room-hero{padding:clamp(3.5rem,7vw,5.5rem) 0 2rem;text-align:center}
-.room-stage{max-width:860px;margin:2rem auto 4.5rem;background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:34px;box-shadow:0 30px 80px -25px rgba(0,0,0,.45)}
-.room-top{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:24px;flex-wrap:wrap;gap:12px}
-.room-badge{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:700;color:var(--sage)}
-.room-badge::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--gn);display:inline-block;box-shadow:0 0 8px var(--gn)}
-.room-status{font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:700;color:var(--gn);background:color-mix(in srgb,var(--gn) 14%,transparent);padding:4px 12px;border-radius:var(--radius-full);border:1px solid color-mix(in srgb,var(--gn) 35%,transparent)}
-
-.avatar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-@media(max-width:680px){.avatar-grid{grid-template-columns:repeat(2,1fr)}}
-.avatar-tile{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px 12px;text-align:center;transition:border-color .2s var(--ease)}
-.avatar-tile.speaking{border-color:var(--sage);box-shadow:0 0 16px color-mix(in srgb,var(--sage) 30%,transparent)}
-.avatar-circle{width:48px;height:48px;border-radius:50%;margin:0 auto 10px;background:var(--sage);color:#fff;display:grid;place-items:center;font-weight:800;font-size:1.1rem}
-.avatar-circle.c2{background:var(--ochre)}
-.avatar-circle.c3{background:var(--cyan)}
-.avatar-circle.c4{background:var(--moss)}
-.avatar-name{font-size:.85rem;font-weight:700;color:var(--ink);margin-bottom:2px}
-.avatar-meta{font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--mute)}
-
-.pomo-bar{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-.pomo-time{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:700;color:var(--ink)}
-
-.feature-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:3.5rem 0}
-@media(max-width:880px){.feature-benefits{grid-template-columns:1fr}}
-.benefit-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:30px;display:flex;flex-direction:column;gap:14px}
-.benefit-icon{width:46px;height:46px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);display:grid;place-items:center;font-size:1.3rem;color:var(--sage)}
-</style>
 </head>
 <body>
 <a href="#main" class="skip-link">Skip to main content</a>
-
-<!-- Navigation Header -->
 <header class="nav"><div class="wrap">
 <a class="logo" href="../index.html" aria-label="Kortexify home">
   <svg width="30" height="30" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
-      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E"/>
-        <stop offset="35%" stop-color="#5B8C93"/>
-        <stop offset="70%" stop-color="#4A6B5D"/>
-        <stop offset="100%" stop-color="#D4A373"/>
-      </linearGradient>
-      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E"/>
-        <stop offset="60%" stop-color="#5B8C93"/>
-        <stop offset="100%" stop-color="#4A6B5D"/>
-      </radialGradient>
-      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/>
-        <stop offset="50%" stop-color="#5B8C93" stop-opacity="0.22"/>
-        <stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/>
-      </linearGradient>
+      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E"/><stop offset="35%" stop-color="#5B8C93"/><stop offset="70%" stop-color="#4A6B5D"/><stop offset="100%" stop-color="#D4A373"/></linearGradient>
+      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E"/><stop offset="60%" stop-color="#5B8C93"/><stop offset="100%" stop-color="#4A6B5D"/></radialGradient>
+      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/><stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/></linearGradient>
     </defs>
-    <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="url(#gridGrad)" stroke-width="2.5"/>
-    <path d="M156 140V372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round"/>
-    <path d="M356 140L256 256L356 372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="156" cy="140" r="13" fill="#788C7E"/>
-    <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
-    <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
-    <circle cx="356" cy="372" r="13" fill="#D4A373"/>
-    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/>
-    <circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
+    <g stroke="url(#gridGrad)" stroke-width="1.2" stroke-linecap="round"><line x1="256" y1="256" x2="256" y2="56"/><line x1="256" y1="256" x2="429.2" y2="156"/><line x1="256" y1="256" x2="429.2" y2="356"/><line x1="256" y1="256" x2="256" y2="456"/><line x1="256" y1="256" x2="82.8" y2="356"/><line x1="256" y1="256" x2="82.8" y2="156"/><polygon points="256,156 342.6,206 342.6,306 256,356 169.4,306 169.4,206" fill="none"/><line x1="82.8" y1="156" x2="429.2" y2="156"/><line x1="82.8" y1="356" x2="429.2" y2="356"/><line x1="169.4" y1="206" x2="169.4" y2="306"/><line x1="342.6" y1="206" x2="342.6" y2="306"/></g>
+    <polygon points="256,56 429.2,156 429.2,356 256,456 82.8,356 82.8,156" stroke="url(#kortexGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <g stroke="url(#kortexGrad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"><line x1="156" y1="140" x2="156" y2="372"/><line x1="156" y1="256" x2="256" y2="256"/><line x1="256" y1="256" x2="356" y2="140"/><line x1="256" y1="256" x2="356" y2="372"/></g>
+    <circle cx="256" cy="56" r="10" fill="#788C7E"/><circle cx="429.2" cy="156" r="10" fill="#5B8C93"/><circle cx="429.2" cy="356" r="10" fill="#4A6B5D"/><circle cx="256" cy="456" r="10" fill="#D4A373"/><circle cx="82.8" cy="356" r="10" fill="#4A6B5D"/><circle cx="82.8" cy="156" r="10" fill="#788C7E"/>
+    <circle cx="156" cy="140" r="13" fill="#788C7E"/><circle cx="156" cy="372" r="13" fill="#4A6B5D"/><circle cx="356" cy="140" r="13" fill="#5B8C93"/><circle cx="356" cy="372" r="13" fill="#D4A373"/>
+    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/><circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
   </svg>
   <span>Kortexify</span>
 </a>
-<a class="l" href="../index.html#how">How it works</a>
-<a class="l" href="../index.html#tutor">Syllabot</a>
-<a class="l" href="../index.html#education">Education & Exams</a>
-<a class="l" href="../pricing.html">Pricing</a>
-<a class="l" href="../downloads.html">Downloads</a>
+<a class="l" href="../index.html#how">How it works</a><a class="l" href="../index.html#tutor">Syllabot</a><a class="l" href="../index.html#education">Education & Exams</a><a class="l" href="../pricing.html">Pricing</a>
 <button class="ic" id="th" aria-label="Toggle light or dark theme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
 <a class="btn p s" href="/workspace/login" data-mag>Start free</a>
 </div></header>
 
 <main id="main">
-  <!-- Hero Section -->
-  <section class="room-hero">
-    <div class="wrap">
-      <p class="eyebrow rv">Live Collaborative Study Rooms</p>
-      <h1 class="rv" style="--d:.1s">Study together in <em>real time.</em></h1>
-      <p class="lead rv" style="--d:.2s;max-width:38em;margin:1rem auto 2.5rem">Drop into live focus rooms with course classmates, study buddies, or research lab partners. Synchronized Pomodoro sprints, encrypted voice channels, and shared vector whiteboard canvas.</p>
-    </div>
-  </section>
+<section class="hero">
+<i class="pill a" data-par="-.12" aria-hidden="true"></i>
+<i class="pill b" data-par=".08" aria-hidden="true"></i>
+<div class="wrap"><div>
+<p class="eyebrow rv">Live collaborative study rooms</p>
+<h1 data-split>Study together in <em>real time.</em></h1>
+<p class="lead rv" style="--d:.5s">Drop into live focus rooms with classmates, study buddies, or lab partners. Synchronized Pomodoro sprints, encrypted voice channels, and a shared whiteboard.</p>
+<div class="cta rv" style="--d:.65s"><a class="btn p" href="/workspace/login" data-mag>Launch a study room →</a><a class="btn" href="#rooms" data-mag>What’s inside</a></div>
 
-  <!-- Interactive Study Room Mockup -->
-  <section><div class="wrap">
-    <div class="room-stage rv" style="--d:.25s" role="region" aria-label="Interactive live study room session preview">
-      <div class="room-top">
-        <div class="room-badge">STUDY ROOM: PATHOLOGY & PHARMACOLOGY SPRINT</div>
-        <div class="room-status">🎙️ Live Audio Active</div>
-      </div>
-
-      <div class="avatar-grid">
-        <div class="avatar-tile speaking">
-          <div class="avatar-circle">WO</div>
-          <div class="avatar-name">Wuke O.</div>
-          <div class="avatar-meta" style="color:var(--gn)">● Speaking</div>
-        </div>
-        <div class="avatar-tile">
-          <div class="avatar-circle c2">AM</div>
-          <div class="avatar-name">Amina M.</div>
-          <div class="avatar-meta">Focusing (Deck #4)</div>
-        </div>
-        <div class="avatar-tile">
-          <div class="avatar-circle c3">TD</div>
-          <div class="avatar-name">Tobi D.</div>
-          <div class="avatar-meta">Reviewing Cards</div>
-        </div>
-        <div class="avatar-tile">
-          <div class="avatar-circle c4">CN</div>
-          <div class="avatar-name">Chiamaka N.</div>
-          <div class="avatar-meta">Solving Equation</div>
-        </div>
-      </div>
-
-      <div class="pomo-bar">
-        <div>
-          <div style="font-size:.78rem;font-family:'JetBrains Mono',monospace;color:var(--mute)">SYNCHRONIZED FOCUS TIMER</div>
-          <div class="pomo-time">⏱️ 21:30 <span style="font-size:.9rem;color:var(--mute);font-weight:400">/ 25:00</span></div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <span style="font-size:.78rem;font-weight:700;color:var(--ink);background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:var(--radius-full)">Shared Whiteboard: Open</span>
-          <span style="font-size:.78rem;font-weight:700;color:var(--sage);background:color-mix(in srgb,var(--sage) 12%,transparent);padding:6px 12px;border-radius:var(--radius-full)">4 Study Partners</span>
-        </div>
-      </div>
-    </div>
-  </div></section>
-
-  <!-- Benefits Grid -->
-  <section><div class="wrap">
-    <div class="section-title rv">
-      <p class="eyebrow">Collaboration System</p>
-      <h2>Built for deep focus, not distractions</h2>
-    </div>
-
-    <div class="feature-benefits">
-      <div class="benefit-card rv" style="--d:.1s">
-        <div class="benefit-icon">🎙️</div>
-        <h3>Ultra-Low Latency Voice</h3>
-        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Powered by modern WebRTC/LiveKit voice mesh. Crisp audio with noise suppression, optimized for campus Wi-Fi and mobile data networks.</p>
-      </div>
-
-      <div class="benefit-card rv" style="--d:.15s">
-        <div class="benefit-icon">⏱️</div>
-        <h3>Synced Pomodoro Cycles</h3>
-        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Keep each other accountable. When the 25-minute study sprint ends, everyone automatically enters the 5-minute discussion break together.</p>
-      </div>
-
-      <div class="benefit-card rv" style="--d:.2s">
-        <div class="benefit-icon">🎨</div>
-        <h3>Infinite Whiteboard</h3>
-        <p style="color:var(--mute);font-size:.9rem;line-height:1.6">Sketch reaction pathways, mathematical proofs, circuit schematics, or anatomical diagrams simultaneously with real-time vector cursor tracking.</p>
-      </div>
-    </div>
-  </div></section>
-
-  <!-- Bottom CTA -->
-  <section class="final-cta"><div class="wrap text-center">
-    <h2 class="rv">Host your first live study room today.</h2>
-    <p class="lead rv" style="--d:.1s;margin:1rem auto 2rem">Invite classmates with a simple link or study in public campus rooms.</p>
-    <div class="cta-actions rv" style="--d:.2s">
-      <a class="btn p" href="/workspace/login" data-mag>Launch Study Room &rarr;</a>
-      <a class="btn" href="../downloads.html">Download Desktop App</a>
-    </div>
-  </div></section>
+</div><div class="rv" style="--d:.5s"><div class="demo" role="region" aria-label="Live study room preview">
+<div class="top"><span class="live">PATHOLOGY & PHARMACOLOGY SPRINT</span><span>VOICE ON</span></div>
+<div class="av"><i style="--c:var(--sage);--k:0">WO</i><i style="--c:var(--te);--k:1">AM</i><i style="--c:var(--cy);--k:2">TD</i><i style="--c:var(--oc);--k:3">CN</i></div>
+<div class="rows" style="margin-top:.8rem">
+<div class="row"><b>Wuke O.</b><span style="color:var(--gn)">● SPEAKING</span></div>
+<div class="row"><b>Amina M.</b><span>FOCUSING · DECK #4</span></div>
+<div class="row"><b>Tobi D.</b><span>REVIEWING CARDS</span></div>
+</div>
+<div class="pane" style="margin-top:10px"><div class="top"><span>SYNCED FOCUS TIMER</span><span>WHITEBOARD OPEN</span></div><p style="margin-top:.4rem"><span class="eq" style="color:var(--ink);font-size:1.8rem" data-countdown="21:30">21:30</span> <span class="mono">/ 25:00</span></p></div>
+</div></div></div>
+</section>
+<section class="sec" id="rooms"><div class="wrap">
+<p class="eyebrow rv">Collaboration system</p><h2 data-split>Deep focus, <em>not distractions.</em></h2>
+<div class="bento b3">
+<div class="bc rv"><div class="top"><span>01 · VOICE</span><span class="live">LIVE</span></div>
+<div class="viz wv" data-wave="22"></div>
+<h3>Ultra-low latency voice</h3><p>Powered by a WebRTC/LiveKit voice mesh. Crisp audio with noise suppression, tuned for campus Wi-Fi and mobile data.</p></div>
+<div class="bc rv" style="--d:.1s"><div class="top"><span>02 · SPRINTS</span><span class="tm" data-countdown="25:00">25:00</span></div>
+<div class="viz"><div class="vs"><span>Focus</span><div class="bar track"><i style="--v:83%"></i></div><span>Break</span></div></div>
+<h3>Synced Pomodoro cycles</h3><p>Keep each other accountable. When the 25-minute sprint ends, everyone enters the 5-minute discussion break together.</p></div>
+<div class="bc rv" style="--d:.2s"><div class="top"><span>03 · WHITEBOARD</span><span>4 CURSORS</span></div>
+<div class="viz"><svg class="cv" viewBox="0 0 360 100" aria-hidden="true"><path class="g" d="M8 50H352"/><path class="sv" d="M20 80 C70 10 120 10 160 50 S250 90 300 30"/><circle cx="300" cy="30" r="6" fill="var(--oc)"/><circle cx="160" cy="50" r="6" fill="var(--sage)"/></svg></div>
+<h3>Infinite whiteboard</h3><p>Sketch reaction pathways, proofs, circuit schematics, or anatomical diagrams together with real-time cursor tracking.</p></div>
+</div></div></section>
+<section class="sec final"><div class="wrap">
+<p class="eyebrow rv">Exam & defense day</p><h2 data-split>Never study <em>alone.</em></h2>
+<p class="lead rv">Invite classmates with a simple link or join public campus rooms.</p>
+<svg class="climb rv" viewBox="0 0 900 220" role="img" aria-label="A memory curve that climbs steadily toward exam day"><path pathLength="1" d="M10 200 L90 168 L96 190 L200 138 L206 164 L330 104 L336 132 L470 78 L476 104 L620 52 L626 76 L780 22 L880 14"/><circle cx="880" cy="14" r="9"/><text x="10" y="216">today</text><text x="820" y="48">exam day</text></svg>
+<div class="cta rv"><a class="btn p" href="/workspace/login" data-mag>Launch a study room →</a><a class="btn" href="../downloads.html" data-mag>Get the desktop app</a></div>
+</div></section>
 </main>
 
-<!-- Unified Site Footer -->
-<footer class="footer"><div class="wrap">
-<div class="foot-grid">
-  <div>
-    <div class="brand-row">
-      <svg width="26" height="26" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="rgba(120,140,126,0.2)" stroke-width="2.5"/>
-        <path d="M156 140V372" stroke="#788C7E" stroke-width="44" stroke-linecap="round"/>
-        <path d="M356 140L256 256L356 372" stroke="#D4A373" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="156" cy="140" r="13" fill="#788C7E"/>
-        <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
-        <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
-        <circle cx="356" cy="372" r="13" fill="#D4A373"/>
-        <circle cx="256" cy="256" r="30" fill="#5B8C93"/>
-      </svg>
-      <span class="foot-title">Kortexify</span>
-    </div>
-    <p class="foot-lead">Active study workspace combining spaced repetition, grounded Socratic tutoring, and timed CBT practice across higher education.</p>
-  </div>
-  <div class="foot-col">
-    <div class="foot-hd">Product</div>
-    <a href="../index.html#how">How it works</a>
-    <a href="../index.html#tutor">Syllabot AI</a>
-    <a href="flashcards.html">Smart Flashcards</a>
-    <a href="questions.html">CBT Practice</a>
-    <a href="../downloads.html">Desktop Apps</a>
-  </div>
-  <div class="foot-col">
-    <div class="foot-hd">Resources</div>
-    <a href="../pricing.html">Pricing & Plans</a>
-    <a href="../about.html">About Us</a>
-    <a href="glossary.html">Cognitive Glossary</a>
-    <a href="../contact.html">Help & Support</a>
-  </div>
-  <div class="foot-col">
-    <div class="foot-hd">Legal & Security</div>
-    <a href="../privacy.html">Privacy Policy</a>
-    <a href="../terms.html">Terms of Service</a>
-    <a href="../contact.html#security">Security Disclosure</a>
-  </div>
-</div>
-<div class="foot-bottom">
-  <div>&copy; 2026 Kortexify. Cognitive active recall for higher education.</div>
-  <div class="foot-badge"><span></span> Operational · Flutter Web Client 3.x</div>
-</div>
-</div></footer>
+<footer><div class="wrap"><span>© Kortexify Technologies</span><nav aria-label="Site"><a href="../about.html">About</a><a href="../pricing.html">Pricing</a><a href="../downloads.html">Downloads</a><a href="../contact.html">Contact</a><a href="../privacy.html">Privacy</a><a href="../terms.html">Terms</a></nav></div>
+<div class="wrap"><span class="mono">FEATURES</span><nav aria-label="Features"><a href="../features/flashcards.html">Smart flashcards</a><a href="../features/questions.html">CBT practice</a><a href="../features/solver.html">Syllabot solver</a><a href="../features/glossary.html">Course glossary</a><a href="../features/study_rooms.html">Study rooms</a></nav></div></footer>
+<div class="meter" aria-hidden="true">retention <b id="mv">38%</b><svg viewBox="0 0 70 26"><path id="mp" pathLength="1" d="M2 22L12 17L14 22L26 14L28 20L44 9L46 16L68 3"/></svg></div>
 
 <script src="../js/kx.js"></script>
 </body>

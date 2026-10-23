@@ -14,89 +14,77 @@
 <!-- Favicon -->
 <link rel="icon" href="assets/kortexify_logo.svg" type="image/svg+xml">
 <link rel="alternate icon" href="assets/favicon.ico">
+<meta name="theme-color" content="#0D0D0F">
+<script>try{const t=localStorage.getItem('kx-theme');if(t){document.documentElement.dataset.theme=t;const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#F6F6F8':'#0D0D0F'}}catch(e){}</script>
 
-<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;600&display=swap">
-
-<!-- Design System CSS -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap"><style>.rv,.bub{opacity:1;transform:none}.w>i{transform:none}.step{opacity:1}</style></noscript>
 <link rel="stylesheet" href="css/kx.css">
-<style>
-body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-.share-card{width:100%;max-width:480px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);padding:36px 28px;text-align:center;box-shadow:0 30px 80px -25px rgba(0,0,0,.5)}
-.share-badge{display:inline-block;padding:4px 14px;border-radius:var(--radius-full);background:color-mix(in srgb,var(--sage) 18%,transparent);border:1px solid color-mix(in srgb,var(--sage) 35%,transparent);color:var(--sage);font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin:16px 0 12px}
-.share-card h1{font-size:1.45rem;font-weight:800;letter-spacing:-.01em;margin-bottom:10px;color:var(--ink)}
-.share-card p{font-size:.9rem;color:var(--mute);line-height:1.55;margin-bottom:24px}
-.share-actions{display:flex;flex-direction:column;gap:10px}
-</style>
 </head>
 <body>
-  <div class="share-card">
-    <svg width="48" height="48" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="margin:0 auto">
-      <defs>
-        <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#788C7E"/>
-          <stop offset="35%" stop-color="#5B8C93"/>
-          <stop offset="70%" stop-color="#4A6B5D"/>
-          <stop offset="100%" stop-color="#D4A373"/>
-        </linearGradient>
-        <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#788C7E"/>
-          <stop offset="60%" stop-color="#5B8C93"/>
-          <stop offset="100%" stop-color="#4A6B5D"/>
-        </radialGradient>
-      </defs>
-      <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="rgba(120,140,126,0.25)" stroke-width="2.5"/>
-      <path d="M156 140V372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round"/>
-      <path d="M356 140L256 256L356 372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="156" cy="140" r="13" fill="#788C7E"/>
-      <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
-      <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
-      <circle cx="356" cy="372" r="13" fill="#D4A373"/>
-      <circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
-    </svg>
+<a href="#main" class="skip-link">Skip to main content</a>
+<header class="nav"><div class="wrap">
+<a class="logo" href="index.html" aria-label="Kortexify home">
+  <svg width="30" height="30" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E"/><stop offset="35%" stop-color="#5B8C93"/><stop offset="70%" stop-color="#4A6B5D"/><stop offset="100%" stop-color="#D4A373"/></linearGradient>
+      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E"/><stop offset="60%" stop-color="#5B8C93"/><stop offset="100%" stop-color="#4A6B5D"/></radialGradient>
+      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/><stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/></linearGradient>
+    </defs>
+    <g stroke="url(#gridGrad)" stroke-width="1.2" stroke-linecap="round"><line x1="256" y1="256" x2="256" y2="56"/><line x1="256" y1="256" x2="429.2" y2="156"/><line x1="256" y1="256" x2="429.2" y2="356"/><line x1="256" y1="256" x2="256" y2="456"/><line x1="256" y1="256" x2="82.8" y2="356"/><line x1="256" y1="256" x2="82.8" y2="156"/><polygon points="256,156 342.6,206 342.6,306 256,356 169.4,306 169.4,206" fill="none"/><line x1="82.8" y1="156" x2="429.2" y2="156"/><line x1="82.8" y1="356" x2="429.2" y2="356"/><line x1="169.4" y1="206" x2="169.4" y2="306"/><line x1="342.6" y1="206" x2="342.6" y2="306"/></g>
+    <polygon points="256,56 429.2,156 429.2,356 256,456 82.8,356 82.8,156" stroke="url(#kortexGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <g stroke="url(#kortexGrad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"><line x1="156" y1="140" x2="156" y2="372"/><line x1="156" y1="256" x2="256" y2="256"/><line x1="256" y1="256" x2="356" y2="140"/><line x1="256" y1="256" x2="356" y2="372"/></g>
+    <circle cx="256" cy="56" r="10" fill="#788C7E"/><circle cx="429.2" cy="156" r="10" fill="#5B8C93"/><circle cx="429.2" cy="356" r="10" fill="#4A6B5D"/><circle cx="256" cy="456" r="10" fill="#D4A373"/><circle cx="82.8" cy="356" r="10" fill="#4A6B5D"/><circle cx="82.8" cy="156" r="10" fill="#788C7E"/>
+    <circle cx="156" cy="140" r="13" fill="#788C7E"/><circle cx="156" cy="372" r="13" fill="#4A6B5D"/><circle cx="356" cy="140" r="13" fill="#5B8C93"/><circle cx="356" cy="372" r="13" fill="#D4A373"/>
+    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/><circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
+  </svg>
+  <span>Kortexify</span>
+</a>
+<a class="l" href="index.html#how">How it works</a><a class="l" href="index.html#tutor">Syllabot</a><a class="l" href="index.html#education">Education & Exams</a><a class="l" href="pricing.html">Pricing</a>
+<button class="ic" id="th" aria-label="Toggle light or dark theme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+<a class="btn p s" href="/workspace/login" data-mag>Start free</a>
+</div></header>
 
-    <div class="share-badge" id="type-badge">Kortex Link</div>
-    <h1 id="title">Shared Academic Item</h1>
-    <p id="description">Open this shared deck, question set, or study room in your Kortexify workspace.</p>
+<main id="main">
+<section class="hero solo" style="min-height:100svh;display:grid;align-items:center">
+<i class="pill a" data-par="-.12" aria-hidden="true"></i>
+<i class="pill b" data-par=".08" aria-hidden="true"></i>
+<div class="wrap" style="grid-template-columns:minmax(0,520px);justify-content:center">
+<div class="demo rv" style="text-align:center;padding:32px 28px">
+<div class="top"><span id="type-badge">KORTEX LINK</span><span class="live">SHARED</span></div>
+<h1 id="title" style="font-size:clamp(1.8rem,5vw,2.6rem);line-height:1.05;letter-spacing:-.035em;margin:1.6rem 0 .8rem">Shared academic item</h1>
+<p id="description" class="lead" style="margin:0 auto 1.6rem">Open this shared deck, question set, or study room in your Kortexify workspace.</p>
+<div style="display:grid;gap:10px"><a id="open-app-btn" href="/workspace/login" class="btn p w" data-mag>Open in Kortexify →</a><a href="index.html" class="btn w">Visit website home</a></div>
+<p class="mono" style="margin-top:1.4rem">KORTEXIFY · COGNITIVE ACTIVE RECALL</p>
+</div>
+</div>
+</section>
+</main>
 
-    <div class="share-actions">
-      <a id="open-app-btn" href="/workspace/login" class="btn p" style="width:100%" data-mag>Open in Kortexify</a>
-      <a href="index.html" class="btn" style="width:100%">Visit Website Home</a>
-    </div>
+<footer><div class="wrap"><span>© Kortexify Technologies</span><nav aria-label="Site"><a href="about.html">About</a><a href="pricing.html">Pricing</a><a href="downloads.html">Downloads</a><a href="contact.html">Contact</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></nav></div>
+<div class="wrap"><span class="mono">FEATURES</span><nav aria-label="Features"><a href="features/flashcards.html">Smart flashcards</a><a href="features/questions.html">CBT practice</a><a href="features/solver.html">Syllabot solver</a><a href="features/glossary.html">Course glossary</a><a href="features/study_rooms.html">Study rooms</a></nav></div></footer>
+<div class="meter" aria-hidden="true">retention <b id="mv">38%</b><svg viewBox="0 0 70 26"><path id="mp" pathLength="1" d="M2 22L12 17L14 22L26 14L28 20L44 9L46 16L68 3"/></svg></div>
 
-    <div style="font-size:.75rem;color:var(--mute);margin-top:20px;font-family:'JetBrains Mono',monospace">
-      Kortexify · Cognitive Active Recall
-    </div>
-  </div>
-
-  <script src="js/kx.js"></script>
-  <script>
-  (function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const type = urlParams.get('type') || 'content';
-    const id = urlParams.get('id') || urlParams.get('code') || '';
-    const title = urlParams.get('title') || 'Shared Study Item';
-    const desc = urlParams.get('desc') || urlParams.get('description') || 'Open this link in Kortexify to view shared study materials.';
-
-    const badgeElem = document.getElementById('type-badge');
-    badgeElem.textContent = type.replace('_', ' ').toUpperCase();
-
-    document.getElementById('title').textContent = title;
-    document.getElementById('description').textContent = desc;
-    document.getElementById('page-title').textContent = title + ' | Kortexify';
-
-    const appSchemeUrl = 'kortex://share' + window.location.search;
-    const openBtn = document.getElementById('open-app-btn');
-    openBtn.href = appSchemeUrl;
-
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile && id) {
-      setTimeout(() => {
-        window.location.href = appSchemeUrl;
-      }, 350);
-    }
-  })();
-  </script>
+<script src="js/kx.js"></script>
+<script>
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const type = params.get('type') || 'content';
+  const id = params.get('id') || params.get('code') || '';
+  const title = params.get('title') || 'Shared study item';
+  const desc = params.get('desc') || params.get('description') || 'Open this link in Kortexify to view shared study materials.';
+  document.getElementById('type-badge').textContent = type.replace(/_/g, ' ').toUpperCase();
+  document.getElementById('title').textContent = title;
+  document.getElementById('description').textContent = desc;
+  document.title = title + ' | Kortexify';
+  const appSchemeUrl = 'kortex://share' + window.location.search;
+  document.getElementById('open-app-btn').href = appSchemeUrl;
+  if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && id) {
+    setTimeout(() => { window.location.href = appSchemeUrl; }, 350);
+  }
+})();
+</script>
 </body>
 </html>

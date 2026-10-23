@@ -210,7 +210,7 @@ h1{font-size:clamp(3rem,9.4vw,7.6rem);line-height:.92;letter-spacing:-.05em;font
 /* final */
 .final{text-align:center;position:relative;overflow:hidden}.final h2{font-size:clamp(2.6rem,8.5vw,7rem);letter-spacing:-.05em;line-height:.95}.final .cta{justify-content:center}
 .climb{width:min(100%,900px);margin:2rem auto 0;display:block}.climb path{fill:none;stroke:var(--cy);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 3s var(--ease)}.climb.in path{stroke-dashoffset:0}.climb text{font:500 12px 'JetBrains Mono',monospace;fill:var(--mute)}.climb circle{fill:var(--oc)}
-footer{border-top:1px solid var(--line);padding:2rem 0 5rem;font-size:.85rem;color:var(--mute)}footer .wrap{display:flex;flex-wrap:wrap;gap:1rem 1.6rem;justify-content:space-between}footer nav{display:flex;gap:1.3rem;flex-wrap:wrap}footer a:hover{color:var(--ink)}
+footer{border-top:1px solid var(--line);padding:2rem 0 5rem;font-size:.85rem;color:var(--mute)}footer .wrap{display:flex;flex-wrap:wrap;gap:1rem 1.6rem;justify-content:space-between}footer .wrap+.wrap{margin-top:1.2rem;justify-content:flex-start;align-items:baseline}.mono{font:500 .75rem 'JetBrains Mono',monospace;color:var(--mute);letter-spacing:.06em}footer nav{display:flex;gap:1.3rem;flex-wrap:wrap}footer a:hover{color:var(--ink)}
 /* retention meter */
 .meter{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:55;display:flex;align-items:center;gap:.7rem;padding:.55rem .9rem;border-radius:99px;background:color-mix(in srgb,var(--card) 85%,transparent);backdrop-filter:blur(12px);border:1px solid var(--line);font:500 .7rem 'JetBrains Mono',monospace;color:var(--mute)}.meter b{color:var(--ink);font-size:.95rem;min-width:2.6ch}.meter svg{width:70px;height:26px}.meter path{fill:none;stroke:var(--cy);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}.rv,.bub{opacity:1;transform:none}.w>i{transform:none}html{scroll-behavior:auto}.scene{height:auto}.stick{position:static;height:auto;min-height:0;padding-block:4rem}.steps li{opacity:1;transform:none}.doc,.fc{opacity:1;transform:none}}
@@ -335,7 +335,8 @@ footer{border-top:1px solid var(--line);padding:2rem 0 5rem;font-size:.85rem;col
 </div></section>
 </main>
 
-<footer><div class="wrap"><span>© Kortexify Technologies</span><nav><a href="about.html">About</a><a href="pricing.html">Pricing</a><a href="downloads.html">Downloads</a><a href="contact.html">Contact</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></nav></div></footer>
+<footer><div class="wrap"><span>© Kortexify Technologies</span><nav aria-label="Site"><a href="about.html">About</a><a href="pricing.html">Pricing</a><a href="downloads.html">Downloads</a><a href="contact.html">Contact</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></nav></div>
+<div class="wrap"><span class="mono">FEATURES</span><nav aria-label="Features"><a href="features/flashcards.html">Smart flashcards</a><a href="features/questions.html">CBT practice</a><a href="features/solver.html">Syllabot solver</a><a href="features/glossary.html">Course glossary</a><a href="features/study_rooms.html">Study rooms</a></nav></div></footer>
 <div class="meter" aria-hidden="true">retention <b id="mv">38%</b><svg viewBox="0 0 70 26"><path id="mp" pathLength="1" d="M2 22L12 17L14 22L26 14L28 20L44 9L46 16L68 3"/></svg></div>
 
 <script>

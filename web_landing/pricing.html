@@ -30,257 +30,111 @@
 <link rel="icon" href="assets/kortexify_logo.svg" type="image/svg+xml">
 <link rel="alternate icon" href="assets/favicon.ico">
 
-<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;600&display=swap">
-
-<!-- Design System CSS -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap"><style>.rv,.bub{opacity:1;transform:none}.w>i{transform:none}.step{opacity:1}</style></noscript>
 <link rel="stylesheet" href="css/kx.css">
 <style>
-.billing-switcher{display:inline-flex;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius-full);padding:4px;gap:4px}
-.billing-switcher button{padding:.5rem 1.15rem;border-radius:var(--radius-full);font-size:.82rem;font-weight:700;color:var(--mute);transition:all .25s var(--ease)}
-.billing-switcher button.active{background:var(--ink);color:var(--bg);box-shadow:0 4px 12px rgba(0,0,0,.15)}
-.save-badge{display:inline-block;padding:.15rem .5rem;border-radius:var(--radius-full);background:color-mix(in srgb,var(--gn) 20%,transparent);color:var(--gn);font:700 .65rem 'JetBrains Mono',monospace;margin-left:.35rem}
-.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:2rem 0 4rem}
-@media(max-width:960px){.pricing-grid{grid-template-columns:1fr}}
-.local-payments{background:color-mix(in srgb,var(--card) 85%,transparent);border:1px solid var(--line);border-radius:var(--radius-xl);padding:24px 30px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:4.5rem}
-.local-payments h4{font-size:1.05rem;font-weight:700;margin-bottom:.3rem}
-.local-payments p{color:var(--mute);font-size:.88rem;max-width:38em}
-.payment-badges{display:flex;gap:.6rem;flex-wrap:wrap}
-.faq-sec{padding:3rem 0 6rem;border-top:1px solid var(--line)}
-.faq-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:28px;margin-top:2.5rem}
-@media(max-width:760px){.faq-grid{grid-template-columns:1fr}}
-.faq-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);padding:26px}
-.faq-card h4{font-size:1.1rem;font-weight:700;margin-bottom:.6rem;letter-spacing:-.01em}
-.faq-card p{color:var(--mute);font-size:.9rem;line-height:1.55}
+.hero.solo .cta{align-items:center}
 </style>
 </head>
 <body>
 <a href="#main" class="skip-link">Skip to main content</a>
-
-<!-- Navigation Header -->
 <header class="nav"><div class="wrap">
 <a class="logo" href="index.html" aria-label="Kortexify home">
   <svg width="30" height="30" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
-      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E"/>
-        <stop offset="35%" stop-color="#5B8C93"/>
-        <stop offset="70%" stop-color="#4A6B5D"/>
-        <stop offset="100%" stop-color="#D4A373"/>
-      </linearGradient>
-      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E"/>
-        <stop offset="60%" stop-color="#5B8C93"/>
-        <stop offset="100%" stop-color="#4A6B5D"/>
-      </radialGradient>
-      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/>
-        <stop offset="50%" stop-color="#5B8C93" stop-opacity="0.22"/>
-        <stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/>
-      </linearGradient>
+      <linearGradient id="kortexGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E"/><stop offset="35%" stop-color="#5B8C93"/><stop offset="70%" stop-color="#4A6B5D"/><stop offset="100%" stop-color="#D4A373"/></linearGradient>
+      <radialGradient id="coreRadialGrad" cx="256" cy="256" r="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E"/><stop offset="60%" stop-color="#5B8C93"/><stop offset="100%" stop-color="#4A6B5D"/></radialGradient>
+      <linearGradient id="gridGrad" x1="82.8" y1="56" x2="429.2" y2="456" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#788C7E" stop-opacity="0.16"/><stop offset="100%" stop-color="#D4A373" stop-opacity="0.16"/></linearGradient>
     </defs>
-    <rect x="36" y="36" width="440" height="440" rx="96" fill="#141417" stroke="url(#gridGrad)" stroke-width="2.5"/>
-    <path d="M156 140V372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round"/>
-    <path d="M356 140L256 256L356 372" stroke="url(#kortexGrad)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="156" cy="140" r="13" fill="#788C7E"/>
-    <circle cx="156" cy="372" r="13" fill="#4A6B5D"/>
-    <circle cx="356" cy="140" r="13" fill="#5B8C93"/>
-    <circle cx="356" cy="372" r="13" fill="#D4A373"/>
-    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/>
-    <circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
+    <g stroke="url(#gridGrad)" stroke-width="1.2" stroke-linecap="round"><line x1="256" y1="256" x2="256" y2="56"/><line x1="256" y1="256" x2="429.2" y2="156"/><line x1="256" y1="256" x2="429.2" y2="356"/><line x1="256" y1="256" x2="256" y2="456"/><line x1="256" y1="256" x2="82.8" y2="356"/><line x1="256" y1="256" x2="82.8" y2="156"/><polygon points="256,156 342.6,206 342.6,306 256,356 169.4,306 169.4,206" fill="none"/><line x1="82.8" y1="156" x2="429.2" y2="156"/><line x1="82.8" y1="356" x2="429.2" y2="356"/><line x1="169.4" y1="206" x2="169.4" y2="306"/><line x1="342.6" y1="206" x2="342.6" y2="306"/></g>
+    <polygon points="256,56 429.2,156 429.2,356 256,456 82.8,356 82.8,156" stroke="url(#kortexGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <g stroke="url(#kortexGrad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"><line x1="156" y1="140" x2="156" y2="372"/><line x1="156" y1="256" x2="256" y2="256"/><line x1="256" y1="256" x2="356" y2="140"/><line x1="256" y1="256" x2="356" y2="372"/></g>
+    <circle cx="256" cy="56" r="10" fill="#788C7E"/><circle cx="429.2" cy="156" r="10" fill="#5B8C93"/><circle cx="429.2" cy="356" r="10" fill="#4A6B5D"/><circle cx="256" cy="456" r="10" fill="#D4A373"/><circle cx="82.8" cy="356" r="10" fill="#4A6B5D"/><circle cx="82.8" cy="156" r="10" fill="#788C7E"/>
+    <circle cx="156" cy="140" r="13" fill="#788C7E"/><circle cx="156" cy="372" r="13" fill="#4A6B5D"/><circle cx="356" cy="140" r="13" fill="#5B8C93"/><circle cx="356" cy="372" r="13" fill="#D4A373"/>
+    <circle cx="256" cy="256" r="42" stroke="url(#kortexGrad)" stroke-width="2" fill="none" opacity="0.35"/><circle cx="256" cy="256" r="30" fill="url(#coreRadialGrad)"/>
   </svg>
   <span>Kortexify</span>
 </a>
-<a class="l" href="index.html#how">How it works</a>
-<a class="l" href="index.html#tutor">Syllabot</a>
-<a class="l" href="index.html#education">Education & Exams</a>
-<a class="l active" href="pricing.html">Pricing</a>
-<a class="l" href="downloads.html">Downloads</a>
+<a class="l" href="index.html#how">How it works</a><a class="l" href="index.html#tutor">Syllabot</a><a class="l" href="index.html#education">Education & Exams</a><a class="l" href="pricing.html" aria-current="page">Pricing</a>
 <button class="ic" id="th" aria-label="Toggle light or dark theme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
 <a class="btn p s" href="/workspace/login" data-mag>Start free</a>
 </div></header>
 
 <main id="main">
-  <!-- Page Hero -->
-  <section class="page-hero">
-    <div class="wrap">
-      <p class="eyebrow rv">Transparent Student Pricing</p>
-      <h1 class="rv" style="--d:.1s">Invest in your <em>mastery.</em></h1>
-      <p class="lead rv" style="--d:.2s">Start free with no credit card required. Upgrade anytime for unlimited flashcards, Syllabot AI tutoring, and CBT mock exam simulations.</p>
+<section class="hero solo">
+<i class="pill a" data-par="-.12" aria-hidden="true"></i>
+<i class="pill b" data-par=".08" aria-hidden="true"></i>
+<div class="wrap"><div>
+<p class="eyebrow rv">Transparent student pricing</p>
+<h1 data-split>Invest in your <em>mastery.</em></h1>
+<p class="lead rv" style="--d:.5s">Start free with no credit card required. Upgrade anytime for unlimited flashcards, Syllabot AI tutoring, and CBT mock exam simulations.</p>
+<div class="cta rv" style="--d:.65s"><div class="seg" role="group" aria-label="Currency"><button type="button" class="active" data-currency-toggle="USD" aria-pressed="true">USD ($)</button><button type="button" data-currency-toggle="NGN" aria-pressed="false">Naira (₦)</button></div>
+<div class="seg" role="group" aria-label="Billing frequency"><button type="button" id="billMonthly" class="active" aria-pressed="true">Monthly</button><button type="button" id="billAnnual" aria-pressed="false">Annual<small>−25%</small></button></div></div>
+<p class="fine rv" style="--d:.75s">Free to start. No credit card needed.</p>
+</div></div>
+</section>
+<section class="sec tight"><div class="wrap">
+<div class="bento b3" style="margin-top:0">
+<div class="bc rv" style="--d:0s">
+<div class="top"><span>STARTER · FREE FOREVER</span></div>
+<h3 style="margin-top:1rem">Starter</h3><p>Essential active recall tools for individual course notes.</p>
+<div class="price" data-price-usd="0" data-price-ngn="0" data-price-usd-annual="0" data-price-ngn-annual="0"><span class="price-currency">$</span><span class="price-amount">0</span><span class="price-period">/ forever free</span></div>
+<ul class="ticks"><li>5 active document decks (PDF, DOCX, TXT)</li><li>Automated active recall & memory curve scheduling</li><li>20 Socratic AI tutor questions / day</li><li>Web and desktop app access</li></ul>
+<div class="foot"><a class="btn w" href="/workspace/login" data-mag>Start studying free</a></div></div><div class="bc feat rv" style="--d:.1s">
+<span class="ribbon">Most popular</span><div class="top"><span>STUDENT PRO · BSC · HND · OND</span></div>
+<h3 style="margin-top:1rem">Student Pro</h3><p>Complete AI workspace for BSc, HND, OND, and entrance candidates.</p>
+<div class="price" data-price-usd="8" data-price-ngn="5,000" data-price-usd-annual="6" data-price-ngn-annual="3,750"><span class="price-currency">$</span><span class="price-amount">8</span><span class="price-period" id="proPeriod">/ month</span></div>
+<ul class="ticks"><li><strong>Unlimited</strong> document & slide decks</li><li><strong>Unlimited Syllabot AI tutor</strong> with step-by-step Socratic guidance</li><li>Full CBT timed mock exams & past question bank</li><li>LaTeX equation & chemistry formula parser</li><li>Audio read-aloud and lo-fi ambient focus soundscapes</li><li>Offline study sync across devices</li></ul>
+<div class="foot"><a class="btn p w" href="/workspace/login" data-mag>Start 7-day free trial →</a></div></div><div class="bc rv" style="--d:.2s">
+<div class="top"><span>RESEARCHER · MSC · PHD</span></div>
+<h3 style="margin-top:1rem">Researcher & Postgrad</h3><p>For MSc, PhD dissertations, journal literature, and board exams.</p>
+<div class="price" data-price-usd="16" data-price-ngn="10,000" data-price-usd-annual="12" data-price-ngn-annual="7,500"><span class="price-currency">$</span><span class="price-amount">16</span><span class="price-period" id="resPeriod">/ month</span></div>
+<ul class="ticks"><li>Everything in Student Pro</li><li>Large thesis & journal paper ingestion (up to 300 pages/doc)</li><li>Priority AI response speed and deep literature synthesis</li><li>Collaborative study rooms with voice discussion</li><li>Early access to next-gen reasoning models</li></ul>
+<div class="foot"><a class="btn w" href="/workspace/login" data-mag>Start Researcher trial</a></div></div>
+<div class="bc wide rv"><div class="two"><div><div class="top"><span>LOCAL PAYMENTS</span></div><h3 style="margin-top:.8rem">Pay the way students actually pay</h3><p>Studying in Nigeria, Ghana, or across Africa? We support local debit cards, <strong>Paystack, Flutterwave, Bank Transfer, and USSD</strong> with zero foreign transaction fees, alongside international credit cards (Visa, Mastercard, Amex).</p></div>
+<div class="tg" style="justify-content:flex-end"><span class="on">Debit card</span><span>Paystack</span><span>Flutterwave</span><span>Bank transfer</span><span>USSD</span><span>Visa · Mastercard · Amex</span></div></div></div>
+</div></div></section>
 
-      <!-- Currency Switcher (USD & NGN) -->
-      <div class="currency-switcher rv" style="--d:.25s" role="group" aria-label="Currency selection">
-        <button type="button" class="active" data-currency-toggle="USD" aria-pressed="true">USD ($)</button>
-        <button type="button" data-currency-toggle="NGN" aria-pressed="false">Nigerian Naira (₦)</button>
-      </div>
-
-      <!-- Billing Period Switcher -->
-      <div class="billing-switcher rv" style="--d:.3s" role="group" aria-label="Billing frequency">
-        <button type="button" id="billMonthly" class="active" aria-pressed="true">Monthly</button>
-        <button type="button" id="billAnnual" aria-pressed="false">Annual <span class="save-badge">SAVE 25%</span></button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Pricing Cards -->
-  <section class="wrap">
-    <div class="pricing-grid">
-
-      <!-- Plan 1: Free Starter -->
-      <div class="pricing-card rv" style="--d:.1s">
-        <div>
-          <h3>Starter</h3>
-          <p class="fine" style="margin-top:.3rem">Essential active recall tools for individual course notes.</p>
-          <div class="price-box" data-price-usd="0" data-price-ngn="0" data-price-usd-annual="0" data-price-ngn-annual="0">
-            <span class="price-currency">$</span>
-            <span class="price-amount">0</span>
-            <span class="price-period">/ forever free</span>
-          </div>
-          <ul class="feature-list">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 5 Active document decks (PDF, DOCX, TXT)</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Automated active recall & memory curve scheduling</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 20 Socratic AI tutor questions / day</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Web and desktop app access</li>
-          </ul>
-        </div>
-        <a class="btn outline" href="/workspace/login" data-mag style="width:100%;margin-top:1.5rem">Start studying free</a>
-      </div>
-
-      <!-- Plan 2: Student Pro (Featured) -->
-      <div class="pricing-card featured rv" style="--d:.2s">
-        <div class="pricing-badge">Most Popular for Students</div>
-        <div>
-          <h3>Student Pro</h3>
-          <p class="fine" style="margin-top:.3rem">Complete AI workspace for BSc, HND, OND, and entrance candidates.</p>
-          <div class="price-box" data-price-usd="8" data-price-ngn="5,000" data-price-usd-annual="6" data-price-ngn-annual="3,750">
-            <span class="price-currency">$</span>
-            <span class="price-amount">8</span>
-            <span class="price-period" id="proPeriod">/ month</span>
-          </div>
-          <ul class="feature-list">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> <strong>Unlimited</strong> document decks & slide decks</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> <strong>Unlimited Syllabot AI Tutor</strong> (step-by-step Socratic guidance)</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Full CBT timed mock exams & past question bank</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Mathematical LaTeX equation & chemistry formula parser</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Audio read-aloud and lo-fi ambient focus soundscapes</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Offline study sync across devices</li>
-          </ul>
-        </div>
-        <a class="btn p" href="/workspace/login" data-mag style="width:100%;margin-top:1.5rem">Start 7-day free trial →</a>
-      </div>
-
-      <!-- Plan 3: Postgrad & Researcher -->
-      <div class="pricing-card rv" style="--d:.3s">
-        <div>
-          <h3>Researcher & Postgrad</h3>
-          <p class="fine" style="margin-top:.3rem">For MSc, PhD dissertations, journal literature, and board exams.</p>
-          <div class="price-box" data-price-usd="16" data-price-ngn="10,000" data-price-usd-annual="12" data-price-ngn-annual="7,500">
-            <span class="price-currency">$</span>
-            <span class="price-amount">16</span>
-            <span class="price-period" id="resPeriod">/ month</span>
-          </div>
-          <ul class="feature-list">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Everything in Student Pro</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Large thesis & journal paper ingestion (up to 300 pages/doc)</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Priority AI response speed and deep literature synthesis</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Collaborative study rooms with voice discussion</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Early access to next-gen reasoning models</li>
-          </ul>
-        </div>
-        <a class="btn outline" href="/workspace/login" data-mag style="width:100%;margin-top:1.5rem">Start Researcher trial</a>
-      </div>
-
-    </div>
-
-    <!-- Local Nigerian & Global Student Payment Banner -->
-    <div class="local-payments rv">
-      <div>
-        <h4>Local Student Payment Options</h4>
-        <p>Studying in Nigeria, Ghana, or across Africa? We support local debit cards, <strong>Paystack, Flutterwave, Bank Transfer, and USSD</strong> with zero foreign transaction fees, alongside international credit cards (Visa, Mastercard, Amex).</p>
-      </div>
-      <div class="payment-badges">
-        <span class="badge">Debit Card</span>
-        <span class="badge oc">Paystack</span>
-        <span class="badge cy">Bank Transfer</span>
-        <span class="badge">USSD</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- Pricing FAQs -->
-  <section class="faq-sec">
-    <div class="wrap">
-      <div style="text-align:center;max-width:680px;margin:auto">
-        <p class="eyebrow rv">Got Questions?</p>
-        <h2 class="rv" style="--d:.1s">Frequently asked <em>questions.</em></h2>
-      </div>
-
-      <div class="faq-grid">
-        <div class="faq-card rv">
-          <h4>Can I pay with a Nigerian bank debit card?</h4>
-          <p>Yes. Select <strong>Nigerian Naira (₦)</strong> using the currency toggle at the top of this page. You can pay seamlessly in Naira with any local Mastercard, Visa, or Verve card, or use direct bank transfer with instant automated activation.</p>
-        </div>
-
-        <div class="faq-card rv">
-          <h4>How does the free starter plan work?</h4>
-          <p>You can create an account and immediately upload up to 5 course decks without entering any credit card information. Your spaced-repetition schedules and progress remain yours permanently.</p>
-        </div>
-
-        <div class="faq-card rv">
-          <h4>Is Kortexify suitable for university midterms and exam prep?</h4>
-          <p>Kortexify is specifically calibrated for university coursework (BSc, HND, OND), post-graduate research (MSc, PhD), and standardized entrance exams (JAMB/UTME, WAEC, SAT). You drop your real syllabus materials, and Syllabot tests you strictly on what your professor expects.</p>
-        </div>
-
-        <div class="faq-card rv">
-          <h4>Can I cancel my subscription anytime?</h4>
-          <p>Yes, you can cancel your subscription with a single click inside your account settings. You will retain full access until the end of your billing cycle with zero cancellation fees.</p>
-        </div>
-      </div>
-    </div>
-  </section>
+<section class="sec tight"><div class="wrap two start">
+<div><p class="eyebrow rv">Got questions?</p><h2 data-split>Frequently asked <em>questions.</em></h2><p class="lead rv">Anything else? <a class="ink-link" href="contact.html">Talk to the team</a>.</p></div>
+<div class="faq rv">
+<details open><summary>Can I pay with a Nigerian bank debit card?</summary><p>Yes. Select <strong>Naira (₦)</strong> using the currency toggle at the top of this page. You can pay seamlessly in Naira with any local Mastercard, Visa, or Verve card, or use direct bank transfer with instant automated activation.</p></details>
+<details><summary>How does the free starter plan work?</summary><p>You can create an account and immediately upload up to 5 course decks without entering any credit card information. Your spaced-repetition schedules and progress remain yours permanently.</p></details>
+<details><summary>Is Kortexify suitable for university midterms and exam prep?</summary><p>Kortexify is specifically calibrated for university coursework (BSc, HND, OND), post-graduate research (MSc, PhD), and standardized entrance exams (JAMB/UTME, WAEC, SAT). You drop your real syllabus materials, and Syllabot tests you strictly on what your professor expects.</p></details>
+<details><summary>Can I cancel my subscription anytime?</summary><p>Yes, you can cancel your subscription with a single click inside your account settings. You will retain full access until the end of your billing cycle with zero cancellation fees.</p></details>
+</div>
+</div></section>
+<section class="sec final"><div class="wrap">
+<p class="eyebrow rv">Exam & defense day</p><h2 data-split>Walk in <em>calm.</em></h2>
+<p class="lead rv">Start free today and upgrade only when your course load demands it.</p>
+<svg class="climb rv" viewBox="0 0 900 220" role="img" aria-label="A memory curve that climbs steadily toward exam day"><path pathLength="1" d="M10 200 L90 168 L96 190 L200 138 L206 164 L330 104 L336 132 L470 78 L476 104 L620 52 L626 76 L780 22 L880 14"/><circle cx="880" cy="14" r="9"/><text x="10" y="216">today</text><text x="820" y="48">exam day</text></svg>
+<div class="cta rv"><a class="btn p" href="/workspace/login" data-mag>Start studying free →</a><a class="btn" href="downloads.html" data-mag>Get the app</a></div>
+</div></section>
 </main>
 
-<!-- Footer -->
-<footer><div class="wrap">
-  <span>© Kortexify Technologies</span>
-  <nav>
-    <a href="about.html">About</a>
-    <a href="pricing.html">Pricing</a>
-    <a href="downloads.html">Downloads</a>
-    <a href="contact.html">Contact</a>
-    <a href="privacy.html">Privacy</a>
-    <a href="terms.html">Terms</a>
-  </nav>
-</div></footer>
+<footer><div class="wrap"><span>© Kortexify Technologies</span><nav aria-label="Site"><a href="about.html">About</a><a href="pricing.html">Pricing</a><a href="downloads.html">Downloads</a><a href="contact.html">Contact</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></nav></div>
+<div class="wrap"><span class="mono">FEATURES</span><nav aria-label="Features"><a href="features/flashcards.html">Smart flashcards</a><a href="features/questions.html">CBT practice</a><a href="features/solver.html">Syllabot solver</a><a href="features/glossary.html">Course glossary</a><a href="features/study_rooms.html">Study rooms</a></nav></div></footer>
+<div class="meter" aria-hidden="true">retention <b id="mv">38%</b><svg viewBox="0 0 70 26"><path id="mp" pathLength="1" d="M2 22L12 17L14 22L26 14L28 20L44 9L46 16L68 3"/></svg></div>
 
-<!-- Shared Kortex Library -->
 <script src="js/kx.js"></script>
 <script>
-  // Billing cycle toggling (Monthly vs Annual)
-  const monthlyBtn = document.getElementById('billMonthly');
-  const annualBtn = document.getElementById('billAnnual');
-  const proPeriod = document.getElementById('proPeriod');
-  const resPeriod = document.getElementById('resPeriod');
-
-  function updateBilling(isAnnual) {
-    document.documentElement.dataset.billing = isAnnual ? 'annual' : 'monthly';
-    monthlyBtn.classList.toggle('active', !isAnnual);
-    monthlyBtn.setAttribute('aria-pressed', !isAnnual ? 'true' : 'false');
-    annualBtn.classList.toggle('active', isAnnual);
-    annualBtn.setAttribute('aria-pressed', isAnnual ? 'true' : 'false');
-
-    proPeriod.textContent = isAnnual ? '/ mo, billed yearly' : '/ month';
-    resPeriod.textContent = isAnnual ? '/ mo, billed yearly' : '/ month';
-
-    // Trigger currency updater to refresh prices
-    if (window.Kortex && window.Kortex.setCurrency) {
-      window.Kortex.setCurrency(document.documentElement.dataset.currency || 'USD');
-    }
-  }
-
-  monthlyBtn.addEventListener('click', () => updateBilling(false));
-  annualBtn.addEventListener('click', () => updateBilling(true));
+const monthlyBtn = document.getElementById('billMonthly');
+const annualBtn = document.getElementById('billAnnual');
+const periods = [document.getElementById('proPeriod'), document.getElementById('resPeriod')];
+function updateBilling(isAnnual) {
+  document.documentElement.dataset.billing = isAnnual ? 'annual' : 'monthly';
+  monthlyBtn.classList.toggle('active', !isAnnual);
+  monthlyBtn.setAttribute('aria-pressed', String(!isAnnual));
+  annualBtn.classList.toggle('active', isAnnual);
+  annualBtn.setAttribute('aria-pressed', String(isAnnual));
+  periods.forEach(p => { p.textContent = isAnnual ? '/ mo, billed yearly' : '/ month'; });
+  window.Kortex.setCurrency(document.documentElement.dataset.currency || 'USD');
+}
+monthlyBtn.addEventListener('click', () => updateBilling(false));
+annualBtn.addEventListener('click', () => updateBilling(true));
 </script>
 </body>
 </html>
