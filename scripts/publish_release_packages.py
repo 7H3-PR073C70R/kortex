@@ -291,6 +291,10 @@ def build_macos_bundle():
         "-t",
         "lib/main_production.dart",
     ]
+    env_prod = os.path.join(PROJECT_ROOT, ".env.production")
+    if os.path.exists(env_prod):
+        cmd.append(f"--dart-define-from-file={env_prod}")
+
     res = subprocess.run(cmd, cwd=PROJECT_ROOT, capture_output=True, text=True)
     if res.returncode != 0:
         print(f"Build failed:\n{res.stderr}\n{res.stdout}")
