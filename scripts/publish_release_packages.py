@@ -31,17 +31,40 @@ if sys.platform.startswith("win"):
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-# Cloudflare R2 Credentials & Configuration (Loaded strictly from environment variables)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DIST_DIR = os.path.join(PROJECT_ROOT, "dist")
+
+
+def _load_env_files():
+    """Optionally load environment variables from .env.production or .env if present."""
+    for env_name in [".env.production", ".env"]:
+        env_path = os.path.join(PROJECT_ROOT, env_name)
+        if os.path.isfile(env_path):
+            try:
+                with open(env_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#") or "=" not in line:
+                            continue
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip("'\"")
+                        if k not in os.environ and v:
+                            os.environ[k] = v
+            except Exception:
+                pass
+
+
+_load_env_files()
+
+# Cloudflare R2 Credentials & Configuration (Loaded strictly from environment variables or .env)
 ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID", "").strip()
 ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "").strip()
 SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "").strip()
 BUCKET_NAME = (os.environ.get("R2_BUCKET_NAME") or "kortex-forum-media").strip()
-PUBLIC_DOMAIN = os.environ.get("R2_PUBLIC_DOMAIN", "").strip().rstrip("/")
+PUBLIC_DOMAIN = (os.environ.get("R2_PUBLIC_DOMAIN") or "https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev").strip().rstrip("/")
 REGION = "auto"
 SERVICE = "s3"
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DIST_DIR = os.path.join(PROJECT_ROOT, "dist")
 
 
 def sign(key, msg):
@@ -58,10 +81,17 @@ def get_signature_key(key, date_stamp, region_name, service_name):
 
 def upload_to_r2(local_path, r2_key, content_type="application/octet-stream"):
     """Uploads a file directly to Cloudflare R2 via AWS SigV4 with direct file attachment headers."""
-    if not ACCOUNT_ID or not ACCESS_KEY_ID or not SECRET_ACCESS_KEY:
+    account_id = (os.environ.get("R2_ACCOUNT_ID") or ACCOUNT_ID).strip()
+    access_key_id = (os.environ.get("R2_ACCESS_KEY_ID") or ACCESS_KEY_ID).strip()
+    secret_access_key = (os.environ.get("R2_SECRET_ACCESS_KEY") or SECRET_ACCESS_KEY).strip()
+    bucket_name = (os.environ.get("R2_BUCKET_NAME") or BUCKET_NAME or "kortex-forum-media").strip()
+    public_domain = (os.environ.get("R2_PUBLIC_DOMAIN") or PUBLIC_DOMAIN or "https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev").strip().rstrip("/")
+
+    if not account_id or not access_key_id or not secret_access_key:
         raise ValueError(
             "Missing required R2 credentials. Please set R2_ACCOUNT_ID, "
-            "R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY environment variables."
+            "R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY environment variables, "
+            "add them to .env.production / .env, or configure them in GitHub Repository Secrets (Actions)."
         )
 
     if not os.path.isfile(local_path):
@@ -75,8 +105,8 @@ def upload_to_r2(local_path, r2_key, content_type="application/octet-stream"):
     with open(local_path, "rb") as f:
         data = f.read()
 
-    host = f"{ACCOUNT_ID}.r2.cloudflarestorage.com"
-    endpoint = f"https://{host}/{BUCKET_NAME}/{r2_key}"
+    host = f"{account_id}.r2.cloudflarestorage.com"
+    endpoint = f"https://{host}/{bucket_name}/{r2_key}"
 
     t = datetime.datetime.now(datetime.timezone.utc)
     amz_date = t.strftime("%Y%m%dT%H%M%SZ")
@@ -84,7 +114,7 @@ def upload_to_r2(local_path, r2_key, content_type="application/octet-stream"):
 
     payload_hash = hashlib.sha256(data).hexdigest()
 
-    canonical_uri = f"/{BUCKET_NAME}/{r2_key}"
+    canonical_uri = f"/{bucket_name}/{r2_key}"
     canonical_headers = (
         f"content-disposition:{disposition}\n"
         f"host:{host}\n"
@@ -97,10 +127,10 @@ def upload_to_r2(local_path, r2_key, content_type="application/octet-stream"):
     credential_scope = f"{date_stamp}/{REGION}/{SERVICE}/aws4_request"
     string_to_sign = f"AWS4-HMAC-SHA256\n{amz_date}\n{credential_scope}\n{hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()}"
 
-    signing_key = get_signature_key(SECRET_ACCESS_KEY, date_stamp, REGION, SERVICE)
+    signing_key = get_signature_key(secret_access_key, date_stamp, REGION, SERVICE)
     signature = hmac.new(signing_key, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
 
-    authorization_header = f"AWS4-HMAC-SHA256 Credential={ACCESS_KEY_ID}/{credential_scope}, SignedHeaders={signed_headers}, Signature={signature}"
+    authorization_header = f"AWS4-HMAC-SHA256 Credential={access_key_id}/{credential_scope}, SignedHeaders={signed_headers}, Signature={signature}"
 
     headers = {
         "Host": host,
@@ -114,7 +144,7 @@ def upload_to_r2(local_path, r2_key, content_type="application/octet-stream"):
     req = urllib.request.Request(endpoint, data=data, headers=headers, method="PUT")
     with urllib.request.urlopen(req) as resp:
         if resp.status in (200, 201):
-            public_url = f"{PUBLIC_DOMAIN}/{r2_key}"
+            public_url = f"{public_domain}/{r2_key}"
             print(f"✅ Successfully uploaded: {public_url}")
             return public_url
         else:
