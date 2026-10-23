@@ -5,7 +5,11 @@ import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.d
 import 'package:kortex/src/features/ingestion/data/services/block_isolation_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/formula_extraction_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/html_entity_decoder.dart';
+import 'package:kortex/src/features/ingestion/data/services/synthesis/concept_inventory.dart';
 import 'package:kortex/src/features/ingestion/data/services/synthesis/flashcard_synthesizer.dart';
+import 'package:kortex/src/features/ingestion/data/services/synthesis/general_vocabulary.dart';
+import 'package:kortex/src/features/ingestion/data/services/synthesis/schema_serializer.dart';
+import 'package:kortex/src/features/ingestion/data/services/synthesis/sentence_quality.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_ir.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/extraction_report.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/pedagogical_card_schema.dart';
@@ -371,9 +375,14 @@ class OfflineCardBuilder {
       totalBlocks: blocks.length,
       termFrequency: termFrequency,
     );
-    final structured = <OfflineCard>[];
-    final clozeCandidates = <_ClozeCandidate>[];
+    final inventory = _buildInventory(blocks, docContext: docContext);
+    final candidates = <_Candidate>[];
     final clozePerSection = <String, int>{};
+
+    void add(OfflineCard? card, int order, {double quality = 1}) {
+      if (card == null) return;
+      candidates.add(_Candidate(card, order: order, quality: quality));
+    }
 
     String? heading;
     final pendingList = <_Block>[];
@@ -381,10 +390,7 @@ class OfflineCardBuilder {
 
     void flushList() {
       if (pendingList.isEmpty) return;
-      final card = _listCard(heading, pendingList, docContext: docContext, index: listStartIndex);
-      if (card != null) {
-        structured.add(card);
-      }
+      add(_listCard(heading, pendingList, docContext: docContext, index: listStartIndex), listStartIndex * 1000);
       pendingList.clear();
     }
 
@@ -399,16 +405,13 @@ class OfflineCardBuilder {
         continue;
       }
 
-      if (block.kind == _BlockKind.heading) {
-        heading = block.text;
-      }
-
+      final order = i * 1000;
       switch (block.kind) {
         case _BlockKind.heading:
           heading = block.text;
         case _BlockKind.qa:
           final pageNum = block.page > 0 ? block.page : (block.provenance?.page ?? 1);
-          structured.add(
+          add(
             OfflineCard(
               type: OfflineCardType.qa,
               front: block.term!,
@@ -425,35 +428,26 @@ class OfflineCardBuilder {
                 blockId: 'p${pageNum}_b${i}_qa',
               ),
             ),
+            order,
           );
         case _BlockKind.glossary:
-          final card = _glossaryCard(block, docContext, heading, i);
-          if (card != null) {
-            structured.add(card);
-          }
+          add(_glossaryCard(block, docContext, heading, i), order);
         case _BlockKind.formula:
-          final card = _formulaCard(block, heading, docContext, index: i);
-          if (card != null) {
-            structured.add(card);
-          }
+          add(_formulaCard(block, heading, docContext, index: i), order);
         case _BlockKind.bullet:
           if (pendingList.isEmpty) {
             listStartIndex = i;
           }
           pendingList.add(block);
         case _BlockKind.code:
-          final card = _codeCard(blocks, i, heading, docContext);
-          if (card != null) {
-            structured.add(card);
-          }
+          add(_codeCard(blocks, i, heading, docContext), order);
         case _BlockKind.table:
           final tableCards = _tableCards(block, heading, docContext, index: i);
-          structured.addAll(tableCards);
-        case _BlockKind.figure:
-          final figCard = _figureCard(block, heading, docContext, index: i);
-          if (figCard != null) {
-            structured.add(figCard);
+          for (var t = 0; t < tableCards.length; t++) {
+            add(tableCards[t], order + t);
           }
+        case _BlockKind.figure:
+          add(_figureCard(block, heading, docContext, index: i), order);
         case _BlockKind.paragraph:
           final sentences = _splitSentences(block.text);
           final consumed = <int>{};
@@ -464,11 +458,12 @@ class OfflineCardBuilder {
               s,
               heading,
               docContext,
+              inventory,
               block: block,
               blockIndex: i,
             );
             if (discourse != null) {
-              structured.add(discourse.card);
+              add(discourse.card, order + s, quality: SentenceQuality.score(sentences[s]));
               consumed.addAll(discourse.consumed);
             }
           }
@@ -477,13 +472,14 @@ class OfflineCardBuilder {
             final def = _definitionCard(
               sentences,
               s,
+              inventory,
               heading: heading,
               docContext: docContext,
               block: block,
               blockIndex: i,
             );
             if (def != null) {
-              structured.add(def.card);
+              add(def.card, order + s, quality: SentenceQuality.score(sentences[s]));
               consumed.addAll(def.consumed);
             }
           }
@@ -492,13 +488,13 @@ class OfflineCardBuilder {
             if (consumed.contains(s)) continue;
             final cloze = _clozeCandidate(
               sentences[s],
-              termFrequency,
-              clozeCandidates.length,
+              inventory,
               heading: heading,
               docContext: docContext,
               block: block,
               blockIndex: i,
               clozeExclusions: clozeExclusions,
+              report: report,
             );
             if (cloze == null) continue;
             if (heading != null && maxClozePerSection != null) {
@@ -506,19 +502,91 @@ class OfflineCardBuilder {
               if (used >= maxClozePerSection!) continue;
               clozePerSection[sectionKey] = used + 1;
             }
-            clozeCandidates.add(cloze);
+            add(cloze.card, order + s, quality: cloze.score);
           }
       }
     }
     flushList();
 
-    final assembled = _assemble(structured, clozeCandidates, report: report);
+    final assembled = _assemble(
+      candidates,
+      inventory,
+      budget: maxCards ?? _autoBudget(blocks),
+      report: report,
+    );
     final bound = _bindAdjacentAssets(assembled, blocks);
     return bound.map((c) => c.copyWith(
       front: HtmlEntityDecoder.decode(c.front),
       back: HtmlEntityDecoder.decode(c.back),
       heading: c.heading != null ? HtmlEntityDecoder.decode(c.heading!) : null,
     )).toList();
+  }
+
+  /// Feeds every studyable block into a document-wide [ConceptInventory].
+  ConceptInventory _buildInventory(List<_Block> blocks, {required String docContext}) {
+    final sources = <ConceptSource>[];
+    for (final b in blocks) {
+      if (DocumentZoneClassifier.isNonPedagogicalZone(b.zone)) continue;
+      final section = b.sectionTitle ?? '';
+      switch (b.kind) {
+        case _BlockKind.heading:
+          sources.add(ConceptSource(b.text, ConceptSourceKind.heading, section: section));
+        case _BlockKind.glossary:
+          if (b.term != null) sources.add(ConceptSource(b.term!, ConceptSourceKind.definedTerm, section: section));
+          sources.add(ConceptSource(b.text, ConceptSourceKind.prose, section: section));
+        case _BlockKind.paragraph:
+        case _BlockKind.bullet:
+        case _BlockKind.qa:
+          for (final sentence in _splitSentences(b.text)) {
+            final subject = _definitionSubject(sentence);
+            if (subject != null) {
+              sources.add(ConceptSource(subject, ConceptSourceKind.definedTerm, section: section));
+            }
+            sources.add(ConceptSource(sentence, ConceptSourceKind.prose, section: section));
+          }
+        case _BlockKind.table:
+          for (final row in b.tableRows) {
+            if (row.isNotEmpty) sources.add(ConceptSource(row.first, ConceptSourceKind.prose, section: section));
+          }
+        case _BlockKind.figure:
+        case _BlockKind.formula:
+        case _BlockKind.code:
+          break;
+      }
+    }
+    final topicWords = docContext == 'Study Deck'
+        ? const <String>{}
+        : {docContext, ...docContext.split(RegExp(r'\s+')).where((w) => w.length > 2)};
+    return ConceptInventory.build(sources, topicWords: topicWords);
+  }
+
+  /// Subject of an explicit definition sentence ("A coroutine is a ..."), if any.
+  static String? _definitionSubject(String sentence) {
+    final m = RegExp(
+      r'^(?:(?:A|An|The)\s+)?([A-Za-z][\w\-]*(?:\s+[A-Za-z][\w\-]*){0,3})\s+(?:is|are)\s+(?:defined\s+as|known\s+as|called|an?|the\s+(?:process|study|set|mechanism|ability|practice))\b',
+    ).firstMatch(sentence.trim());
+    if (m == null) return null;
+    final subject = m.group(1)!;
+    final first = subject.split(' ').first.toLowerCase();
+    if (_badSubjectStarts.contains(first) || GeneralVocabulary.isGeneral(subject)) return null;
+    return subject;
+  }
+
+  /// Number of cards a document can support: a few per section, bounded by
+  /// how much prose there is, never more than [_maxAutoBudget].
+  int _autoBudget(List<_Block> blocks) {
+    final sections = <String>{};
+    var words = 0;
+    for (final b in blocks) {
+      if (DocumentZoneClassifier.isNonPedagogicalZone(b.zone)) continue;
+      if (b.kind == _BlockKind.heading) continue;
+      sections.add(b.sectionTitle ?? '');
+      if (b.kind != _BlockKind.code) words += _wordCount(b.text);
+    }
+    final bySections = sections.length * _cardsPerSection + 8;
+    // Short documents are dense with facts; roughly one card per 20 words.
+    final byWords = words ~/ 20 + 10;
+    return math.min(bySections, byWords).clamp(10, _maxAutoBudget);
   }
 
   List<OfflineCard> _bindAdjacentAssets(
@@ -710,16 +778,28 @@ class OfflineCardBuilder {
     return '__root__';
   }
 
+  static const _cardsPerSection = 6;
+  static const _maxAutoBudget = 300;
+  static const _maxCardsPerConcept = 2;
+  static const _minCandidateScore = 0.12;
+
+  /// Ranks candidates, removes duplicates, applies per-section, per-concept
+  /// and document budgets, and returns the winners in document order.
   List<OfflineCard> _assemble(
-    List<OfflineCard> structured,
-    List<_ClozeCandidate> clozes, {
+    List<_Candidate> candidates,
+    ConceptInventory inventory, {
+    required int budget,
     ExtractionReport? report,
   }) {
     final seen = <String>{};
     final seenFrontTokensBySubdeck = <String, List<Set<String>>>{};
     final seenSourceSentences = <String>{};
     final seenAnswersBySubdeck = <String, Set<String>>{};
-    final result = <OfflineCard>[];
+    final perSection = <String, int>{};
+    final perConcept = <String, int>{};
+    // One cloze per concept per sub-deck; other sections may test it again.
+    final clozedConcepts = <String>{};
+    final selected = <_Candidate>[];
 
     String norm(String s) =>
         s.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '');
@@ -751,8 +831,22 @@ class OfflineCardBuilder {
       return false;
     }
 
-    bool tryAddCard(OfflineCard card) {
-      if (maxCards != null && result.length >= maxCards!) return false;
+    bool tryAdd(_Candidate candidate) {
+      final card = candidate.card;
+      final subDeck = subDeckKey(card);
+      final concept = candidate.conceptKey;
+
+      if ((perSection[subDeck] ?? 0) >= _cardsPerSection) {
+        report?.recordDrop(rule: 'section_card_cap', sampleText: card.front);
+        return false;
+      }
+      if (concept != null) {
+        if ((perConcept[concept] ?? 0) >= _maxCardsPerConcept ||
+            (card.type == OfflineCardType.cloze && clozedConcepts.contains('$subDeck\u0000$concept'))) {
+          report?.recordDrop(rule: 'concept_card_cap', sampleText: card.front);
+          return false;
+        }
+      }
 
       if (!_isMeaningfulCard(card)) {
         report?.recordDrop(
@@ -771,7 +865,6 @@ class OfflineCardBuilder {
         return false;
       }
 
-      final subDeck = subDeckKey(card);
       if (isSemanticDuplicate(card.front, subDeck)) {
         report?.recordDrop(
           rule: 'semantic_duplicate_card_front',
@@ -782,14 +875,12 @@ class OfflineCardBuilder {
 
       // 1. Deduplicate cards citing the identical source sentence
       final sourceSent = norm(extractSourceSentence(card));
-      if (sourceSent.length >= 20) {
-        if (seenSourceSentences.contains(sourceSent)) {
-          report?.recordDrop(
-            rule: 'duplicate_source_sentence',
-            sampleText: card.front,
-          );
-          return false;
-        }
+      if (sourceSent.length >= 20 && seenSourceSentences.contains(sourceSent)) {
+        report?.recordDrop(
+          rule: 'duplicate_source_sentence',
+          sampleText: card.front,
+        );
+        return false;
       }
 
       // 2. Deduplicate cards yielding identical answers within the same sub-deck
@@ -814,27 +905,121 @@ class OfflineCardBuilder {
       if (normAns.length >= 2 && normAns.length <= 80) {
         seenAnswersBySubdeck.putIfAbsent(subDeck, () => <String>{}).add(normAns);
       }
-      result.add(card);
+      perSection.update(subDeck, (v) => v + 1, ifAbsent: () => 1);
+      if (concept != null) {
+        perConcept.update(concept, (v) => v + 1, ifAbsent: () => 1);
+        if (card.type == OfflineCardType.cloze) clozedConcepts.add('$subDeck\u0000$concept');
+      }
+      selected.add(candidate);
       return true;
     }
 
-    for (final card in structured) {
-      if (maxCards != null && result.length >= maxCards!) break;
-      tryAddCard(card);
+    for (final c in candidates) {
+      c
+        ..conceptKey = _conceptKeyFor(c.card, inventory)
+        ..score = _rankScore(c, inventory);
     }
-
-    // Sort clozes by score descending so the highest-yield domain terms come first
-    final sortedClozes = List<_ClozeCandidate>.from(clozes)
-      ..sort((a, b) => b.score.compareTo(a.score));
-
-    final room = maxCards == null ? sortedClozes.length : (maxCards! - result.length);
-    if (room > 0 && sortedClozes.isNotEmpty) {
-      for (final c in sortedClozes) {
-        if (maxCards != null && result.length >= maxCards!) break;
-        tryAddCard(c.card);
+    final ranked = <_Candidate>[];
+    for (final c in candidates) {
+      if (c.score < _minCandidateScore) {
+        report?.recordDrop(rule: 'low_rank_score', sampleText: c.card.front);
+      } else if (_hasTruncatedAnswer(c.card)) {
+        // The deck serializer would reject it later; drop it before it takes
+        // a slot from a card that would survive.
+        report?.recordDrop(rule: 'truncated_answer', sampleText: c.card.front);
+      } else {
+        ranked.add(c);
       }
     }
-    return result;
+    ranked.sort((a, b) {
+      final byScore = b.score.compareTo(a.score);
+      return byScore != 0 ? byScore : a.order.compareTo(b.order);
+    });
+
+    // Coverage pass: every section first gets its best card, as long as the
+    // budget is large enough for coverage to matter more than global rank.
+    final bestBySection = <String, _Candidate>{};
+    for (final c in ranked) {
+      bestBySection.putIfAbsent(subDeckKey(c.card), () => c);
+    }
+    // A rejection only depends on cards already selected, so a candidate
+    // rejected in the coverage pass would be rejected again.
+    final attempted = <_Candidate>{};
+    if (bestBySection.length * 2 <= budget) {
+      for (final c in bestBySection.values) {
+        if (selected.length >= budget) break;
+        attempted.add(c);
+        tryAdd(c);
+      }
+    }
+    for (final c in ranked) {
+      if (attempted.contains(c)) continue;
+      if (selected.length >= budget) {
+        report?.recordDrop(rule: 'card_budget', sampleText: c.card.front);
+        continue;
+      }
+      tryAdd(c);
+    }
+
+    selected.sort((a, b) => a.order.compareTo(b.order));
+    return [for (final c in selected) c.card];
+  }
+
+  /// Mirrors the truncation rule [SchemaSerializer] applies to card backs.
+  static bool _hasTruncatedAnswer(OfflineCard card) => switch (card.type) {
+        OfflineCardType.code ||
+        OfflineCardType.formula ||
+        OfflineCardType.list ||
+        OfflineCardType.table ||
+        OfflineCardType.figure =>
+          false,
+        _ => SchemaSerializer.isTruncatedAnswer(card.back.trim()),
+      };
+
+  /// The concept a card tests: the blanked term of a cloze, otherwise the
+  /// highest-ranked concept named in the question.
+  static String? _conceptKeyFor(OfflineCard card, ConceptInventory inventory) {
+    if (card.type == OfflineCardType.cloze) {
+      return ConceptInventory.normalize(extractCardAnswer(card));
+    }
+    final question = card.front
+        .replaceFirst(RegExp(r'^In\s+"[^"]*",\s*'), '')
+        .split('\n')
+        .first;
+    ConceptMention? best;
+    for (final m in inventory.mentionsIn(question)) {
+      if (best == null || m.concept.score > best.concept.score) best = m;
+    }
+    return best?.concept.key;
+  }
+
+  static double _rankScore(_Candidate candidate, ConceptInventory inventory) {
+    final card = candidate.card;
+    final fromDocumentQa = card.source?.blockId?.endsWith('_qa') ?? false;
+    final typeWeight = switch (card.type) {
+      OfflineCardType.qa => fromDocumentQa ? 1.2 : 0.85,
+      OfflineCardType.definition || OfflineCardType.glossary => 1.0,
+      OfflineCardType.formula => 0.95,
+      OfflineCardType.list => 0.85,
+      OfflineCardType.code => 0.8,
+      OfflineCardType.table => 0.7,
+      OfflineCardType.cloze => 0.65,
+      OfflineCardType.figure => 0.5,
+    };
+    final key = candidate.conceptKey;
+    final conceptScore = key == null ? null : inventory.lookup(key)?.score;
+    // Structured cards stand on the document's own markup; prose-derived cards
+    // are only as good as the concept they test.
+    final structured = fromDocumentQa ||
+        card.type == OfflineCardType.formula ||
+        card.type == OfflineCardType.list ||
+        card.type == OfflineCardType.table ||
+        card.type == OfflineCardType.code ||
+        card.type == OfflineCardType.glossary;
+    final conceptFactor = conceptScore == null
+        ? (structured ? 0.6 : 0.35)
+        : (structured ? 0.6 + 0.4 * conceptScore : 0.3 + 0.7 * conceptScore);
+    return typeWeight * card.confidence * conceptFactor * candidate.quality;
   }
 
   // ---------------------------------------------------------------------------
@@ -2303,7 +2488,8 @@ class OfflineCardBuilder {
     List<String> sentences,
     int index,
     String? heading,
-    String docContext, {
+    String docContext,
+    ConceptInventory inventory, {
     _Block? block,
     int blockIndex = 0,
   }) {
@@ -2311,6 +2497,18 @@ class OfflineCardBuilder {
     if (!_endsSentence(sentence) || !_looksLikeProse(sentence)) return null;
     final lowerSentence = sentence.toLowerCase();
     if (_isBannedBoilerplate(lowerSentence)) return null;
+    if (!SentenceQuality.isSelfContained(sentence)) return null;
+
+    // The subject must be a concept of this document, not "feature" or "it".
+    String? resolve(String rawSubject) {
+      final subject = _resolveSubject(rawSubject, heading);
+      if (subject == null) return null;
+      final words = subject.split(RegExp(r'\s+'));
+      if (words.every(GeneralVocabulary.isGeneral)) return null;
+      final concept = inventory.lookup(subject);
+      if (concept != null && concept.isGeneric) return null;
+      return subject;
+    }
 
     final consumed = <int>{index};
     final pageNum = block != null && block.page > 0 ? block.page : (block?.provenance?.page ?? 1);
@@ -2332,12 +2530,9 @@ class OfflineCardBuilder {
       final rawSubject = becauseMatch.group(1)!.trim();
       final copula = becauseMatch.group(2)!;
       final predicate = becauseMatch.group(3)!.trim();
-      final subject = _resolveSubject(rawSubject, heading);
+      final subject = resolve(rawSubject);
       if (subject != null) {
-        final contextSuffix = (docContext.isNotEmpty && !sentence.toLowerCase().contains(docContext.toLowerCase()))
-            ? ' in $docContext'
-            : '';
-        final front = 'Why $copula $subject $predicate$contextSuffix?';
+        final front = 'Why $copula $subject $predicate?';
         return _DefinitionResult(
           OfflineCard(
             type: OfflineCardType.qa,
@@ -2360,20 +2555,18 @@ class OfflineCardBuilder {
       final rawSubject = methodMatch.group(1)!.trim();
       final verbS = methodMatch.group(2)!.toLowerCase();
       final obj = methodMatch.group(3)!.trim();
-      final subject = _resolveSubject(rawSubject, heading);
+      final subject = resolve(rawSubject);
       if (subject != null &&
           !obj.contains(',') &&
           !obj.contains(';') &&
           !obj.toLowerCase().startsWith('which ') &&
           !obj.toLowerCase().startsWith('that ') &&
+          (GeneralVocabulary.looksLikeVerb(verbS) || !GeneralVocabulary.isGenericNoun(verbS)) &&
           !_subjectBannedWords.contains(verbS) &&
           !_nounPluralExclusions.contains(verbS) &&
           !_anaphoraBlacklist.contains(rawSubject.toLowerCase())) {
         final baseVerb = _toBaseVerb(verbS);
-        final contextSuffix = (docContext.isNotEmpty && !sentence.toLowerCase().contains(docContext.toLowerCase()))
-            ? ' in $docContext'
-            : '';
-        final front = 'How does $subject $baseVerb $obj$contextSuffix?';
+        final front = 'How does $subject $baseVerb $obj?';
         return _DefinitionResult(
           OfflineCard(
             type: OfflineCardType.qa,
@@ -2395,12 +2588,12 @@ class OfflineCardBuilder {
       final rawSubject = passiveMatch.group(1)!.trim();
       final copula = passiveMatch.group(2)!;
       final participle = passiveMatch.group(3)!;
-      final subject = _resolveSubject(rawSubject, heading);
-      if (subject != null && !_anaphoraBlacklist.contains(rawSubject.toLowerCase())) {
-        final contextSuffix = (docContext.isNotEmpty && !sentence.toLowerCase().contains(docContext.toLowerCase()))
-            ? ' in $docContext'
-            : '';
-        final front = 'How $copula $subject $participle$contextSuffix?';
+      final subject = resolve(rawSubject);
+      final agent = passiveMatch.group(4)!.toLowerCase();
+      if (subject != null &&
+          !_anaphoraBlacklist.contains(rawSubject.toLowerCase()) &&
+          !RegExp(r'^(?:default|the\s+user|users|you|developers|hand|itself)\b').hasMatch(agent)) {
+        final front = 'How $copula $subject $participle?';
         return _DefinitionResult(
           OfflineCard(
             type: OfflineCardType.qa,
@@ -2421,8 +2614,7 @@ class OfflineCardBuilder {
     ).firstMatch(sentence);
     if (eventMatch != null) {
       final callTarget = eventMatch.group(1)!.replaceAll(RegExp('[( )]'), '');
-      final contextSuffix = docContext.isNotEmpty ? ' in $docContext' : '';
-      final front = 'What happens when $callTarget is called$contextSuffix?';
+      final front = 'What happens when $callTarget is called?';
       return _DefinitionResult(
         OfflineCard(
           type: OfflineCardType.qa,
@@ -2465,7 +2657,7 @@ class OfflineCardBuilder {
     ).firstMatch(sentence);
     if (yieldMatch != null) {
       final rawSubject = yieldMatch.group(1)!.trim();
-      final subject = _resolveSubject(rawSubject, heading);
+      final subject = resolve(rawSubject);
       if (subject != null) {
         final front = 'What is the net yield of $subject?';
         return _DefinitionResult(
@@ -2488,7 +2680,7 @@ class OfflineCardBuilder {
     ).firstMatch(sentence);
     if (locationMatch != null) {
       final rawSubject = locationMatch.group(1)!.trim();
-      final subject = _resolveSubject(rawSubject, heading);
+      final subject = resolve(rawSubject);
       if (subject != null) {
         final front = 'Where does $subject take place?';
         return _DefinitionResult(
@@ -2511,7 +2703,7 @@ class OfflineCardBuilder {
     ).firstMatch(sentence);
     if (purposeMatch != null) {
       final rawSubject = purposeMatch.group(1)!.trim();
-      final subject = _resolveSubject(rawSubject, heading);
+      final subject = resolve(rawSubject);
       if (subject != null) {
         final front = 'What is the primary objective of $subject?';
         return _DefinitionResult(
@@ -2742,16 +2934,6 @@ class OfflineCardBuilder {
     'note', 'remember', 'consider', 'assume', 'suppose',
   };
 
-  static const _clozeBadSubjectStarts = {
-    // Pronouns & demonstratives with dangling references
-    'it', 'this', 'that', 'these', 'those', 'they', 'them', 'their', 'theirs',
-    'there', 'he', 'him', 'his', 'she', 'her', 'hers', 'we', 'us', 'our', 'ours',
-    'you', 'your', 'yours', 'i', 'me', 'my', 'mine',
-    'which', 'who', 'whom', 'whose',
-    'here', 'however', 'therefore', 'furthermore', 'moreover', 'instead', 'otherwise',
-    'note', 'remember',
-  };
-
   static const _clauseKeywords = {
     'need', 'needs', 'want', 'wants', 'should', 'must', 'could', 'would', 'might',
     'are', 'is', 'were', 'was', 'have', 'has', 'had', 'do', 'does', 'did',
@@ -2781,7 +2963,8 @@ class OfflineCardBuilder {
 
   _DefinitionResult? _definitionCard(
     List<String> sentences,
-    int index, {
+    int index,
+    ConceptInventory inventory, {
     String? heading,
     String docContext = '',
     _Block? block,
@@ -2800,12 +2983,20 @@ class OfflineCardBuilder {
         (sentence.contains('"') && sentence.contains('?'))) {
       return null;
     }
+    // A definition is subject-first, so only dependency on earlier text and
+    // structural damage disqualify it.
+    final rejection = SentenceQuality.rejectionReason(trimmed);
+    if (const {'external_reference', 'meta_text', 'extraction_damage', 'list_lead_in', 'imperative', 'too_long'}
+        .contains(rejection)) {
+      return null;
+    }
 
     final m = _definitionRe.firstMatch(sentence);
     if (m == null) return null;
     final verb = m.group(2)!;
+    final object = m.group(3)!;
     if ((verb == 'is' || verb == 'are') &&
-        !_copulaObjectRe.hasMatch(m.group(3)!)) {
+        !_copulaObjectRe.hasMatch(object)) {
       return null;
     }
 
@@ -2855,18 +3046,11 @@ class OfflineCardBuilder {
       '',
     );
     subject = subject.replaceAll('®', '').replaceAll(RegExp(r'\s{2,}'), ' ').trim();
-    if (subject.isNotEmpty && !RegExp('^[A-Z]').hasMatch(subject)) {
-      subject = subject[0].toUpperCase() + subject.substring(1);
-    }
     if (subject.length < 2) return null;
 
     final words = subject.split(RegExp(r'\s+'));
     if (words.length > 5) return null;
-    if (!RegExp('^[A-Z]').hasMatch(subject)) return null;
     if (_badSubjectStarts.contains(words.first.toLowerCase())) return null;
-    if (words.length == 1 && {'time', 'life', 'day', 'world', 'moment', 'thing', 'way'}.contains(subject.toLowerCase())) {
-      return null;
-    }
     if (words.any((w) => _subjectBannedWords.contains(w.toLowerCase()))) {
       return null;
     }
@@ -2874,7 +3058,27 @@ class OfflineCardBuilder {
     if (RegExp(r'\d+(?:\.\d+)*').hasMatch(subject)) return null;
     if (RegExp('[,;:()]').hasMatch(subject)) return null;
 
+    // The subject must be something worth knowing, not "Everything" or "Feature".
+    final concept = inventory.lookup(subject);
+    if (words.length == 1 && GeneralVocabulary.isGeneral(subject) && !(concept?.isIdentifier ?? false)) {
+      return null;
+    }
+    if (words.every(GeneralVocabulary.isGeneral)) return null;
+    if (concept != null && concept.key.split(' ').every(inventory.topicKeys.contains) && verb != 'is defined as') {
+      // Allow the topic's own definition ("Kotlin is a modern language").
+      if (!_copulaObjectRe.hasMatch(object)) return null;
+    }
+
+    // Prefer the spelling used mid-sentence elsewhere ("glycolysis", "StableRef").
+    final surface = concept?.surface;
+    if (surface != null && surface.toLowerCase() == subject.toLowerCase()) {
+      subject = surface;
+    } else if (!ConceptInventory.isIdentifier(subject) && !ConceptInventory.isAcronym(words.first)) {
+      subject = subject[0].toUpperCase() + subject.substring(1);
+    }
+
     final plural = verb == 'are';
+    final copula = plural ? 'are' : 'is';
 
     final consumed = <int>{index};
     var back = sentence;
@@ -2883,7 +3087,9 @@ class OfflineCardBuilder {
       if (back.length + next.length + 1 <= _maxDefinitionBackChars &&
           !_definitionRe.hasMatch(next) &&
           _endsSentence(next) &&
-          _looksLikeProse(next)) {
+          _looksLikeProse(next) &&
+          !const {'external_reference', 'meta_text', 'extraction_damage', 'imperative'}
+              .contains(SentenceQuality.rejectionReason(next))) {
         back = '$back $next';
         consumed.add(index + 1);
       }
@@ -2907,14 +3113,21 @@ class OfflineCardBuilder {
       blockId: 'p${pageNum}_b${blockIndex}_definition',
     );
 
+    final lowerObject = object.toLowerCase();
+    final front = switch (verb) {
+      'states that' => 'What does $subject state?',
+      'occurs in' || 'occurs at' => 'Where does $subject occur?',
+      _ when lowerObject.startsWith('used to') || lowerObject.startsWith('used for') =>
+        'What $copula $subject used for?',
+      _ when lowerObject.startsWith('used when') || lowerObject.startsWith('used in') =>
+        'When $copula $subject used?',
+      _ => 'What $copula $subject?',
+    };
+
     return _DefinitionResult(
       OfflineCard(
         type: OfflineCardType.definition,
-        front: switch (verb) {
-          'states that' => 'What does $subject state?',
-          'occurs in' || 'occurs at' => 'Where does $subject occur?',
-          _ => plural ? 'What are $subject?' : 'What is $subject?',
-        },
+        front: front,
         back: back,
         confidence: 0.8,
         heading: heading,
@@ -3040,145 +3253,78 @@ class OfflineCardBuilder {
     unicode: true,
   ).allMatches(text).map((m) => m.group(0)!);
 
+  /// Minimum [Concept.score] for a term to be worth blanking.
+  static const _minClozeConceptScore = 0.18;
+
+  /// Builds a cloze that blanks the most important concept in [sentence].
+  ///
+  /// Only terms from the [ConceptInventory] are ever blanked, never arbitrary
+  /// words, and only self-contained sentences qualify.
   _ClozeCandidate? _clozeCandidate(
     String sentence,
-    Map<String, int> freq,
-    int order, {
+    ConceptInventory inventory, {
     String? heading,
     String docContext = '',
     _Block? block,
     int blockIndex = 0,
     Set<String> clozeExclusions = const {},
+    ExtractionReport? report,
   }) {
     final words = _wordCount(sentence);
     if (words < _minClozeWords || words > _maxClozeWords) return null;
-    if (!RegExp(r'^[\p{Lu}\p{Lo}\p{Lt}]', unicode: true).hasMatch(sentence)) return null;
-    if (!RegExp(r'[.!?\u3002\uFF01\uFF1F\u0964\u06D4]$').hasMatch(sentence.trim())) return null;
-    if (sentence.endsWith('?')) return null;
+    if (sentence.trim().endsWith('?')) return null;
     if (RegExp(r'https?://|www\.').hasMatch(sentence)) return null;
     if (!_looksLikeProse(sentence)) return null;
     if (BlockIsolationService.isHybridClozeCandidate(sentence)) return null;
-
-    final trimmed = sentence.trim();
-    if (RegExp(
-      r'^(?:however\b|keep in mind\b|it(?:\x27|’|s)? important\b|as a rough estimate\b|we recommend\b|please submit\b|good luck\b|you can\b|exercise\b|solution\b|problem\b|practice\b|drill\b|task\b|answer\b|hint\b)',
-      caseSensitive: false,
-    ).hasMatch(trimmed)) {
+    final rejection = SentenceQuality.rejectionReason(sentence);
+    if (rejection != null) {
+      report?.recordDrop(rule: 'cloze_sentence_$rejection', sampleText: sentence);
       return null;
     }
 
-    // Strip leading section header prefixes
-    var effectiveSentence = sentence.replaceFirst(
-      RegExp(r'^(?:section|chapter|part)\s+\d+(?:\.\d+)*:?\s+.*?(?:\.|\s{2,}|:\s*)', caseSensitive: false),
-      '',
-    ).trim();
-    if (effectiveSentence.length < 20 || !_endsSentence(effectiveSentence)) {
-      effectiveSentence = sentence;
+    final effectiveSentence = sentence.trim();
+    final headingKeys = heading == null
+        ? const <String>{}
+        : {
+            ConceptInventory.normalize(heading.replaceFirst(RegExp(r'^(?:#+|\d+(?:\.\d+)*\.?)\s*'), '')),
+            ..._tokens(heading).map(ConceptInventory.normalize),
+          };
+
+    bool excluded(Concept c) {
+      final parts = c.key.split(' ');
+      if (parts.every((p) => clozeExclusions.contains(p) || clozeExclusions.contains(p.toLowerCase()))) {
+        return true;
+      }
+      if (inventory.topicKeys.contains(c.key)) return true;
+      return headingKeys.contains(c.key);
     }
 
-    final firstWord = sentence
-        .split(RegExp(r'\s+'))
-        .first
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^\p{L}]', unicode: true), '');
-    // Reject cloze cards starting with pronouns ("It occurs in the _____")
-    if (_clozeBadSubjectStarts.contains(firstWord)) return null;
-
-    if (RegExp(
-      r'^\s*(?:copyright\b|all\s+rights\s+reserved\b|dear\s+[a-z]+|welcome\s+to\b|in\s+witness\s+whereof\b|signed\s+by\b)',
-      caseSensitive: false,
-    ).hasMatch(trimmed)) {
-      return null;
+    ConceptMention? best;
+    for (final m in inventory.mentionsIn(effectiveSentence)) {
+      final c = m.concept;
+      if (c.isGeneric || c.score < _minClozeConceptScore || excluded(c)) continue;
+      // Never blank inside an equation or code-like expression.
+      if (FormulaExtractionService.isFormula(m.text)) continue;
+      if (best == null || c.score > best.concept.score) best = m;
     }
-
-    Set<String>? headingWords;
-    if (heading != null && heading.trim().isNotEmpty) {
-      headingWords = _tokens(heading).map((t) => t.toLowerCase()).toSet();
-    }
-
-    String? best;
-    var bestScore = 0.0;
-    final matches = RegExp(
-      r"[\p{L}\p{N}][\p{L}\p{N}'’\-]*[\p{L}\p{N}]|[\p{Lu}]{2,}|[\p{Lo}]+",
-      unicode: true,
-    ).allMatches(effectiveSentence);
-    for (final m in matches) {
-      final word = m.group(0)!;
-      final lowerWord = word.toLowerCase();
-      if (word.length < 3 && !RegExp(r'^\p{Lu}{2,}$', unicode: true).hasMatch(word)) continue;
-      if (_stopWords.contains(lowerWord)) continue;
-      if (clozeExclusions.contains(lowerWord)) continue;
-      final stem = lowerWord.replaceAll(RegExp(r"['’]s$"), '');
-      if (clozeExclusions.contains(stem)) continue;
-      if (lowerWord.endsWith('s') && lowerWord.length > 3 && clozeExclusions.contains(lowerWord.substring(0, lowerWord.length - 1))) {
-        continue;
-      }
-      if (headingWords != null && (headingWords.contains(lowerWord) || headingWords.contains(stem))) {
-        continue;
-      }
-
-      var score = math.log(1 + word.length);
-      final midSentence = m.start > 0;
-      if (RegExp(r'^\p{Lu}{2,}[\p{Ll}\p{N}]*$', unicode: true).hasMatch(word)) {
-        score *= 2.2; // acronym
-      } else if (midSentence && RegExp(r'^\p{Lu}', unicode: true).hasMatch(word)) {
-        score *= 1.8; // proper / technical noun
-      } else if (RegExp(r'\d').hasMatch(word)) {
-        score *= 1.5;
-      }
-      if ((freq[lowerWord] ?? 1) >= 2) score *= 1.4;
-      if (score > bestScore) {
-        bestScore = score;
-        best = word;
-      }
-    }
-
-    // Fallback: If all candidates were excluded because of corpus-wide dominant terms,
-    // allow selecting the highest-scoring candidate that is not a stopword, title, heading, or meta-word.
     if (best == null) {
-      final docContextWords = docContext.isNotEmpty
-          ? _tokens(docContext).map((t) => t.toLowerCase()).toSet()
-          : const <String>{};
-      for (final m in matches) {
-        final word = m.group(0)!;
-        final lowerWord = word.toLowerCase();
-        if (word.length < 3 && !RegExp(r'^\p{Lu}{2,}$', unicode: true).hasMatch(word)) continue;
-        if (_stopWords.contains(lowerWord)) continue;
-        if (_metaStructuralWords.contains(lowerWord)) continue;
-        if (docContextWords.contains(lowerWord)) continue;
-        final stem = lowerWord.replaceAll(RegExp(r"['’]s$"), '');
-        if (docContextWords.contains(stem)) continue;
-        if (headingWords != null && (headingWords.contains(lowerWord) || headingWords.contains(stem))) {
-          continue;
-        }
-
-        var score = math.log(1 + word.length);
-        final midSentence = m.start > 0;
-        if (RegExp(r'^\p{Lu}{2,}[\p{Ll}\p{N}]*$', unicode: true).hasMatch(word)) {
-          score *= 2.2;
-        } else if (midSentence && RegExp(r'^\p{Lu}', unicode: true).hasMatch(word)) {
-          score *= 1.8;
-        } else if (RegExp(r'\d').hasMatch(word)) {
-          score *= 1.5;
-        }
-        if (score > bestScore) {
-          bestScore = score;
-          best = word;
-        }
-      }
+      report?.recordDrop(rule: 'cloze_no_concept', sampleText: sentence);
+      return null;
     }
 
-    if (best == null) return null;
-
+    final answer = best.text;
     final blank = effectiveSentence.replaceAll(
-      RegExp(r'(?<=[^\p{L}]|^)' + RegExp.escape(best) + r'(?=[^\p{L}]|$)', unicode: true),
+      RegExp(r'(?<![\p{L}\p{N}_])' + RegExp.escape(answer) + r'(?![\p{L}\p{N}_])', unicode: true),
       '_____',
     );
     if (blank == effectiveSentence) return null;
+    // Enough of the sentence must remain to recall the term from.
+    final remaining = _wordCount(blank.replaceAll('_____', ''));
+    if (remaining < 4) return null;
 
-    final cleanHeading = heading
-        ?.replaceFirst(RegExp(r'^(?:#+|\d+(?:\.\d+)*\.?)\s*'), '')
-        .trim();
+    final cleanHeading = _isPromptableHeading(heading)
+        ? heading!.replaceFirst(RegExp(r'^(?:#+|\d+(?:\.\d+)*\.?)\s*'), '').trim()
+        : null;
     final contextualFront = (cleanHeading != null &&
             cleanHeading.isNotEmpty &&
             !effectiveSentence.toLowerCase().contains(cleanHeading.toLowerCase()))
@@ -3200,14 +3346,33 @@ class OfflineCardBuilder {
       card: OfflineCard(
         type: OfflineCardType.cloze,
         front: contextualFront,
-        back: '$best\n\n$effectiveSentence',
+        back: '$answer\n\n$effectiveSentence',
         confidence: 0.75,
         heading: heading,
         source: source,
       ),
-      score: bestScore,
-      order: order,
+      score: SentenceQuality.score(effectiveSentence),
+      order: blockIndex,
     );
+  }
+
+  /// Whether [heading] reads as a section title that helps frame a prompt,
+  /// rather than a grammar production, sentence fragment or list lead-in.
+  static bool _isPromptableHeading(String? heading) {
+    if (heading == null) return false;
+    final h = heading.replaceFirst(RegExp(r'^(?:#+|\d+(?:\.\d+)*\.?)\s*'), '').trim();
+    if (h.length < 3 || h.length > 70) return false;
+    if (h.endsWith(':') || h.endsWith(',')) return false;
+    if (RegExp(r'^\p{Ll}', unicode: true).hasMatch(h)) return false;
+    // Grammar productions ("ClassBody: { ClassBodyDeclarations }"), not
+    // titled headings such as "Indicators: Identifying Direction".
+    if (RegExp(r'^\w+:\s+(?:\S+$|[{\[(]|[A-Z][a-z]+[A-Z])').hasMatch(h)) return false;
+    if (h.contains('§') || h.contains('(')) return false;
+    if (RegExp(r'\b(?:and|or|of|in|to|the|a|an|with|for|when|that|which|by)$', caseSensitive: false).hasMatch(h)) {
+      return false;
+    }
+    if (RegExp(r'^(?:in|on|for|with|by|to|from|at)\s', caseSensitive: false).hasMatch(h)) return false;
+    return h.split(RegExp(r'\s+')).length <= 10;
   }
 
   static final _danglingPronounRe = RegExp(
@@ -3394,6 +3559,18 @@ class _DefinitionResult {
 
   final OfflineCard card;
   final Set<int> consumed;
+}
+
+class _Candidate {
+  _Candidate(this.card, {required this.order, this.quality = 1});
+
+  final OfflineCard card;
+
+  /// Position in the document, used to restore reading order after ranking.
+  final int order;
+  final double quality;
+  String? conceptKey;
+  double score = 0;
 }
 
 class _ClozeCandidate {

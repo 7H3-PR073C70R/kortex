@@ -23,6 +23,19 @@ void main() {
       expect(LocalPdfParserService.repairHeadingQuoteArtifact('It’s a valid feature'), 'It’s a valid feature');
     });
 
+    test('repairs quotes glued between lowercase words', () {
+      expect(LocalPdfParserService.repairHeadingQuoteArtifact('Intermediate’flow’operators'), 'Intermediate flow operators');
+      expect(LocalPdfParserService.repairHeadingQuoteArtifact('Is’anything’missing?'), 'Is anything missing?');
+      expect(LocalPdfParserService.repairHeadingQuoteArtifact("What's’next?"), "What's next?");
+      expect(LocalPdfParserService.repairHeadingQuoteArtifact('Welcome’to’our’tour’of Kotlin!'), 'Welcome to our tour of Kotlin!');
+      expect(LocalPdfParserService.repairHeadingQuoteArtifact('Kotlin’s’standard’library'), 'Kotlin’s standard library');
+      expect(LocalPdfParserService.repairHeadingQuoteArtifact('Expand Library authors’ guidelines'), 'Expand Library authors’ guidelines');
+      expect(
+        LocalPdfParserService.repairHeadingQuoteArtifact('There’s a whole pizza so you won’t get a boost'),
+        'There’s a whole pizza so you won’t get a boost',
+      );
+    });
+
     test('repairs unspaced uppercase transitions', () {
       expect(LocalPdfParserService.repairHeadingQuoteArtifact('Hello’World'), 'Hello World');
     });

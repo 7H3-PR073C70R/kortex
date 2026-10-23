@@ -760,8 +760,11 @@ class LocalPdfParserService {
   /// Repairs font-encoding artifacts where heading spaces are represented by
   /// right single quotation marks (`’` / `\u2019`, e.g., "Hello’ world", "Get’ started’ with’ Kotlin").
   /// Preserves genuine internal word contractions and possessives (e.g. "Java's", "don’t", "user’s").
-  static String repairHeadingQuoteArtifact(String text) {
-    if (!text.contains('’') && !text.contains('\u2019')) return text;
+  static String repairHeadingQuoteArtifact(String raw) {
+    if (!raw.contains('’')) return raw;
+
+    final text = _repairGluedQuoteSpaces(raw);
+    if (!text.contains('’')) return text;
 
     // Pattern: Word character followed by right single quote and whitespace (or end of line)
     final quoteSpaceMatches =
@@ -793,6 +796,25 @@ class LocalPdfParserService {
       return cleaned;
     }
 
+    return text;
+  }
+
+  // A quote glued between two letters ("Intermediate’flow’operators") that is
+  // not followed by an English contraction / possessive suffix.
+  static final _gluedQuoteRe = RegExp(
+    r'(?<=\p{L})’(?!(?:s|t|d|ll|re|ve|m)(?!\p{L}))(?=\p{L})',
+    unicode: true,
+  );
+
+  /// Replaces quotes used as word separators by heading fonts with spaces,
+  /// keeping contractions such as "don’t" and possessives such as "user’s".
+  static String _repairGluedQuoteSpaces(String text) {
+    final glued = _gluedQuoteRe.allMatches(text).length;
+    if (glued == 0) return text;
+    final words = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    if (glued >= 2 || words <= 4) {
+      return text.replaceAll(_gluedQuoteRe, ' ');
+    }
     return text;
   }
 
@@ -1429,7 +1451,12 @@ class LocalPdfParserService {
             .round(),
       );
       final indent = ' ' * indentSpaces;
-      formatted.add('$indent${line.text.trimRight()}');
+      // Monospace fonts often encode the inter-token space glyph as a tab.
+      final text = line.text.trimRight().replaceAllMapped(
+            RegExp(r'(?<=\S)\t+(?=\S)'),
+            (_) => ' ',
+          );
+      formatted.add('$indent$text');
     }
 
     return '```\n${formatted.join('\n')}\n```';

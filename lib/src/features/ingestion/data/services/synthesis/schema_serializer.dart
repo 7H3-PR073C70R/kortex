@@ -53,7 +53,7 @@ class SchemaSerializer {
     if (card.type != CognitiveQuestionType.code &&
         card.type != CognitiveQuestionType.math &&
         card.type != CognitiveQuestionType.yieldResult &&
-        _isTruncated(back)) {
+        isTruncatedAnswer(back)) {
       return false;
     }
 
@@ -64,7 +64,7 @@ class SchemaSerializer {
   }
 
   /// Checks if the card back represents an incomplete, truncated thought.
-  bool _isTruncated(String back) {
+  static bool isTruncatedAnswer(String back) {
     if (back.endsWith('-') || back.endsWith(',')) return true;
     if (_danglingTailRegex.hasMatch(back)) return true;
     if (!_terminalPunctuationRegex.hasMatch(back) && !back.contains('\n')) {
