@@ -100,7 +100,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final userStorage = locator.isRegistered<UserStorageService>()
         ? locator<UserStorageService>()
         : null;
-    final hasSession = userStorage != null ? userStorage.hasActiveSession() : true;
+    final hasSession = !(userStorage != null) || userStorage.hasActiveSession();
 
     if (!hasSession) {
       emit(
