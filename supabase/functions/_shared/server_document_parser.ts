@@ -36,6 +36,9 @@ function crc32(bytes: Uint8Array): number {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
+/** Diagrams extracted and uploaded per document. */
+const MAX_EXTRACTED_IMAGES = 8;
+
 export interface ExtractedMediaAttachment {
   filename: string;
   bytes: Uint8Array;
@@ -99,8 +102,8 @@ export class ServerDocumentParser {
       }
     }
 
-    // Upload extracted media diagrams concurrently (capped at top 8 figures)
-    const mediaToUpload = extractedMedia.slice(0, 8);
+    // Upload extracted media diagrams concurrently (capped at top figures)
+    const mediaToUpload = extractedMedia.slice(0, MAX_EXTRACTED_IMAGES);
     const uploadedImagesResults = await Promise.all(
       mediaToUpload.map(async (media, i) => {
         try {
@@ -225,7 +228,7 @@ export class ServerDocumentParser {
    * Handles:
    * - Inline JPEG (FF D8 FF ... FF D9)
    * - Flate-compressed streams containing PNG data (89 50 4E 47...)
-   * - No image count cap — all images are extracted
+   * - Stops after MAX_EXTRACTED_IMAGES, the number that is uploaded
    */
   /**
    * Encodes a raw RGB, RGBA, or Grayscale raster scanline buffer into standards-compliant PNG bytes.
@@ -313,6 +316,9 @@ export class ServerDocumentParser {
     let match: RegExpExecArray | null;
 
     while ((match = imageRegex.exec(pdfText)) !== null) {
+      // Only the first few figures are uploaded; decoding the rest of a
+      // textbook's images would exhaust the worker for nothing.
+      if (images.length >= MAX_EXTRACTED_IMAGES) break;
       const dictStr = match[1];
       const streamStart = match.index + match[0].length;
 
@@ -412,7 +418,7 @@ export class ServerDocumentParser {
       const JPEG_EOI = [0xff, 0xd9];
       let searchFrom = 0;
 
-      while (true) {
+      while (images.length < MAX_EXTRACTED_IMAGES) {
         const jpegStart = this.indexOfBytes(bytes, JPEG_SOI, searchFrom);
         if (jpegStart === -1) break;
 

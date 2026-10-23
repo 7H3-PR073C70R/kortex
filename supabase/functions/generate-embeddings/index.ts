@@ -78,6 +78,7 @@ function chunkText(text: string, chunkSize = 500, overlap = 50): string[] {
 }
 
 const SUB_BATCH_SIZE = 25;
+const MAX_CHUNKS_PER_REQUEST = 100;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -135,7 +136,13 @@ serve(async (req) => {
       }
     }
 
-    const cacheKey = `doc_embeddings:${documentId}:${hasChunks ? chunks!.length : (rawText?.length ?? 0)}`;
+    // Clients send a large document as several batches of chunks, so the key
+    // must identify the batch, not just its size, or every batch after the
+    // first would be answered from the cache without being stored.
+    const batchKey = hasChunks
+      ? `${chunks![0]?.chunk_index ?? 0}-${chunks![chunks!.length - 1]?.chunk_index ?? chunks!.length - 1}:${chunks!.length}`
+      : `raw:${rawText?.length ?? 0}`;
+    const cacheKey = `doc_embeddings:${documentId}:${batchKey}`;
     const cacheResult = await SemanticCacheProvider.getCachedResponse(
       supabase,
       cacheKey,
@@ -242,6 +249,19 @@ serve(async (req) => {
         content: chunk,
         chunk_index: i,
       }));
+    }
+
+    // One invocation embeds a bounded amount of text; a whole textbook in a
+    // single request exceeds the worker's CPU and memory limits.
+    if (itemsToProcess.length > MAX_CHUNKS_PER_REQUEST) {
+      return new Response(
+        JSON.stringify({
+          error: `Too many chunks in one request (${itemsToProcess.length}). Send at most ${MAX_CHUNKS_PER_REQUEST} chunks per call.`,
+          code: "PAYLOAD_TOO_LARGE",
+          max_chunks: MAX_CHUNKS_PER_REQUEST,
+        }),
+        { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Process in sub-batches of SUB_BATCH_SIZE (25) to avoid WORKER_RESOURCE_LIMIT

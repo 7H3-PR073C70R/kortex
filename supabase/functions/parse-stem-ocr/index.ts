@@ -10,6 +10,14 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
+/** Files above this size are only parsed on the server when the app sent no text. */
+const SERVER_PARSE_MAX_BYTES = 8 * 1024 * 1024;
+/** Client-extracted text at least this long is trusted over a server re-parse. */
+const MIN_CLIENT_TEXT_CHARS = 1000;
+const LUNA_CONCURRENCY = 3;
+/** High-yield upper limit to prevent memory bloat and duplicate floods. */
+const MAX_GENERATED_CARDS = 150;
+
 interface OcrRequestPayload {
   documentId: string;
   storagePath: string;
@@ -124,7 +132,7 @@ serve(async (req) => {
 
     const { data: documentRecord } = await supabase
       .from("documents")
-      .select("id, user_id, filename, content_hash")
+      .select("id, user_id, filename, content_hash, file_size_bytes")
       .eq("id", documentId)
       .maybeSingle();
 
@@ -218,8 +226,16 @@ serve(async (req) => {
         .update({ processing_status: "parsingOcr" })
         .eq("id", documentId);
 
+      // Parsing a large PDF on the server (pdf.js over every page plus a raw
+      // image scan) exhausts the worker's CPU and memory on textbooks. The app
+      // already extracted the text, so only re-parse small files on the server.
+      const clientTextUsable = (extractedText?.trim().length ?? 0) >= MIN_CLIENT_TEXT_CHARS;
+      const knownSize = Number(documentRecord?.file_size_bytes ?? 0);
+      const shouldParseOnServer =
+        !clientTextUsable || (knownSize > 0 && knownSize <= SERVER_PARSE_MAX_BYTES);
+
       let fileBytes: Uint8Array | null = null;
-      if (storagePath) {
+      if (storagePath && shouldParseOnServer) {
         try {
           const { data: fileBlob, error: downloadError } = await supabase.storage
             .from("study-documents")
@@ -249,6 +265,20 @@ serve(async (req) => {
       images: [] as Array<{ url: string; label: string }>,
       isScannedOrImage: false,
     };
+
+    if (fileBytes && fileBytes.length > SERVER_PARSE_MAX_BYTES) {
+      if (!clientTextUsable) {
+        return new Response(
+          JSON.stringify({
+            error: "Document is too large to parse on the server. Synthesize it with Fast Local instead.",
+            code: "DOCUMENT_TOO_LARGE",
+          }),
+          { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log(`[parse-stem-ocr] Skipping server parse of ${fileBytes.length} bytes; using client-extracted text.`);
+      fileBytes = null;
+    }
 
     if (fileBytes && fileBytes.length > 0) {
       const parsedFromFile = await parser.parseDocument({
@@ -370,39 +400,55 @@ serve(async (req) => {
 
       const seenPrompts = new Set<string>();
 
+      // Luna calls run a few at a time so a long document finishes well within
+      // the worker's wall-clock limit; results are merged in document order.
+      const chunkResults: Array<Awaited<ReturnType<typeof luna.generateFlashcardsFromSemanticMapping>> | null> =
+        new Array(chunksToProcess.length).fill(null);
+      let nextChunk = 0;
+      const worker = async () => {
+        while (nextChunk < chunksToProcess.length) {
+          const i = nextChunk++;
+          const chunk = chunksToProcess[i];
+          try {
+            const targetCards = Math.max(5, Math.min(12, Math.round(chunk.content.length / 600)));
+            chunkResults[i] = await luna.generateFlashcardsFromSemanticMapping({
+              content: chunk.content,
+              topic: chunk.title,
+              courseCode,
+              availableImages: parsedDoc.images,
+              cardCountHint: targetCards,
+            });
+          } catch (lunaErr) {
+            console.error(`[parse-stem-ocr] Chunk ${i + 1} Luna error:`, lunaErr);
+          }
+        }
+      };
+      await Promise.all(
+        Array.from({ length: Math.min(LUNA_CONCURRENCY, chunksToProcess.length) }, worker)
+      );
+
       for (let i = 0; i < chunksToProcess.length; i++) {
-        if (generatedCards.length >= 150) break; // High-yield upper limit to prevent memory bloat/duplicate flood
+        if (generatedCards.length >= MAX_GENERATED_CARDS) break;
 
         const chunk = chunksToProcess[i];
-        try {
-          const targetCards = Math.max(5, Math.min(12, Math.round(chunk.content.length / 600)));
-          const cards = await luna.generateFlashcardsFromSemanticMapping({
-            content: chunk.content,
-            topic: chunk.title,
-            courseCode,
-            availableImages: parsedDoc.images,
-            cardCountHint: targetCards,
+        const cards = chunkResults[i];
+        if (!cards) continue;
+        for (const c of cards) {
+          const normPrompt = c.front.toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (normPrompt.length > 5 && seenPrompts.has(normPrompt)) continue;
+          if (normPrompt.length > 5) seenPrompts.add(normPrompt);
+
+          generatedCards.push({
+            id: crypto.randomUUID(),
+            front: c.front,
+            back: c.back,
+            back_latex: c.latex_content,
+            explanation: c.explanation || c.hints,
+            image_url: c.image_url,
+            tags: c.tags || [chunk.title, cleanDeckTitle, courseCode].filter(Boolean),
           });
 
-          for (const c of cards) {
-            const normPrompt = c.front.toLowerCase().replace(/[^a-z0-9]/g, "");
-            if (normPrompt.length > 5 && seenPrompts.has(normPrompt)) continue;
-            if (normPrompt.length > 5) seenPrompts.add(normPrompt);
-
-            generatedCards.push({
-              id: crypto.randomUUID(),
-              front: c.front,
-              back: c.back,
-              back_latex: c.latex_content,
-              explanation: c.explanation || c.hints,
-              image_url: c.image_url,
-              tags: c.tags || [chunk.title, cleanDeckTitle, courseCode].filter(Boolean),
-            });
-
-            if (generatedCards.length >= 150) break;
-          }
-        } catch (lunaErr) {
-          console.error(`[parse-stem-ocr] Chunk ${i + 1} Luna error:`, lunaErr);
+          if (generatedCards.length >= MAX_GENERATED_CARDS) break;
         }
       }
       console.log(`[parse-stem-ocr] Multi-chunk synthesis produced ${generatedCards.length} high-yield cards spanning full document.`);
@@ -412,6 +458,7 @@ serve(async (req) => {
       console.warn("[parse-stem-ocr] Luna returned 0 cards; generating structured fallback cards from extracted sections...");
 
       for (const sec of parsedDoc.sections) {
+        if (generatedCards.length >= MAX_GENERATED_CARDS) break;
         const isDescriptorSection = sec.text.startsWith("[Scanned") || sec.text.startsWith("[Visual");
 
         const items = sec.text
@@ -432,7 +479,7 @@ serve(async (req) => {
           });
 
         if (items.length > 0 && !isDescriptorSection) {
-          for (let pIdx = 0; pIdx < Math.min(25, items.length); pIdx++) {
+          for (let pIdx = 0; pIdx < Math.min(25, items.length) && generatedCards.length < MAX_GENERATED_CARDS; pIdx++) {
             const item = items[pIdx];
             const isSentence = item.includes(".") || item.length > 60;
             const front = isSentence
